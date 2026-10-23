@@ -80,6 +80,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 .mpsub{font:600 12px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 #mpBan{position:fixed;left:50%;top:calc(100px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:4;pointer-events:none;font:600 14px var(--f-mono);text-align:center;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
 #resetBtn:disabled{opacity:.4;cursor:default}
+#bld{display:block;font-size:11px;line-height:1.3;color:var(--muted)}
 </style>
 
 <div id="game"></div>
@@ -87,7 +88,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 <div id="cross"></div><div id="hit"></div><div id="toast" class="chip"></div><div id="warn"></div><div id="mpBan" class="chip" hidden></div>
 <div id="hudL" class="chip"></div>
 <canvas id="compass" width="1240" height="76"></canvas>
-<div id="hudR" class="chip"></div>
+<div id="hudR" class="chip"><span id="hudT"></span><small id="bld"></small></div>
 <div id="miniW"><canvas id="miniCv" width="400" height="400"></canvas><div id="miniT"></div></div>
 <div id="perf" class="chip" hidden></div>
 <div id="sndDbg" class="chip" hidden></div>
@@ -3323,7 +3324,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const brgEl=$('hudR'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=57;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);updatePlayer(dt,clockT);
@@ -3467,6 +3468,11 @@ function clearWildlife(){for(const d of DEER.slice())removeDeer(d);clearBirds();
 function p2Idle(){if(!P2M)return;applyPose(cpose('Idle',0));for(const [s,t] of P2PAIRS){t.position.copy(s.position);t.quaternion.copy(s.quaternion);t.scale.copy(s.scale);t.visible=s.visible;}
   P2M.position.set(P2_SPAWN.x,P2_SPAWN.y,P2_SPAWN.z);P2M.rotation.y=Math.atan2(-P2_SPAWN.x,-P2_SPAWN.z);P2M.visible=true;P2M.updateMatrixWorld(true);}
 
+// both players drop straight into the game when the connection is made (a first click then captures the mouse and turns the sound on)
+function mpAutoDeploy(){if(!playing){try{setPlaying(true);cv.focus();}catch(e){}}
+  const go=()=>{try{initAudio();if(AC&&AC.state==='suspended')AC.resume();startAmbience();if(!locked&&!fallback)requestLock();}catch(e){}};
+  const once=()=>{removeEventListener('mousedown',once,true);removeEventListener('keydown',once,true);go();};
+  addEventListener('mousedown',once,true);addEventListener('keydown',once,true);}
 // ---- messages ----
 function onMsg(t,d,m){
   if(t==='shot'){if(!Array.isArray(d.o)||!Array.isArray(d.v))return;const o=V(+d.o[0],+d.o[1],+d.o[2]),dir=V(+d.v[0],+d.v[1],+d.v[2]);if(!isFinite(o.x+o.y+o.z)||dir.lengthSq()<0.5)return;dir.normalize();
@@ -3566,7 +3572,7 @@ function netStep(dt){
   const now=performance.now(),host=NT.role==='h',M=NT.M;NT.needT-=dt;
   // who is the opponent
   let opp=null;try{for(const p of NT.room.peers()){if(p.sameTab)continue;const pr=p.presence||{};if(pr.v!==NET_V||pr.role===NT.role||!pr.role)continue;opp=p;break;}}catch(e){}
-  if(opp){NT.oppSeen=now;if(!NT.opp||NT.opp.peer!==opp.peer){NT.opp=opp;if(!NT.wasOpp)toast('Opponent connected');NT.wasOpp=true;mpStat('Direct match'+' · '+NT.where+' · opponent connected'+(host?' · press Start match':' · waiting for the host to start'));if(host)sendRoster();mpUI();}
+  if(opp){NT.oppSeen=now;if(!NT.opp||NT.opp.peer!==opp.peer){NT.opp=opp;if(!NT.wasOpp){toast('Opponent connected · click the game to capture the mouse');mpAutoDeploy();if(host)setTimeout(()=>{if(NT.room&&NT.role==='h'&&NT.opp&&NT.M.ph==='wait')mpStart();},3000);}NT.wasOpp=true;mpStat('Direct match'+' · '+NT.where+' · opponent connected'+(host?' · press Start match':' · waiting for the host to start'));if(host)sendRoster();mpUI();}
     NT.opp=opp;const pr=opp.presence;feedSnap(pr.s);
     if(!host&&pr.m){const m=pr.m;const prevPh=M.ph;NT.M={ph:String(m.ph),r:m.r|0,sc:[m.sc&&m.sc[0]|0,m.sc&&m.sc[1]|0],left:+m.left||0,lw:m.lw||''};
       if(typeof m.tod==='number'){if(Math.abs(wrapA((m.tod-DAY.tod)*PI/12))>0.01)DAY.tod=m.tod;DAY.rateI=m.ri|0;}
