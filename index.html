@@ -3398,7 +3398,7 @@ async function unpackDesc(code,kind){code=String(code||'').replace(/\s+/g,'');co
 const gathered=(pc,ms)=>new Promise(res=>{if(pc.iceGatheringState==='complete')return res();const t=setTimeout(res,ms||5000);pc.addEventListener('icegatheringstatechange',()=>{if(pc.iceGatheringState==='complete'){clearTimeout(t);res();}});});
 let DX=null;   // the direct connection being set up
 function dxStat(t){mpStat(t);}
-function dxReset(){if(DX){try{DX.pc.close();}catch(e){}DX=null;}$('mpDx').value='';$('mpDx').hidden=true;$('mpDgo').hidden=true;mpUI();}
+function dxReset(){if(DX){try{DX.pc.close();}catch(e){}DX=null;}$('mpDx').value='';$('mpDx').hidden=true;$('mpDgo').hidden=true;$('mpDgo').disabled=false;mpUI();}
 function dxWatch(pc,dc,role){let done=false;
   const open=()=>{if(done||dc.readyState!=='open')return;done=true;const r=rtcRoom(pc,dc);DX=null;$('mpDx').value='';$('mpDx').hidden=true;$('mpDgo').hidden=true;
     if(NT.room)mpLeave(true);mpAttach(r,'direct',role,'direct','');};
@@ -3420,8 +3420,14 @@ async function dxJoin(){const box=$('mpDx');const txt=box.value;
     try{await pc.setRemoteDescription(offer);await pc.setLocalDescription(await pc.createAnswer());await gathered(pc);}catch(e){dxStat('That code did not work: '+(e&&e.message||e));dxReset();return;}
     const code=await packDesc('a',pc.localDescription);box.hidden=false;box.value=code;box.readOnly=false;box.select();try{navigator.clipboard.writeText(code).catch(()=>{});}catch(e){}
     dxStat('Reply copied. Send it to the host and wait — you will connect when they press Connect.');}}
-async function dxFinish(){if(!DX||DX.role!=='h')return;const ans=await unpackDesc($('mpDx').value,'a');if(!ans){dxStat('That is not a reply code. Paste the code your opponent sent back.');return;}
-  try{await DX.pc.setRemoteDescription(ans);dxStat('Connecting…');}catch(e){dxStat('That reply did not work: '+(e&&e.message||e));}}
+async function dxFinish(){if(!DX||DX.role!=='h')return;
+  if(DX.busy){dxStat('Already connecting — give it a few seconds…');return;}
+  if(DX.pc.signalingState!=='have-local-offer'){dxStat('This code was already used. Press Leave (or Host match again) to start over with a fresh code.');return;}
+  const ans=await unpackDesc($('mpDx').value,'a');if(!ans){dxStat('That is not a reply code. Paste the code your opponent sent back over the box, then press Connect.');return;}
+  DX.busy=true;$('mpDgo').disabled=true;
+  try{await DX.pc.setRemoteDescription(ans);}catch(e){DX.busy=false;$('mpDgo').disabled=false;dxStat('That reply did not work ('+(e&&e.message||e)+'). Make sure it is the reply to THIS code; otherwise press Host match again and swap new codes.');return;}
+  dxStat('Connecting…');const me=DX;
+  setTimeout(()=>{if(DX===me&&!NT.room)dxStat('Still connecting… if nothing happens in a few more seconds the connection is blocked: press Host match to try again, and make sure you are both on the GitHub Pages link.');},10000);}
 
 // ---- lobby ----
 function mpStat(s){const e=$('mpStat');if(e)e.textContent=s;}
