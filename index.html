@@ -2264,7 +2264,7 @@ function updatePlayer(dt,time){
   if(pl.stance!=='stand'&&sprint&&mi.f>0&&!act&&pl.stance==='crouch'&&canFit(HEIGHT.stand))pl.stance='stand';
   const recentFire=time-pl.lastShot<0.55;
   const canAim=pl.alive&&!act&&pl.reloadT<0&&pl.stance!=='prone';
-  const aimT=canAim&&(aimHeld||recentFire||firing)?1:0;
+  const aimT=canAim&&(aimHeld||recentFire||firing)?1:(canAim&&!viewFP&&!(sprint&&mi.f>0)?0.7:0);   // third person: the rifle is carried up and ready, so you can see it beside the character
   pl.aimW=damp(pl.aimW,aimT,14,dt);
   const isSprint=sprint&&mi.f>0&&pl.stance==='stand'&&!aimHeld&&!firing&&!recentFire&&pl.reloadT<0;
   // speed
@@ -3022,9 +3022,9 @@ function updateCamera(dt){
     if(scoped)fov=62/ZOOMS[zoomI];
   } else {
     J.head.visible=true;marine.visible=true;
-    const h=(pl.stance==='prone'?0.8:(pl.stance==='crouch'?1.3:1.72))+(pl.aimW>0.3?0.18:0)-0.6*pl.slideW;
+    const h=(pl.stance==='prone'?0.8:(pl.stance==='crouch'?1.3:1.72))+(pl.aimW>0.3?0.3:0)-0.6*pl.slideW;
     const aim=pl.aimW>0.3;
-    const dist=aim?2.2:camDist, sh=aim?0.95:0.6;
+    const dist=aim?Math.min(camDist,2.7):camDist, sh=aim?1.2:0.6;
     camPivot.x=damp(camPivot.x,pl.pos.x,20,dt);camPivot.z=damp(camPivot.z,pl.pos.z,20,dt);camPivot.y=damp(camPivot.y,pl.pos.y+h,10,dt);
     camSh.x=damp(camSh.x,sh,10,dt);camSh.y=damp(camSh.y,dist,10,dt);
     const piv=_cp.copy(camPivot).addScaledVector(_rt,camSh.x);
@@ -3039,7 +3039,7 @@ function updateCamera(dt){
     {const nb=d<camBoom?damp(camBoom,d,12,dt):damp(camBoom,d,2.5,dt);camBoom+=clamp(nb-camBoom,-16*dt,6*dt);}
     camera.position.copy(piv).addScaledVector(_dir,-camBoom);
     const g=groundH(camera.position.x,camera.position.z)+0.25;if(camera.position.y<g)camera.position.y=g;
-    if(aim)fov=50;fov+=7*pl.slideW;
+    if(aim)fov=56;fov+=7*pl.slideW;
   }
   camera.fov=scoped?fov:damp(camera.fov,fov,12,dt);camera.updateProjectionMatrix();
   camera.lookAt(_v9.copy(camera.position).add(_dir));camera.updateMatrixWorld();
@@ -3335,7 +3335,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=64;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=67;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);updatePlayer(dt,clockT);
