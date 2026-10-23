@@ -26,7 +26,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-ui);o
 #warn{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:4;font:600 18px var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--warn);text-shadow:0 1px 3px #000;pointer-events:none}
 #toast{position:fixed;top:calc(62px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:4;opacity:0;transition:opacity .25s;pointer-events:none;font:14px var(--f-mono)}
 #hit{position:fixed;left:50%;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;border:2px solid #fff;border-radius:50%;opacity:0;pointer-events:none;z-index:4}
-#cross{position:fixed;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border:1px solid rgba(255,255,255,.8);border-radius:50%;z-index:3;pointer-events:none}
+#cross{position:fixed;left:50%;top:50%;width:25px;height:25px;margin:-12px 0 0 -12px;z-index:3;pointer-events:none;background:linear-gradient(#fff,#fff) 50% 0/1px 6px no-repeat,linear-gradient(#fff,#fff) 50% 100%/1px 6px no-repeat,linear-gradient(#fff,#fff) 0 50%/6px 1px no-repeat,linear-gradient(#fff,#fff) 100% 50%/6px 1px no-repeat,radial-gradient(circle,#fff 0,#fff 0.9px,transparent 1.3px) 50% 50%/3px 3px no-repeat;filter:drop-shadow(0 0 0.6px rgba(0,0,0,.95)) drop-shadow(0 0 0.6px rgba(0,0,0,.8))}
 #mapPanel{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none}
 #mapPanel .chip{padding:10px;pointer-events:none}
 #mapPanel .chip canvas{pointer-events:auto;cursor:crosshair}
@@ -3002,7 +3002,7 @@ const ZOOMS=[2,3,4]; let zoomI=0;   // magnification; field of view = 62 deg (no
 const _cp=V(0,0,0),_dir=V(0,0,0),_eye=V(0,0,0),_rt=V(0,0,0), camRay=new THREE.Raycaster();
 let breath=6, breathLock=0, swayT=0, range=null, rangeT=0;
 let camBoom=3;
-let aimYawV=null,aimPitchV=null;
+let aimYawV=null,aimPitchV=null,aimPtTP=null,_wasScoped=false;
 function gunYaw(){return aimYawV!=null?aimYawV:camYaw;}
 function gunPitch(){return aimPitchV!=null?aimPitchV:camPitch;}
 function updateCamera(dt){
@@ -3021,6 +3021,8 @@ function updateCamera(dt){
   let fov=62;
   if(scoped||viewFP){
     J.head.updateMatrixWorld(true);_eye.set(0,0.2,0.18);J.head.localToWorld(_eye);
+    if(scoped&&!_wasScoped&&aimPtTP&&!viewFP){const dx=aimPtTP.x-_eye.x,dy=aimPtTP.y-_eye.y,dz=aimPtTP.z-_eye.z,hz=Math.hypot(dx,dz);   // entering the scope: look at the point the third-person crosshair was on
+      if(hz>6){camYaw=Math.atan2(dx,dz);camPitch=clamp(Math.atan2(dy,hz),-1.25,1.05);_dir.set(Math.sin(camYaw)*Math.cos(camPitch),Math.sin(camPitch),Math.cos(camYaw)*Math.cos(camPitch));}}
     camera.position.copy(_eye);J.head.visible=false;marine.visible=!scoped;
     if(scoped)fov=62/ZOOMS[zoomI];
   } else {
@@ -3051,8 +3053,9 @@ function updateCamera(dt){
   if(!scoped&&!viewFP&&pl.alive&&(pl.aimW>0.15||input.lmb)){   // third person: point the rifle at what the crosshair hits, not parallel to the camera
     const h=castRay(camera.position,_dir,700);const ap=h?h.point:_v9.copy(camera.position).addScaledVector(_dir,700);
     const ox=pl.pos.x,oy=pl.pos.y+(pl.stance==='prone'?0.35:pl.stance==='crouch'?1.0:1.4),oz=pl.pos.z;
-    const dx=ap.x-ox,dy=ap.y-oy,dz=ap.z-oz,hz=Math.hypot(dx,dz);
+    aimPtTP=(aimPtTP||V(0,0,0)).copy(ap);const dx=ap.x-ox,dy=ap.y-oy,dz=ap.z-oz,hz=Math.hypot(dx,dz);
     if(hz>4){aimYawV=camYaw+clamp(wrapA(Math.atan2(dx,dz)-camYaw),-0.35,0.35);aimPitchV=camPitch+clamp(Math.atan2(dy,hz)-camPitch,-0.35,0.35);}}
+  if(viewFP)aimPtTP=null;_wasScoped=scoped;
   rangeT-=dt;if(scoped&&rangeT<=0){rangeT=0.12;camera.getWorldDirection(_cd);const h=castRay(camera.position,_cd,1800);range=h?h.dist:null;}
 }
 /* ---------------- scope overlay (first focal plane mil reticle) ---------------- */
@@ -3338,7 +3341,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=73;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=75;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);updatePlayer(dt,clockT);
@@ -3712,7 +3715,7 @@ function netStats(dt){const st=NT.st,nd=$('netDbg'),r=NT.room;_fpsS+=(1/Math.max
 
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&NT.room&&playing&&!locked&&!fallback)toast('Click the game to capture the mouse');});
 
-window.SNIPER={mp:{start:mpStart,fanfare:playFanfare,goodbye:playGoodbye,leave:mpLeave,NT,RPS,MPM,P2RHB,P2PAIRS,packPose,getDeerVer:()=>deerVer,getYaw:()=>player.yaw,getDeer:()=>DEER},deerSample,getDCGCD:()=>dcGCD,getP2:()=>P2M,getBoltT:()=>boltT,P1_SPAWN,P2_SPAWN,getFALL:()=>FALL,STREAM,BED,CW,getSE:()=>STREAM_END,hFull,lakeE,LOWR,hitBird,getAmb:()=>amb,SND,playSample,initAudio,getAC:()=>AC,DAY,stepDay,meadowK,resetGame,BZ,BGRP,setBuzzards,STAIRS,TORTOPS,rockTopAt,DEER,MARKS,ROCKS,PGRID,setDeerCounts,disturb,miniZoom,keysDown:keys,player,marine,J,MAP,SEAT_INFO,SUMMIT,LW,chunks,stats,keys,input,camera,scene,renderer,castRay,groundH,setZero,
+window.SNIPER={mp:{start:mpStart,fanfare:playFanfare,goodbye:playGoodbye,leave:mpLeave,NT,RPS,MPM,P2RHB,P2PAIRS,packPose,getDeerVer:()=>deerVer,getYaw:()=>player.yaw,getDeer:()=>DEER,getAim:()=>aimPtTP?aimPtTP.toArray():null,getCam:()=>{const d=new THREE.Vector3();camera.getWorldDirection(d);return [camera.position.toArray(),d.toArray(),scoped]}},deerSample,getDCGCD:()=>dcGCD,getP2:()=>P2M,getBoltT:()=>boltT,P1_SPAWN,P2_SPAWN,getFALL:()=>FALL,STREAM,BED,CW,getSE:()=>STREAM_END,hFull,lakeE,LOWR,hitBird,getAmb:()=>amb,SND,playSample,initAudio,getAC:()=>AC,DAY,stepDay,meadowK,resetGame,BZ,BGRP,setBuzzards,STAIRS,TORTOPS,rockTopAt,DEER,MARKS,ROCKS,PGRID,setDeerCounts,disturb,miniZoom,keysDown:keys,player,marine,J,MAP,SEAT_INFO,SUMMIT,LW,chunks,stats,keys,input,camera,scene,renderer,castRay,groundH,setZero,
   set(o){if(o.yaw!=null)camYaw=o.yaw;if(o.pitch!=null)camPitch=o.pitch;if(o.pos)player.pos.set(o.pos[0],o.pos[1],o.pos[2]);if(o.fp!=null)viewFP=o.fp;if(o.zoom!=null)zoomI=o.zoom;},
   play(){setPlaying(true);fallback=true;}, pause(v){paused=v;}, lod(){updateLOD();}, tick(dt){update(dt);renderer.render(scene,camera);}, step(dt){update(dt);}, info(){return {genMs,nTrees,nPlants,rocks:ROCKS.length,inst:instCount,LW,tris:renderer.info.render.triangles,calls:renderer.info.render.calls};}};
 }
