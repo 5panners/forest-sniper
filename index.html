@@ -2293,7 +2293,7 @@ function updatePlayer(dt,time){
   // facing
   let faceT=null;
   if(act&&act.name==='throw')faceT=camYaw;
-  else if(!(A_&&A_.lock)){if(pl.aimW>0.15||aimHeld||firing||viewFP)faceT=camYaw;else if(hs>0.3)faceT=Math.atan2(pl.vel.x,pl.vel.z);}
+  else if(!(A_&&A_.lock)){if(pl.aimW>0.15||aimHeld||firing||viewFP)faceT=gunYaw();else if(hs>0.3)faceT=Math.atan2(pl.vel.x,pl.vel.z);else faceT=gunYaw();}   // standing still: the body turns to where the mouse points
   if(faceT!=null&&pl.slide){const sd=Math.atan2(pl.slide.dx,pl.slide.dz);faceT=sd+clamp(wrapA(faceT-sd),-1.1,1.1);}
   if(faceT!=null){const rate=pl.stance==='prone'?3:12;pl.yaw+=wrapA(faceT-pl.yaw)*(1-Math.exp(-rate*dt));}
   // gravity + integration
@@ -2355,8 +2355,8 @@ function updatePlayer(dt,time){
     else{const u=pl.reloadT/2.6;const w=Math.sin(u*PI);p=Object.assign({},p);p.L={guard:1-w,magwell:w};p.magHide=(u>0.3&&u<0.6)?1:0;}}
   // pitch
   p=Object.assign({},p);
-  if(pl.stance!=='prone'){p.gunR=[p.gunR[0]-camPitch*0.85*pl.aimW,p.gunR[1],p.gunR[2]];p.chest=[p.chest[0]-camPitch*0.15*pl.aimW,p.chest[1],p.chest[2]];p.head=[p.head[0]-camPitch*0.45*(1-pl.aimW),p.head[1],p.head[2]];}
-  else{const pc=clamp(camPitch,-0.25,0.35);p.gunR=[p.gunR[0]-pc*0.8,p.gunR[1],p.gunR[2]];p.head=[p.head[0]-pc*0.6,p.head[1],p.head[2]];}
+  if(pl.stance!=='prone'){p.gunR=[p.gunR[0]-gunPitch()*0.85*pl.aimW,p.gunR[1],p.gunR[2]];p.chest=[p.chest[0]-gunPitch()*0.15*pl.aimW,p.chest[1],p.chest[2]];p.head=[p.head[0]-camPitch*0.45*(1-pl.aimW),p.head[1],p.head[2]];}
+  else{const pc=clamp(gunPitch(),-0.25,0.35);p.gunR=[p.gunR[0]-pc*0.8,p.gunR[1],p.gunR[2]];p.head=[p.head[0]-pc*0.6,p.head[1],p.head[2]];}
   // recoil kick along the gun axis
   if(pl.kick>0){_e.set(p.gunR[0],p.gunR[1],p.gunR[2],'ZYX');const d=V(0,0,1).applyEuler(_e);const k=pl.kick*(pl.stance==='prone'?0.6:1);
     p.gunP=[p.gunP[0]-d.x*0.05*k,p.gunP[1]-d.y*0.05*k+0.01*k,p.gunP[2]-d.z*0.05*k];p.gunR=[p.gunR[0]-0.13*k,p.gunR[1],p.gunR[2]];p.chest=[p.chest[0]-0.035*k,p.chest[1],p.chest[2]];}
@@ -2999,6 +2999,9 @@ const ZOOMS=[2,3,4]; let zoomI=0;   // magnification; field of view = 62 deg (no
 const _cp=V(0,0,0),_dir=V(0,0,0),_eye=V(0,0,0),_rt=V(0,0,0), camRay=new THREE.Raycaster();
 let breath=6, breathLock=0, swayT=0, range=null, rangeT=0;
 let camBoom=3;
+let aimYawV=null,aimPitchV=null;
+function gunYaw(){return aimYawV!=null?aimYawV:camYaw;}
+function gunPitch(){return aimPitchV!=null?aimPitchV:camPitch;}
 function updateCamera(dt){
   const pl=player;
   scoped=input.rmb&&pl.alive&&!(pl.action&&ACTIONS[pl.action.name].lock)&&pl.reloadT<0&&(pl.aimW>0.5||pl.stance==='prone')&&!pl.slide;
@@ -3041,6 +3044,12 @@ function updateCamera(dt){
   camera.fov=scoped?fov:damp(camera.fov,fov,12,dt);camera.updateProjectionMatrix();
   camera.lookAt(_v9.copy(camera.position).add(_dir));camera.updateMatrixWorld();
   if(shake>0){camera.position.add(rv(shake*0.15));camera.rotation.z+=(Math.random()-0.5)*shake*0.02;shake=Math.max(0,shake-dt*2.2);}
+  aimYawV=aimPitchV=null;
+  if(!scoped&&!viewFP&&pl.alive&&(pl.aimW>0.15||input.lmb)){   // third person: point the rifle at what the crosshair hits, not parallel to the camera
+    const h=castRay(camera.position,_dir,700);const ap=h?h.point:_v9.copy(camera.position).addScaledVector(_dir,700);
+    const ox=pl.pos.x,oy=pl.pos.y+(pl.stance==='prone'?0.35:pl.stance==='crouch'?1.0:1.4),oz=pl.pos.z;
+    const dx=ap.x-ox,dy=ap.y-oy,dz=ap.z-oz,hz=Math.hypot(dx,dz);
+    if(hz>4){aimYawV=camYaw+clamp(wrapA(Math.atan2(dx,dz)-camYaw),-0.35,0.35);aimPitchV=camPitch+clamp(Math.atan2(dy,hz)-camPitch,-0.35,0.35);}}
   rangeT-=dt;if(scoped&&rangeT<=0){rangeT=0.12;camera.getWorldDirection(_cd);const h=castRay(camera.position,_cd,1800);range=h?h.dist:null;}
 }
 /* ---------------- scope overlay (first focal plane mil reticle) ---------------- */
@@ -3326,7 +3335,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=63;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=64;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);updatePlayer(dt,clockT);
@@ -3697,7 +3706,7 @@ function netStats(dt){const st=NT.st,nd=$('netDbg'),r=NT.room;_fpsS+=(1/Math.max
 
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&NT.room&&playing&&!locked&&!fallback)toast('Click the game to capture the mouse');});
 
-window.SNIPER={mp:{start:mpStart,fanfare:playFanfare,goodbye:playGoodbye,leave:mpLeave,NT,RPS,MPM,P2RHB,P2PAIRS,packPose,getDeerVer:()=>deerVer},deerSample,getDCGCD:()=>dcGCD,getP2:()=>P2M,getBoltT:()=>boltT,P1_SPAWN,P2_SPAWN,getFALL:()=>FALL,STREAM,BED,CW,getSE:()=>STREAM_END,hFull,lakeE,LOWR,hitBird,getAmb:()=>amb,SND,playSample,initAudio,getAC:()=>AC,DAY,stepDay,meadowK,resetGame,BZ,BGRP,setBuzzards,STAIRS,TORTOPS,rockTopAt,DEER,MARKS,ROCKS,PGRID,setDeerCounts,disturb,miniZoom,keysDown:keys,player,marine,J,MAP,SEAT_INFO,SUMMIT,LW,chunks,stats,keys,input,camera,scene,renderer,castRay,groundH,setZero,
+window.SNIPER={mp:{start:mpStart,fanfare:playFanfare,goodbye:playGoodbye,leave:mpLeave,NT,RPS,MPM,P2RHB,P2PAIRS,packPose,getDeerVer:()=>deerVer,getYaw:()=>player.yaw},deerSample,getDCGCD:()=>dcGCD,getP2:()=>P2M,getBoltT:()=>boltT,P1_SPAWN,P2_SPAWN,getFALL:()=>FALL,STREAM,BED,CW,getSE:()=>STREAM_END,hFull,lakeE,LOWR,hitBird,getAmb:()=>amb,SND,playSample,initAudio,getAC:()=>AC,DAY,stepDay,meadowK,resetGame,BZ,BGRP,setBuzzards,STAIRS,TORTOPS,rockTopAt,DEER,MARKS,ROCKS,PGRID,setDeerCounts,disturb,miniZoom,keysDown:keys,player,marine,J,MAP,SEAT_INFO,SUMMIT,LW,chunks,stats,keys,input,camera,scene,renderer,castRay,groundH,setZero,
   set(o){if(o.yaw!=null)camYaw=o.yaw;if(o.pitch!=null)camPitch=o.pitch;if(o.pos)player.pos.set(o.pos[0],o.pos[1],o.pos[2]);if(o.fp!=null)viewFP=o.fp;if(o.zoom!=null)zoomI=o.zoom;},
   play(){setPlaying(true);fallback=true;}, pause(v){paused=v;}, lod(){updateLOD();}, tick(dt){update(dt);renderer.render(scene,camera);}, step(dt){update(dt);}, info(){return {genMs,nTrees,nPlants,rocks:ROCKS.length,inst:instCount,LW,tris:renderer.info.render.triangles,calls:renderer.info.render.calls};}};
 }
