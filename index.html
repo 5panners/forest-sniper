@@ -26,7 +26,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-ui);o
 #warn{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:4;font:600 18px var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--warn);text-shadow:0 1px 3px #000;pointer-events:none}
 #toast{position:fixed;top:calc(62px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:4;opacity:0;transition:opacity .25s;pointer-events:none;font:14px var(--f-mono)}
 #hit{position:fixed;left:50%;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;border:2px solid #fff;border-radius:50%;opacity:0;pointer-events:none;z-index:4}
-#cross{position:fixed;left:50%;top:50%;width:25px;height:25px;margin:-12px 0 0 -12px;z-index:3;pointer-events:none;background:linear-gradient(#fff,#fff) 50% 0/1px 6px no-repeat,linear-gradient(#fff,#fff) 50% 100%/1px 6px no-repeat,linear-gradient(#fff,#fff) 0 50%/6px 1px no-repeat,linear-gradient(#fff,#fff) 100% 50%/6px 1px no-repeat,radial-gradient(circle,#fff 0,#fff 0.9px,transparent 1.3px) 50% 50%/3px 3px no-repeat;filter:drop-shadow(0 0 0.6px rgba(0,0,0,.95)) drop-shadow(0 0 0.6px rgba(0,0,0,.8))}
+#cross{position:fixed;left:50%;top:50%;width:25px;height:25px;margin:-12px 0 0 -12px;z-index:3;pointer-events:none;background:linear-gradient(#000,#000) 50% 0/1px 6px no-repeat,linear-gradient(#000,#000) 50% 100%/1px 6px no-repeat,linear-gradient(#000,#000) 0 50%/6px 1px no-repeat,linear-gradient(#000,#000) 100% 50%/6px 1px no-repeat;filter:drop-shadow(0 0 0.7px rgba(255,255,255,.9))}#cross::after{content:'';position:absolute;left:11px;top:11px;width:3px;height:3px;border-radius:50%;background:#fff;box-shadow:0 0 1px .5px rgba(0,0,0,.9)}
 #mapPanel{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none}
 #mapPanel .chip{padding:10px;pointer-events:none}
 #mapPanel .chip canvas{pointer-events:auto;cursor:crosshair}
@@ -3341,7 +3341,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=75;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=76;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);updatePlayer(dt,clockT);
