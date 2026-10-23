@@ -2753,7 +2753,7 @@ function stepDeer(dt){
   for(const d of DEER){
     const dist=Math.hypot(d.x-cp.x,d.z-cp.z);_sph.center.set(d.x,d.y+0.9,d.z);_sph.radius=3;const vis=dist<40||_fr.intersectsSphere(_sph);
     // behaviour: every frame up close, 20 Hz in view further out, 5 Hz for anything off screen
-    deerSpeak(d,dt,dist);d.acc+=dt;const dN=(MPM.on&&!MPM.guest&&RPS.vis)?Math.min(dist,Math.hypot(d.x-RPS.pos.x,d.z-RPS.pos.z)):dist;const iv=dN<120?0:((vis||dN<400)?0.05:0.2);   // deer near the opponent are simulated as finely as deer near youif(d.acc>=iv){const a=Math.min(d.acc,0.25);d.acc=0;(MPM.guest?netDeer(d,a):deerAI(d,a));if(d.pin&&d.st!=='dead'&&!d.wound){d.x=d.pin.x;d.z=d.pin.z;d.y=groundH(d.x,d.z);d.spd=0;d.fear=0;if(d.st!=='graze'){d.st='graze';d.stT=1e9;}}}
+    deerSpeak(d,dt,dist);d.acc+=dt;const dN=(MPM.on&&!MPM.guest&&RPS.vis)?Math.min(dist,Math.hypot(d.x-RPS.pos.x,d.z-RPS.pos.z)):dist;const iv=dN<120?0:((vis||dN<400)?0.05:0.2);if(d.acc>=iv){const a=Math.min(d.acc,0.25);d.acc=0;(MPM.guest?netDeer(d,a):deerAI(d,a));if(d.pin&&d.st!=='dead'&&!d.wound){d.x=d.pin.x;d.z=d.pin.z;d.y=groundH(d.x,d.z);d.spd=0;d.fear=0;if(d.st!=='graze'){d.st='graze';d.stT=1e9;}}}
     // animation: only what the camera can see; 15 Hz beyond 400 m
     d.pacc+=dt;
     if(vis&&dist<1250&&(dist<400||(deerFrame+d.id)%3===0)){poseDeer(d,Math.min(d.pacc,0.1));d.pacc=0;d.stale=false;}else d.stale=true;
@@ -3336,7 +3336,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=71;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=72;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);updatePlayer(dt,clockT);
