@@ -1912,8 +1912,9 @@ const SPR=['#ffffff','#e6ece2','#d6e2d4','#f2f2e6'].map(C_);
 const SNAGC=['#ffffff','#e2ded6','#cfcbc3'].map(C_);
 const SHRUBC=['#4f7a35','#5d8a3a','#6b8f3a','#4a6d33','#7a8a3c','#8a6a3a'].map(C_);
 const FERNC=['#5f8f3a','#6f9a40','#7c9f45','#8a7a3a'].map(C_);
-let nTrees=0,nPlants=0;
+let nTrees=0,nPlants=0;const TREE_CUT=0.25;
 function placeTree(x,z,inner){
+  const skipT=hsh(Math.floor(x*9)+17,Math.floor(z*9)+5)<TREE_CUT;   // 25% of the trees are left out (same on both machines: it depends only on position)
   const h=groundH(x,z);const slp=slopeAt(x,z);if(slp>(inner?0.95:1.5))return;
   const le=lakeE(x,z);if(le<1.12)return;
   const dS=fieldF(x,z,FdS,CdS),cw=fieldF(x,z,FCw,CCw);if(dS<cw+1.8)return;
@@ -1929,7 +1930,8 @@ function placeTree(x,z,inner){
     else{type=wr()<0.5?'spruceA':'spruceB';sc=wrr(0.68,1.18);col=SPR[Math.floor(wr()*4)];r=0.32;}}
   {const ds=Math.hypot(x-SUMMIT.x,z-SUMMIT.z);if(ds<230&&type!=='young')sc*=0.4+0.6*sst(50,230,ds);}
   const sy=sc*wrr(0.92,1.08);
-  addInst(c,type,x,h-0.15,z,sc,sy,ry,col,(type==='snag'?wrr(-0.06,0.06):wrr(-0.02,0.02)));nTrees++;
+  const tilt=(type==='snag'?wrr(-0.06,0.06):wrr(-0.02,0.02));if(skipT)return;
+  addInst(c,type,x,h-0.15,z,sc,sy,ry,col,tilt);nTrees++;
   if(inner){if(type==='beech')addLos({x,z,r:3.8*sc,y0:h+12*sy,y1:h+23*sy});else if(type==='young')addLos({x,z,r:0.9*sc,y0:h-0.5,y1:h+3.2*sy});else if(type!=='snag')addLos({x,z,r:2.6*sc,y0:h+6.5*sy,y1:h+21*sy});}
   if(inner&&r>0)addPillar({x,z,r:Math.max(0.14,r*sc),y0:h-1,y1:h+(type==='snag'?21:26)*sy,kind:'wood'});}
 // inner forest: 6.2 m jittered grid; outer ring 9.5 m (far LOD only)
@@ -3336,7 +3338,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=72;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=73;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);updatePlayer(dt,clockT);
