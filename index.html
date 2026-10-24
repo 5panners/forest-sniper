@@ -1333,7 +1333,10 @@ const starGeo=(()=>{const s=new THREE.Shape();const n=6;for(let i=0;i<n*2;i++){c
 const fs=new THREE.Mesh(starGeo,flashMat); flashGrp.add(fs);
 const coneGeo=new THREE.ConeGeometry(0.06,0.3,5,1,true); coneGeo.rotateX(HP); coneGeo.translate(0,0,0.12);
 flashGrp.add(new THREE.Mesh(coneGeo,flashMat));
-const flashLight=new THREE.PointLight(0xffb347,0,3,2); flashGrp.add(flashLight);
+const flashLight=new THREE.PointLight(0xffb347,0,30,2); flashGrp.add(flashLight);
+// soft glow around the muzzle flash (also reused for far-off flashes seen from the other player)
+const glowTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,240,200,1)');g.addColorStop(0.25,'rgba(255,190,100,0.65)');g.addColorStop(1,'rgba(255,140,40,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
+const flashGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));flashGlow.scale.set(1.1,1.1,1);flashGrp.add(flashGlow);
 flashGrp.visible=false;
 
 // anchors for IK targets
@@ -1616,8 +1619,8 @@ function applyPose(p){
   // magazine in hand during reload
   if(p.mag>0.5){J.lHand.getWorldPosition(tv[0]);tv[0].y-=0.02;gun.worldToLocal(tv[0]);mag.position.copy(tv[0]).add(V(0,0.04,0));}
   handNade.visible=p.nade>0.5;
-  flashGrp.visible=p.flash>0.5; flashLight.intensity=p.flash>0.5?2.2:0;
-  if(flashGrp.visible){fs.rotation.z=Math.random()*PI;flashGrp.scale.setScalar(0.8+Math.random()*0.5);}
+  flashGrp.visible=p.flash>0.5; flashLight.intensity=p.flash>0.5?6:0;
+  if(flashGrp.visible){fs.rotation.z=Math.random()*PI;flashGrp.scale.setScalar(1.6+Math.random()*0.7);}
 }
 
 
@@ -2364,7 +2367,7 @@ function updatePlayer(dt,time){
   // recoil kick along the gun axis
   if(pl.kick>0){_e.set(p.gunR[0],p.gunR[1],p.gunR[2],'ZYX');const d=V(0,0,1).applyEuler(_e);const k=pl.kick*(pl.stance==='prone'?0.6:1);
     p.gunP=[p.gunP[0]-d.x*0.05*k,p.gunP[1]-d.y*0.05*k+0.01*k,p.gunP[2]-d.z*0.05*k];p.gunR=[p.gunR[0]-0.13*k,p.gunR[1],p.gunR[2]];p.chest=[p.chest[0]-0.035*k,p.chest[1],p.chest[2]];}
-  p.flash=time-pl.lastShot<0.04?1:0;
+  p.flash=time-pl.lastShot<0.075?1:0;
   {const bw=boltHandW();if(bw>0.001&&!act){p=Object.assign({},p);p.R={grip:1-bw,bolt:bw};p.poleR=[-0.9,-0.9,-0.3];}}
   // full-body action
   if(act){const ap=cpose(ACTIONS[act.name].clip,act.t);p=mix(p,ap,clamp(act.w,0,1));p.flash=0;}
@@ -3342,7 +3345,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=77;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=80;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);updatePlayer(dt,clockT);
@@ -3385,7 +3388,8 @@ const RES_T=[
   {k:'wood',    label:'wood',      cell:11, p:0.060, amt:[2,4]},
   {k:'flint',   label:'flint',     cell:13, p:0.040, amt:[1,2]},
   {k:'scrap',   label:'scrap',     cell:17, p:0.004, amt:[1,2]}];
-const INV={berries:0,mushroom:0,wood:0,flint:0,scrap:0};
+const INV={berries:0,mushroom:0,wood:0,flint:0,scrap:0,meat:0,hide:0,feather:0};
+const INV_LABEL={berries:'berries',mushroom:'mushrooms',wood:'wood',flint:'flint',scrap:'scrap',meat:'meat',hide:'hide',feather:'feathers'};
 const RES_GEO={
   berries:build([[new THREE.IcosahedronGeometry(0.26,0),'#4c8a3c',[0,0.22,0],[0,0.5,0],[1.2,0.8,1.2]],[new THREE.IcosahedronGeometry(0.19,0),'#58a044',[0.22,0.17,0.08]],
     [new THREE.IcosahedronGeometry(0.07,0),'#e03040',[0.1,0.42,0.12]],[new THREE.IcosahedronGeometry(0.07,0),'#e03040',[-0.14,0.36,-0.1]],[new THREE.IcosahedronGeometry(0.07,0),'#cc2c52',[0.3,0.3,0.2]],[new THREE.IcosahedronGeometry(0.07,0),'#e03040',[-0.02,0.3,0.24]]]),
@@ -3436,13 +3440,25 @@ function resNearest(){const p=player.pos;let best=null,bd=2.7*2.7;const cx=Math.
 const invEl=document.createElement('div');invEl.id='inv';invEl.className='chip';invEl.hidden=true;document.body.appendChild(invEl);
 const resPrompt=document.createElement('div');resPrompt.id='resPrompt';resPrompt.className='chip';resPrompt.hidden=true;document.body.appendChild(resPrompt);
 let _invS='',_prS='';
-function invUI(){const s=RES_T.filter(R=>INV[R.k]>0).map(R=>'<b>'+INV[R.k]+'</b> '+R.label).join(' · ');if(s===_invS)return;_invS=s;invEl.innerHTML=s;invEl.hidden=!s;}
-function resGather(){if(!player.alive||mapOpen)return;const i=resNearest();if(i==null)return;const n=RES_NODES[i],R=RES_T[n.ti];
+function invUI(){const s=Object.keys(INV).filter(k=>INV[k]>0).map(k=>'<b>'+INV[k]+'</b> '+INV_LABEL[k]).join(' · ');if(s===_invS)return;_invS=s;invEl.innerHTML=s;invEl.hidden=!s;}
+// ---- dead animals: walk up and press F to take the meat ----
+const CARVE={stag:{meat:8,hide:2},fallow:{meat:6,hide:1},roe:{meat:4,hide:1}};
+function carcassNearest(){const p=player.pos;let best=null,bd=3.2*3.2;
+  for(let i=0;i<DEER.length;i++){const d=DEER[i];if(d.st!=='dead'||d.carved)continue;const q=(d.x-p.x)*(d.x-p.x)+(d.z-p.z)*(d.z-p.z);if(q<bd){bd=q;best={k:'d',i,o:d};}}
+  for(let i=0;i<BZ.length;i++){const b=BZ[i];if(b.st!=='dead'||b.carved)continue;const q=(b.x-p.x)*(b.x-p.x)+(b.z-p.z)*(b.z-p.z);if(q<Math.min(bd,2.6*2.6)&&Math.abs(b.y-p.y)<2.5){bd=q;best={k:'b',i,o:b};}}
+  return best;}
+function carcassName(c){return c.k==='d'?deerName(c.o).toLowerCase():'buzzard';}
+function resRemoteCarve(d){const v=MPM.guest?NT.rosterV:deerVer;if(d.v!==v)return;const o=d.k==='d'?DEER[d.i|0]:BZ[d.i|0];if(o)o.carved=true;}
+function carve(c){c.o.carved=true;let m,h=0,f=0;
+  if(c.k==='d'){const y=CARVE[c.o.kind]||CARVE.roe;m=y.meat;h=y.hide;}else{m=1;f=2+(c.i%2);}
+  INV.meat+=m;INV.hide+=h;INV.feather+=f;invUI();toast('Butchered '+carcassName(c)+' · +'+m+' meat'+(h?' · +'+h+' hide':'')+(f?' · +'+f+' feathers':''));try{sfx.click();}catch(e){}
+  if(NT.room&&MPM.on)NT.room.emit('carve',{k:c.k,i:c.i,v:MPM.guest?NT.rosterV:deerVer}).catch(()=>{});}
+function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();if(c){carve(c);return;}const i=resNearest();if(i==null)return;const n=RES_NODES[i],R=RES_T[n.ti];
   resSetGot(n,true);const q=R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));INV[R.k]+=q;invUI();toast('+'+q+' '+R.label);try{sfx.click();}catch(e){}
   if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});}
 addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyF')resGather();});
 function resStep(dt){
-  let s='';if(playing&&player.alive&&!scoped&&!mapOpen){const i=resNearest();if(i!=null)s='<b>F</b> · gather '+RES_T[RES_NODES[i].ti].label;}
+  let s='';if(playing&&player.alive&&!scoped&&!mapOpen){const c=carcassNearest();if(c)s='<b>F</b> · butcher '+carcassName(c);else{const i=resNearest();if(i!=null)s='<b>F</b> · gather '+RES_T[RES_NODES[i].ti].label;}}
   if(s!==_prS){_prS=s;resPrompt.innerHTML=s;resPrompt.hidden=!s;}}
 window.SNIPER_RES={INV,RES_NODES};
 
@@ -3530,7 +3546,7 @@ function mpAttach(room,kind,role,code,why){
   NT.pend.clear();NT.seen.clear();RPS.buf=[];RPS.off=null;RPS.lastT=0;RPS.vis=false;RPS.al=false;
   MPM.on=true;MPM.guest=role==='g';MPM.hp=100;player.reserve=SPARE;
   room.presence({v:NET_V,role}).catch(()=>{});
-  ['shot','hit','ack','wild','need','roster','dhit','bhit','take'].forEach(t=>room.on(t,m=>{if(m.sameTab||NT.room!==room)return;try{onMsg(t,m.data||{},m);}catch(e){console.warn('net',t,e);}},()=>{}));
+  ['shot','hit','ack','wild','need','roster','dhit','bhit','take','carve'].forEach(t=>room.on(t,m=>{if(m.sameTab||NT.room!==room)return;try{onMsg(t,m.data||{},m);}catch(e){console.warn('net',t,e);}},()=>{}));
   if(MPM.guest)clearWildlife();
   setLooks(MPM.guest);
   if(P2M)P2M.visible=false;
@@ -3609,7 +3625,7 @@ function audioUnlock(){try{initAudio();if(AC&&AC.state==='suspended')AC.resume()
 // ---- messages ----
 function onMsg(t,d,m){
   if(t==='shot'){if(!Array.isArray(d.o)||!Array.isArray(d.v))return;const o=V(+d.o[0],+d.o[1],+d.o[2]),dir=V(+d.v[0],+d.v[1],+d.v[2]);if(!isFinite(o.x+o.y+o.z)||dir.lengthSq()<0.5)return;dir.normalize();
-    bullets.push({p:o.clone(),o:o.clone(),v:dir.multiplyScalar(V0),t:0,tr:getP(gTracer,matTracer),rem:true});remoteShotSnd(o);if(!MPM.guest)disturb(o.x,o.z,200,650);}
+    bullets.push({p:o.clone(),o:o.clone(),v:dir.multiplyScalar(V0),t:0,tr:getP(gTracer,matTracer),rem:true});remoteShotSnd(o);RFL=0.11;farFlash(o);if(!MPM.guest)disturb(o.x,o.z,200,650);}
   else if(t==='hit'){NT.room.emit('ack',{n:d.n}).catch(()=>{});takeHit(d,m.peer);}
   else if(t==='ack'){NT.pend.delete(d.n);}
   else if(t==='wild'){if(MPM.guest)applyWild(d);}
@@ -3618,8 +3634,13 @@ function onMsg(t,d,m){
   else if(t==='dhit'){if(MPM.guest||d.v!==deerVer)return;const dr=DEER[d.i|0];if(!dr)return;hitFrom=RPS.pos;MPM.mute=true;
     try{hitDeer(dr,String(d.sub),+d.dist||0);if(d.sub==='leg')legHit(dr,d.leg|0);}finally{MPM.mute=false;hitFrom=null;}}
   else if(t==='take'){resRemoteTake(d.i|0);}
+  else if(t==='carve'){resRemoteCarve(d);}
   else if(t==='bhit'){if(MPM.guest)return;const b=BZ[d.i|0];if(!b)return;MPM.mute=true;try{hitBird(b,+d.dist||0);}finally{MPM.mute=false;}}
 }
+let RFL=0;const P2FL={g:null,l:null};let _fgS=null,_fgT=0;
+function farFlash(o){if(!_fgS){_fgS=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));_fgS.renderOrder=8;scene.add(_fgS);}
+  const d=o.distanceTo(camera.position);if(d>900){return;}_fgS.position.copy(o);const s=clamp(d*0.016,1.4,16);_fgS.scale.set(s,s,1);_fgS.material.opacity=1;_fgS.visible=true;_fgT=0.14;}
+function farFlashStep(dt){if(_fgT>0){_fgT-=dt;if(_fgS){_fgS.material.opacity=Math.max(0,_fgT/0.14);if(_fgT<=0)_fgS.visible=false;}}}
 function netShot(b){if(!NT.room)return;const v=b.v.clone().normalize();NT.room.emit('shot',{o:[nr2(b.o.x),nr2(b.o.y),nr2(b.o.z)],v:[nr3(v.x),nr3(v.y),nr3(v.z)]}).catch(()=>{});}
 function netHitRemote(h,dist){flashHit();const z=h.zone;toast('Opponent hit · '+(z==='head'?'head':z==='torso'?'body':'limb')+' · '+Math.round(dist)+' m');
   if(NT.M.ph!=='live'||!NT.room)return;const n=++NT.hitN;NT.pend.set(n,{msg:{n,z,dist:Math.round(dist),r:NT.M.r},next:0,tries:0});}
@@ -3693,6 +3714,8 @@ function applyRemote(dt){const B=RPS.buf;if(!B.length||!P2M)return;const rt=perf
   if(pose&&pose.hipsP&&pose.gunR){const sv=boltT;boltT=typeof (u<0.5?a:b).b==='number'?(u<0.5?a:b).b:-1;
     try{poseBolt();applyPose(pose);}catch(e){}boltT=sv;
     for(const [s,t] of P2PAIRS){t.position.copy(s.position);t.quaternion.copy(s.quaternion);t.scale.copy(s.scale);if(P2VIS.has(s))t.visible=s.visible;if(s.isLight)t.intensity=s.intensity;}}
+  if(RFL>0){RFL-=dt;if(!P2FL.g)for(const [s,t] of P2PAIRS){if(s===flashGrp)P2FL.g=t;else if(s===flashLight)P2FL.l=t;}   // the opponent's muzzle flash and the light it throws, driven by the shot event so none are missed between state packets
+    if(P2FL.g){P2FL.g.visible=true;P2FL.g.scale.setScalar(1.6+Math.random()*0.7);}if(P2FL.l)P2FL.l.intensity=6;}
   P2M.position.copy(RPS.pos);P2M.rotation.y=yaw;P2M.visible=true;P2M.updateMatrixWorld(true);RPS.vis=true;
   // footsteps you can hear
   if(RPS.al&&RPS.sp>0.35){RPS.stepD+=RPS.sp*dt;const st=RPS.stn,spr=RPS.sp>5;const stride=st==='prone'?0.55:st==='crouch'?1.0:spr?2.1:1.7;
@@ -3704,7 +3727,7 @@ function rayRemote(o,d,len){if(!P2RHB.length)return null;_hbR2.set(o,d);_hbR2.ne
   return {point:best.point.clone(),normal:d.clone().negate(),dist:best.distance,object:null,kind:'flesh',remote:true,zone:best.object.userData.zone};}
 
 // ---- per frame ----
-function netStep(dt){
+function netStep(dt){farFlashStep(dt);
   MPM.freeze=false;if(!NT.room){if(!$('netDbg').hidden)$('netDbg').hidden=true;return;}
   const now=performance.now(),host=NT.role==='h',M=NT.M;NT.needT-=dt;
   // who is the opponent
