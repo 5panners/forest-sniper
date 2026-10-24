@@ -106,7 +106,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <button role="tab" id="tabAud" aria-selected="false" aria-controls="paneAud">Audio</button>
     <button role="tab" id="tabMp" aria-selected="false" aria-controls="paneMp">Multiplayer</button>
   </div>
-  <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div></div>
+  <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div><p class="sec" style="margin-top:14px">Foraged food · health</p><table class="foodT" style="border-collapse:collapse;font-size:13px;margin-top:6px"><tr><td style="padding:2px 18px 2px 0">Berries</td><td>+4 health each</td></tr><tr><td style="padding:2px 18px 2px 0">Mushrooms</td><td>+8 health each</td></tr><tr><td style="padding:2px 18px 2px 0">Raw meat</td><td>none, cook it first (coming later)</td></tr></table><p class="note">Health starts at 100% and food raises it slowly (about 1.5 per second) up to 200%.</p></div>
   <div id="paneGfx" role="tabpanel" aria-labelledby="tabGfx" hidden>
     <div class="opts">
       <label class="opt"><input type="checkbox" id="optFps"><span><b>Show FPS</b><small>Frame rate and frame time, top left.</small></span></label>
@@ -2146,7 +2146,7 @@ function explosion(p){
   emit(gFire,matFire,p.clone().add(V(0,0.4,0)),V(0,0.5,0),0.35,{s:0.5,grow:3.2});
   for(let i=0;i<10;i++){const a=Math.random()*PI*2;emit(gPuff,i%3?matSmoke:matDust,p.clone().add(V(0,0.3,0)),V(Math.cos(a)*2.2,1.5+Math.random()*2.5,Math.sin(a)*2.2),1.6,{s:0.3,grow:1.2,drag:1.6});}
   disturb(p.x,p.z,300,900);const d=camera.position.distanceTo(p);shake=Math.max(shake,clamp(1*(14-d)/14,0,1.2));if(AC&&soundOn)boomAt(p);else sfx.boom(d);
-  if(player.alive&&player.pos.distanceTo(p)<DM.nadeKill)startAction('death');
+  if(player.alive&&player.pos.distanceTo(p)<DM.nadeKill){MPM.hp-=DMG.nade.dmg;flashHit();if(MPM.hp<=0){MPM.hp=0;startAction('death');}else toast('Grenade blast · '+Math.round(MPM.hp)+' hp left');}
 }
 function stepParts(dt){
   for(let i=parts.length-1;i>=0;i--){const q=parts[i];q.life-=dt;if(q.life<=0){relP(q.m);parts.splice(i,1);continue;}
@@ -2220,7 +2220,7 @@ function endAction(){const a=player.action;if(!a)return;
   if(a.name==='death'){if(MPM.on)return;respawn();}   // in a match you stay down until the next round
   player.action=null;}
 function snapLayer(k){for(const q in player.lw)player.lw[q]=q===k?1:0;}
-function respawn(){player.pos.copy(SPAWN);player.vel.set(0,0,0);player.stance='stand';snapLayer('idle');player.alive=true;player.ammo=MAG;player.reloadT=-1;player.yaw=0;camYaw=0;camPitch=-0.05;toast('Respawned');}
+function respawn(){player.pos.copy(SPAWN);player.vel.set(0,0,0);player.stance='stand';snapLayer('idle');player.alive=true;MPM.hp=100;player.ammo=MAG;player.reloadT=-1;player.yaw=0;camYaw=0;camPitch=-0.05;toast('Respawned');}
 function canFit(h,px,pz){const x=px==null?player.pos.x:px,z=pz==null?player.pos.z:pz,y=player.pos.y;
   for(const c of colliders){if(!c.on||c.max.y<=y+0.05||c.min.y>=y+h)continue;const cx=clamp(x,c.min.x,c.max.x),cz=clamp(z,c.min.z,c.max.z);if((x-cx)**2+(z-cz)**2<PRAD*PRAD*0.8)return false;}
   for(const p of pillarsNear(x,z)){if(p.y1<=y+0.05||p.y0>=y+h)continue;if(Math.hypot(x-p.x,z-p.z)<p.r+PRAD*0.9)return false;}return true;}
@@ -2656,7 +2656,7 @@ function killDeer(d,shot){if(d.st==='dead')return;release(d);const was=d.wound;d
   if(!shot){const m=d.ranFrom?Math.round(Math.hypot(d.x-d.ranFrom.x,d.z-d.ranFrom.z)):0;toast(deerName(d)+(was==='gut'?' died of its wound':' went down')+(m>2?' · '+m+' m from where it was hit':''));dvox.thud(d);}}
 function hitDeer(d,sub,dist){const nm=deerName(d),R=' · '+Math.round(dist)+' m';flashHit();
   if(d.st==='dead'){toast(nm+' is already down'+R);return;}
-  d.ranFrom=d.ranFrom||{x:d.x,z:d.z};const px=(hitFrom||player.pos).x,pz=(hitFrom||player.pos).z;
+  d.ranFrom=d.ranFrom||{x:d.x,z:d.z};const px=(hitFrom||player.pos).x,pz=(hitFrom||player.pos).z;{const _dm=DMG.w.rifle.d[sub]!=null?DMG.w.rifle.d[sub]:DMG.w.rifle.d.leg;d.hpL=(d.hpL==null?DMG.hp[d.kind]:d.hpL)-_dm;if(d.hpL<=0){killDeer(d,true);toast(nm+' down · '+sub+' shot'+R);return;}}
   if(sub==='head'||sub==='neck'){killDeer(d,true);toast(nm+' down · '+sub+' shot'+R);return;}
   if(d.wound||d.st==='bed'){if(sub!=='leg'||d.limp>=0){killDeer(d,true);toast(nm+' down · follow-up shot'+R);return;}}
   if(sub==='vitals'){d.wound='fatal';d.dieT=2+Math.random()*4.5;d.st='flee';scare(d,px,pz);d.st='dying';toast(nm+' hit · heart/lung · it runs'+R);}
@@ -2674,7 +2674,7 @@ function locomote(d,tS,dt,steer){
     const turn=(d.spd>4?2.4:1.7)*dt;d.yaw+=clamp(wrapA(best-d.yaw),-turn,turn);}
   const nx=d.x+Math.sin(d.yaw)*d.spd*dt,nz2=d.z+Math.cos(d.yaw)*d.spd*dt;
   if(deerOK(nx,nz2)){d.x=nx;d.z=nz2;}else{d.stuck+=dt;d.yaw+=dt*2;}
-  pillarsNear(d.x,d.z,_dn);for(const p of _dn){const dx=d.x-p.x,dz=d.z-p.z,r=p.r+0.35*d.s,dd=Math.hypot(dx,dz);if(dd<r&&dd>1e-4){d.x=p.x+dx/dd*r;d.z=p.z+dz/dd*r;}}}
+  pillarsNear(d.x,d.z,_dn);let _hit=false;for(const p of _dn){const dx=d.x-p.x,dz=d.z-p.z,r=p.r+0.35*d.s,dd=Math.hypot(dx,dz);if(dd<r&&dd>1e-4){d.x=p.x+dx/dd*r;d.z=p.z+dz/dd*r;_hit=true;const ra=Math.atan2(dx,dz);const into=Math.cos(d.yaw-ra);if(into<0.3){const sg=wrapA(d.yaw-ra)>=0?1:-1;d.logT=(d.logT||0)+dt;const tg=ra+sg*(PI/2-Math.min(1,d.logT*0.25)*PI/3);d.yaw+=clamp(wrapA(tg-d.yaw),-1.3*dt,1.3*dt);}}}if(!_hit)d.logT=0;}
 function turnTo(d,x,z,dt,rate){d.yaw+=clamp(wrapA(Math.atan2(x-d.x,z-d.z)-d.yaw),-rate*dt,rate*dt);}
 function pickSub(d){const r=Math.random();if(r<(d.st==='hold'?0.4:0.6)){d.sub='eat';d.subT=3+Math.random()*7;}else if(r<0.85){d.sub='look';d.subT=1.5+Math.random()*3;d.nyR=(Math.random()-0.5)*1.8;}else{d.sub='step';d.subT=1+Math.random()*2;d.wob=(Math.random()-0.5)*0.9;}}
 const OPEN_K=0.42;
@@ -2936,7 +2936,7 @@ function rayBird(o,d,len){let best=null;for(const b of BZ){if(b.st==='gone'||!b.
     const cx=b.x-o.x,cy=b.y-o.y,cz=b.z-o.z;const t=cx*d.x+cy*d.y+cz*d.z;if(t<0||t>len)continue;const ex=cx-d.x*t,ey=cy-d.y*t,ez=cz-d.z*t;const hr=1.6+0.004*t;if(ex*ex+ey*ey+ez*ez>hr*hr)continue;
     if(!best||t<best.dist)best={point:V(o.x+d.x*t,o.y+d.y*t,o.z+d.z*t),normal:d.clone().negate(),dist:t,object:null,kind:'flesh',bird:b};}
   return best;}
-function hitBird(b,dist){flashHit();if(b.st!=='fly'){return;}b.st='fall';b.vy=0;b.fold=0;b.spin=(Math.random()<0.5?-1:1)*(2.5+Math.random()*3);b.fvx=Math.sin(b.yaw)*b.spd*0.6;b.fvz=Math.cos(b.yaw)*b.spd*0.6;toast('Buzzard down · '+Math.round(dist)+' m');}
+function hitBird(b,dist){flashHit();if(b.st!=='fly'){return;}b.hpL=(b.hpL==null?DMG.hp.buzzard:b.hpL)-DMG.w.rifle.b;if(b.hpL>0){toast('Buzzard grazed · '+Math.round(dist)+' m');return;}b.st='fall';b.vy=0;b.fold=0;b.spin=(Math.random()<0.5?-1:1)*(2.5+Math.random()*3);b.fvx=Math.sin(b.yaw)*b.spd*0.6;b.fvz=Math.cos(b.yaw)*b.spd*0.6;toast('Buzzard down · '+Math.round(dist)+' m');}
 
 /* ---------------- ballistics: .308-class round with gravity and drag; zeroing solved numerically ---------------- */
 const ray=new THREE.Raycaster(), _cd=V(0,0,0), _mz=V(0,0,0), _bp=V(0,0,0), _bd=V(0,0,0);
@@ -3357,7 +3357,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=109;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=118;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3443,7 +3443,7 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
     m.instanceMatrix.needsUpdate=true;scene.add(m);RES_MESH[R.k]=m;});
 })();
 function resSetGot(n,v){n.got=v;if(n.gim)leadGlowSet(n,v);const m=RES_MESH[n.t];m.setMatrixAt(n.mi,v?_ZERO:n.mat);m.instanceMatrix.needsUpdate=true;}
-function resReset(){STAM.v=1;STAM.lock=false;for(const n of RES_NODES)if(n.got)resSetGot(n,false);for(const k in INV)INV[k]=0;invUI();}
+function resReset(){HEAL.pool=0;STAM.v=1;STAM.lock=false;for(const n of RES_NODES)if(n.got)resSetGot(n,false);for(const k in INV)INV[k]=0;invUI();}
 function resRemoteTake(i){const n=RES_NODES[i];if(n&&!n.got)resSetGot(n,true);}
 function resNearest(){const p=player.pos;let best=null,bd=2.7*2.7;const cx=Math.floor(p.x/8),cz=Math.floor(p.z/8);
   for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const L=RES_CELLS.get((cx+a)+','+(cz+b));if(!L)continue;
@@ -3467,7 +3467,7 @@ function carve(c){goneCarcass(c.o,c.k);let m,h=0,f=0;
   INV.meat+=m;INV.hide+=h;INV.feather+=f;invUI();toast('Butchered '+carcassName(c)+' · +'+m+' meat'+(h?' · +'+h+' hide':'')+(f?' · +'+f+' feathers':''));try{sfx.click();}catch(e){}
   if(NT.room&&MPM.on)NT.room.emit('carve',{k:c.k,i:c.i,v:MPM.guest?NT.rosterV:deerVer}).catch(()=>{});}
 function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();if(c){carve(c);return;}const i=resNearest();if(i==null)return;const n=RES_NODES[i],R=RES_T[n.ti];
-  resSetGot(n,true);const q=R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));INV[R.k]+=q;invUI();toast('+'+q+' '+R.label);try{sfx.click();}catch(e){}
+  resSetGot(n,true);const q=R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));INV[R.k]+=q;invUI();toast('+'+q+' '+R.label+eatFood(R.k,q));try{sfx.click();}catch(e){}
   if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});}
 addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyF')resGather();});
 function resStep(dt){
@@ -3516,7 +3516,7 @@ function applyLook(i){lookI=Math.max(0,Math.min(3,i|0));const seen=new Set();
     m.defines=m.defines||{};if(lookI)m.defines.GSTYLE=lookI;else delete m.defines.GSTYLE;m.needsUpdate=true;}});
   try{localStorage.setItem('fsMist2',String(lookI));}catch(e){}}
 (function(){const el=document.getElementById('optMist');if(!el)return;let v=1;try{const q=localStorage.getItem('fsMist2');if(q!=null)v=+q||0;}catch(e){}el.value=String(v);el.onchange=()=>applyLook(+el.value);})();
-function lookStep(){leadGlowStep();owlStep();vitalsStep();if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
+function lookStep(){if(!_dmgApplied)dmgApply();fireStep();leadGlowStep();owlStep();vitalsStep();if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
 window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial){c++;if(m.defines&&m.defines.GSTYLE)d++;}});return {sh:true,std:c,withDef:d,keys:renderer.info.programs.map(p=>p.cacheKey.includes('GSTYLE')).join(','),lookI};};
 
 // ---- edge glow on every collectible: a slightly enlarged back-face shell per node, additive, pulsing on a 3 s cycle, one colour per resource type
@@ -3541,7 +3541,8 @@ const VIT=(()=>{const st=document.createElement('style');st.textContent=`
 #vitals .tr{position:relative;flex:1;height:9px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.45)}
 #vitals .fl{position:absolute;left:0;top:0;bottom:0;width:100%;border-radius:5px;transition:width .12s linear;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 55%),var(--c)}
 #vitals .lag{position:absolute;left:0;top:0;bottom:0;width:100%;background:rgba(255,255,255,.35);transition:width .7s ease .25s}
-#vitals .n{width:26px;text-align:right;font-variant-numeric:tabular-nums;opacity:.9}
+#vitals #vh .tr::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,.55)}
+#vitals .n{width:36px;text-align:right;font-variant-numeric:tabular-nums;opacity:.9}
 #vitals.low #vh .fl{animation:vpulse .8s ease-in-out infinite}
 #vitals.out #vs{color:#e9a23b}
 @keyframes vpulse{50%{filter:brightness(1.6)}}`;document.head.appendChild(st);
@@ -3551,10 +3552,10 @@ const VIT=(()=>{const st=document.createElement('style');st.textContent=`
   document.body.appendChild(d);
   const q=(id)=>{const r=d.querySelector('#'+id);return {r,fl:r.querySelector('.fl'),lag:r.querySelector('.lag'),n:r.querySelector('.n')};};
   return {d,h:q('vh'),s:q('vs'),lh:-1,ls:-1,lk:null};})();
-function vitalsStep(){const hp=Math.max(0,Math.min(100,MPM.on?MPM.hp:100)),sp=STAM.v;
+function vitalsStep(){healStep();const hp=Math.max(0,Math.min(HP_MAX,MPM.hp)),sp=STAM.v;
   const hv=Math.round(hp),sv=Math.round(sp*100);
-  if(hv!==VIT.lh){VIT.lh=hv;const c='hsl('+Math.round(hp*1.15)+',70%,52%)';VIT.h.fl.style.setProperty('--c',c);VIT.h.fl.style.width=hv+'%';VIT.h.lag.style.width=hv+'%';VIT.h.n.textContent=hv;VIT.d.classList.toggle('low',hp<30);}
-  if(sv!==VIT.ls||VIT.lk!==STAM.lock){VIT.ls=sv;VIT.lk=STAM.lock;VIT.s.fl.style.setProperty('--c',STAM.lock?'#e9a23b':'#47c9bb');VIT.s.fl.style.width=sv+'%';VIT.s.lag.style.width=sv+'%';VIT.s.n.textContent=sv;VIT.d.classList.toggle('out',STAM.lock);}
+  if(hv!==VIT.lh){VIT.lh=hv;const c=hp>100?'hsl(46,88%,56%)':'hsl('+Math.round(hp*1.15)+',70%,52%)';VIT.h.fl.style.setProperty('--c',c);VIT.h.fl.style.width=(hv/2)+'%';VIT.h.lag.style.width=(hv/2)+'%';VIT.h.n.textContent=hv+'%';VIT.d.classList.toggle('low',hp<30);}
+  if(sv!==VIT.ls||VIT.lk!==STAM.lock){VIT.ls=sv;VIT.lk=STAM.lock;VIT.s.fl.style.setProperty('--c',STAM.lock?'#e9a23b':'#47c9bb');VIT.s.fl.style.width=sv+'%';VIT.s.lag.style.width=sv+'%';VIT.s.n.textContent=sv+'%';VIT.d.classList.toggle('out',STAM.lock);}
   VIT.d.style.display=(playing&&player.alive)?'flex':'none';}
 
 // ---- owl hoots: tawny-owl style calls from the trees at night (Audio options > Owl hoots)
@@ -3578,11 +3579,146 @@ function owlStep(){if(!AC||!soundOn||OWL.vol<=0.001||typeof DAY==='undefined')re
   el.onchange=()=>{if(AC&&soundOn){const p=player.pos;owlCall(p.x+30,p.y+8,p.z,1,1.6*OWL.vol,0);}};})();
 
 // ---- rescaled volume sliders: ambience 100% = the old 30%, footsteps 100% = the old 200%
-(function(){const defs=[['audA','audAv','amb',0.3,'fsAmbD'],['audS','audSv','fs',2,'fsFsD']];
+(function(){const defs=[['audA','audAv','amb',0.3,'fsAmbD'],['audS','audSv','fs',4,'fsFsD']];
   defs.forEach(([id,oid,k,f,sk])=>{const el=document.getElementById(id),o=document.getElementById(oid);if(!el)return;let d=100;try{const v=localStorage.getItem(sk);if(v!=null)d=Math.max(0,Math.min(200,+v));}catch(e){}
     const set=v=>{VOLS[k]=v/100*f;el.value=v;o.textContent=Math.round(v)+'%';};set(d);
     el.oninput=()=>{set(+el.value);try{localStorage.setItem(sk,String(el.value));}catch(e){}};});})();
 window.SNIPER_RES.owlReady=()=>!!SND.ow;
+
+// ---- sound schedule defaults (applied once, then your own changes are kept): day 05:30-18:15, night 18:15-05:30, 10 min fade
+(function(){let done=false;try{done=localStorage.getItem('fsSched2')==='1';}catch(e){}if(done)return;
+  Object.assign(VOLS,{ds:330,de:1095,ns:1095,ne:330,fade:10});
+  [['audDs','ds'],['audDe','de'],['audNs','ns'],['audNe','ne']].forEach(([id,k])=>{const el=document.getElementById(id),o=document.getElementById(id+'v');if(el){el.value=VOLS[k];o.textContent=hm(VOLS[k]);}});
+  const f=document.getElementById('audF'),fv=document.getElementById('audFv');if(f){f.value=10;fv.textContent='10 min';}
+  try{audSave();localStorage.setItem('fsSched2','1');}catch(e){}})();
+window.SNIPER_RES.logs=()=>LOGS;
+
+// ---- foraged food heals slowly, up to 200% of normal health. Raw meat gives nothing until cooking exists.
+const HEAL={pool:0,t:performance.now()},FOOD={berries:4,mushroom:8,meat:0},HP_MAX=200,HEAL_RATE=1.5;
+function eatFood(k,q){const v=(FOOD[k]||0)*q;if(v<=0)return '';HEAL.pool=Math.min(120,HEAL.pool+v);return ' · +'+v+' health over time';}
+function healStep(){const now=performance.now(),dt=Math.min(0.25,(now-HEAL.t)/1000);HEAL.t=now;
+  if(HEAL.pool>0&&player.alive&&MPM.hp>0){if(MPM.hp>=HP_MAX){HEAL.pool=0;return;}const h=Math.min(HEAL.pool,HEAL_RATE*dt,HP_MAX-MPM.hp);MPM.hp+=h;HEAL.pool-=h;}}
+
+// ---- damage model: every weapon's damage per target zone, hit points, and the list of what can be damaged (menu tab "Damage Model")
+const DMG_DEF={
+  w:{rifle:{n:'Rifle',on:1,p:{head:100,torso:70,limb:35},d:{head:999,neck:999,vitals:70,gut:40,leg:25},b:100}},
+  hp:{stag:120,fallow:100,roe:80,buzzard:10},
+  nade:{radius:2.6,dmg:200}};
+const DMG=JSON.parse(JSON.stringify(DMG_DEF));
+try{const v=JSON.parse(localStorage.getItem('fsDmg')||'null');if(v){for(const w in DMG.w)if(v.w&&v.w[w]){for(const g of['p','d'])for(const k in DMG.w[w][g])if(v.w[w][g]&&v.w[w][g][k]!=null)DMG.w[w][g][k]=+v.w[w][g][k];if(v.w[w].b!=null)DMG.w[w].b=+v.w[w].b;}
+  if(v.hp)for(const k in DMG.hp)if(v.hp[k]!=null)DMG.hp[k]=+v.hp[k];if(v.nade){DMG.nade.radius=+v.nade.radius;DMG.nade.dmg=+v.nade.dmg;}}}catch(e){}
+let _dmgApplied=false;
+function dmgApply(){if(typeof MP_DMG!=='undefined'){Object.assign(MP_DMG,DMG.w.rifle.p);_dmgApplied=true;}DM.nadeKill=DMG.nade.radius;}
+function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(e){}dmgApply();}
+(function(){
+  const tabs=document.querySelector('.tabs'),paneMp=document.getElementById('paneMp');if(!tabs||!paneMp)return;
+  const css=document.createElement('style');css.textContent=`#paneDmg table{border-collapse:collapse;margin:6px 0 4px;font-size:13px}#paneDmg th{font:600 11px var(--f-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:3px 10px 3px 0}
+#paneDmg td{padding:2px 10px 2px 0;vertical-align:middle}#paneDmg input{width:62px;background:rgba(255,255,255,.06);color:inherit;border:1px solid var(--line);border-radius:4px;padding:3px 5px;font:inherit}
+#paneDmg tr.off td:first-child{opacity:.6}#paneDmg .tag{font-size:11px;opacity:.65;margin-left:6px}#paneDmg .nd td{opacity:.8;padding-right:14px}#paneDmg button{margin-top:10px}`;document.head.appendChild(css);
+  const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabDmg';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','paneDmg');tb.textContent='Damage Model';tabs.appendChild(tb);
+  const pn=document.createElement('div');pn.id='paneDmg';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabDmg');pn.hidden=true;paneMp.after(pn);
+  const num=(path,val,step)=>`<input type="number" min="0" step="${step||1}" data-p="${path}" value="${val}">`;
+  const wrows=(g,keys)=>Object.keys(DMG.w).map(w=>{const W=DMG.w[w];return `<tr class="${W.on?'':'off'}"><td>${W.n}${W.on?'':'<span class="tag">not in game yet</span>'}</td>${keys.map(k=>`<td>${num('w.'+w+'.'+g+'.'+k,W[g][k])}</td>`).join('')}</tr>`;}).join('');
+  const build=()=>{pn.innerHTML=`<p class="note">Damage is in health points. Every value saves as you type. In a 1v1 match, damage to a player is taken from that player's own table and damage to animals from the host's table, so keep both players' values the same.</p>
+<p class="sec">Players · damage per hit</p><table><tr><th>Weapon</th><th>Head</th><th>Torso</th><th>Limbs</th></tr>${wrows('p',['head','torso','limb'])}</table>
+<p class="sec" style="margin-top:12px">Deer · damage per hit</p><table><tr><th>Weapon</th><th>Head</th><th>Neck</th><th>Heart / lungs</th><th>Gut</th><th>Leg</th></tr>${wrows('d',['head','neck','vitals','gut','leg'])}</table>
+<p class="note">Deer die when their hit points run out. Heart / lung hits that do not kill outright leave a fatal wound (it runs, then dies within seconds), a gut hit bleeds out over one to two minutes, and a leg hit causes a limp. A second hit on a wounded deer always kills.</p>
+<p class="sec" style="margin-top:12px">Buzzard · damage per hit (any part)</p><table><tr><th>Weapon</th><th>Any hit</th></tr>${Object.keys(DMG.w).map(w=>{const W=DMG.w[w];return `<tr class="${W.on?'':'off'}"><td>${W.n}${W.on?'':'<span class="tag">not in game yet</span>'}</td><td>${num('w.'+w+'.b',W.b)}</td></tr>`;}).join('')}</table>
+<p class="sec" style="margin-top:12px">Grenade blast</p><table><tr><th>Blast radius (m)</th><th>Damage to a player inside it</th></tr><tr><td>${num('nade.radius',DMG.nade.radius,0.1)}</td><td>${num('nade.dmg',DMG.nade.dmg)}</td></tr></table>
+<p class="sec" style="margin-top:12px">Everything that can be damaged · hit points</p><table><tr><th>Target</th><th>Hit points</th><th>Hit by</th></tr>
+<tr><td>Player (you or the opponent)</td><td>100 at the start of a round, up to 200 with food</td><td>rifle, grenade (head, torso, limbs)</td></tr>
+<tr><td>Red deer stag</td><td>${num('hp.stag',DMG.hp.stag)}</td><td>rifle (head, neck, heart / lungs, gut, legs)</td></tr>
+<tr><td>Fallow doe</td><td>${num('hp.fallow',DMG.hp.fallow)}</td><td>rifle (same zones)</td></tr>
+<tr><td>Roe doe</td><td>${num('hp.roe',DMG.hp.roe)}</td><td>rifle (same zones)</td></tr>
+<tr><td>Buzzard</td><td>${num('hp.buzzard',DMG.hp.buzzard)}</td><td>rifle</td></tr></table>
+<p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Berries, mushrooms, wood, lead ore, scrap</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>
+<button type="button" id="dmgReset" class="btn">Reset to defaults</button>`;
+    pn.querySelectorAll('input').forEach(i=>i.oninput=()=>{const v=parseFloat(i.value);if(!(v>=0))return;const ks=i.dataset.p.split('.');let o=DMG;for(let j=0;j<ks.length-1;j++)o=o[ks[j]];o[ks[ks.length-1]]=v;dmgSave();});
+    pn.querySelector('#dmgReset').onclick=()=>{const f=JSON.parse(JSON.stringify(DMG_DEF));for(const k in f)DMG[k]=f[k];dmgSave();build();};};
+  build();
+  const ids=['Brief','Gfx','Env','Aud','Mp'];
+  tb.onclick=()=>{ids.forEach(n=>{document.getElementById('tab'+n).setAttribute('aria-selected','false');document.getElementById('pane'+n).hidden=true;});tb.setAttribute('aria-selected','true');pn.hidden=false;};
+  const _st=showTab;showTab=function(w){_st(w);tb.setAttribute('aria-selected','false');pn.hidden=true;};
+})();
+
+// ---- ring of fire: flat-shaded animated flame wall, smoke curtain, ember glow on the ground and rising sparks.
+// Four draw calls in all; every bit of motion is done in the vertex shaders, so the CPU only updates one time uniform per frame.
+const FIRE_DAY={value:1};
+const FIRE=(()=>{const R=490,TAU=Math.PI*2,U={uT:{value:0}};
+  const hr=(i,k)=>{const s=Math.sin(i*127.1+k*311.7)*43758.5453;return s-Math.floor(s);};
+  const gh=(a,r)=>groundH(Math.cos(a)*r,Math.sin(a)*r);
+  // flames: three layers of triangular tongues; each triangle carries one colour and one phase, so it flickers as a flat facet
+  {const P=[],H=[],PH=[],C=[],N=760;
+   const LAY=[{dr:3.0,h:[16,30],c:[[0.62,0.05,0.02],[0.82,0.12,0.03]]},{dr:1.0,h:[10,19],c:[[0.98,0.30,0.03],[1.0,0.44,0.05]]},{dr:-1.0,h:[5,10],c:[[1.0,0.70,0.12],[1.0,0.86,0.34]]},{dr:-2.4,h:[1.8,4],c:[[1.0,0.95,0.7],[1.0,0.82,0.3]]}];
+   LAY.forEach((L,li)=>{for(let i=0;i<N;i++){const k=li*7+1,a0=(i-0.35-hr(i,k)*0.3)/N*TAU,a1=(i+1.35+hr(i,k+1)*0.3)/N*TAU,am=(i+0.5+(hr(i,k+2)-0.5)*0.6)/N*TAU;
+     const r=R+L.dr+(hr(i,k+3)-0.5)*1.6,ht=L.h[0]+(L.h[1]-L.h[0])*Math.pow(hr(i,k+4),1.4),lean=(hr(i,k+5)-0.5)*3.2,ph=hr(i,k+6)*TAU,col=L.c[hr(i,k+7)<0.5?0:1];
+     const b0=gh(a0,r)-0.4,b1=gh(a1,r)-0.4,bm=Math.min(b0,b1);
+     P.push(Math.cos(a0)*r,b0,Math.sin(a0)*r, Math.cos(a1)*r,b1,Math.sin(a1)*r, Math.cos(am)*(r+lean),bm+ht,Math.sin(am)*(r+lean));
+     H.push(0,0,1);for(let q=0;q<3;q++){PH.push(ph);C.push(...col);}}});
+   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('aH',new THREE.Float32BufferAttribute(H,1));g.setAttribute('aPh',new THREE.Float32BufferAttribute(PH,1));g.setAttribute('aC',new THREE.Float32BufferAttribute(C,3));
+   const m=new THREE.ShaderMaterial({uniforms:U,side:THREE.DoubleSide,
+     vertexShader:`uniform float uT;attribute float aH,aPh;attribute vec3 aC;varying vec3 vC;
+      void main(){vec3 p=position;float t=uT;
+       float fl=0.72+0.2*sin(t*5.3+aPh)+0.12*sin(t*11.7+aPh*2.3);
+       vec3 bse=vec3(p.x,0.0,p.z);vec3 tg=normalize(vec3(-p.z,0.0,p.x));
+       if(aH>0.5){p.y=p.y-(1.0-fl)*9.0; p+=tg*sin(t*1.9+aPh*1.7)*2.4+normalize(bse)*sin(t*1.3+aPh)*1.4;}
+       vC=aC*(0.82+0.3*sin(t*9.0+aPh*3.1));
+       gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);}`,
+     fragmentShader:`varying vec3 vC;void main(){gl_FragColor=vec4(vC,1.0);}`});
+   const me=new THREE.Mesh(g,m);me.frustumCulled=false;me.renderOrder=3;scene.add(me);}
+  // smoke curtain: faceted low-poly billows rolling upwards and leaning outwards; lit per face (flat normal from screen derivatives) and lit from below by the fire
+  {const P=[],F=[],N=240,ROWS=[3,12,24,40,60,84,112,144,176];
+   for(let i=0;i<N;i++)for(let j=0;j<ROWS.length-1;j++){const a0=i/N*TAU,a1=(i+1)/N*TAU;const v=(a,y)=>[Math.cos(a)*(R+7),y,Math.sin(a)*(R+7)];
+     const gA=gh(a0,R+7),gB=gh(a1,R+7);const A=v(a0,gA+ROWS[j]),B=v(a1,gB+ROWS[j]),C=v(a0,gA+ROWS[j+1]),D=v(a1,gB+ROWS[j+1]);
+     const lv0=j/(ROWS.length-1),lv1=(j+1)/(ROWS.length-1),f1=hr(i,j*3+50),f2=hr(i,j*3+51);P.push(...A,...B,...C,...C,...B,...D);
+     F.push(f1,lv0,f1,lv0,f1,lv1, f2,lv1,f2,lv0,f2,lv1);}
+   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('aF',new THREE.Float32BufferAttribute(F,2));
+   const m=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,side:THREE.DoubleSide,extensions:{derivatives:true},
+     vertexShader:`uniform float uT;attribute vec2 aF;varying vec3 vW;varying vec2 vF;varying float vG;
+      void main(){vec3 p=position;float ang=atan(p.z,p.x);float y=aF.y*176.0;
+       float rise=y*0.035-uT*0.22;
+       float puff=sin(ang*53.0+rise*2.3)*0.55+sin(ang*19.0-rise*1.4+1.7)*0.45;
+       vec3 rd=normalize(vec3(p.x,0.0,p.z));p+=rd*(puff*(5.0+y*0.12)+y*0.32);p.y+=sin(ang*37.0+rise*1.9)*(3.0+y*0.05);
+       vG=0.75+0.25*sin(uT*2.6+ang*31.0);vF=aF;vW=p;
+       gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);}`,
+     fragmentShader:`uniform float uDay;varying vec3 vW;varying vec2 vF;varying float vG;
+      void main(){vec3 n=normalize(cross(dFdx(vW),dFdy(vW)));float lit=0.45+0.55*abs(dot(n,normalize(vec3(0.35,0.85,0.25))));
+       float sh=(0.13+vF.x*0.09)*lit*uDay;vec3 base=vec3(sh*1.06,sh,sh*0.96);
+       float gw=clamp(1.0-vF.y*2.6,0.0,1.0);vec3 glow=vec3(1.0,0.36,0.07)*gw*gw*(0.55+0.45*lit)*vG;
+       float a=mix(0.95,0.0,smoothstep(0.45,1.0,vF.y));
+       gl_FragColor=vec4(base+glow*0.9,a);}`});
+   m.uniforms.uDay=FIRE_DAY;const me=new THREE.Mesh(g,m);me.frustumCulled=false;me.renderOrder=4;scene.add(me);}
+  // heat glow: an additive sheet just behind the flames, bright at the ground and fading upwards
+  {const P=[],H=[],N=360;for(let i=0;i<N;i++){const a0=i/N*TAU,a1=(i+1)/N*TAU,r=R+4.5;const g0=gh(a0,r),g1=gh(a1,r);
+     const A=[Math.cos(a0)*r,g0-1,Math.sin(a0)*r],B=[Math.cos(a1)*r,g1-1,Math.sin(a1)*r],C=[Math.cos(a0)*r,g0+42,Math.sin(a0)*r],D=[Math.cos(a1)*r,g1+42,Math.sin(a1)*r];
+     P.push(...A,...B,...C,...C,...B,...D);H.push(0,0,1,1,0,1);}
+   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('aH',new THREE.Float32BufferAttribute(H,1));
+   const m=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,
+     vertexShader:`uniform float uT;attribute float aH;varying float vH;varying float vF;void main(){float ang=atan(position.z,position.x);vH=aH;vF=0.8+0.2*sin(uT*3.3+ang*53.0);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+     fragmentShader:`varying float vH;varying float vF;void main(){float k=pow(1.0-vH,2.2);gl_FragColor=vec4(vec3(1.0,0.42,0.08)*k*0.75*vF,1.0);}`});
+   const me=new THREE.Mesh(g,m);me.frustumCulled=false;me.renderOrder=3;scene.add(me);}
+  // ember glow on the ground: an additive band that hugs the terrain and fades inwards
+  {const P=[],A=[],N=720,RR=[R-26,R-14,R-6,R-1,R+3];
+   for(let i=0;i<N;i++)for(let j=0;j<RR.length-1;j++){const a0=i/N*TAU,a1=(i+1)/N*TAU;const v=(a,r)=>[Math.cos(a)*r,groundH(Math.cos(a)*r,Math.sin(a)*r)+0.35,Math.sin(a)*r];
+     const w=r=>clamp((r-(R-26))/22,0,1);const A0=v(a0,RR[j]),B0=v(a1,RR[j]),C0=v(a0,RR[j+1]),D0=v(a1,RR[j+1]);
+     P.push(...A0,...B0,...C0,...C0,...B0,...D0);A.push(w(RR[j]),w(RR[j]),w(RR[j+1]),w(RR[j+1]),w(RR[j]),w(RR[j+1]));}
+   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('aW',new THREE.Float32BufferAttribute(A,1));
+   const m=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,
+     vertexShader:`uniform float uT;attribute float aW;varying float vW;varying float vF;void main(){float ang=atan(position.z,position.x);vW=aW;vF=0.7+0.3*sin(uT*4.0+ang*97.0);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+     fragmentShader:`varying float vW;varying float vF;void main(){float w=vW*vW;gl_FragColor=vec4(vec3(1.0,0.36,0.06)*w*0.85*vF,1.0);}`});
+   const me=new THREE.Mesh(g,m);me.frustumCulled=false;me.renderOrder=2;scene.add(me);}
+  // sparks: one point cloud; each spark loops up from the flames on its own clock
+  {const N=900,P=new Float32Array(N*3),S=new Float32Array(N*2);
+   for(let i=0;i<N;i++){const a=hr(i,900)*TAU,r=R+(hr(i,901)-0.6)*5;P[i*3]=Math.cos(a)*r;P[i*3+1]=gh(a,r)+2;P[i*3+2]=Math.sin(a)*r;S[i*2]=hr(i,902);S[i*2+1]=0.6+hr(i,903)*0.8;}
+   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('aS',new THREE.BufferAttribute(S,2));
+   const m=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+     vertexShader:`uniform float uT;attribute vec2 aS;varying float vA;void main(){float life=fract(uT*0.16*aS.y+aS.x);vec3 p=position;p.y+=life*60.0*aS.y;
+       vec3 tg=normalize(vec3(-p.z,0.0,p.x));p+=tg*sin(uT*1.1+aS.x*40.0)*life*6.0+normalize(vec3(p.x,0.0,p.z))*life*4.0;
+       vA=(1.0-life)*smoothstep(0.0,0.08,life);vec4 mv=modelViewMatrix*vec4(p,1.0);gl_PointSize=clamp(900.0/-mv.z,1.5,7.0);gl_Position=projectionMatrix*mv;}`,
+     fragmentShader:`varying float vA;void main(){vec2 c=gl_PointCoord-0.5;if(abs(c.x)+abs(c.y)>0.5)discard;gl_FragColor=vec4(vec3(1.0,0.62,0.18)*vA,1.0);}`});
+   const pts=new THREE.Points(g,m);pts.frustumCulled=false;pts.renderOrder=5;scene.add(pts);}
+  return {R,U};})();
+function fireStep(){FIRE.U.uT.value=(performance.now()/1000)%3600;FIRE_DAY.value=1-DAY.dark*0.8;}
 
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
