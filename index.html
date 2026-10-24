@@ -21,7 +21,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-ui);o
 #scopeCv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
 .chip{background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:6px 10px;backdrop-filter:blur(4px)}
 #hudL{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono);display:flex;flex-direction:column;gap:2px}
-#scFlame{position:fixed;left:50%;top:50%;width:min(34vmin,340px);height:min(34vmin,340px);margin:2vmin 0 0 -4vmin;z-index:2;pointer-events:none;display:none;transform:rotate(var(--r,0deg)) scale(var(--s,1));background:#ff5a12;clip-path:polygon(50% 0,60% 30%,92% 8%,72% 40%,100% 52%,70% 62%,88% 96%,56% 72%,50% 100%,40% 72%,12% 94%,30% 62%,0 50%,28% 40%,8% 6%,40% 30%)}#scFlame.on{display:block}#scFlame i{position:absolute;inset:24%;background:#ffd23a;clip-path:polygon(50% 0,62% 34%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 34%)}#inv{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono)}#inv b,#resPrompt b{color:var(--amber);font-weight:600}#resPrompt{position:fixed;left:50%;top:60%;transform:translateX(-50%);z-index:3;pointer-events:none;font:14px/1.5 var(--f-mono)}
+#scFlame{position:fixed;left:0;top:0;width:100%;height:100%;z-index:2;pointer-events:none;display:none;background:radial-gradient(ellipse 70% 60% at 58% 108%,rgba(255,244,214,.95) 0%,rgba(255,196,110,.75) 22%,rgba(255,150,50,.35) 50%,rgba(255,120,30,0) 78%);mix-blend-mode:screen}#scFlame.on{display:block}#scFlame i{display:none}#inv{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono)}#inv b,#resPrompt b{color:var(--amber);font-weight:600}#resPrompt{position:fixed;left:50%;top:60%;transform:translateX(-50%);z-index:3;pointer-events:none;font:14px/1.5 var(--f-mono)}
 #hudL b{color:var(--amber);font-weight:600}
 #hudR{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono);text-align:right}
 #warn{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:4;font:600 18px var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--warn);text-shadow:0 1px 3px #000;pointer-events:none}
@@ -2773,7 +2773,7 @@ function stepDeer(dt){
     // animation: only what the camera can see; 15 Hz beyond 400 m
     d.pacc+=dt;
     if(vis&&dist<1250&&(dist<400||(deerFrame+d.id)%3===0)){poseDeer(d,Math.min(d.pacc,0.1));d.pacc=0;d.stale=false;}else d.stale=true;
-    d.root.visible=dist<1250;d.sm.castShadow=dist<SH_D+25;}
+    d.root.visible=!d.carved&&dist<1250;d.sm.castShadow=dist<SH_D+25;}
   for(let i=0;i<DEER.length;i+=1){const a=DEER[i];if(a.st==='dead'||(deerFrame+i)%3)continue;for(let j=i+1;j<DEER.length;j++){const b=DEER[j];if(b.st==='dead'||a.mate===b)continue;
     const dx=b.x-a.x,dz=b.z-a.z,dd=Math.hypot(dx,dz),r=0.5*(a.s+b.s)*0.85;if(dd<r&&dd>1e-4){const p=(r-dd)/2/dd;a.x-=dx*p;a.z-=dz*p;b.x+=dx*p;b.z+=dz*p;}}}
 }
@@ -2976,7 +2976,7 @@ function shoot(time){
   camera.getWorldDirection(_cd);const h=castRay(camera.position,_cd,2000);const aimPt=h?h.point:camera.position.clone().addScaledVector(_cd,2000);
   flashGrp.getWorldPosition(_mz);const origin=(scoped?camera.position:_mz).clone();
   const dir=launchDir(origin,aimPt,spread,V(0,0,0));
-  bullets.push({p:origin.clone(),o:origin.clone(),v:dir.multiplyScalar(V0),t:0,tr:getP(gTracer,matTracer)});if(MPM.on)netShot(bullets[bullets.length-1]);
+  bullets.push({p:origin.clone(),o:origin.clone(),v:dir.multiplyScalar(V0),t:0,tr:getP(gTracer,matTracer)});mkStreak(bullets[bullets.length-1]);if(MPM.on)netShot(bullets[bullets.length-1]);
   sfx.shot();disturb(origin.x,origin.z,200,650);input.lmb=false;
   if(scoped){scopeKick=1;}else{camPitch+=0.02;}
   boltT=0;   // bolt cycle: brass comes out on the way back
@@ -3355,10 +3355,10 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=82;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=86;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
-  netStep(dt);resStep(dt);updatePlayer(dt,clockT);
+  netStep(dt);resStep(dt);streakStep(dt);updatePlayer(dt,clockT);
   stepBolt(dt);stepBullets(dt);stepNades(dt);stepParts(dt);stepBrass(dt);
   stepDeer(dt);stepHerds(dt);stepBirds(dt,clockT);stepMarks(dt);if(fallFX)fallFX.step(dt);_rdt=dt;
   updateCamera(dt);updateLOD();updListener();
@@ -3458,8 +3458,9 @@ function carcassNearest(){const p=player.pos;let best=null,bd=3.2*3.2;
   for(let i=0;i<BZ.length;i++){const b=BZ[i];if(b.st!=='dead'||b.carved)continue;const q=(b.x-p.x)*(b.x-p.x)+(b.z-p.z)*(b.z-p.z);if(q<Math.min(bd,2.6*2.6)&&Math.abs(b.y-p.y)<2.5){bd=q;best={k:'b',i,o:b};}}
   return best;}
 function carcassName(c){return c.k==='d'?deerName(c.o).toLowerCase():'buzzard';}
-function resRemoteCarve(d){const v=MPM.guest?NT.rosterV:deerVer;if(d.v!==v)return;const o=d.k==='d'?DEER[d.i|0]:BZ[d.i|0];if(o)o.carved=true;}
-function carve(c){c.o.carved=true;let m,h=0,f=0;
+function resRemoteCarve(d){const v=MPM.guest?NT.rosterV:deerVer;if(d.v!==v)return;const o=d.k==='d'?DEER[d.i|0]:BZ[d.i|0];if(o)goneCarcass(o,d.k);}
+function goneCarcass(o,k){o.carved=true;if(k==='b'){o.st='gone';o.root.visible=false;}else o.root.visible=false;}
+function carve(c){goneCarcass(c.o,c.k);let m,h=0,f=0;
   if(c.k==='d'){const y=CARVE[c.o.kind]||CARVE.roe;m=y.meat;h=y.hide;}else{m=1;f=2+(c.i%2);}
   INV.meat+=m;INV.hide+=h;INV.feather+=f;invUI();toast('Butchered '+carcassName(c)+' · +'+m+' meat'+(h?' · +'+h+' hide':'')+(f?' · +'+f+' feathers':''));try{sfx.click();}catch(e){}
   if(NT.room&&MPM.on)NT.room.emit('carve',{k:c.k,i:c.i,v:MPM.guest?NT.rosterV:deerVer}).catch(()=>{});}
@@ -3471,6 +3472,15 @@ function resStep(dt){
   let s='';if(playing&&player.alive&&!scoped&&!mapOpen){const c=carcassNearest();if(c)s='<b>F</b> · butcher '+carcassName(c);else{const i=resNearest();if(i!=null)s='<b>F</b> · gather '+RES_T[RES_NODES[i].ti].label;}}
   if(s!==_prS){_prS=s;resPrompt.innerHTML=s;resPrompt.hidden=!s;}}
 window.SNIPER_RES={INV,RES_NODES};
+
+// ---- bullet streaks: a thin bright line along the whole flight path that fades out quickly after the bullet lands
+const STREAKS=[],stGeo=new THREE.BoxGeometry(1,1,1).translate(0,0,0.5),ST_LIFE=0.55;
+function mkStreak(b){const m=new THREE.Mesh(stGeo,new THREE.MeshBasicMaterial({color:0xfff1c9,transparent:true,opacity:0.7,depthWrite:false,fog:false}));m.frustumCulled=false;m.visible=false;scene.add(m);STREAKS.push({b,m,t:0});}
+function streakStep(dt){for(let i=STREAKS.length-1;i>=0;i--){const s=STREAKS[i],b=s.b,m=s.m;const alive=bullets.indexOf(b)>=0;if(!alive)s.t+=dt;
+  if(s.t>=ST_LIFE){scene.remove(m);m.material.dispose();STREAKS.splice(i,1);continue;}
+  const L=b.p.distanceTo(b.o);if(L<0.3)continue;m.visible=true;m.position.copy(b.o);m.lookAt(b.p);
+  const dc=Math.min(camera.position.distanceTo(b.p),500),w=0.02+dc*0.0016;m.scale.set(w,w,L);
+  m.material.opacity=alive?0.7:0.7*(1-s.t/ST_LIFE)*(1-s.t/ST_LIFE);}}
 
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
@@ -3635,7 +3645,7 @@ function audioUnlock(){try{initAudio();if(AC&&AC.state==='suspended')AC.resume()
 // ---- messages ----
 function onMsg(t,d,m){
   if(t==='shot'){if(!Array.isArray(d.o)||!Array.isArray(d.v))return;const o=V(+d.o[0],+d.o[1],+d.o[2]),dir=V(+d.v[0],+d.v[1],+d.v[2]);if(!isFinite(o.x+o.y+o.z)||dir.lengthSq()<0.5)return;dir.normalize();
-    bullets.push({p:o.clone(),o:o.clone(),v:dir.multiplyScalar(V0),t:0,tr:getP(gTracer,matTracer),rem:true});remoteShotSnd(o);RFL=0.11;farFlash(o);if(!MPM.guest)disturb(o.x,o.z,200,650);}
+    bullets.push({p:o.clone(),o:o.clone(),v:dir.multiplyScalar(V0),t:0,tr:getP(gTracer,matTracer),rem:true});mkStreak(bullets[bullets.length-1]);remoteShotSnd(o);RFL=0.11;farFlash(o);if(!MPM.guest)disturb(o.x,o.z,200,650);}
   else if(t==='hit'){NT.room.emit('ack',{n:d.n}).catch(()=>{});takeHit(d,m.peer);}
   else if(t==='ack'){NT.pend.delete(d.n);}
   else if(t==='wild'){if(MPM.guest)applyWild(d);}
