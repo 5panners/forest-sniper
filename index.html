@@ -106,7 +106,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <button role="tab" id="tabAud" aria-selected="false" aria-controls="paneAud">Audio</button>
     <button role="tab" id="tabMp" aria-selected="false" aria-controls="paneMp">Multiplayer</button>
   </div>
-  <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div><p class="sec" style="margin-top:14px">Foraged food · health</p><table class="foodT" style="border-collapse:collapse;font-size:13px;margin-top:6px"><tr><td style="padding:2px 18px 2px 0">Berries</td><td>+1 health per pick-up</td></tr><tr><td style="padding:2px 18px 2px 0">Mushrooms</td><td>+2 health per pick-up</td></tr><tr><td style="padding:2px 18px 2px 0">Raw meat</td><td>none, cook it first (coming later)</td></tr></table><p class="note">Health starts at 100% and food raises it slowly (about 1.5 per second) up to 200%.</p></div>
+  <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div><p class="sec" style="margin-top:14px">Pickups</p><table class="foodT" style="border-collapse:collapse;font-size:13px;margin-top:6px"><tr><td style="padding:2px 18px 2px 0">Magic Mushrooms</td><td>+2% stamina per cluster</td></tr><tr><td style="padding:2px 18px 2px 0">Raw meat</td><td>no health, cook it first (coming later)</td></tr><tr><td style="padding:2px 18px 2px 0">Wood, lead ore, Tech Chips</td><td>for crafting (coming later)</td></tr></table><p class="note">Stamina powers a double-speed boost: double-tap W and keep holding it. The longer you hold, the more it drains. Health starts at 100% and cooked food will raise it up to 200%.</p></div>
   <div id="paneGfx" role="tabpanel" aria-labelledby="tabGfx" hidden>
     <div class="opts">
       <label class="opt"><input type="checkbox" id="optFps"><span><b>Show FPS</b><small>Frame rate and frame time, top left.</small></span></label>
@@ -2288,11 +2288,11 @@ function updatePlayer(dt,time){
   const canAim=pl.alive&&!act&&pl.reloadT<0&&pl.stance!=='prone';
   const aimT=canAim&&(aimHeld||recentFire||firing)?1:(canAim&&!viewFP&&!(sprint&&mi.f>0)?0.7:0);   // third person: the rifle is carried up and ready, so you can see it beside the character
   pl.aimW=damp(pl.aimW,aimT,14,dt);
-  const isSprint=sprint&&mi.f>0&&pl.stance==='stand'&&!aimHeld&&!firing&&!recentFire&&pl.reloadT<0&&stamOK();stamStep(isSprint,dt);
+  const isSprint=sprint&&mi.f>0&&pl.stance==='stand'&&!aimHeld&&!firing&&!recentFire&&pl.reloadT<0&&stamOK();stamStep(isSprint,dt);const boostOn=boostStep(mi.f>0&&pl.stance==='stand'&&pl.alive&&!aimHeld&&!firing&&pl.reloadT<0,dt);
   // speed
   let spd=0;
   if(!(A_&&A_.lock)&&pl.alive){
-    if(pl.stance==='prone')spd=0.8;else if(pl.stance==='crouch')spd=1.7;else if(aimHeld)spd=2.1;else if(isSprint)spd=6.4;else spd=4.2;
+    if(pl.stance==='prone')spd=0.8;else if(pl.stance==='crouch')spd=1.7;else if(aimHeld)spd=2.1;else if(isSprint)spd=6.4;else spd=4.2;if(boostOn)spd*=GAME.stMult;
     if(act&&act.name==='land')spd*=0.5;
   }
   const depth=waterLevelAt(pl.pos.x,pl.pos.z)-pl.pos.y; pl.wading=depth>0?depth:0;
@@ -2332,7 +2332,7 @@ function updatePlayer(dt,time){
   // locomotion layers
   const lw=pl.lw, T={idle:0,walk:0,run:0,sprint:0,cidle:0,cwalk:0,prone:0,crawl:0,kneel:0};
   const moveK=hs>0.25;
-  if(pl.stance==='stand'){if(!moveK)T.idle=1;else if(isSprint&&hs>5)T.sprint=1;else if(hs>3.1)T.run=1;else T.walk=1;}
+  if(pl.stance==='stand'){if(!moveK)T.idle=1;else if((isSprint||boostOn)&&hs>5)T.sprint=1;else if(hs>3.1)T.run=1;else T.walk=1;}
   else if(pl.stance==='crouch'){if(!moveK)T[pl.aimW>0.5?'kneel':'cidle']=1;else T.cwalk=1;}
   else {if(hs>0.15)T.crawl=1;else T.prone=1;}
   for(const k in lw)lw[k]=damp(lw[k],T[k],9,dt);
@@ -3143,6 +3143,7 @@ addEventListener('keydown',e=>{
   const pl=player;const busy=pl.action||!pl.alive;
   switch(e.code){
     case 'Escape': if(fallback||(MPM.on&&!locked))setPlaying(false); break;
+    case 'KeyW': wTap(); break;
     case 'KeyV': viewFP=!viewFP; break;
     case 'KeyM': soundOn=!soundOn;toast(soundOn?'Sound on':'Sound muted'); break;
     case 'KeyB': setHB(!hbShown);toast(hbShown?'Hit boxes shown · red head, yellow torso, blue limbs':'Hit boxes hidden'); break;
@@ -3169,7 +3170,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;});
 
-const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (bolt action)','LMB'],['Scope zoom 2/3/4×','Wheel / 1-3'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Grenade','G'],['Shadows','O'],['Mute','M']];
+const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (bolt action)','LMB'],['Scope zoom 2/3/4×','Wheel / 1-3'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Grenade','G'],['Shadows','O'],['Mute','M']];
 $('keyList').innerHTML=KEYS.map(k=>`<div><kbd>${k[1]}</kbd><span>${k[0]}</span></div>`).join('');
 
 /* ---------------- menu tabs + graphics options ---------------- */
@@ -3350,7 +3351,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=145;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=147;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3384,17 +3385,17 @@ const genMs=Math.round(performance.now()-T0);
 $('deployBtn').disabled=false;$('deployBtn').textContent='Deploy';
 $('stats').textContent=nTrees.toLocaleString()+' trees · '+nPlants.toLocaleString()+' shrubs and ferns · '+ROCKS.length+' rocks · generated in '+(genMs/1000).toFixed(1)+' s';
 
-/* ================= resources: berries, mushrooms, wood, lead ore and scrap =================
+/* ================= resources: Magic Mushrooms, wood, lead ore and Tech Chips =================
    Nodes are placed from a position hash only (no random numbers), so both players get exactly the same ones.
    Only "taken" events cross the network. Five instanced meshes, no shadows: a few hundred triangles each. */
 const RES_T=[
-  {k:'berries', label:'berries',   cell:11, p:0.050, amt:[2,4]},
-  {k:'mushroom',label:'mushrooms', cell:11, p:0.036, amt:[1,3]},
+  {k:'berries', label:'berries',   cell:11, p:0.050, amt:[2,4], n:0},
+  {k:'mushroom',label:'Magic Mushrooms', cell:11, p:0.25, amt:[1,3], n:300},
   {k:'wood',    label:'wood',      cell:11, p:0.060, amt:[2,4]},
-  {k:'lead',    label:'lead ore',     cell:13, p:0.040, amt:[1,2]},
-  {k:'scrap',   label:'scrap',     cell:17, p:0.004, amt:[1,2]}];
+  {k:'lead',    label:'lead ore',     cell:13, p:0.25, amt:[1,2], n:300},
+  {k:'scrap',   label:'Tech Chips',     cell:17, p:0.05, amt:[1,2], n:20}];
 const INV={berries:0,mushroom:0,wood:0,lead:0,scrap:0,meat:0,hide:0,feather:0};
-const INV_LABEL={berries:'berries',mushroom:'mushrooms',wood:'wood',lead:'lead ore',scrap:'scrap',meat:'meat',hide:'hide',feather:'feathers'};
+const INV_LABEL={berries:'berries',mushroom:'Magic Mushrooms',wood:'wood',lead:'lead ore',scrap:'Tech Chips',meat:'meat',hide:'hide',feather:'feathers'};
 const RES_GEO={
   berries:build([[new THREE.IcosahedronGeometry(0.26,0),'#4c8a3c',[0,0.22,0],[0,0.5,0],[1.2,0.8,1.2]],[new THREE.IcosahedronGeometry(0.19,0),'#58a044',[0.22,0.17,0.08]],
     [new THREE.IcosahedronGeometry(0.07,0),'#e03040',[0.1,0.42,0.12]],[new THREE.IcosahedronGeometry(0.07,0),'#e03040',[-0.14,0.36,-0.1]],[new THREE.IcosahedronGeometry(0.07,0),'#cc2c52',[0.3,0.3,0.2]],[new THREE.IcosahedronGeometry(0.07,0),'#e03040',[-0.02,0.3,0.24]]]),
@@ -3419,24 +3420,26 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
   RES_NODES.push({t,ti,x,y:h,z,ry:hsh(salt+11,salt+29)*PI*2,s:1.25+hsh(salt+5,salt+7)*0.5,got:false,a:hsh(salt+1,salt+2)});
   const n=RES_NODES.length-1,key=Math.floor(x/8)+','+Math.floor(z/8);let L=RES_CELLS.get(key);if(!L){L=[];RES_CELLS.set(key,L);}L.push(n);return n;}
 (function resGen(){
-  RES_T.forEach((R,ti)=>{
+  // a few at each starting point so the first minute has something to do, and Tech Chips around the hut
+  const near=(c,list)=>list.forEach(([t,a,d],i)=>{for(let k=0;k<12;k++){const ang=a+k*0.7+hsh(i,k+Math.round(c.x))*0.6,r=d+k*2.2,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
+      if(resOK(x,z,t)){resAdd(t,x,z,i*53+k*7+Math.round(c.x+c.z));break;}}});
+  const starts=[['wood',0.3,14],['wood',2.4,20],['lead',1.2,18],['mushroom',3.6,22],['mushroom',4.4,16]];
+  near({x:P1_SPAWN.x,z:P1_SPAWN.z},starts);near({x:P2_SPAWN.x,z:P2_SPAWN.z},starts);
+  near({x:HUT.x,z:HUT.z},[['scrap',0.4,9],['scrap',2.2,11],['scrap',3.9,8],['scrap',5.4,12]]);
+  RES_T.forEach((R,ti)=>{const have=RES_NODES.filter(n=>n.t===R.k).length,cand=[];
     for(let iz=-Math.floor(PLAY/R.cell);iz<Math.floor(PLAY/R.cell);iz++)for(let ix=-Math.floor(PLAY/R.cell);ix<Math.floor(PLAY/R.cell);ix++){
       const h0=hsh(ix*31+ti*977,iz*17+ti*613);if(h0>R.p)continue;
       const x=(ix+hsh(ix+ti*5,iz*3+1))*R.cell,z=(iz+hsh(ix*7+2,iz+ti*11))*R.cell;
-      if(resOK(x,z,R.k))resAdd(R.k,x,z,ix*13+iz*7+ti*101);}});
-  // a few at each starting point so the first minute has something to do, and scrap around the hut
-  const near=(c,list)=>list.forEach(([t,a,d],i)=>{for(let k=0;k<12;k++){const ang=a+k*0.7+hsh(i,k+Math.round(c.x))*0.6,r=d+k*2.2,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
-      if(resOK(x,z,t)){resAdd(t,x,z,i*53+k*7+Math.round(c.x+c.z));break;}}});
-  const starts=[['wood',0.3,14],['wood',2.4,20],['lead',1.2,18],['berries',3.6,22],['berries',5.0,26],['mushroom',4.4,16]];
-  near({x:P1_SPAWN.x,z:P1_SPAWN.z},starts);near({x:P2_SPAWN.x,z:P2_SPAWN.z},starts);
-  near({x:HUT.x,z:HUT.z},[['scrap',0.4,9],['scrap',2.2,11],['scrap',3.9,8],['scrap',5.4,12]]);
+      if(resOK(x,z,R.k))cand.push([h0,x,z,ix*13+iz*7+ti*101]);}
+    if(R.n!=null){cand.sort((p,q)=>p[0]-q[0]);cand.length=Math.max(0,Math.min(cand.length,R.n-have));}
+    for(const c of cand)resAdd(R.k,c[1],c[2],c[3]);});
   RES_T.forEach(R=>{const L=RES_NODES.filter(n=>n.t===R.k);R.idx=L.map(n=>RES_NODES.indexOf(n));
-    const m=new THREE.InstancedMesh(RES_GEO[R.k],RES_MAT,Math.max(1,L.length));m.frustumCulled=false;m.castShadow=false;m.receiveShadow=false;
+    const m=new THREE.InstancedMesh(RES_GEO[R.k],RES_MAT,Math.max(1,L.length));if(!L.length)m.count=0;m.frustumCulled=false;m.castShadow=false;m.receiveShadow=false;
     L.forEach((n,i)=>{n.mi=i;_re.set(0,n.ry,0);_rq.setFromEuler(_re);_rm.compose(_rp.set(n.x,n.y-0.02,n.z),_rq,_rs.set(n.s,n.s,n.s));m.setMatrixAt(i,_rm);n.mat=_rm.clone();});
     m.instanceMatrix.needsUpdate=true;scene.add(m);RES_MESH[R.k]=m;});
 })();
 function resSetGot(n,v){n.got=v;if(n.gim)leadGlowSet(n,v);const m=RES_MESH[n.t];m.setMatrixAt(n.mi,v?_ZERO:n.mat);m.instanceMatrix.needsUpdate=true;}
-function resReset(){FIRE.t=0;if(FIRE.R!==FIRE.R0){FIRE.R=FIRE.R0;fireBuild(FIRE.R0);}HEAL.pool=0;STAM.v=1;STAM.lock=false;for(const n of RES_NODES)if(n.got)resSetGot(n,false);for(const k in INV)INV[k]=0;invUI();}
+function resReset(){STAM.v=GAME.stStart/100;BOOST.on=false;FIRE.t=0;if(FIRE.R!==FIRE.R0){FIRE.R=FIRE.R0;fireBuild(FIRE.R0);}HEAL.pool=0;STAM.lock=false;for(const n of RES_NODES)if(n.got)resSetGot(n,false);for(const k in INV)INV[k]=0;invUI();}
 function resRemoteTake(i){const n=RES_NODES[i];if(n&&!n.got)resSetGot(n,true);}
 function resNearest(){const p=player.pos;let best=null,bd=2.7*2.7;const cx=Math.floor(p.x/8),cz=Math.floor(p.z/8);
   for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const L=RES_CELLS.get((cx+a)+','+(cz+b));if(!L)continue;
@@ -3526,6 +3529,9 @@ function leadGlowStep(){const t=performance.now()/1000;for(const g of LEADGLOW.m
 // ---- stamina + vitals panel (health and stamina bars, bottom left)
 const STAM={v:1,lock:false};
 function stamOK(){return true;}
+const BOOST={on:false,lastW:-9999};
+function wTap(){const t=performance.now();if(t-BOOST.lastW<320&&STAM.v>0&&player.alive&&player.stance==='stand'&&!BOOST.on){BOOST.on=true;}BOOST.lastW=t;}
+function boostStep(ok,dt){if(!(keys.KeyW||keys.ArrowUp)){BOOST.on=false;return false;}if(!BOOST.on)return false;if(!ok){BOOST.on=false;return false;}STAM.v=Math.max(0,STAM.v-dt/GAME.stDrain);if(STAM.v<=0){BOOST.on=false;toast('Out of stamina');return false;}return true;}
 function stamStep(sp,dt){return;if(sp){STAM.v-=dt/12;if(STAM.v<=0){STAM.v=0;STAM.lock=true;}}else STAM.v=Math.min(1,STAM.v+dt/7);if(STAM.lock&&STAM.v>0.28)STAM.lock=false;}
 const VIT=(()=>{const st=document.createElement('style');st.textContent=`
 #vitals{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:3;pointer-events:none;width:210px;padding:9px 12px 10px;border-radius:10px;background:linear-gradient(180deg,rgba(14,18,16,.62),rgba(10,13,12,.5));border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(5px);box-shadow:0 4px 14px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:7px;font:600 11px/1 "IBM Plex Mono",ui-monospace,monospace;color:#e8e4d4}
@@ -3538,16 +3544,18 @@ const VIT=(()=>{const st=document.createElement('style');st.textContent=`
 #vitals #vh .tr::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,.55)}
 #vitals .n{width:36px;text-align:right;font-variant-numeric:tabular-nums;opacity:.9}
 #vitals.low #vh .fl{animation:vpulse .8s ease-in-out infinite}
-#vitals.out #vs{color:#e9a23b}
+#vitals.boost #vs .fl{animation:vpulse .5s ease-in-out infinite}
 @keyframes vpulse{50%{filter:brightness(1.6)}}`;document.head.appendChild(st);
   const d=document.createElement('div');d.id='vitals';d.innerHTML=`
-<div class="vr" id="vh" style="color:#f08070"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.8 4.5 6.4 4.5c2.1 0 3.9 1.1 5.6 3.2 1.7-2.100 3.500-3.200 5.600-3.200 3.600 0 5.500 3.900 4 7.300C19.500 16.400 12 21 12 21z"/></svg><div class="tr"><div class="lag"></div><div class="fl"></div><div class="bo"></div></div><span class="n"></span></div>`;
+<div class="vr" id="vh" style="color:#f08070"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.8 4.5 6.4 4.5c2.1 0 3.9 1.1 5.6 3.2 1.7-2.100 3.500-3.200 5.600-3.200 3.600 0 5.500 3.900 4 7.300C19.500 16.400 12 21 12 21z"/></svg><div class="tr"><div class="lag"></div><div class="fl"></div><div class="bo"></div></div><span class="n"></span></div>
+<div class="vr" id="vs" style="color:#6fd3c6"><svg viewBox="0 0 24 24"><path d="M13.500 2 4 13.500h6.500L9 22l10-12.500h-6.700z"/></svg><div class="tr"><div class="lag"></div><div class="fl"></div></div><span class="n"></span></div>`;
   document.body.appendChild(d);
   const q=(id)=>{const r=d.querySelector('#'+id);return {r,bo:r.querySelector('.bo'),fl:r.querySelector('.fl'),lag:r.querySelector('.lag'),n:r.querySelector('.n')};};
-  return {d,h:q('vh'),lh:-1,ls:-1,lk:null};})();
+  return {d,h:q('vh'),s:q('vs'),lh:-1,ls:-1,lk:null};})();
 function vitalsStep(){healStep();const hp=Math.max(0,Math.min(HP_MAX,MPM.hp)),sp=STAM.v;
   const hv=Math.round(hp),sv=Math.round(sp*100);
   if(hv!==VIT.lh){VIT.lh=hv;const c='hsl('+Math.round(Math.min(hp,100)*1.15)+',70%,'+(hp>100?'46':'52')+'%)';VIT.h.fl.style.setProperty('--c',c);VIT.h.fl.style.width=(Math.min(hv,100)/2)+'%';VIT.h.lag.style.width=(Math.min(hv,100)/2)+'%';VIT.h.bo.style.width=(Math.max(0,hv-100)/2)+'%';VIT.h.n.textContent=hv+'%';VIT.d.classList.toggle('low',hp<30);}
+  {const sv=Math.round(STAM.v*100);if(sv!==VIT.ls||VIT.lk!==BOOST.on){VIT.ls=sv;VIT.lk=BOOST.on;VIT.s.fl.style.setProperty('--c',BOOST.on?'#7df0ff':'#47c9bb');VIT.s.fl.style.width=sv+'%';VIT.s.lag.style.width=sv+'%';VIT.s.n.textContent=sv+'%';VIT.d.classList.toggle('boost',BOOST.on);}}
   VIT.d.style.display=(playing&&player.alive)?'flex':'none';}
 
 // ---- owl hoots: tawny-owl style calls from the trees at night (Audio options > Owl hoots)
@@ -3586,8 +3594,8 @@ window.SNIPER_RES.owlReady=()=>!!SND.ow;
 window.SNIPER_RES.logs=()=>LOGS;
 
 // ---- foraged food heals slowly, up to 200% of normal health. Raw meat gives nothing until cooking exists.
-const HEAL={pool:0,t:performance.now()},FOOD={berries:1,mushroom:2,meat:0},HP_MAX=200,HEAL_RATE=1.5;
-function eatFood(k,q){const v=(FOOD[k]||0);if(v<=0)return '';HEAL.pool=Math.min(120,HEAL.pool+v);return ' · +'+v+' health over time';}
+const HEAL={pool:0,t:performance.now()},FOOD={berries:0,mushroom:0,meat:0},HP_MAX=200,HEAL_RATE=1.5;
+function eatFood(k,q){if(k==='mushroom'){const g=GAME.stGain/100;STAM.v=Math.min(1,STAM.v+g);return ' · +'+GAME.stGain+'% stamina';}const v=(FOOD[k]||0);if(v<=0)return '';HEAL.pool=Math.min(120,HEAL.pool+v);return ' · +'+v+' health over time';}
 function healStep(){const now=performance.now(),dt=Math.min(0.25,(now-HEAL.t)/1000);HEAL.t=now;
   if(HEAL.pool>0&&player.alive&&MPM.hp>0){if(MPM.hp>=HP_MAX){HEAL.pool=0;return;}const h=Math.min(HEAL.pool,HEAL_RATE*dt,HP_MAX-MPM.hp);MPM.hp+=h;HEAL.pool-=h;}}
 
@@ -3623,7 +3631,7 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
 <tr><td>Fallow doe</td><td>${num('hp.fallow',DMG.hp.fallow)}</td><td>rifle (same zones)</td></tr>
 <tr><td>Roe doe</td><td>${num('hp.roe',DMG.hp.roe)}</td><td>rifle (same zones)</td></tr>
 <tr><td>Buzzard</td><td>${num('hp.buzzard',DMG.hp.buzzard)}</td><td>rifle</td></tr></table>
-<p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Berries, mushrooms, wood, lead ore, scrap</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>
+<p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Magic Mushrooms, wood, lead ore, Tech Chips</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>
 <button type="button" id="dmgReset" class="btn">Reset to defaults</button>`;
     pn.querySelectorAll('input').forEach(i=>i.oninput=()=>{const v=parseFloat(i.value);if(!(v>=0))return;const ks=i.dataset.p.split('.');let o=DMG;for(let j=0;j<ks.length-1;j++)o=o[ks[j]];o[ks[ks.length-1]]=v;dmgSave();});
     pn.querySelector('#dmgReset').onclick=()=>{const f=JSON.parse(JSON.stringify(DMG_DEF));for(const k in f)DMG[k]=f[k];dmgSave();build();};};
@@ -3634,7 +3642,7 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): ring shrink, flame / smoke / spark look, tree fires
-const GAME_DEF={fDens:1,fWid:1.3,fFer:1,fSpd:0.5,sm:1,sp:1,spit:1,sDelay:60,sDur:900,sEnd:80,tOn:1,tFrac:0.25,rdOn:1,rdBand:15,rdIn:6,rdOut:12};
+const GAME_DEF={fDens:1,fWid:1.3,fFer:1,fSpd:0.5,sm:1,sp:1,spit:1,sDelay:60,sDur:900,sEnd:80,tOn:1,tFrac:0.25,rdOn:1,rdBand:15,rdIn:6,rdOut:12,stStart:0,stGain:2,stDrain:10,stMult:2};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 // ---- ring of fire: flat-shaded animated flame wall, smoke curtain, ember glow on the ground and rising sparks.
 // Four draw calls in all; every bit of motion is done in the vertex shaders, so the CPU only updates one time uniform per frame.
@@ -3783,6 +3791,7 @@ function treeFireStep(dt){TF.t-=dt;if(TF.t>0)return;TF.t=0.5;
   const ROWS=[['sec','Ring of fire · shrinking'],['sDelay','Wait before it starts to shrink (s)',0,600,10,0],['sDur','Time to shrink to the final size (s)',30,3600,30,0],['sEnd','Final radius (m)',20,600,10,0],
    ['sec','Flames'],['fDens','Flame density',0.3,2,0.05,2],['fWid','Flame width',0.5,2.5,0.05,2],['fFer','Flame ferocity (height and sway)',0.3,2.5,0.05,2],['fSpd','Flame speed',0.1,2,0.05,2],
    ['sec','Smoke and sparks'],['sm','Smoke density',0,2,0.05,2],['sp','Rising sparks',0,2,0.05,2],['spit','Sparks spitting inwards',0,2,0.05,2],
+   ['sec','Stamina boost (double-tap W)'],['stStart','Starting stamina (%)',0,100,1,0],['stGain','Stamina per Magic Mushroom cluster (%)',0,25,1,0],['stDrain','Seconds of boost from a full bar',2,60,1,0],['stMult','Boost speed multiplier',1,3,0.1,1],
    ['sec','Ring damage to players'],['rdOn','Ring hurts players (1 = on, 0 = off)',0,1,1,0],['rdBand','Burn zone width inside the ring (m)',2,60,1,0],['rdIn','Damage per second at the wall, inside (hp/s)',0,40,0.5,1],['rdOut','Damage per second outside the ring (hp/s)',0,60,0.5,1],
    ['sec','Trees on fire'],['tOn','Trees catch fire (1 = on, 0 = off)',0,1,1,0],['tFrac','Share of nearby trees that burn',0,1,0.05,2]];
   const rebuildKeys={fDens:1,fWid:1,sp:1,spit:1};let to=0;
@@ -3808,7 +3817,7 @@ function ringHurt(dt){if(!GAME.rdOn||!playing||!player.alive||MPM.hp<=0)return;i
   MPM.hp-=dps*dt;RH.fl-=dt;if(RH.fl<=0){RH.fl=0.5;flashHit();}
   if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Burned to death by the ring of fire');}}
 window.SNIPER_RES.hp=()=>MPM.hp;window.SNIPER_RES.alive=()=>player.alive;
-window.SNIPER_RES.heal={eat:(k,q)=>eatFood(k,q),hp:(v)=>{if(v!=null)MPM.hp=v;return MPM.hp;},pool:()=>HEAL.pool,step:()=>healStep()};
+window.SNIPER_RES.heal={eat:(k,q)=>eatFood(k,q),hp:(v)=>{if(v!=null)MPM.hp=v;return MPM.hp;},pool:()=>HEAL.pool,step:()=>healStep(),st:(v)=>{if(v!=null)STAM.v=v;return STAM.v},boost:()=>BOOST.on};
 
 function ringReset(){FIRE.t=0;RH.warn=0;if(FIRE.R!==FIRE.R0||FIRE.builtR!==FIRE.R0){FIRE.R=FIRE.R0;fireBuild(FIRE.R0);}}
 
@@ -3816,6 +3825,7 @@ function ringReset(){FIRE.t=0;RH.warn=0;if(FIRE.R!==FIRE.R0||FIRE.builtR!==FIRE.
 function headDing(){if(!AC||!soundOn)return;try{const t=AC.currentTime,out=AC.createGain();out.gain.value=0.55;out.connect(AC.destination);
   for(const [r,g,d] of [[1,0.5,2.1],[2.0,0.3,1.4],[2.76,0.22,1.0],[5.4,0.09,0.45],[0.5,0.18,2.4]]){const o=AC.createOscillator(),e=AC.createGain();o.type='sine';o.frequency.value=1760*r;
     e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(g,t+0.003);e.gain.exponentialRampToValueAtTime(0.0005,t+d);o.connect(e);e.connect(out);o.start(t);o.stop(t+d+0.05);}}catch(e){}}
+STAM.v=GAME.stStart/100;
 
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
