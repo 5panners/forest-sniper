@@ -21,6 +21,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-ui);o
 #scopeCv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
 .chip{background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:6px 10px;backdrop-filter:blur(4px)}
 #hudL{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono);display:flex;flex-direction:column;gap:2px}
+#inv{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono)}#inv b,#resPrompt b{color:var(--amber);font-weight:600}#resPrompt{position:fixed;left:50%;top:60%;transform:translateX(-50%);z-index:3;pointer-events:none;font:14px/1.5 var(--f-mono)}
 #hudL b{color:var(--amber);font-weight:600}
 #hudR{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono);text-align:right}
 #warn{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:4;font:600 18px var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--warn);text-shadow:0 1px 3px #000;pointer-events:none}
@@ -3161,7 +3162,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;});
 
-const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (bolt action)','LMB'],['Scope zoom 2/3/4×','Wheel / 1-3'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Grenade','G'],['Shadows','O'],['Mute','M']];
+const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (bolt action)','LMB'],['Scope zoom 2/3/4×','Wheel / 1-3'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Grenade','G'],['Shadows','O'],['Mute','M']];
 $('keyList').innerHTML=KEYS.map(k=>`<div><kbd>${k[1]}</kbd><span>${k[0]}</span></div>`).join('');
 
 /* ---------------- menu tabs + graphics options ---------------- */
@@ -3341,10 +3342,10 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=76;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=77;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
-  netStep(dt);updatePlayer(dt,clockT);
+  netStep(dt);resStep(dt);updatePlayer(dt,clockT);
   stepBolt(dt);stepBullets(dt);stepNades(dt);stepParts(dt);stepBrass(dt);
   stepDeer(dt);stepHerds(dt);stepBirds(dt,clockT);stepMarks(dt);if(fallFX)fallFX.step(dt);_rdt=dt;
   updateCamera(dt);updateLOD();updListener();
@@ -3374,6 +3375,76 @@ requestAnimationFrame(frame);
 const genMs=Math.round(performance.now()-T0);
 $('deployBtn').disabled=false;$('deployBtn').textContent='Deploy';
 $('stats').textContent=nTrees.toLocaleString()+' trees · '+nPlants.toLocaleString()+' shrubs and ferns · '+ROCKS.length+' rocks · generated in '+(genMs/1000).toFixed(1)+' s';
+
+/* ================= resources: berries, mushrooms, wood, flint and scrap =================
+   Nodes are placed from a position hash only (no random numbers), so both players get exactly the same ones.
+   Only "taken" events cross the network. Five instanced meshes, no shadows: a few hundred triangles each. */
+const RES_T=[
+  {k:'berries', label:'berries',   cell:11, p:0.050, amt:[2,4]},
+  {k:'mushroom',label:'mushrooms', cell:11, p:0.036, amt:[1,3]},
+  {k:'wood',    label:'wood',      cell:11, p:0.060, amt:[2,4]},
+  {k:'flint',   label:'flint',     cell:13, p:0.040, amt:[1,2]},
+  {k:'scrap',   label:'scrap',     cell:17, p:0.004, amt:[1,2]}];
+const INV={berries:0,mushroom:0,wood:0,flint:0,scrap:0};
+const RES_GEO={
+  berries:build([[new THREE.IcosahedronGeometry(0.26,0),'#4c8a3c',[0,0.22,0],[0,0.5,0],[1.2,0.8,1.2]],[new THREE.IcosahedronGeometry(0.19,0),'#58a044',[0.22,0.17,0.08]],
+    [new THREE.IcosahedronGeometry(0.07,0),'#e03040',[0.1,0.42,0.12]],[new THREE.IcosahedronGeometry(0.07,0),'#e03040',[-0.14,0.36,-0.1]],[new THREE.IcosahedronGeometry(0.07,0),'#cc2c52',[0.3,0.3,0.2]],[new THREE.IcosahedronGeometry(0.07,0),'#e03040',[-0.02,0.3,0.24]]]),
+  mushroom:build([[CY(0.035,0.045,0.14,5),'#e6dcc2',[0,0.07,0]],[new THREE.ConeGeometry(0.11,0.08,6),'#d07a44',[0,0.17,0]],
+    [CY(0.025,0.032,0.1,5),'#e6dcc2',[0.17,0.05,0.07]],[new THREE.ConeGeometry(0.08,0.06,6),'#dc8850',[0.17,0.12,0.07]],[CY(0.02,0.028,0.08,5),'#e6dcc2',[-0.12,0.04,-0.1]],[new THREE.ConeGeometry(0.065,0.05,6),'#d07a44',[-0.12,0.1,-0.1]]]),
+  wood:build([[B(0.05,0.05,0.8),'#9a6a3c',[0,0.05,0],[0.05,0.3,0]],[B(0.045,0.045,0.7),'#a97a46',[0.07,0.1,0.05],[0.1,-0.4,0.05]],[B(0.05,0.05,0.65),'#865a30',[-0.06,0.1,-0.04],[0.0,0.9,-0.05]],[B(0.04,0.04,0.5),'#a97a46',[0.0,0.15,0.0],[0.1,0.1,0.1]]]),
+  flint:build([[new THREE.IcosahedronGeometry(0.15,0),'#b4bac2',[0,0.09,0],[0.3,0.4,0],[1.2,0.7,1]],[new THREE.IcosahedronGeometry(0.1,0),'#969ca4',[0.17,0.06,0.05]],[new THREE.IcosahedronGeometry(0.07,0),'#d0d4da',[-0.13,0.05,0.09]]]),
+  scrap:build([[B(0.44,0.035,0.3),'#a8643a',[0,0.03,0],[0.0,0.4,0.08]],[B(0.28,0.03,0.22),'#9aa2aa',[0.12,0.07,0.1],[0.05,-0.3,0.0]],[CY(0.035,0.035,0.42,6),'#7a8088',[-0.12,0.08,-0.12],[0,0,PI/2]],[B(0.12,0.1,0.12),'#b87a3c',[-0.16,0.06,0.15]]])};
+const RES_MAT=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:0.9,metalness:0});
+const RES_MESH={},RES_NODES=[],RES_CELLS=new Map(),_rm=new THREE.Matrix4(),_rq=new THREE.Quaternion(),_re=new THREE.Euler(),_rp=new THREE.Vector3(),_rs=new THREE.Vector3(),_ZERO=new THREE.Matrix4().makeScale(0,0,0),_RC=new THREE.Color();
+function resOK(x,z,t){
+  if(Math.abs(x)>PLAY-6||Math.abs(z)>PLAY-6)return false;
+  if(lakeE(x,z)<1.12||fieldF(x,z,FdR,CdR)<5.5)return false;
+  if(fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw,CCw)+1.6)return false;
+  if(slopeAt(x,z)>0.7)return false;
+  if(treeAt(x,z,0.7))return false;
+  const mk=meadowK(x,z);
+  if(t==='wood'||t==='mushroom'){if(mk>0.3)return false;}
+  if(t==='berries'){if(mk<0.1&&hsh(Math.floor(x)+3,Math.floor(z)+9)<0.5)return false;}
+  return true;}
+function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH(x,z);
+  RES_NODES.push({t,ti,x,y:h,z,ry:hsh(salt+11,salt+29)*PI*2,s:1.25+hsh(salt+5,salt+7)*0.5,got:false,a:hsh(salt+1,salt+2)});
+  const n=RES_NODES.length-1,key=Math.floor(x/8)+','+Math.floor(z/8);let L=RES_CELLS.get(key);if(!L){L=[];RES_CELLS.set(key,L);}L.push(n);return n;}
+(function resGen(){
+  RES_T.forEach((R,ti)=>{
+    for(let iz=-Math.floor(PLAY/R.cell);iz<Math.floor(PLAY/R.cell);iz++)for(let ix=-Math.floor(PLAY/R.cell);ix<Math.floor(PLAY/R.cell);ix++){
+      const h0=hsh(ix*31+ti*977,iz*17+ti*613);if(h0>R.p)continue;
+      const x=(ix+hsh(ix+ti*5,iz*3+1))*R.cell,z=(iz+hsh(ix*7+2,iz+ti*11))*R.cell;
+      if(resOK(x,z,R.k))resAdd(R.k,x,z,ix*13+iz*7+ti*101);}});
+  // a few at each starting point so the first minute has something to do, and scrap around the hut
+  const near=(c,list)=>list.forEach(([t,a,d],i)=>{for(let k=0;k<12;k++){const ang=a+k*0.7+hsh(i,k+Math.round(c.x))*0.6,r=d+k*2.2,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
+      if(resOK(x,z,t)){resAdd(t,x,z,i*53+k*7+Math.round(c.x+c.z));break;}}});
+  const starts=[['wood',0.3,14],['wood',2.4,20],['flint',1.2,18],['berries',3.6,22],['berries',5.0,26],['mushroom',4.4,16]];
+  near({x:P1_SPAWN.x,z:P1_SPAWN.z},starts);near({x:P2_SPAWN.x,z:P2_SPAWN.z},starts);
+  near({x:HUT.x,z:HUT.z},[['scrap',0.4,9],['scrap',2.2,11],['scrap',3.9,8],['scrap',5.4,12]]);
+  RES_T.forEach(R=>{const L=RES_NODES.filter(n=>n.t===R.k);R.idx=L.map(n=>RES_NODES.indexOf(n));
+    const m=new THREE.InstancedMesh(RES_GEO[R.k],RES_MAT,Math.max(1,L.length));m.frustumCulled=false;m.castShadow=false;m.receiveShadow=false;
+    L.forEach((n,i)=>{n.mi=i;_re.set(0,n.ry,0);_rq.setFromEuler(_re);_rm.compose(_rp.set(n.x,n.y-0.02,n.z),_rq,_rs.set(n.s,n.s,n.s));m.setMatrixAt(i,_rm);n.mat=_rm.clone();});
+    m.instanceMatrix.needsUpdate=true;scene.add(m);RES_MESH[R.k]=m;});
+})();
+function resSetGot(n,v){n.got=v;const m=RES_MESH[n.t];m.setMatrixAt(n.mi,v?_ZERO:n.mat);m.instanceMatrix.needsUpdate=true;}
+function resReset(){for(const n of RES_NODES)if(n.got)resSetGot(n,false);for(const k in INV)INV[k]=0;invUI();}
+function resRemoteTake(i){const n=RES_NODES[i];if(n&&!n.got)resSetGot(n,true);}
+function resNearest(){const p=player.pos;let best=null,bd=2.7*2.7;const cx=Math.floor(p.x/8),cz=Math.floor(p.z/8);
+  for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const L=RES_CELLS.get((cx+a)+','+(cz+b));if(!L)continue;
+    for(const i of L){const n=RES_NODES[i];if(n.got)continue;const d=(n.x-p.x)*(n.x-p.x)+(n.z-p.z)*(n.z-p.z)+Math.pow((n.y-p.y)*0.6,2);if(d<bd){bd=d;best=i;}}}
+  return best;}
+const invEl=document.createElement('div');invEl.id='inv';invEl.className='chip';invEl.hidden=true;document.body.appendChild(invEl);
+const resPrompt=document.createElement('div');resPrompt.id='resPrompt';resPrompt.className='chip';resPrompt.hidden=true;document.body.appendChild(resPrompt);
+let _invS='',_prS='';
+function invUI(){const s=RES_T.filter(R=>INV[R.k]>0).map(R=>'<b>'+INV[R.k]+'</b> '+R.label).join(' · ');if(s===_invS)return;_invS=s;invEl.innerHTML=s;invEl.hidden=!s;}
+function resGather(){if(!player.alive||mapOpen)return;const i=resNearest();if(i==null)return;const n=RES_NODES[i],R=RES_T[n.ti];
+  resSetGot(n,true);const q=R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));INV[R.k]+=q;invUI();toast('+'+q+' '+R.label);try{sfx.click();}catch(e){}
+  if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});}
+addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyF')resGather();});
+function resStep(dt){
+  let s='';if(playing&&player.alive&&!scoped&&!mapOpen){const i=resNearest();if(i!=null)s='<b>F</b> · gather '+RES_T[RES_NODES[i].ti].label;}
+  if(s!==_prS){_prS=s;resPrompt.innerHTML=s;resPrompt.hidden=!s;}}
+window.SNIPER_RES={INV,RES_NODES};
 
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
@@ -3459,7 +3530,7 @@ function mpAttach(room,kind,role,code,why){
   NT.pend.clear();NT.seen.clear();RPS.buf=[];RPS.off=null;RPS.lastT=0;RPS.vis=false;RPS.al=false;
   MPM.on=true;MPM.guest=role==='g';MPM.hp=100;player.reserve=SPARE;
   room.presence({v:NET_V,role}).catch(()=>{});
-  ['shot','hit','ack','wild','need','roster','dhit','bhit'].forEach(t=>room.on(t,m=>{if(m.sameTab||NT.room!==room)return;try{onMsg(t,m.data||{},m);}catch(e){console.warn('net',t,e);}},()=>{}));
+  ['shot','hit','ack','wild','need','roster','dhit','bhit','take'].forEach(t=>room.on(t,m=>{if(m.sameTab||NT.room!==room)return;try{onMsg(t,m.data||{},m);}catch(e){console.warn('net',t,e);}},()=>{}));
   if(MPM.guest)clearWildlife();
   setLooks(MPM.guest);
   if(P2M)P2M.visible=false;
@@ -3474,7 +3545,7 @@ function mpLeave(quiet){const r=NT.room,wasG=MPM.guest;if(!quiet&&r&&NT.wasOpp)p
   const b=$('mpBan');b.hidden=true;NT.banTxt='';if(!quiet)mpStat('Left the match');mpUI();}
 function mpStart(){if(NT.role!=='h'||!NT.opp)return;const M=NT.M;if(M.ph!=='wait'&&M.ph!=='over')return;M.sc=[0,0];M.r=0;M.lw='';hostNextRound();mpUI();}
 function hostNextRound(){const M=NT.M;M.r++;M.ph='count';M.left=5;roundReset();}
-function roundReset(){const r=NT.M.r;NT.myR=r;
+function roundReset(){const r=NT.M.r;NT.myR=r;resReset();
   const mine=(MPM.guest?(r%2===0):(r%2===1))?P1_SPAWN:P2_SPAWN;   // host starts NE, sides swap every round
   player.action=null;player.slide=null;player.mantle=null;player.pos.set(mine.x,groundH(mine.x,mine.z)+0.05,mine.z);player.vel.set(0,0,0);
   player.stance='stand';snapLayer('idle');player.alive=true;player.ammo=MAG;player.reserve=SPARE;player.reloadT=-1;boltT=-1;MPM.hp=100;
@@ -3546,6 +3617,7 @@ function onMsg(t,d,m){
   else if(t==='roster'){if(MPM.guest)gotRoster(d);}
   else if(t==='dhit'){if(MPM.guest||d.v!==deerVer)return;const dr=DEER[d.i|0];if(!dr)return;hitFrom=RPS.pos;MPM.mute=true;
     try{hitDeer(dr,String(d.sub),+d.dist||0);if(d.sub==='leg')legHit(dr,d.leg|0);}finally{MPM.mute=false;hitFrom=null;}}
+  else if(t==='take'){resRemoteTake(d.i|0);}
   else if(t==='bhit'){if(MPM.guest)return;const b=BZ[d.i|0];if(!b)return;MPM.mute=true;try{hitBird(b,+d.dist||0);}finally{MPM.mute=false;}}
 }
 function netShot(b){if(!NT.room)return;const v=b.v.clone().normalize();NT.room.emit('shot',{o:[nr2(b.o.x),nr2(b.o.y),nr2(b.o.z)],v:[nr3(v.x),nr3(v.y),nr3(v.z)]}).catch(()=>{});}
