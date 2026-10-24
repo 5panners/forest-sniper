@@ -2679,6 +2679,7 @@ function deerAI(d,dt){
   if(d.st==='dead')return;
   if(d.wound==='fatal'||d.wound==='gut'){d.dieT-=dt;if(d.dieT<=0){killDeer(d,false);return;}}
   d.stT-=dt;d.fear=Math.max(0,d.fear-dt*0.025);d.roarA-=dt;
+  {const fr=Math.hypot(d.x,d.z),fd=FIRE.R-fr;if(d.st!=='dying'&&(fd<85||(d.inFire&&fd<125))){d.inFire=true;if(d.st!=='flee'){release(d);d.st='flee';d.stT=60;}d.fleeLeft=Math.max(d.fleeLeft,60);d.fear=1.2;d.thx=d.x*(1+30/(fr||1));d.thz=d.z*(1+30/(fr||1));d.fleeOff=0;}else if(d.inFire){d.inFire=false;d.fleeLeft=Math.min(d.fleeLeft,35);}}
   const K=d.K,wm=d.limp>=0?0.55:d.wound==='gut'?0.7:1;let tS=0,steer=false;
   switch(d.st){
     case 'graze': case 'hold':{d.subT-=dt;if(d.subT<=0)pickSub(d);
@@ -2758,7 +2759,7 @@ function stepDeer(dt){
   for(const d of DEER){
     const dist=Math.hypot(d.x-cp.x,d.z-cp.z);_sph.center.set(d.x,d.y+0.9,d.z);_sph.radius=3;const vis=dist<40||_fr.intersectsSphere(_sph);
     // behaviour: every frame up close, 20 Hz in view further out, 5 Hz for anything off screen
-    deerSpeak(d,dt,dist);d.acc+=dt;const dN=(MPM.on&&!MPM.guest&&RPS.vis)?Math.min(dist,Math.hypot(d.x-RPS.pos.x,d.z-RPS.pos.z)):dist;const iv=dN<120?0:((vis||dN<400)?0.05:0.2);if(d.acc>=iv){const a=Math.min(d.acc,0.25);d.acc=0;(MPM.guest?netDeer(d,a):deerAI(d,a));if(d.pin&&d.st!=='dead'&&!d.wound){d.x=d.pin.x;d.z=d.pin.z;d.y=groundH(d.x,d.z);d.spd=0;d.fear=0;if(d.st!=='graze'){d.st='graze';d.stT=1e9;}}}
+    deerSpeak(d,dt,dist);fireCry(d,dt,dist);d.acc+=dt;const dN=(MPM.on&&!MPM.guest&&RPS.vis)?Math.min(dist,Math.hypot(d.x-RPS.pos.x,d.z-RPS.pos.z)):dist;const iv=dN<120?0:((vis||dN<400)?0.05:0.2);if(d.acc>=iv){const a=Math.min(d.acc,0.25);d.acc=0;(MPM.guest?netDeer(d,a):deerAI(d,a));if(d.pin&&d.st!=='dead'&&!d.wound){d.x=d.pin.x;d.z=d.pin.z;d.y=groundH(d.x,d.z);d.spd=0;d.fear=0;if(d.st!=='graze'){d.st='graze';d.stT=1e9;}}}
     // animation: only what the camera can see; 15 Hz beyond 400 m
     d.pacc+=dt;
     if(vis&&dist<1250&&(dist<400||(deerFrame+d.id)%3===0)){poseDeer(d,Math.min(d.pacc,0.1));d.pacc=0;d.stale=false;}else d.stale=true;
@@ -2870,6 +2871,7 @@ function buzzCry(b){const c=sp3(b.x,b.y,b.z,2200);if(!c)return;const t=c.t0;
 function foldWings(b,f,tw){const k=f*f*(3-2*f);b.wR.rotation.set(0,1.15*k,-0.95*k+(tw||0));b.wL.rotation.set(0,-1.15*k,0.95*k-(tw||0));}
 function stepBirds(dt,T){if(MPM.guest){netBirds(dt,T);return;}
   for(const g of BGRP){g.t-=dt;
+    {const gd=Math.hypot(g.cx,g.cz);if(g.phase!=='away'&&gd>FIRE.R-190){const k=Math.min(26*dt,gd-(FIRE.R-210));g.cx-=g.cx/gd*k;g.cz-=g.cz/gd*k;g.fear=1;}else g.fear=0;}
     if(g.phase==='away'){g.p=0;if(g.t<=0){g.phase='in';g.t=26;g.cx=(Math.random()-0.5)*760;g.cz=(Math.random()-0.5)*760;g.ap=Math.random()*PI*2;g.alt=130+Math.random()*150;}}
     else if(g.phase==='in'){g.p=1-g.t/26;if(g.t<=0){g.phase='orbit';g.t=70+Math.random()*130;}}
     else if(g.phase==='orbit'){g.p=1;if(g.t<=0){g.phase='out';g.t=26;}}
@@ -2887,7 +2889,7 @@ function stepBirds(dt,T){if(MPM.guest){netBirds(dt,T);return;}
         b.nextFlap-=dt;if(b.nextFlap<=0){b.flapT=1.4;b.nextFlap=15+Math.random()*30;}
         const flap=b.flapT>0?0.65*Math.sin(T*9+b.ph)*Math.min(1,b.flapT):0;if(b.flapT>0)b.flapT-=dt;
         const dih=0.1+0.03*Math.sin(T*1.1+b.ph);b.wR.rotation.z=dih+flap;b.wL.rotation.z=-(dih+flap);
-        b.cryT-=dt;if(e>0.6&&b.cryT<=0){const hd=Math.hypot(b.x-camera.position.x,b.z-camera.position.z);   // only calls when it is passing overhead
+        if(g.fear&&b.cryT>3)b.cryT=1+Math.random()*3;b.cryT-=dt;if(e>0.6&&b.cryT<=0){const hd=Math.hypot(b.x-camera.position.x,b.z-camera.position.z);   // only calls when it is passing overhead
           if(hd<650){b.cryT=14+Math.random()*30;buzzCry(b);}else b.cryT=4+Math.random()*4;}
         r.visible=e>0.01;r.rotation.set(b.pitch,b.yaw,b.roll);}
       else if(b.st==='fall'){b.vy=Math.max(-26,b.vy-9.8*dt);b.fvx*=Math.exp(-0.7*dt);b.fvz*=Math.exp(-0.7*dt);b.x+=b.fvx*dt;b.z+=b.fvz*dt;b.y+=b.vy*dt;
@@ -3105,6 +3107,7 @@ mapCv.addEventListener('click',e=>{if(!mapOpen)return;const r=mapCv.getBoundingC
   const pl=player;pl.vel.set(0,0,0);pl.slide=null;pl.stance='stand';pl.pos.set(x,supportAt(x,z,1e4,PRAD*0.7)+0.05,z);pl.grounded=true;pl.fallV=0;
   camPivot.copy(pl.pos).add(V(0,1.68,0));toast('Teleported · '+Math.round(x)+' E  '+Math.round(-z)+' N');setMap(false);e.stopPropagation();});
 function drawMap(){if(!mapBase)buildMap();const N=mapCv.width;mctx.putImageData(mapBase,0,0);const S=v=>(v+FE)/(FE*2)*N;
+  {mctx.save();mctx.strokeStyle='rgba(255,90,20,0.95)';mctx.lineWidth=5;mctx.shadowColor='#ff5a14';mctx.shadowBlur=10;mctx.beginPath();mctx.arc(S(0),S(0),FIRE.R/(FE*2)*N,0,PI*2);mctx.stroke();mctx.restore();}
   if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));
   const p=player.pos;mctx.save();mctx.translate(S(p.x),S(p.z));mctx.rotate(-camYaw+PI);mctx.fillStyle='#ffcc4a';mctx.strokeStyle='#000';mctx.lineWidth=1.5;mctx.beginPath();mctx.moveTo(0,-9);mctx.lineTo(6,7);mctx.lineTo(0,3);mctx.lineTo(-6,7);mctx.closePath();mctx.fill();mctx.stroke();mctx.restore();
   {const x=S(P1_SPAWN.x),y=S(P1_SPAWN.z);mctx.strokeStyle='#4ab0ff';mctx.lineWidth=2;mctx.beginPath();mctx.arc(x,y,7,0,PI*2);mctx.stroke();mctx.fillStyle='#4ab0ff';mctx.font='600 11px "IBM Plex Mono", monospace';mctx.fillText('P1',x+9,y+4);}
@@ -3223,6 +3226,7 @@ function drawMini(){mini.parentNode.style.display=miniOn?'':'none';if(!miniOn)re
   const W=mini.width,R=MINI_R[miniZ],ppm=mapCv.width/(FE*2),sc=(W/2)/R/ppm,p=player.pos,th=camYaw-PI;
   mx.clearRect(0,0,W,W);mx.save();mx.beginPath();mx.arc(W/2,W/2,W/2-3,0,PI*2);mx.clip();mx.fillStyle='#0c120a';mx.fillRect(0,0,W,W);
   mx.translate(W/2,W/2);mx.rotate(th);mx.scale(sc,sc);mx.drawImage(baseCv,-(p.x+FE)*ppm,-(p.z+FE)*ppm);
+  {mx.save();mx.strokeStyle='rgba(255,90,20,0.95)';mx.lineWidth=5/sc;mx.shadowColor='#ff5a14';mx.shadowBlur=8;mx.beginPath();mx.arc(-p.x*ppm,-p.z*ppm,FIRE.R*ppm,0,PI*2);mx.stroke();mx.restore();}
   if($('optDeerMap').checked){const k=1/sc;DEER.forEach(d=>drawDeerMark(mx,(d.x-p.x)*ppm,(d.z-p.z)*ppm,d,k*1.2,th));}
   mx.restore();
   // view cone and the player
@@ -3344,7 +3348,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=122;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=125;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3704,6 +3708,19 @@ const FIRE=(()=>{const R=490,TAU=Math.PI*2,U={uT:{value:0}};
        vA=(1.0-life)*smoothstep(0.0,0.08,life);vec4 mv=modelViewMatrix*vec4(p,1.0);gl_PointSize=clamp(900.0/-mv.z,1.5,7.0);gl_Position=projectionMatrix*mv;}`,
      fragmentShader:`varying float vA;void main(){vec2 c=gl_PointCoord-0.5;if(abs(c.x)+abs(c.y)>0.5)discard;gl_FragColor=vec4(vec3(1.0,0.62,0.18)*vA,1.0);}`});
    const pts=new THREE.Points(g,m);pts.frustumCulled=false;pts.renderOrder=5;scene.add(pts);}
+  // spitting sparks: a few bright sparks fly off the wall in an arc towards the centre, at random spots and times
+  {const N=420,P=new Float32Array(N*3),S=new Float32Array(N*2);
+   for(let i=0;i<N;i++){P[i*3]=hr(i,950);P[i*3+1]=hr(i,951);P[i*3+2]=hr(i,952);S[i*2]=hr(i,953);S[i*2+1]=hr(i,954);}
+   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('aS',new THREE.BufferAttribute(S,2));
+   const m=new THREE.ShaderMaterial({uniforms:U,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+     vertexShader:`uniform float uT;attribute vec2 aS;varying float vA;float h(float n){return fract(sin(n*91.345+17.17)*43758.5453);}
+       void main(){float per=2.5+position.y*5.0;float q=uT/per+position.x*37.0;float cyc=floor(q);float ph=fract(q);float sd=position.z*100.0+cyc*7.31+aS.x*50.0;
+       float on=step(0.45,h(sd));float ang=h(sd+1.7)*6.2832;float fl=0.55+h(sd+3.1)*0.45;float T=ph*(1.1+fl);float v=26.0+h(sd+5.3)*30.0;
+       float up=18.0+h(sd+7.7)*22.0;float R=490.0;vec3 p=vec3(cos(ang)*R,0.0,sin(ang)*R);vec3 inw=-normalize(p);vec3 side=vec3(-inw.z,0.0,inw.x)*(h(sd+9.1)-0.5)*14.0;
+       p+=inw*v*T+side*T;p.y=6.0+up*T-24.0*T*T;if(p.y<1.0){p.y=1.0;}
+       float life=ph;vA=on*smoothstep(0.0,0.04,life)*(1.0-life*life);vec4 mv=modelViewMatrix*vec4(p,1.0);gl_PointSize=clamp(1500.0/-mv.z,2.5,10.0)*on;gl_Position=projectionMatrix*mv;}`,
+     fragmentShader:`varying float vA;void main(){vec2 c=gl_PointCoord-0.5;if(abs(c.x)+abs(c.y)>0.5)discard;gl_FragColor=vec4(vec3(1.0,0.78,0.35)*vA*1.3,1.0);}`});
+   const pts=new THREE.Points(g,m);pts.frustumCulled=false;pts.renderOrder=6;scene.add(pts);}
   return {R,U};})();
 const FSND={vol:1,on:false};try{const v=localStorage.getItem('fsFire');if(v!=null)FSND.vol=Math.max(0,Math.min(2,+v));}catch(e){}
 function fireSound(){if(!AC||!soundOn||typeof noiseBuf==='undefined'||!noiseBuf)return;
@@ -3720,6 +3737,10 @@ function fireStep(){fireSound();FIRE.U.uT.value=(performance.now()/1000)%3600;FI
 
 (function(){const el=document.getElementById('audF2'),o=document.getElementById('audF2v');if(!el)return;el.value=Math.round(FSND.vol*100);o.textContent=el.value+'%';
   el.oninput=()=>{FSND.vol=el.value/100;o.textContent=el.value+'%';try{localStorage.setItem('fsFire',String(FSND.vol));}catch(e){}};})();
+
+// animals flee the ring: deer run inward (see deerAI) with loud cries until clear of it; this makes the cries, on both the host and the guest
+function fireCry(d,dt,dist){if(d.st!=='flee'&&d.st!=='dying'||d.st==='dead')return;const fd=FIRE.R-Math.hypot(d.x,d.z);if(fd>130||dist>650)return;
+  d.fcry=(d.fcry==null?Math.random()*1.5:d.fcry)-dt;if(d.fcry>0)return;d.fcry=2.2+Math.random()*2.6;deerSample(d,2.6,d.sex!=='m'&&Math.random()<0.7);}
 
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
@@ -3952,7 +3973,7 @@ function netBirds(dt,T){const now=performance.now(),k=Math.min(1,dt*5);
     b.yaw+=wrapA(n.yaw-b.yaw)*k;b.pitch+=(n.pitch-b.pitch)*k;b.roll+=(n.roll-b.roll)*k;b.st=n.st;b.e=n.e;
     r.position.set(b.x,b.y,b.z);r.rotation.set(b.pitch,b.yaw,b.roll);
     if(b.st==='fly'){const dih=0.1+0.03*Math.sin(T*1.1+b.ph);b.wR.rotation.set(0,0,dih);b.wL.rotation.set(0,0,-dih);r.visible=b.e>0.01;
-      b.cryT-=dt;if(b.e>0.6&&b.cryT<=0){const hd=Math.hypot(b.x-camera.position.x,b.z-camera.position.z);if(hd<650){b.cryT=14+Math.random()*30;buzzCry(b);}else b.cryT=4+Math.random()*4;}}
+      if(Math.hypot(b.x,b.z)>FIRE.R-150&&b.cryT>3)b.cryT=1+Math.random()*3;b.cryT-=dt;if(b.e>0.6&&b.cryT<=0){const hd=Math.hypot(b.x-camera.position.x,b.z-camera.position.z);if(hd<650){b.cryT=14+Math.random()*30;buzzCry(b);}else b.cryT=4+Math.random()*4;}}
     else{foldWings(b,1,0);r.visible=b.st!=='gone';}}}
 
 // ---- the opponent: interpolated state drives player 2's model ----
