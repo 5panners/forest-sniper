@@ -2222,7 +2222,7 @@ function endAction(){const a=player.action;if(!a)return;
   if(a.name==='death'){if(MPM.on)return;respawn();}   // in a match you stay down until the next round
   player.action=null;}
 function snapLayer(k){for(const q in player.lw)player.lw[q]=q===k?1:0;}
-function respawn(){player.pos.copy(SPAWN);player.vel.set(0,0,0);player.stance='stand';snapLayer('idle');player.alive=true;MPM.hp=100;player.ammo=MAG;player.reloadT=-1;player.yaw=0;camYaw=0;camPitch=-0.05;toast('Respawned');}
+function respawn(){ringReset();player.pos.copy(SPAWN);player.vel.set(0,0,0);player.stance='stand';snapLayer('idle');player.alive=true;MPM.hp=100;player.ammo=MAG;player.reloadT=-1;player.yaw=0;camYaw=0;camPitch=-0.05;toast('Respawned');}
 function canFit(h,px,pz){const x=px==null?player.pos.x:px,z=pz==null?player.pos.z:pz,y=player.pos.y;
   for(const c of colliders){if(!c.on||c.max.y<=y+0.05||c.min.y>=y+h)continue;const cx=clamp(x,c.min.x,c.max.x),cz=clamp(z,c.min.z,c.max.z);if((x-cx)**2+(z-cz)**2<PRAD*PRAD*0.8)return false;}
   for(const p of pillarsNear(x,z)){if(p.y1<=y+0.05||p.y0>=y+h)continue;if(Math.hypot(x-p.x,z-p.z)<p.r+PRAD*0.9)return false;}return true;}
@@ -3349,7 +3349,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=135;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=136;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3805,6 +3805,8 @@ function ringHurt(dt){if(!GAME.rdOn||!playing||!player.alive||MPM.hp<=0)return;i
   if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Burned to death by the ring of fire');}}
 window.SNIPER_RES.hp=()=>MPM.hp;window.SNIPER_RES.alive=()=>player.alive;
 window.SNIPER_RES.heal={eat:(k,q)=>eatFood(k,q),hp:(v)=>{if(v!=null)MPM.hp=v;return MPM.hp;},pool:()=>HEAL.pool,step:()=>healStep()};
+
+function ringReset(){FIRE.t=0;RH.warn=0;if(FIRE.R!==FIRE.R0||FIRE.builtR!==FIRE.R0){FIRE.R=FIRE.R0;fireBuild(FIRE.R0);}}
 
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
