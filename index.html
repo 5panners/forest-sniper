@@ -106,7 +106,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <button role="tab" id="tabAud" aria-selected="false" aria-controls="paneAud">Audio</button>
     <button role="tab" id="tabMp" aria-selected="false" aria-controls="paneMp">Multiplayer</button>
   </div>
-  <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div><p class="sec" style="margin-top:14px">Foraged food · health</p><table class="foodT" style="border-collapse:collapse;font-size:13px;margin-top:6px"><tr><td style="padding:2px 18px 2px 0">Berries</td><td>+4 health each</td></tr><tr><td style="padding:2px 18px 2px 0">Mushrooms</td><td>+8 health each</td></tr><tr><td style="padding:2px 18px 2px 0">Raw meat</td><td>none, cook it first (coming later)</td></tr></table><p class="note">Health starts at 100% and food raises it slowly (about 1.5 per second) up to 200%.</p></div>
+  <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div><p class="sec" style="margin-top:14px">Foraged food · health</p><table class="foodT" style="border-collapse:collapse;font-size:13px;margin-top:6px"><tr><td style="padding:2px 18px 2px 0">Berries</td><td>+1 health per pick-up</td></tr><tr><td style="padding:2px 18px 2px 0">Mushrooms</td><td>+2 health per pick-up</td></tr><tr><td style="padding:2px 18px 2px 0">Raw meat</td><td>none, cook it first (coming later)</td></tr></table><p class="note">Health starts at 100% and food raises it slowly (about 1.5 per second) up to 200%.</p></div>
   <div id="paneGfx" role="tabpanel" aria-labelledby="tabGfx" hidden>
     <div class="opts">
       <label class="opt"><input type="checkbox" id="optFps"><span><b>Show FPS</b><small>Frame rate and frame time, top left.</small></span></label>
@@ -3021,7 +3021,7 @@ function updateCamera(dt){
   const sw=st*(holding?0.12:(breathLock>0?2.2:1))*(1+Math.min(1,Math.hypot(pl.vel.x,pl.vel.z)*0.5));
   const sx=(Math.sin(swayT*0.83)*0.0011+Math.sin(swayT*1.91+1)*0.0005)*sw, sy=(Math.sin(swayT*1.17+2)*0.0009+Math.sin(swayT*2.3)*0.0004)*sw+Math.sin(swayT*1.6)*0.0004*sw;
   scopeKick=Math.max(0,scopeKick-dt*3.2);
-  const yaw=camYaw+(scoped?sx:0), pitch=camPitch+(scoped?sy+scopeKick*scopeKick*0.05:0);
+  const hk=scoped?1:1.5,yaw=camYaw+sx*hk, pitch=camPitch+sy*hk+(scoped?scopeKick*scopeKick*0.05:0);
   _dir.set(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch));
   _rt.set(-Math.cos(yaw),0,Math.sin(yaw));
   let fov=62;
@@ -3349,7 +3349,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=139;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=142;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3584,8 +3584,8 @@ window.SNIPER_RES.owlReady=()=>!!SND.ow;
 window.SNIPER_RES.logs=()=>LOGS;
 
 // ---- foraged food heals slowly, up to 200% of normal health. Raw meat gives nothing until cooking exists.
-const HEAL={pool:0,t:performance.now()},FOOD={berries:4,mushroom:8,meat:0},HP_MAX=200,HEAL_RATE=1.5;
-function eatFood(k,q){const v=(FOOD[k]||0)*q;if(v<=0)return '';HEAL.pool=Math.min(120,HEAL.pool+v);return ' · +'+v+' health over time';}
+const HEAL={pool:0,t:performance.now()},FOOD={berries:1,mushroom:2,meat:0},HP_MAX=200,HEAL_RATE=1.5;
+function eatFood(k,q){const v=(FOOD[k]||0);if(v<=0)return '';HEAL.pool=Math.min(120,HEAL.pool+v);return ' · +'+v+' health over time';}
 function healStep(){const now=performance.now(),dt=Math.min(0.25,(now-HEAL.t)/1000);HEAL.t=now;
   if(HEAL.pool>0&&player.alive&&MPM.hp>0){if(MPM.hp>=HP_MAX){HEAL.pool=0;return;}const h=Math.min(HEAL.pool,HEAL_RATE*dt,HP_MAX-MPM.hp);MPM.hp+=h;HEAL.pool-=h;}}
 
