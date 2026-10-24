@@ -2174,7 +2174,7 @@ const nadeG=(()=>merge([tint(new THREE.IcosahedronGeometry(0.045,0),'#4d5532'),x
 
 /* ---------------- tuning ---------------- */
 const DM={headMult:4,limbMult:0.6,rifleDmg:34,nadeKill:2.6};
-const MAG=5, BOLT=1.35;
+const MAG=12, BOLT=1.35;
 let hitT=0;function flashHit(){$('hit').style.opacity=1;hitT=0.14;}
 let toastT=0;function toast(s){if(MPM.mute)return;const e=$('toast');e.textContent=s;e.style.opacity=1;toastT=3;}
 const hud={anim:'Idle'};
@@ -3081,7 +3081,7 @@ function drawScope(){
   const rg=sctx.createRadialGradient(cx,cy,R*0.82,cx,cy,R);rg.addColorStop(0,'rgba(0,0,0,0)');rg.addColorStop(1,'rgba(0,0,0,0.85)');sctx.fillStyle=rg;sctx.beginPath();sctx.arc(cx,cy,R,0,PI*2);sctx.fill();
   const mil=(h/2)/Math.tan(camera.fov*PI/360)*0.001;     // pixels per milliradian
   const ret=DAY.dark>0.55?'rgba(255,70,48,0.92)':'rgba(10,10,8,0.95)';sctx.strokeStyle=ret;sctx.fillStyle=ret;
-  sctx.lineWidth=Math.max(4,R*0.012);
+  sctx.lineWidth=Math.max(2,R*0.005);
   [[1,0],[-1,0],[0,1]].forEach(([x,y])=>{sctx.beginPath();sctx.moveTo(cx+x*mil*5,cy+y*mil*5);sctx.lineTo(cx+x*R,cy+y*R);sctx.stroke();});
   sctx.lineWidth=1.2;sctx.beginPath();sctx.moveTo(cx-mil*5,cy);sctx.lineTo(cx+mil*5,cy);sctx.moveTo(cx,cy-mil*5);sctx.lineTo(cx,cy+mil*5);sctx.moveTo(cx,cy);sctx.lineTo(cx,cy-R);sctx.stroke();
   for(let i=-4;i<=4;i++){if(!i)continue;const r=Math.max(1.6,mil*0.11);sctx.beginPath();sctx.arc(cx+i*mil,cy,r,0,PI*2);sctx.fill();sctx.beginPath();sctx.arc(cx,cy+i*mil,r,0,PI*2);sctx.fill();
@@ -3355,7 +3355,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=92;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=96;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3440,7 +3440,7 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
     L.forEach((n,i)=>{n.mi=i;_re.set(0,n.ry,0);_rq.setFromEuler(_re);_rm.compose(_rp.set(n.x,n.y-0.02,n.z),_rq,_rs.set(n.s,n.s,n.s));m.setMatrixAt(i,_rm);n.mat=_rm.clone();});
     m.instanceMatrix.needsUpdate=true;scene.add(m);RES_MESH[R.k]=m;});
 })();
-function resSetGot(n,v){n.got=v;const m=RES_MESH[n.t];m.setMatrixAt(n.mi,v?_ZERO:n.mat);m.instanceMatrix.needsUpdate=true;}
+function resSetGot(n,v){n.got=v;if(n.gi!=null&&typeof LEADGLOW!=='undefined')leadGlowSet(n,v);const m=RES_MESH[n.t];m.setMatrixAt(n.mi,v?_ZERO:n.mat);m.instanceMatrix.needsUpdate=true;}
 function resReset(){for(const n of RES_NODES)if(n.got)resSetGot(n,false);for(const k in INV)INV[k]=0;invUI();}
 function resRemoteTake(i){const n=RES_NODES[i];if(n&&!n.got)resSetGot(n,true);}
 function resNearest(){const p=player.pos;let best=null,bd=2.7*2.7;const cx=Math.floor(p.x/8),cz=Math.floor(p.z/8);
@@ -3514,9 +3514,17 @@ function applyLook(i){lookI=((i%LOOKS.length)+LOOKS.length)%LOOKS.length;const s
   scene.traverse(o=>{const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];for(const m of ms){if(!m||!m.isMeshStandardMaterial||seen.has(m))continue;seen.add(m);
     m.defines=m.defines||{};if(lookI)m.defines.GSTYLE=lookI;else delete m.defines.GSTYLE;m.needsUpdate=true;}});
   try{localStorage.setItem('fsLook',String(lookI));}catch(e){}toast('Look: '+LOOKS[lookI]+(lookI?'':' (fastest)'));}
-function lookStep(){if(lookInit>=0&&++lookInit>240){lookInit=-1;let v=0;try{v=+localStorage.getItem('fsLook')||0;}catch(e){}if(v)applyLook(v);}}
+function lookStep(){leadGlowStep();if(lookInit>=0&&++lookInit>240){lookInit=-1;let v=0;try{v=+localStorage.getItem('fsLook')||0;}catch(e){}if(v)applyLook(v);}}
 addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyL')applyLook(lookI+1);});
 window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial){c++;if(m.defines&&m.defines.GSTYLE)d++;}});return {sh:THREE.ShaderLib.physical.fragmentShader.includes('GSTYLE'),std:c,withDef:d,keys:renderer.info.programs.map(p=>p.cacheKey.includes('GSTYLE')).join(','),lookI};};
+
+// ---- lead ore aura: one additive point sprite per ore node, pulsing softly on a 3 s cycle
+const LEADGLOW=(()=>{const L=RES_NODES.filter(n=>n.t==='lead');const pos=new Float32Array(L.length*3);L.forEach((n,i)=>{n.gi=i;pos[i*3]=n.x;pos[i*3+1]=n.y+0.3;pos[i*3+2]=n.z;});
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  const m=new THREE.PointsMaterial({map:glowTex,color:0x3f7dff,size:2.3,sizeAttenuation:true,transparent:true,opacity:0.5,depthWrite:false,blending:THREE.AdditiveBlending});
+  const pts=new THREE.Points(g,m);pts.frustumCulled=false;pts.renderOrder=6;scene.add(pts);return {pts,m,pos,g};})();
+function leadGlowSet(n,v){const a=LEADGLOW.pos;a[n.gi*3+1]=v?-1000:n.y+0.3;LEADGLOW.g.attributes.position.needsUpdate=true;}
+function leadGlowStep(){const t=performance.now()/1000;LEADGLOW.m.opacity=0.12+0.5*(0.5-0.5*Math.cos(t*Math.PI*2/3));}
 
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
@@ -3525,7 +3533,7 @@ window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if
    - Shots go out as events; the shooter's machine decides hits against the opponent's hit boxes and sends a hit
      (resent until acknowledged); the victim's machine applies the damage.
    - The match creator (host) runs rounds and the wildlife; deer and buzzards are broadcast 4 times a second. */
-const NET_V=1, MP_DMG={head:100,torso:70,limb:35}, SPARE=15, ROUNDS_WIN=3, SEND_HZ=15, WILD_HZ=4;
+const NET_V=1, MP_DMG={head:100,torso:70,limb:35}, SPARE=24, ROUNDS_WIN=3, SEND_HZ=15, WILD_HZ=4;
 const NT={seq:0,st:{intv:[],lastArr:0,rx:0,gap:0,tot:0,lastQ:-1,wild:0,rtt:null,path:'',ice:'',rates:{},prev:null,pt:0,txt:''},room:null,role:null,code:'',kind:'',opp:null,oppSeen:0,sendAcc:0,wildAcc:0,needT:0,hitN:0,pend:new Map(),seen:new Set(),
   M:{ph:'wait',r:0,sc:[0,0],left:0,lw:''},myR:0,rosterV:-1,rost:null,banTxt:'',ban:null,wasOpp:false,offs:[]};
 RPS.buf=[];RPS.off=null;RPS.lastT=0;RPS.hp=100;RPS.r=0;RPS.stepD=0;RPS.side=false;RPS.yaw=0;
