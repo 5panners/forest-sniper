@@ -2124,7 +2124,7 @@ const matChip=new THREE.MeshLambertMaterial({color:0xb08a5a});
 const matSplash=new THREE.MeshLambertMaterial({color:0xdcebef});
 const matSpark=new THREE.MeshBasicMaterial({color:0xffd27a,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false});
 const matFire=new THREE.MeshBasicMaterial({color:0xffa340,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false,opacity:0.9});
-const matTracer=new THREE.MeshBasicMaterial({color:0xfff0c8,transparent:true,opacity:0.28,depthWrite:false});
+const matTracer=new THREE.MeshBasicMaterial({color:0xfff0c8,transparent:true,opacity:0.28,depthWrite:false,visible:false});
 const gPuff=new THREE.DodecahedronGeometry(0.5,0), gSpark=new THREE.BoxGeometry(0.04,0.04,0.12), gFire=new THREE.IcosahedronGeometry(1,1), gTracer=new THREE.BoxGeometry(1,1,1).translate(0,0,0.5);
 const parts=[]; const pool={};
 function getP(geo,material){const k=geo.uuid+material.uuid;const arr=pool[k]||(pool[k]=[]);let m=arr.pop();if(!m){m=new THREE.Mesh(geo,material);m.userData.k=k;}m.visible=true;scene.add(m);return m;}
@@ -2993,7 +2993,7 @@ function stepBullets1(dt){
     const h=castRay(b.p,_bd,len,b.rem);
     if(b.hostile&&player.alive){const ph=rayPlayerZones(b.p,_bd,h?Math.min(len,h.dist):len);if(ph){damagePlayer(ph.zone,b.dmg);impact(ph.point,_bd.clone().negate(),'dirt');if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}}
     if(h||b.t>4||b.p.y<-200){
-      if(h){impact(h.point,h.normal,h.kind);impactSnd(h.point,h.kind);if(h.kind!=='water'&&h.kind!=='flesh')addMark(h.point,h.normal,h.kind,h.point.distanceTo(b.o),null);const dist=h.point.distanceTo(b.o);stats.last=[h.point.x,h.point.y,h.point.z,h.kind,dist];
+      if(h){b.end=h.point.clone();impact(h.point,h.normal,h.kind);impactSnd(h.point,h.kind);if(h.kind!=='water'&&h.kind!=='flesh')addMark(h.point,h.normal,h.kind,h.point.distanceTo(b.o),null);const dist=h.point.distanceTo(b.o);stats.last=[h.point.x,h.point.y,h.point.z,h.kind,dist];
         if(!b.rem){if(h.remote)netHitRemote(h,dist);
         if(h.bird){if(MPM.guest)netBirdHit(h.bird,dist);else hitBird(h.bird,dist);}
         if(h.deer){if(MPM.guest)netDeerHit(h.deer,h.sub,h.leg,dist);else{hitDeer(h.deer,h.sub,dist);if(h.sub==='leg')legHit(h.deer,h.leg);}}}}
@@ -3355,7 +3355,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=86;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=88;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);updatePlayer(dt,clockT);
@@ -3473,14 +3473,19 @@ function resStep(dt){
   if(s!==_prS){_prS=s;resPrompt.innerHTML=s;resPrompt.hidden=!s;}}
 window.SNIPER_RES={INV,RES_NODES};
 
-// ---- bullet streaks: a thin bright line along the whole flight path that fades out quickly after the bullet lands
-const STREAKS=[],stGeo=new THREE.BoxGeometry(1,1,1).translate(0,0,0.5),ST_LIFE=0.55;
-function mkStreak(b){const m=new THREE.Mesh(stGeo,new THREE.MeshBasicMaterial({color:0xfff1c9,transparent:true,opacity:0.7,depthWrite:false,fog:false}));m.frustumCulled=false;m.visible=false;scene.add(m);STREAKS.push({b,m,t:0});}
-function streakStep(dt){for(let i=STREAKS.length-1;i>=0;i--){const s=STREAKS[i],b=s.b,m=s.m;const alive=bullets.indexOf(b)>=0;if(!alive)s.t+=dt;
-  if(s.t>=ST_LIFE){scene.remove(m);m.material.dispose();STREAKS.splice(i,1);continue;}
-  const L=b.p.distanceTo(b.o);if(L<0.3)continue;m.visible=true;m.position.copy(b.o);m.lookAt(b.p);
-  const dc=Math.min(camera.position.distanceTo(b.p),500),w=0.02+dc*0.0016;m.scale.set(w,w,L);
-  m.material.opacity=alive?0.7:0.7*(1-s.t/ST_LIFE)*(1-s.t/ST_LIFE);}}
+// ---- tracer: a pencil-thin glowing line that follows the bullet's real (dropping) path, plus a hot head; fades fast after impact
+const STREAKS=[],ST_LIFE=0.6,ST_MAX=420;
+function mkStreak(b){const g=new THREE.BufferGeometry(),pos=new Float32Array(ST_MAX*3);g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setDrawRange(0,0);
+  const ln=new THREE.Line(g,new THREE.LineBasicMaterial({color:0xff3d14,transparent:true,opacity:0.95,depthWrite:false,fog:false}));ln.frustumCulled=false;ln.renderOrder=7;scene.add(ln);
+  const hd=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffa070,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));hd.renderOrder=8;scene.add(hd);
+  const s={b,ln,hd,pos,n:0,t:0,fin:false};pos[0]=b.o.x;pos[1]=b.o.y;pos[2]=b.o.z;s.n=1;STREAKS.push(s);}
+function streakStep(dt){for(let i=STREAKS.length-1;i>=0;i--){const s=STREAKS[i],b=s.b,alive=bullets.indexOf(b)>=0;
+  if(alive){if(s.n<ST_MAX){const k=s.n*3;s.pos[k]=b.p.x;s.pos[k+1]=b.p.y;s.pos[k+2]=b.p.z;s.n++;}}
+  else{if(!s.fin){s.fin=true;const e=b.end||b.p;if(s.n<ST_MAX){const k=s.n*3;s.pos[k]=e.x;s.pos[k+1]=e.y;s.pos[k+2]=e.z;s.n++;}}s.t+=dt;}
+  if(s.t>=ST_LIFE){scene.remove(s.ln);scene.remove(s.hd);s.ln.geometry.dispose();s.ln.material.dispose();s.hd.material.dispose();STREAKS.splice(i,1);continue;}
+  s.ln.geometry.attributes.position.needsUpdate=true;s.ln.geometry.setDrawRange(0,s.n);
+  const f=alive?1:(1-s.t/ST_LIFE);s.ln.material.opacity=0.95*f*f;
+  const dc=Math.min(camera.position.distanceTo(b.p),600);s.hd.visible=alive;s.hd.position.copy(b.p);s.hd.scale.setScalar(0.25+dc*0.006);}}
 
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
