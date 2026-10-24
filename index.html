@@ -59,7 +59,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 .opt b{display:block;font-weight:600}
 .opt small{display:block;color:var(--muted);font-size:13px}
 .opt select{background:#252c1d;color:inherit;border:1px solid #435034;border-radius:4px;padding:3px 6px;font:13px var(--f-mono)}
-#compass{position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:min(620px,calc(100vw - 340px));height:38px;z-index:3;pointer-events:none}
+#compass{display:none;position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:min(620px,calc(100vw - 340px));height:38px;z-index:3;pointer-events:none}
 #miniW{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:3;pointer-events:none;text-align:center;font:11px var(--f-mono);color:var(--muted)}
 #miniCv{display:block;width:min(200px,30vmin);height:min(200px,30vmin);border-radius:50%;border:2px solid var(--line);background:#0c120a}
 .rng{display:grid;grid-template-columns:110px 1fr 92px;gap:12px;align-items:center;margin:6px 0}
@@ -2284,7 +2284,7 @@ function updatePlayer(dt,time){
   const canAim=pl.alive&&!act&&pl.reloadT<0&&pl.stance!=='prone';
   const aimT=canAim&&(aimHeld||recentFire||firing)?1:(canAim&&!viewFP&&!(sprint&&mi.f>0)?0.7:0);   // third person: the rifle is carried up and ready, so you can see it beside the character
   pl.aimW=damp(pl.aimW,aimT,14,dt);
-  const isSprint=sprint&&mi.f>0&&pl.stance==='stand'&&!aimHeld&&!firing&&!recentFire&&pl.reloadT<0;
+  const isSprint=sprint&&mi.f>0&&pl.stance==='stand'&&!aimHeld&&!firing&&!recentFire&&pl.reloadT<0&&stamOK();stamStep(isSprint,dt);
   // speed
   let spd=0;
   if(!(A_&&A_.lock)&&pl.alive){
@@ -3356,7 +3356,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=97;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=101;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3374,10 +3374,10 @@ function update(dt){
   scv.hidden=!scoped;$('cross').style.display=scoped?'none':'block';if(scoped)drawScope();
   const brg=Math.round(((Math.atan2(Math.sin(camYaw),-Math.cos(camYaw))*180/PI)+360)%360);
   brgEl.textContent=hhmm(DAY.tod);
-  hudL.innerHTML=(MPM.on?'<span><b>'+Math.max(0,Math.round(MPM.hp))+' hp</b></span>':'')+'<span>'+player.ammo+(MPM.on?' loaded · '+(player.reserve|0)+' spare':' / '+MAG+' rounds')+(boltT>=0?' · chambering':'')+'</span><span>grid '+Math.round(player.pos.x)+' E  '+Math.round(-player.pos.z)+' N  ·  '+Math.round(player.pos.y)+' m</span>';
+  hudL.innerHTML='<span>'+player.ammo+(MPM.on?' loaded · '+(player.reserve|0)+' spare':' / '+MAG+' rounds')+(boltT>=0?' · chambering':'')+'</span><span>grid '+Math.round(player.pos.x)+' E  '+Math.round(-player.pos.z)+' N  ·  '+Math.round(player.pos.y)+' m</span>';
   const edge=PLAY-Math.max(Math.abs(player.pos.x),Math.abs(player.pos.z));warnEl.textContent=edge<20&&!scoped?'Edge of the operating area':'';
   if(mapOpen)drawMap();
-  drawCompass();drawMini();
+  drawMini();
 }
 let paused=false;
 let lastF=performance.now();
@@ -3442,7 +3442,7 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
     m.instanceMatrix.needsUpdate=true;scene.add(m);RES_MESH[R.k]=m;});
 })();
 function resSetGot(n,v){n.got=v;if(n.gi!=null&&typeof LEADGLOW!=='undefined')leadGlowSet(n,v);const m=RES_MESH[n.t];m.setMatrixAt(n.mi,v?_ZERO:n.mat);m.instanceMatrix.needsUpdate=true;}
-function resReset(){for(const n of RES_NODES)if(n.got)resSetGot(n,false);for(const k in INV)INV[k]=0;invUI();}
+function resReset(){STAM.v=1;STAM.lock=false;for(const n of RES_NODES)if(n.got)resSetGot(n,false);for(const k in INV)INV[k]=0;invUI();}
 function resRemoteTake(i){const n=RES_NODES[i];if(n&&!n.got)resSetGot(n,true);}
 function resNearest(){const p=player.pos;let best=null,bd=2.7*2.7;const cx=Math.floor(p.x/8),cz=Math.floor(p.z/8);
   for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const L=RES_CELLS.get((cx+a)+','+(cz+b));if(!L)continue;
@@ -3515,16 +3515,44 @@ function applyLook(i){lookI=Math.max(0,Math.min(3,i|0));const seen=new Set();
     m.defines=m.defines||{};if(lookI)m.defines.GSTYLE=lookI;else delete m.defines.GSTYLE;m.needsUpdate=true;}});
   try{localStorage.setItem('fsMist',String(lookI));}catch(e){}}
 (function(){const el=document.getElementById('optMist');if(!el)return;let v=0;try{v=+localStorage.getItem('fsMist')||0;}catch(e){}el.value=String(v);el.onchange=()=>applyLook(+el.value);})();
-function lookStep(){leadGlowStep();if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
+function lookStep(){leadGlowStep();vitalsStep();if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
 window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial){c++;if(m.defines&&m.defines.GSTYLE)d++;}});return {sh:true,std:c,withDef:d,keys:renderer.info.programs.map(p=>p.cacheKey.includes('GSTYLE')).join(','),lookI};};
 
-// ---- lead ore aura: one additive point sprite per ore node, pulsing softly on a 3 s cycle
-const LEADGLOW=(()=>{const L=RES_NODES.filter(n=>n.t==='lead');const pos=new Float32Array(L.length*3);L.forEach((n,i)=>{n.gi=i;pos[i*3]=n.x;pos[i*3+1]=n.y+0.3;pos[i*3+2]=n.z;});
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  const m=new THREE.PointsMaterial({map:glowTex,color:0x3f7dff,size:2.3,sizeAttenuation:true,transparent:true,opacity:0.5,depthWrite:false,blending:THREE.AdditiveBlending});
-  const pts=new THREE.Points(g,m);pts.frustumCulled=false;pts.renderOrder=6;scene.add(pts);return {pts,m,pos,g};})();
-function leadGlowSet(n,v){const a=LEADGLOW.pos;a[n.gi*3+1]=v?-1000:n.y+0.3;LEADGLOW.g.attributes.position.needsUpdate=true;}
-function leadGlowStep(){const t=performance.now()/1000;LEADGLOW.m.opacity=0.12+0.5*(0.5-0.5*Math.cos(t*Math.PI*2/3));}
+// ---- lead ore edge glow: a slightly enlarged back-face shell around each ore chunk, additive blue, pulsing on a 3 s cycle
+const LEADGLOW=(()=>{const L=RES_NODES.filter(n=>n.t==='lead');
+  const m=new THREE.MeshBasicMaterial({color:0x4d8dff,side:THREE.BackSide,transparent:true,opacity:0.5,depthWrite:false,blending:THREE.AdditiveBlending,fog:false});
+  const im=new THREE.InstancedMesh(RES_GEO.lead,m,Math.max(1,L.length)),sc=new THREE.Matrix4().makeScale(1.13,1.13,1.13);
+  L.forEach((n,i)=>{n.gi=i;n.gmat=n.mat.clone().multiply(sc);im.setMatrixAt(i,n.gmat);});
+  im.instanceMatrix.needsUpdate=true;im.frustumCulled=false;im.renderOrder=6;scene.add(im);return {im,m};})();
+function leadGlowSet(n,v){LEADGLOW.im.setMatrixAt(n.gi,v?_ZERO:n.gmat);LEADGLOW.im.instanceMatrix.needsUpdate=true;}
+function leadGlowStep(){const t=performance.now()/1000;LEADGLOW.m.opacity=0.1+0.75*(0.5-0.5*Math.cos(t*Math.PI*2/3));}
+
+// ---- stamina + vitals panel (health and stamina bars, bottom left)
+const STAM={v:1,lock:false};
+function stamOK(){return !STAM.lock&&STAM.v>0;}
+function stamStep(sp,dt){if(sp){STAM.v-=dt/12;if(STAM.v<=0){STAM.v=0;STAM.lock=true;}}else STAM.v=Math.min(1,STAM.v+dt/7);if(STAM.lock&&STAM.v>0.28)STAM.lock=false;}
+const VIT=(()=>{const st=document.createElement('style');st.textContent=`
+#vitals{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:3;pointer-events:none;width:210px;padding:9px 12px 10px;border-radius:10px;background:linear-gradient(180deg,rgba(14,18,16,.62),rgba(10,13,12,.5));border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(5px);box-shadow:0 4px 14px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:7px;font:600 11px/1 "IBM Plex Mono",ui-monospace,monospace;color:#e8e4d4}
+#vitals .vr{display:flex;align-items:center;gap:8px}
+#vitals svg{width:15px;height:15px;flex:none;fill:currentColor}
+#vitals .tr{position:relative;flex:1;height:9px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.45)}
+#vitals .fl{position:absolute;left:0;top:0;bottom:0;width:100%;border-radius:5px;transition:width .12s linear;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 55%),var(--c)}
+#vitals .lag{position:absolute;left:0;top:0;bottom:0;width:100%;background:rgba(255,255,255,.35);transition:width .7s ease .25s}
+#vitals .n{width:26px;text-align:right;font-variant-numeric:tabular-nums;opacity:.9}
+#vitals.low #vh .fl{animation:vpulse .8s ease-in-out infinite}
+#vitals.out #vs{color:#e9a23b}
+@keyframes vpulse{50%{filter:brightness(1.6)}}`;document.head.appendChild(st);
+  const d=document.createElement('div');d.id='vitals';d.innerHTML=`
+<div class="vr" id="vh" style="color:#f08070"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.8 4.5 6.4 4.5c2.1 0 3.9 1.1 5.6 3.2 1.7-2.100 3.500-3.200 5.600-3.200 3.600 0 5.500 3.900 4 7.300C19.500 16.400 12 21 12 21z"/></svg><div class="tr"><div class="lag"></div><div class="fl"></div></div><span class="n"></span></div>
+<div class="vr" id="vs" style="color:#6fd3c6"><svg viewBox="0 0 24 24"><path d="M13.500 2 4 13.500h6.500L9 22l10-12.500h-6.700z"/></svg><div class="tr"><div class="lag"></div><div class="fl"></div></div><span class="n"></span></div>`;
+  document.body.appendChild(d);
+  const q=(id)=>{const r=d.querySelector('#'+id);return {r,fl:r.querySelector('.fl'),lag:r.querySelector('.lag'),n:r.querySelector('.n')};};
+  return {d,h:q('vh'),s:q('vs'),lh:-1,ls:-1,lk:null};})();
+function vitalsStep(){const hp=Math.max(0,Math.min(100,MPM.on?MPM.hp:100)),sp=STAM.v;
+  const hv=Math.round(hp),sv=Math.round(sp*100);
+  if(hv!==VIT.lh){VIT.lh=hv;const c='hsl('+Math.round(hp*1.15)+',70%,52%)';VIT.h.fl.style.setProperty('--c',c);VIT.h.fl.style.width=hv+'%';VIT.h.lag.style.width=hv+'%';VIT.h.n.textContent=hv;VIT.d.classList.toggle('low',hp<30);}
+  if(sv!==VIT.ls||VIT.lk!==STAM.lock){VIT.ls=sv;VIT.lk=STAM.lock;VIT.s.fl.style.setProperty('--c',STAM.lock?'#e9a23b':'#47c9bb');VIT.s.fl.style.width=sv+'%';VIT.s.lag.style.width=sv+'%';VIT.s.n.textContent=sv;VIT.d.classList.toggle('out',STAM.lock);}
+  VIT.d.style.display=(playing&&player.alive)?'flex':'none';}
 
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
