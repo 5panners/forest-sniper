@@ -21,7 +21,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-ui);o
 #scopeCv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
 .chip{background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:6px 10px;backdrop-filter:blur(4px)}
 #hudL{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono);display:flex;flex-direction:column;gap:2px}
-#inv{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono)}#inv b,#resPrompt b{color:var(--amber);font-weight:600}#resPrompt{position:fixed;left:50%;top:60%;transform:translateX(-50%);z-index:3;pointer-events:none;font:14px/1.5 var(--f-mono)}
+#scFlame{position:fixed;left:50%;top:50%;width:min(34vmin,340px);height:min(34vmin,340px);margin:2vmin 0 0 -4vmin;z-index:2;pointer-events:none;display:none;transform:rotate(var(--r,0deg)) scale(var(--s,1));background:#ff5a12;clip-path:polygon(50% 0,60% 30%,92% 8%,72% 40%,100% 52%,70% 62%,88% 96%,56% 72%,50% 100%,40% 72%,12% 94%,30% 62%,0 50%,28% 40%,8% 6%,40% 30%)}#scFlame.on{display:block}#scFlame i{position:absolute;inset:24%;background:#ffd23a;clip-path:polygon(50% 0,62% 34%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 34%)}#inv{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono)}#inv b,#resPrompt b{color:var(--amber);font-weight:600}#resPrompt{position:fixed;left:50%;top:60%;transform:translateX(-50%);z-index:3;pointer-events:none;font:14px/1.5 var(--f-mono)}
 #hudL b{color:var(--amber);font-weight:600}
 #hudR{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono);text-align:right}
 #warn{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:4;font:600 18px var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--warn);text-shadow:0 1px 3px #000;pointer-events:none}
@@ -88,7 +88,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 
 <div id="game"></div>
 <canvas id="scopeCv" hidden></canvas>
-<div id="cross"></div><div id="hit"></div><div id="toast" class="chip"></div><div id="warn"></div><div id="mpBan" class="chip" hidden></div><div id="netDbg" class="chip" hidden></div><div id="pingEl" class="chip" hidden></div>
+<div id="cross"></div><div id="scFlame"><i></i></div><div id="hit"></div><div id="toast" class="chip"></div><div id="warn"></div><div id="mpBan" class="chip" hidden></div><div id="netDbg" class="chip" hidden></div><div id="pingEl" class="chip" hidden></div>
 <div id="hudL" class="chip"></div>
 <canvas id="compass" width="1240" height="76"></canvas>
 <div id="hudR" class="chip"><span id="hudT"></span><small id="bld"></small></div>
@@ -1330,9 +1330,13 @@ const mag=new THREE.Group(); mag.position.set(0,-0.03,0.11); gun.add(mag);
 const flashGrp=new THREE.Group(); flashGrp.position.set(0,0.035,0.7); gun.add(flashGrp);
 const flashMat=new THREE.MeshBasicMaterial({color:0xffc861,transparent:true,opacity:0.95,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending});
 const starGeo=(()=>{const s=new THREE.Shape();const n=6;for(let i=0;i<n*2;i++){const a=i/(n*2)*PI*2;const r=i%2?0.04:0.13;i?s.lineTo(Math.cos(a)*r,Math.sin(a)*r):s.moveTo(Math.cos(a)*r,Math.sin(a)*r);}return new THREE.ShapeGeometry(s);})();
-const fs=new THREE.Mesh(starGeo,flashMat); flashGrp.add(fs);
-const coneGeo=new THREE.ConeGeometry(0.06,0.3,5,1,true); coneGeo.rotateX(HP); coneGeo.translate(0,0,0.12);
-flashGrp.add(new THREE.Mesh(coneGeo,flashMat));
+// low-poly cartoon flame burst: flat-coloured faceted spikes, orange outside, yellow inside, white core
+const fs=new THREE.Group(); flashGrp.add(fs);
+{const cone=(col,r,l0,tilt,az)=>{const l=l0*1.35;const g=new THREE.ConeGeometry(r,l,5,1);g.rotateX(HP);g.translate(0,0,l/2);if(tilt){g.rotateX(-tilt);g.rotateZ(az);}const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:col,flatShading:true,fog:false}));fs.add(m);return m;};
+ cone(0xff5a12,0.085,0.46,0,0);cone(0xffa91f,0.06,0.36,0,0.4);cone(0xfff1a8,0.032,0.24,0,0);
+ for(let i=0;i<5;i++){cone(i%2?0xff7a18:0xffb02a,0.035,0.26+0.05*(i%3),0.62,i/5*PI*2+0.3);}
+ const st=new THREE.Mesh(starGeo,new THREE.MeshBasicMaterial({color:0xffc03a,flatShading:true,side:THREE.DoubleSide,fog:false}));st.scale.setScalar(1.15);fs.add(st);}
+let flashAtScope=false;
 const flashLight=new THREE.PointLight(0xffb347,0,30,2); flashGrp.add(flashLight);
 // soft glow around the muzzle flash (also reused for far-off flashes seen from the other player)
 const glowTex=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,240,200,1)');g.addColorStop(0.25,'rgba(255,190,100,0.65)');g.addColorStop(1,'rgba(255,140,40,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
@@ -1619,8 +1623,14 @@ function applyPose(p){
   // magazine in hand during reload
   if(p.mag>0.5){J.lHand.getWorldPosition(tv[0]);tv[0].y-=0.02;gun.worldToLocal(tv[0]);mag.position.copy(tv[0]).add(V(0,0.04,0));}
   handNade.visible=p.nade>0.5;
+  let scF=false;try{scF=scoped;}catch(e){}
   flashGrp.visible=p.flash>0.5; flashLight.intensity=p.flash>0.5?6:0;
   if(flashGrp.visible){fs.rotation.z=Math.random()*PI;flashGrp.scale.setScalar(1.6+Math.random()*0.7);}
+  // scoped: the rifle is hidden, so the flame is drawn as a screen burst and the light hangs just ahead of the camera
+  const scEl=scFlameEl||(scFlameEl=document.getElementById('scFlame'));
+  if(scEl){const on=scF&&p.flash>0.5;if(on&&!scEl.classList.contains('on'))scEl.style.setProperty('--r',(Math.random()*30-15)+'deg'),scEl.style.setProperty('--s',(0.85+Math.random()*0.4).toFixed(2));scEl.classList.toggle('on',on);}
+  if(scF&&p.flash>0.5){if(flashLight.parent!==scene)scene.add(flashLight);camera.getWorldDirection(tv[0]);flashLight.position.copy(camera.position).addScaledVector(tv[0],2.2);}
+  else if(flashLight.parent!==flashGrp){flashGrp.add(flashLight);flashLight.position.set(0,0,0);}
 }
 
 
@@ -1916,7 +1926,7 @@ const SPR=['#ffffff','#e6ece2','#d6e2d4','#f2f2e6'].map(C_);
 const SNAGC=['#ffffff','#e2ded6','#cfcbc3'].map(C_);
 const SHRUBC=['#4f7a35','#5d8a3a','#6b8f3a','#4a6d33','#7a8a3c','#8a6a3a'].map(C_);
 const FERNC=['#5f8f3a','#6f9a40','#7c9f45','#8a7a3a'].map(C_);
-let nTrees=0,nPlants=0;const TREE_CUT=0.25;
+let nTrees=0,nPlants=0;const TREE_CUT=0.25;var scFlameEl=null;
 function placeTree(x,z,inner){
   const skipT=hsh(Math.floor(x*9)+17,Math.floor(z*9)+5)<TREE_CUT;   // 25% of the trees are left out (same on both machines: it depends only on position)
   const h=groundH(x,z);const slp=slopeAt(x,z);if(slp>(inner?0.95:1.5))return;
@@ -3345,7 +3355,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=80;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=82;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);updatePlayer(dt,clockT);
@@ -3379,24 +3389,24 @@ const genMs=Math.round(performance.now()-T0);
 $('deployBtn').disabled=false;$('deployBtn').textContent='Deploy';
 $('stats').textContent=nTrees.toLocaleString()+' trees · '+nPlants.toLocaleString()+' shrubs and ferns · '+ROCKS.length+' rocks · generated in '+(genMs/1000).toFixed(1)+' s';
 
-/* ================= resources: berries, mushrooms, wood, flint and scrap =================
+/* ================= resources: berries, mushrooms, wood, lead ore and scrap =================
    Nodes are placed from a position hash only (no random numbers), so both players get exactly the same ones.
    Only "taken" events cross the network. Five instanced meshes, no shadows: a few hundred triangles each. */
 const RES_T=[
   {k:'berries', label:'berries',   cell:11, p:0.050, amt:[2,4]},
   {k:'mushroom',label:'mushrooms', cell:11, p:0.036, amt:[1,3]},
   {k:'wood',    label:'wood',      cell:11, p:0.060, amt:[2,4]},
-  {k:'flint',   label:'flint',     cell:13, p:0.040, amt:[1,2]},
+  {k:'lead',    label:'lead ore',     cell:13, p:0.040, amt:[1,2]},
   {k:'scrap',   label:'scrap',     cell:17, p:0.004, amt:[1,2]}];
-const INV={berries:0,mushroom:0,wood:0,flint:0,scrap:0,meat:0,hide:0,feather:0};
-const INV_LABEL={berries:'berries',mushroom:'mushrooms',wood:'wood',flint:'flint',scrap:'scrap',meat:'meat',hide:'hide',feather:'feathers'};
+const INV={berries:0,mushroom:0,wood:0,lead:0,scrap:0,meat:0,hide:0,feather:0};
+const INV_LABEL={berries:'berries',mushroom:'mushrooms',wood:'wood',lead:'lead ore',scrap:'scrap',meat:'meat',hide:'hide',feather:'feathers'};
 const RES_GEO={
   berries:build([[new THREE.IcosahedronGeometry(0.26,0),'#4c8a3c',[0,0.22,0],[0,0.5,0],[1.2,0.8,1.2]],[new THREE.IcosahedronGeometry(0.19,0),'#58a044',[0.22,0.17,0.08]],
     [new THREE.IcosahedronGeometry(0.07,0),'#e03040',[0.1,0.42,0.12]],[new THREE.IcosahedronGeometry(0.07,0),'#e03040',[-0.14,0.36,-0.1]],[new THREE.IcosahedronGeometry(0.07,0),'#cc2c52',[0.3,0.3,0.2]],[new THREE.IcosahedronGeometry(0.07,0),'#e03040',[-0.02,0.3,0.24]]]),
   mushroom:build([[CY(0.035,0.045,0.14,5),'#e6dcc2',[0,0.07,0]],[new THREE.ConeGeometry(0.11,0.08,6),'#d07a44',[0,0.17,0]],
     [CY(0.025,0.032,0.1,5),'#e6dcc2',[0.17,0.05,0.07]],[new THREE.ConeGeometry(0.08,0.06,6),'#dc8850',[0.17,0.12,0.07]],[CY(0.02,0.028,0.08,5),'#e6dcc2',[-0.12,0.04,-0.1]],[new THREE.ConeGeometry(0.065,0.05,6),'#d07a44',[-0.12,0.1,-0.1]]]),
   wood:build([[B(0.05,0.05,0.8),'#9a6a3c',[0,0.05,0],[0.05,0.3,0]],[B(0.045,0.045,0.7),'#a97a46',[0.07,0.1,0.05],[0.1,-0.4,0.05]],[B(0.05,0.05,0.65),'#865a30',[-0.06,0.1,-0.04],[0.0,0.9,-0.05]],[B(0.04,0.04,0.5),'#a97a46',[0.0,0.15,0.0],[0.1,0.1,0.1]]]),
-  flint:build([[new THREE.IcosahedronGeometry(0.15,0),'#b4bac2',[0,0.09,0],[0.3,0.4,0],[1.2,0.7,1]],[new THREE.IcosahedronGeometry(0.1,0),'#969ca4',[0.17,0.06,0.05]],[new THREE.IcosahedronGeometry(0.07,0),'#d0d4da',[-0.13,0.05,0.09]]]),
+  lead:build([[new THREE.IcosahedronGeometry(0.15,0),'#8593ab',[0,0.09,0],[0.3,0.4,0],[1.2,0.7,1]],[new THREE.IcosahedronGeometry(0.1,0),'#627088',[0.17,0.06,0.05]],[new THREE.IcosahedronGeometry(0.07,0),'#b4c0d6',[-0.13,0.05,0.09]]]),
   scrap:build([[B(0.44,0.035,0.3),'#a8643a',[0,0.03,0],[0.0,0.4,0.08]],[B(0.28,0.03,0.22),'#9aa2aa',[0.12,0.07,0.1],[0.05,-0.3,0.0]],[CY(0.035,0.035,0.42,6),'#7a8088',[-0.12,0.08,-0.12],[0,0,PI/2]],[B(0.12,0.1,0.12),'#b87a3c',[-0.16,0.06,0.15]]])};
 const RES_MAT=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:0.9,metalness:0});
 const RES_MESH={},RES_NODES=[],RES_CELLS=new Map(),_rm=new THREE.Matrix4(),_rq=new THREE.Quaternion(),_re=new THREE.Euler(),_rp=new THREE.Vector3(),_rs=new THREE.Vector3(),_ZERO=new THREE.Matrix4().makeScale(0,0,0),_RC=new THREE.Color();
@@ -3422,7 +3432,7 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
   // a few at each starting point so the first minute has something to do, and scrap around the hut
   const near=(c,list)=>list.forEach(([t,a,d],i)=>{for(let k=0;k<12;k++){const ang=a+k*0.7+hsh(i,k+Math.round(c.x))*0.6,r=d+k*2.2,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
       if(resOK(x,z,t)){resAdd(t,x,z,i*53+k*7+Math.round(c.x+c.z));break;}}});
-  const starts=[['wood',0.3,14],['wood',2.4,20],['flint',1.2,18],['berries',3.6,22],['berries',5.0,26],['mushroom',4.4,16]];
+  const starts=[['wood',0.3,14],['wood',2.4,20],['lead',1.2,18],['berries',3.6,22],['berries',5.0,26],['mushroom',4.4,16]];
   near({x:P1_SPAWN.x,z:P1_SPAWN.z},starts);near({x:P2_SPAWN.x,z:P2_SPAWN.z},starts);
   near({x:HUT.x,z:HUT.z},[['scrap',0.4,9],['scrap',2.2,11],['scrap',3.9,8],['scrap',5.4,12]]);
   RES_T.forEach(R=>{const L=RES_NODES.filter(n=>n.t===R.k);R.idx=L.map(n=>RES_NODES.indexOf(n));
