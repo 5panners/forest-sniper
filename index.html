@@ -1332,10 +1332,10 @@ const flashMat=new THREE.MeshBasicMaterial({color:0xffc861,transparent:true,opac
 const starGeo=(()=>{const s=new THREE.Shape();const n=6;for(let i=0;i<n*2;i++){const a=i/(n*2)*PI*2;const r=i%2?0.04:0.13;i?s.lineTo(Math.cos(a)*r,Math.sin(a)*r):s.moveTo(Math.cos(a)*r,Math.sin(a)*r);}return new THREE.ShapeGeometry(s);})();
 // low-poly cartoon flame burst: flat-coloured faceted spikes, orange outside, yellow inside, white core
 const fs=new THREE.Group(); flashGrp.add(fs);
-{const cone=(col,r,l0,tilt,az)=>{const l=l0*1.35;const g=new THREE.ConeGeometry(r,l,5,1);g.rotateX(HP);g.translate(0,0,l/2);if(tilt){g.rotateX(-tilt);g.rotateZ(az);}const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:col,flatShading:true,fog:false}));fs.add(m);return m;};
+{const cone=(col,r,l0,tilt,az)=>{const l=l0*1.35;const g=new THREE.ConeGeometry(r,l,5,1);g.rotateX(HP);g.translate(0,0,l/2);if(tilt){g.rotateX(-tilt);g.rotateZ(az);}const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:col,fog:false}));fs.add(m);return m;};
  cone(0xff5a12,0.085,0.46,0,0);cone(0xffa91f,0.06,0.36,0,0.4);cone(0xfff1a8,0.032,0.24,0,0);
  for(let i=0;i<5;i++){cone(i%2?0xff7a18:0xffb02a,0.035,0.26+0.05*(i%3),0.62,i/5*PI*2+0.3);}
- const st=new THREE.Mesh(starGeo,new THREE.MeshBasicMaterial({color:0xffc03a,flatShading:true,side:THREE.DoubleSide,fog:false}));st.scale.setScalar(1.15);fs.add(st);}
+ const st=new THREE.Mesh(starGeo,new THREE.MeshBasicMaterial({color:0xffc03a,side:THREE.DoubleSide,fog:false}));st.scale.setScalar(1.15);fs.add(st);}
 let flashAtScope=false;
 const flashLight=new THREE.PointLight(0xffb347,0,30,2); flashGrp.add(flashLight);
 // soft glow around the muzzle flash (also reused for far-off flashes seen from the other player)
@@ -3175,7 +3175,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;});
 
-const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (bolt action)','LMB'],['Scope zoom 2/3/4×','Wheel / 1-3'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Grenade','G'],['Shadows','O'],['Mute','M']];
+const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (bolt action)','LMB'],['Scope zoom 2/3/4×','Wheel / 1-3'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Look / shader style','L'],['Grenade','G'],['Shadows','O'],['Mute','M']];
 $('keyList').innerHTML=KEYS.map(k=>`<div><kbd>${k[1]}</kbd><span>${k[0]}</span></div>`).join('');
 
 /* ---------------- menu tabs + graphics options ---------------- */
@@ -3355,10 +3355,10 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=89;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=92;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
-  netStep(dt);resStep(dt);streakStep(dt);updatePlayer(dt,clockT);
+  netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
   stepBolt(dt);stepBullets(dt);stepNades(dt);stepParts(dt);stepBrass(dt);
   stepDeer(dt);stepHerds(dt);stepBirds(dt,clockT);stepMarks(dt);if(fallFX)fallFX.step(dt);_rdt=dt;
   updateCamera(dt);updateLOD();updListener();
@@ -3490,6 +3490,33 @@ function streakStep(dt){for(let i=STREAKS.length-1;i>=0;i--){const s=STREAKS[i],
   s.ln.geometry.attributes.position.needsUpdate=true;s.ln.geometry.setDrawRange(0,s.n);
   const f=alive?1:(1-s.t/ST_LIFE);s.ln.material.opacity=0.95*f*f;
   const dc=Math.min(camera.position.distanceTo(b.p),600);s.hd.visible=alive;s.hd.position.copy(b.p);s.hd.scale.setScalar(0.25+dc*0.006);}}
+
+// ---- look / shader styles (press L to cycle). Zero cost when off: the extra code is compiled in only when a style is chosen
+const LOOKS=['Original','Toon','Gouache','Misty valley','Storybook'];let lookI=0,lookInit=0;
+(()=>{const f=THREE.ShaderLib.physical.fragmentShader,key='gl_FragColor = vec4( outgoingLight, diffuseColor.a );';if(f.indexOf(key)<0)return;
+const code=`
+#if defined(GSTYLE) && GSTYLE>0
+ { vec3 Lc=outgoingLight; float lum=dot(Lc,vec3(0.299,0.587,0.114)); float dd=length(vViewPosition);
+ #if GSTYLE==1
+  float bnd=floor(lum*4.0+0.5)/4.0; Lc*=(bnd+0.04)/max(lum,0.02); float rim=pow(1.0-clamp(dot(normalize(vViewPosition),normal),0.0,1.0),3.0); Lc+=vec3(0.16,0.13,0.08)*smoothstep(0.35,1.0,rim)*clamp(lum*3.0,0.0,1.0);
+ #elif GSTYLE==2
+  float wv=smoothstep(0.12,0.7,lum); Lc=mix(Lc*vec3(0.74,0.86,1.2),Lc*vec3(1.14,1.02,0.8),wv); float pl=floor(lum*7.0+0.5)/7.0; Lc=mix(Lc,Lc*(pl+0.03)/max(lum,0.02),0.45); Lc=mix(vec3(dot(Lc,vec3(0.299,0.587,0.114))),Lc,0.88);
+ #elif GSTYLE==3
+  float hz=1.0-exp(-dd*0.0042); Lc=mix(vec3(dot(Lc,vec3(0.299,0.587,0.114))),Lc,0.8); Lc=mix(Lc,vec3(0.6,0.71,0.8)*(0.55+0.6*lum),hz*0.75); Lc*=vec3(0.95,1.0,1.06);
+ #elif GSTYLE==4
+  Lc=mix(vec3(lum),Lc,1.4); Lc=(Lc-0.5)*1.06+0.5+0.09; Lc*=vec3(1.05,1.0,0.94);
+ #endif
+ outgoingLight=max(Lc,vec3(0.0)); }
+#endif
+`;
+THREE.ShaderLib.physical.fragmentShader=f.replace(key,code+key);})();
+function applyLook(i){lookI=((i%LOOKS.length)+LOOKS.length)%LOOKS.length;const seen=new Set();
+  scene.traverse(o=>{const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];for(const m of ms){if(!m||!m.isMeshStandardMaterial||seen.has(m))continue;seen.add(m);
+    m.defines=m.defines||{};if(lookI)m.defines.GSTYLE=lookI;else delete m.defines.GSTYLE;m.needsUpdate=true;}});
+  try{localStorage.setItem('fsLook',String(lookI));}catch(e){}toast('Look: '+LOOKS[lookI]+(lookI?'':' (fastest)'));}
+function lookStep(){if(lookInit>=0&&++lookInit>240){lookInit=-1;let v=0;try{v=+localStorage.getItem('fsLook')||0;}catch(e){}if(v)applyLook(v);}}
+addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyL')applyLook(lookI+1);});
+window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial){c++;if(m.defines&&m.defines.GSTYLE)d++;}});return {sh:THREE.ShaderLib.physical.fragmentShader.includes('GSTYLE'),std:c,withDef:d,keys:renderer.info.programs.map(p=>p.cacheKey.includes('GSTYLE')).join(','),lookI};};
 
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
