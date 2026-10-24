@@ -113,9 +113,9 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
       <label class="opt"><input type="checkbox" id="optGeo"><span><b>Show geometry stats</b><small>Triangles and draw calls this frame, plus geometries, textures and instanced trees and plants in memory.</small></span></label>
       <label class="opt"><input type="checkbox" id="optHB"><span><b>Show hit boxes</b><small>Wireframes on the player, player 2 and the deer: red head, yellow torso, blue limbs (deer: head, neck, body and legs). Also the B key.</small></span></label>
       <label class="opt"><input type="checkbox" id="optSh" checked><span><b>Shadows</b><small>Sun shadows near the player. Also the O key.</small></span></label>
-      <label class="opt"><span><b>Shadow draw distance</b><small>How far from you trees and rocks cast shadows. Longer is softer and slower.</small></span><select id="optShD"><option value="30">30 m</option><option value="50" selected>50 m</option><option value="100">100 m</option><option value="150">150 m</option><option value="250">250 m</option></select></label>
-      <label class="opt"><span><b>Render resolution</b><small>Lower this if the frame rate is poor.</small></span><select id="optRes"><option value="0.75">75%</option><option value="1">100%</option><option value="1.5" selected>Sharp (up to 1.5×)</option></select></label>
-      <label class="opt"><span><b>Misty valley</b><small>Cool blue haze that thickens with distance and softens the colours. Costs a few percent of frame rate when on.</small></span><select id="optMist"><option value="0" selected>Off</option><option value="1">Light</option><option value="2">Medium</option><option value="3">Strong</option></select></label>
+      <label class="opt"><span><b>Shadow draw distance</b><small>How far from you trees and rocks cast shadows. Longer is softer and slower.</small></span><select id="optShD"><option value="30">30 m</option><option value="50">50 m</option><option value="100">100 m</option><option value="150" selected>150 m</option><option value="250">250 m</option></select></label>
+      <label class="opt"><span><b>Render resolution</b><small>Lower this if the frame rate is poor.</small></span><select id="optRes"><option value="0.75">75%</option><option value="1" selected>100%</option><option value="1.5">Sharp (up to 1.5×)</option></select></label>
+      <label class="opt"><span><b>Misty valley</b><small>Cool blue haze that thickens with distance and softens the colours. Costs a few percent of frame rate when on.</small></span><select id="optMist"><option value="0">Off</option><option value="1" selected>Light</option><option value="2">Medium</option><option value="3">Strong</option></select></label>
     </div>
   </div>
   <div id="paneEnv" role="tabpanel" aria-labelledby="tabEnv" hidden>
@@ -137,6 +137,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <label class="rng"><span>Forest ambience</span><input type="range" id="audA" min="0" max="200" step="1"><output id="audAv"></output></label>
     <label class="rng"><span>Buzzard</span><input type="range" id="audB" min="0" max="200" step="1"><output id="audBv"></output></label>
     <label class="rng"><span>Deer calls</span><input type="range" id="audD" min="0" max="200" step="1"><output id="audDv"></output></label>
+    <label class="rng"><span>Owl hoots</span><input type="range" id="audO" min="0" max="200" step="1"><output id="audOv"></output></label>
     <label class="rng"><span>Footsteps</span><input type="range" id="audS" min="0" max="200" step="1"><output id="audSv"></output></label>
     <label class="opt"><input type="checkbox" id="optSndDbg"><span><b>Show playing sounds</b><small>Development: lists each sound as it plays, with its distance, plus the looping ambience levels.</small></span></label>
     <p class="sec" style="margin-top:14px">Sound schedule (game clock)</p>
@@ -3204,7 +3205,7 @@ try{$('optSndDbg').checked=localStorage.getItem('sniperSndDbg')==='1';}catch(e){
 $('optSndDbg').onchange=()=>{try{localStorage.setItem('sniperSndDbg',$('optSndDbg').checked?'1':'0');}catch(e){}};
 $('audG').oninput=()=>{VOLS.gun=$('audG').value/100;$('audGv').textContent=$('audG').value+'%';audSave();};
 $('audG').onchange=()=>{if(AC&&soundOn)sfx.shot();};   // preview the level when the slider is released
-function gfxSave(){try{localStorage.setItem('sniperGfx',JSON.stringify({fps:$('optFps').checked,geo:$('optGeo').checked,sh:renderer.shadowMap.enabled,res:$('optRes').value,shd:$('optShD').value}));}catch(e){}}
+function gfxSave(){try{localStorage.setItem('sniperGfx2',JSON.stringify({fps:$('optFps').checked,geo:$('optGeo').checked,sh:renderer.shadowMap.enabled,res:$('optRes').value,shd:$('optShD').value}));}catch(e){}}
 let SH_D=50;
 function applyShD(){SH_D=+$('optShD').value;csm.maxFar=SH_D;csm.updateFrustums();SUN_R=Math.max(150,SH_D+100);gfxSave();}
 $('optShD').onchange=applyShD;
@@ -3212,8 +3213,8 @@ function applyRes(){const v=parseFloat($('optRes').value);renderer.setPixelRatio
 function applyPerfVis(){perfEl.hidden=!($('optFps').checked||$('optGeo').checked);gfxSave();}
 $('optFps').onchange=applyPerfVis;$('optGeo').onchange=applyPerfVis;
 $('optSh').onchange=()=>setShadows($('optSh').checked);
-$('optRes').onchange=applyRes;
-try{const s=JSON.parse(localStorage.getItem('sniperGfx')||'null');if(s){$('optFps').checked=!!s.fps;$('optGeo').checked=!!s.geo;if(s.res)$('optRes').value=s.res;if(s.shd){$('optShD').value=s.shd;applyShD();}applyRes();applyPerfVis();if(s.sh===false&&renderer.shadowMap.enabled)setShadows(false);}}catch(e){}
+$('optRes').onchange=applyRes;applyShD();applyRes();
+try{const s=JSON.parse(localStorage.getItem('sniperGfx2')||'null');if(s){$('optFps').checked=!!s.fps;$('optGeo').checked=!!s.geo;if(s.res)$('optRes').value=s.res;if(s.shd){$('optShD').value=s.shd;applyShD();}applyRes();applyPerfVis();if(s.sh===false&&renderer.shadowMap.enabled)setShadows(false);}}catch(e){}
 
 /* ---------------- compass strip + zoomable mini map ---------------- */
 const cmp=$('compass'),cctx=cmp.getContext('2d');
@@ -3242,7 +3243,7 @@ function drawMini(){mini.parentNode.style.display=miniOn?'':'none';if(!miniOn)re
   mx.fillStyle='#ffcc4a';mx.strokeStyle='#000';mx.lineWidth=2.5;mx.beginPath();mx.moveTo(W/2,W/2-16);mx.lineTo(W/2+10,W/2+12);mx.lineTo(W/2,W/2+6);mx.lineTo(W/2-10,W/2+12);mx.closePath();mx.fill();mx.stroke();
   mx.strokeStyle='rgba(255,255,255,0.35)';mx.lineWidth=3;mx.beginPath();mx.arc(W/2,W/2,W/2-3,0,PI*2);mx.stroke();
   mx.fillStyle='#ff6a4a';mx.font='700 26px "IBM Plex Mono", monospace';mx.textAlign='center';mx.textBaseline='middle';mx.fillText('N',W/2+Math.sin(th)*(W/2-22),W/2-Math.cos(th)*(W/2-22));}
-function drawDeerMark(c,x,y,d,k,th){c.save();c.translate(x,y);c.rotate(-th);c.scale(k,k);c.lineWidth=2.5;
+function drawDeerMark(c,x,y,d,k,th){if(d.carved)return;c.save();c.translate(x,y);c.rotate(-th);c.scale(k,k);c.lineWidth=2.5;
   if(d.st==='dead'){c.strokeStyle='#e8e2d4';c.beginPath();c.moveTo(-6,-6);c.lineTo(6,6);c.moveTo(6,-6);c.lineTo(-6,6);c.stroke();}
   else if(d.sex==='m'){c.fillStyle=d.wound?'#ff5a3c':'#5a3420';c.strokeStyle='#f3e6c8';c.beginPath();c.moveTo(0,-8);c.lineTo(7,6);c.lineTo(-7,6);c.closePath();c.fill();c.stroke();}
   else{c.fillStyle=d.wound?'#ff5a3c':'#e7b77a';c.strokeStyle='#3a2414';c.beginPath();c.arc(0,0,5.5,0,PI*2);c.fill();c.stroke();}
@@ -3356,7 +3357,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=101;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=105;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3513,9 +3514,9 @@ THREE.ShaderLib.physical.fragmentShader=f.replace(key,code+key);})();
 function applyLook(i){lookI=Math.max(0,Math.min(3,i|0));const seen=new Set();
   scene.traverse(o=>{const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];for(const m of ms){if(!m||!m.isMeshStandardMaterial||seen.has(m))continue;seen.add(m);
     m.defines=m.defines||{};if(lookI)m.defines.GSTYLE=lookI;else delete m.defines.GSTYLE;m.needsUpdate=true;}});
-  try{localStorage.setItem('fsMist',String(lookI));}catch(e){}}
-(function(){const el=document.getElementById('optMist');if(!el)return;let v=0;try{v=+localStorage.getItem('fsMist')||0;}catch(e){}el.value=String(v);el.onchange=()=>applyLook(+el.value);})();
-function lookStep(){leadGlowStep();vitalsStep();if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
+  try{localStorage.setItem('fsMist2',String(lookI));}catch(e){}}
+(function(){const el=document.getElementById('optMist');if(!el)return;let v=1;try{const q=localStorage.getItem('fsMist2');if(q!=null)v=+q||0;}catch(e){}el.value=String(v);el.onchange=()=>applyLook(+el.value);})();
+function lookStep(){leadGlowStep();owlStep();vitalsStep();if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
 window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial){c++;if(m.defines&&m.defines.GSTYLE)d++;}});return {sh:true,std:c,withDef:d,keys:renderer.info.programs.map(p=>p.cacheKey.includes('GSTYLE')).join(','),lookI};};
 
 // ---- lead ore edge glow: a slightly enlarged back-face shell around each ore chunk, additive blue, pulsing on a 3 s cycle
@@ -3553,6 +3554,30 @@ function vitalsStep(){const hp=Math.max(0,Math.min(100,MPM.on?MPM.hp:100)),sp=ST
   if(hv!==VIT.lh){VIT.lh=hv;const c='hsl('+Math.round(hp*1.15)+',70%,52%)';VIT.h.fl.style.setProperty('--c',c);VIT.h.fl.style.width=hv+'%';VIT.h.lag.style.width=hv+'%';VIT.h.n.textContent=hv;VIT.d.classList.toggle('low',hp<30);}
   if(sv!==VIT.ls||VIT.lk!==STAM.lock){VIT.ls=sv;VIT.lk=STAM.lock;VIT.s.fl.style.setProperty('--c',STAM.lock?'#e9a23b':'#47c9bb');VIT.s.fl.style.width=sv+'%';VIT.s.lag.style.width=sv+'%';VIT.s.n.textContent=sv;VIT.d.classList.toggle('out',STAM.lock);}
   VIT.d.style.display=(playing&&player.alive)?'flex':'none';}
+
+// ---- owl hoots: tawny-owl style calls from the trees at night (Audio options > Owl hoots)
+const OWL={vol:1,next:performance.now()/1000+10+Math.random()*20};try{const v=localStorage.getItem('fsOwl');if(v!=null)OWL.vol=Math.max(0,Math.min(2,+v));}catch(e){}
+function owlHoot(c,t0,f0,len,gain,trem){const o=AC.createOscillator(),o2=AC.createOscillator(),g=AC.createGain(),g2=AC.createGain(),gm=AC.createGain(),f=AC.createBiquadFilter();
+  o.type='sine';o2.type='sine';o.frequency.setValueAtTime(f0*1.05,t0);o.frequency.linearRampToValueAtTime(f0*0.96,t0+len);o2.frequency.setValueAtTime(f0*2.1,t0);o2.frequency.linearRampToValueAtTime(f0*1.92,t0+len);
+  g2.gain.value=0.1;f.type='lowpass';f.frequency.value=1100;gm.gain.value=trem?0.62:1;
+  if(trem){const l=AC.createOscillator(),lg=AC.createGain();l.frequency.value=11+Math.random()*3;lg.gain.value=0.38;l.connect(lg);lg.connect(gm.gain);l.start(t0);l.stop(t0+len+0.1);}
+  envG(g,t0,Math.min(0.12,len*0.3),gain,len*0.55,len);o.connect(gm);o2.connect(g2);g2.connect(gm);gm.connect(f);f.connect(g);g.connect(c.inp);o.start(t0);o2.start(t0);o.stop(t0+len+0.1);o2.stop(t0+len+0.1);}
+function owlCall(x,y,z,f0,gain){const c=sp3(x,y,z,520);if(!c)return;const t=c.t0;
+  [[0,0.95,1,0],[2.4,0.22,0.97,0],[2.85,0.4,1.0,0],[3.4,1.9,0.93,1]].forEach(([o,l,fm,tr])=>owlHoot(c,t+o,f0*fm,l,gain,tr));}
+function owlStep(){if(!AC||!soundOn||OWL.vol<=0.001||typeof DAY==='undefined')return;const now=performance.now()/1000;if(now<OWL.next)return;
+  if(DAY.dark<0.45){OWL.next=now+10;return;}
+  OWL.next=now+35+Math.random()*60;const p=player.pos,a=Math.random()*PI*2,d=90+Math.random()*170;
+  const x=p.x+Math.cos(a)*d,z=p.z+Math.sin(a)*d,y=groundH(x,z)+11;owlCall(x,y,z,410+Math.random()*50,3.2*OWL.vol);
+  if(Math.random()<0.6){const a2=a+0.6+Math.random()*1.4,d2=140+Math.random()*190,x2=p.x+Math.cos(a2)*d2,z2=p.z+Math.sin(a2)*d2;setTimeout(()=>owlCall(x2,groundH(x2,z2)+10,z2,470+Math.random()*40,2.4*OWL.vol),7000+Math.random()*4000);}}
+(function(){const el=document.getElementById('audO'),o=document.getElementById('audOv');if(!el)return;el.value=Math.round(OWL.vol*100);o.textContent=Math.round(OWL.vol*100)+'%';
+  el.oninput=()=>{OWL.vol=el.value/100;o.textContent=el.value+'%';try{localStorage.setItem('fsOwl',String(OWL.vol));}catch(e){}};
+  el.onchange=()=>{if(AC&&soundOn){const p=player.pos;owlCall(p.x+30,p.y+8,p.z,430,3.2*OWL.vol);}};})();
+
+// ---- rescaled volume sliders: ambience 100% = the old 30%, footsteps 100% = the old 200%
+(function(){const defs=[['audA','audAv','amb',0.3,'fsAmbD'],['audS','audSv','fs',2,'fsFsD']];
+  defs.forEach(([id,oid,k,f,sk])=>{const el=document.getElementById(id),o=document.getElementById(oid);if(!el)return;let d=100;try{const v=localStorage.getItem(sk);if(v!=null)d=Math.max(0,Math.min(200,+v));}catch(e){}
+    const set=v=>{VOLS[k]=v/100*f;el.value=v;o.textContent=Math.round(v)+'%';};set(d);
+    el.oninput=()=>{set(+el.value);try{localStorage.setItem(sk,String(el.value));}catch(e){}};});})();
 
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
