@@ -3355,7 +3355,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=88;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=89;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);updatePlayer(dt,clockT);
@@ -3478,7 +3478,11 @@ const STREAKS=[],ST_LIFE=0.6,ST_MAX=420;
 function mkStreak(b){const g=new THREE.BufferGeometry(),pos=new Float32Array(ST_MAX*3);g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setDrawRange(0,0);
   const ln=new THREE.Line(g,new THREE.LineBasicMaterial({color:0xff3d14,transparent:true,opacity:0.95,depthWrite:false,fog:false}));ln.frustumCulled=false;ln.renderOrder=7;scene.add(ln);
   const hd=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffa070,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));hd.renderOrder=8;scene.add(hd);
-  const s={b,ln,hd,pos,n:0,t:0,fin:false};pos[0]=b.o.x;pos[1]=b.o.y;pos[2]=b.o.z;s.n=1;STREAKS.push(s);}
+  const s={b,ln,hd,pos,n:0,t:0,fin:false};pos[0]=b.o.x;pos[1]=b.o.y;pos[2]=b.o.z;
+  let sc=false;try{sc=scoped&&!b.rem;}catch(e){}
+  if(sc){camera.updateMatrixWorld();const d=new THREE.Vector3(),u=new THREE.Vector3();camera.getWorldDirection(d);u.set(0,1,0).applyQuaternion(camera.quaternion);
+    pos[0]=camera.position.x+d.x*0.4-u.x*0.1;pos[1]=camera.position.y+d.y*0.4-u.y*0.1;pos[2]=camera.position.z+d.z*0.4-u.z*0.1;}   // scoped: the line starts just below the scope, not off to one side
+  s.n=1;STREAKS.push(s);}
 function streakStep(dt){for(let i=STREAKS.length-1;i>=0;i--){const s=STREAKS[i],b=s.b,alive=bullets.indexOf(b)>=0;
   if(alive){if(s.n<ST_MAX){const k=s.n*3;s.pos[k]=b.p.x;s.pos[k+1]=b.p.y;s.pos[k+2]=b.p.z;s.n++;}}
   else{if(!s.fin){s.fin=true;const e=b.end||b.p;if(s.n<ST_MAX){const k=s.n*3;s.pos[k]=e.x;s.pos[k+1]=e.y;s.pos[k+2]=e.z;s.n++;}}s.t+=dt;}
