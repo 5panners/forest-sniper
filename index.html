@@ -2679,7 +2679,7 @@ function deerAI(d,dt){
   if(d.st==='dead')return;
   if(d.wound==='fatal'||d.wound==='gut'){d.dieT-=dt;if(d.dieT<=0){killDeer(d,false);return;}}
   d.stT-=dt;d.fear=Math.max(0,d.fear-dt*0.025);d.roarA-=dt;
-  {const fr=Math.hypot(d.x,d.z),fd=FIRE.R-fr;if(d.st!=='dying'&&(fd<85||(d.inFire&&fd<125))){d.inFire=true;if(d.st!=='flee'){release(d);d.st='flee';d.stT=60;}d.fleeLeft=Math.max(d.fleeLeft,60);d.fear=1.2;d.thx=d.x*(1+30/(fr||1));d.thz=d.z*(1+30/(fr||1));d.fleeOff=0;}else if(d.inFire){d.inFire=false;d.fleeLeft=Math.min(d.fleeLeft,35);}}
+  {const fr=Math.hypot(d.x,d.z),fd=FIRE.R-fr;if(d.st!=='dying'&&(fd<20||(d.inFire&&fd<42))){d.inFire=true;if(d.st!=='flee'){release(d);d.st='flee';d.stT=60;}d.fleeLeft=Math.max(d.fleeLeft,60);d.fear=1.2;d.thx=d.x*(1+30/(fr||1));d.thz=d.z*(1+30/(fr||1));d.fleeOff=0;}else if(d.inFire){d.inFire=false;d.fleeLeft=Math.min(d.fleeLeft,35);}}
   const K=d.K,wm=d.limp>=0?0.55:d.wound==='gut'?0.7:1;let tS=0,steer=false;
   switch(d.st){
     case 'graze': case 'hold':{d.subT-=dt;if(d.subT<=0)pickSub(d);
@@ -3348,7 +3348,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=131;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=133;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3631,7 +3631,7 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): ring shrink, flame / smoke / spark look, tree fires
-const GAME_DEF={fDens:1,fWid:1.3,fFer:1,fSpd:0.5,sm:1,sp:1,spit:1,sDelay:60,sDur:900,sEnd:80,tOn:1,tFrac:0.25};
+const GAME_DEF={fDens:1,fWid:1.3,fFer:1,fSpd:0.5,sm:1,sp:1,spit:1,sDelay:60,sDur:900,sEnd:80,tOn:1,tFrac:0.25,rdOn:1,rdBand:15,rdIn:6,rdOut:12};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 // ---- ring of fire: flat-shaded animated flame wall, smoke curtain, ember glow on the ground and rising sparks.
 // Four draw calls in all; every bit of motion is done in the vertex shaders, so the CPU only updates one time uniform per frame.
@@ -3738,13 +3738,13 @@ function fireSound(){if(!AC||!soundOn)return;
   const nx=p.x/r*FIRE.R,nz2=p.z/r*FIRE.R,dd=Math.max(8,Math.min(d,200)),sx=p.x+(nx-p.x)/Math.max(1,d)*dd,sz=p.z+(nz2-p.z)/Math.max(1,d)*dd;
   if(FSND.pn.positionX){FSND.pn.positionX.value=sx;FSND.pn.positionY.value=camera.position.y+4;FSND.pn.positionZ.value=sz;}else FSND.pn.setPosition(sx,camera.position.y+4,sz);}
 function fireStep(){fireSound();{const now=performance.now(),dt=Math.min(0.25,(now-(FIRE.lt||now))/1000);FIRE.lt=now;if(playing)FIRE.t+=dt;const u=Math.max(0,Math.min(1,(FIRE.t-GAME.sDelay)/Math.max(1,GAME.sDur)));FIRE.R=FIRE.R0+(GAME.sEnd-FIRE.R0)*u;if(FIRE.builtR-FIRE.R>=4)fireBuild(FIRE.R);
-  FIRE.U.uT.value=(now/1000)%3600;FIRE.U.uF.value=((now/1000)%7200)*GAME.fSpd;FIRE.U.uFer.value=GAME.fFer;FIRE.U.uSm.value=GAME.sm;treeFireStep(dt);const ro=document.getElementById('gmR');if(ro&&ro.offsetParent)ro.textContent=Math.round(FIRE.R)+' m';}FIRE_DAY.value=1-DAY.dark*0.8;}
+  FIRE.U.uT.value=(now/1000)%3600;FIRE.U.uF.value=((now/1000)%7200)*GAME.fSpd;FIRE.U.uFer.value=GAME.fFer;FIRE.U.uSm.value=GAME.sm;treeFireStep(dt);ringHurt(dt);const ro=document.getElementById('gmR');if(ro&&ro.offsetParent)ro.textContent=Math.round(FIRE.R)+' m';}FIRE_DAY.value=1-DAY.dark*0.8;}
 
 (function(){const el=document.getElementById('audF2'),o=document.getElementById('audF2v');if(!el)return;el.value=Math.round(FSND.vol*100);o.textContent=el.value+'%';
   el.oninput=()=>{FSND.vol=el.value/100;o.textContent=el.value+'%';try{localStorage.setItem('fsFire',String(FSND.vol));}catch(e){}};})();
 
 // animals flee the ring: deer run inward (see deerAI) with loud cries until clear of it; this makes the cries, on both the host and the guest
-function fireCry(d,dt,dist){if(d.st!=='flee'&&d.st!=='dying'||d.st==='dead')return;const fd=FIRE.R-Math.hypot(d.x,d.z);if(fd>130||dist>650)return;
+function fireCry(d,dt,dist){if(d.st!=='flee'&&d.st!=='dying'||d.st==='dead')return;const fd=FIRE.R-Math.hypot(d.x,d.z);if(fd>60||dist>650)return;
   d.fcry=(d.fcry==null?Math.random()*1.5:d.fcry)-dt;if(d.fcry>0)return;d.fcry=2.2+Math.random()*2.6;deerSample(d,2.6,d.sex!=='m'&&Math.random()<0.7);}
 
 // ---- trees on fire: the trees just inside the ring burn until the wall passes them (a small pool of instanced flame clusters, rebuilt twice a second)
@@ -3778,6 +3778,7 @@ function treeFireStep(dt){TF.t-=dt;if(TF.t>0)return;TF.t=0.5;
   const ROWS=[['sec','Ring of fire · shrinking'],['sDelay','Wait before it starts to shrink (s)',0,600,10,0],['sDur','Time to shrink to the final size (s)',30,3600,30,0],['sEnd','Final radius (m)',20,490,10,0],
    ['sec','Flames'],['fDens','Flame density',0.3,2,0.05,2],['fWid','Flame width',0.5,2.5,0.05,2],['fFer','Flame ferocity (height and sway)',0.3,2.5,0.05,2],['fSpd','Flame speed',0.1,2,0.05,2],
    ['sec','Smoke and sparks'],['sm','Smoke density',0,2,0.05,2],['sp','Rising sparks',0,2,0.05,2],['spit','Sparks spitting inwards',0,2,0.05,2],
+   ['sec','Ring damage to players'],['rdOn','Ring hurts players (1 = on, 0 = off)',0,1,1,0],['rdBand','Burn zone width inside the ring (m)',2,60,1,0],['rdIn','Damage per second at the wall, inside (hp/s)',0,40,0.5,1],['rdOut','Damage per second outside the ring (hp/s)',0,60,0.5,1],
    ['sec','Trees on fire'],['tOn','Trees catch fire (1 = on, 0 = off)',0,1,1,0],['tFrac','Share of nearby trees that burn',0,1,0.05,2]];
   const rebuildKeys={fDens:1,fWid:1,sp:1,spit:1};let to=0;
   const build=()=>{pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. The ring radius now: <b id="gmR"></b>. In a match each player runs their own ring clock, started at the round start.</p>'+ROWS.map(r=>r[0]==='sec'?`<p class="sec" style="margin-top:12px">${r[1]}</p>`:`<div class="gr"><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${GAME[r[0]]}" data-k="${r[0]}"><output>${(+GAME[r[0]]).toFixed(r[5])}</output></div>`).join('')+'<button type="button" class="btn" id="gmRestart">Restart ring now</button><button type="button" class="btn" id="gmReset">Reset to defaults</button>';
@@ -3790,7 +3791,18 @@ function treeFireStep(dt){TF.t-=dt;if(TF.t>0)return;TF.t=0.5;
   tb.onclick=()=>{ids.forEach(n=>{const t=document.getElementById('tab'+n),p=document.getElementById('pane'+n);if(t)t.setAttribute('aria-selected','false');if(p)p.hidden=true;});tb.setAttribute('aria-selected','true');pn.hidden=false;};
   const _st=showTab;showTab=function(w){_st(w);tb.setAttribute('aria-selected','false');pn.hidden=true;};
 })();
-window.SNIPER_RES.fire=()=>({FIRE,GAME,TF,TREEPOS,fireBuild,SND,FSND});
+window.SNIPER_RES.fire=()=>({FIRE,GAME,TF,TREEPOS,fireBuild,SND,FSND,ringHurt,playing:()=>playing});
+
+// ---- the ring hurts: a burn zone just inside the wall (strongest at the wall) and everything outside it. Health 0 = dead, which ends the round for the opponent in a match.
+const RH={fl:0,warn:0};
+function ringHurt(dt){if(!GAME.rdOn||!playing||!player.alive||MPM.hp<=0)return;if(MPM.on&&NT.M.ph!=='live')return;
+  const d=FIRE.R-Math.hypot(player.pos.x,player.pos.z);let dps=0,out=false;
+  if(d<0){dps=GAME.rdOut;out=true;}else if(d<GAME.rdBand){const k=1-d/GAME.rdBand;dps=GAME.rdIn*k*k*(3-2*k);}
+  RH.warn-=dt;if(dps<=0){return;}
+  if(RH.warn<=0){RH.warn=4;toast(out?'You are outside the ring of fire · get back inside!':'The ring of fire is burning you · move away from the flames');}
+  MPM.hp-=dps*dt;RH.fl-=dt;if(RH.fl<=0){RH.fl=0.5;flashHit();}
+  if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Burned to death by the ring of fire');}}
+window.SNIPER_RES.hp=()=>MPM.hp;window.SNIPER_RES.alive=()=>player.alive;
 
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
