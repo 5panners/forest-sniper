@@ -1950,7 +1950,7 @@ function placeTree(x,z,inner){
   const tilt=(type==='snag'?wrr(-0.06,0.06):wrr(-0.02,0.02));if(skipT)return;
   {const cn=vn(x/80+31.7,z/80-12.4)*0.8+vn(x/37+5.1,z/37+8.8)*0.2;if(cn>0.5)return;if(cn>0.38&&hsh(Math.floor(x*3)+41,Math.floor(z*3)+7)<(cn-0.38)/0.12)return;}
   {const rr=Math.hypot(x,z),pk=Math.max(0,Math.min(1,(320-rr)/320))*0.6;if(hsh(Math.floor(x*4)+83,Math.floor(z*4)+29)<pk)return;}
-  addInst(c,type,x,h-0.15,z,sc,sy,ry,col,tilt);nTrees++;if(inner&&type!=='young')TREEPOS.push(x,z,h,sy);
+  addInst(c,type,x,h-0.15,z,sc,sy,ry,col,tilt);nTrees++;
   if(inner){if(type==='beech')addLos({x,z,r:3.8*sc,y0:h+12*sy,y1:h+23*sy});else if(type==='young')addLos({x,z,r:0.9*sc,y0:h-0.5,y1:h+3.2*sy});else if(type!=='snag')addLos({x,z,r:2.6*sc,y0:h+6.5*sy,y1:h+21*sy});}
   if(inner&&r>0)addPillar({x,z,r:Math.max(0.14,r*sc),y0:h-1,y1:h+(type==='snag'?21:26)*sy,kind:'wood'});}
 // inner forest: 6.2 m jittered grid; outer ring 9.5 m (far LOD only)
@@ -3352,7 +3352,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=150;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=151;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3652,7 +3652,7 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): ring shrink, flame / smoke / spark look, tree fires
-const GAME_DEF={fDens:1,fWid:1.3,fFer:1,fSpd:0.5,sm:1,sp:1,spit:1,sDelay:60,sDur:900,sEnd:80,tOn:1,tFrac:0.25,rdOn:1,rdBand:15,rdIn:6,rdOut:12,stStart:0,stGain:2,stDrain:10,stMult:2};
+const GAME_DEF={fDens:1,fWid:1.3,fFer:1,fSpd:0.5,sm:1,sp:1,spit:1,sDelay:60,sDur:900,sEnd:80,rdOn:1,rdBand:15,rdIn:6,rdOut:12,stStart:0,stGain:2,stDrain:10,stMult:2};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 // ---- ring of fire: flat-shaded animated flame wall, smoke curtain, ember glow on the ground and rising sparks.
 // Four draw calls in all; every bit of motion is done in the vertex shaders, so the CPU only updates one time uniform per frame.
@@ -3761,7 +3761,7 @@ function fireSound(){if(!AC||!soundOn)return;
   const nx=p.x/r*FIRE.R,nz2=p.z/r*FIRE.R,dd=Math.max(8,Math.min(d,200)),sx=p.x+(nx-p.x)/Math.max(1,d)*dd,sz=p.z+(nz2-p.z)/Math.max(1,d)*dd;
   if(FSND.pn.positionX){FSND.pn.positionX.value=sx;FSND.pn.positionY.value=camera.position.y+4;FSND.pn.positionZ.value=sz;}else FSND.pn.setPosition(sx,camera.position.y+4,sz);}
 function fireStep(){fireSound();{const now=performance.now(),dt=Math.min(0.25,(now-(FIRE.lt||now))/1000);FIRE.lt=now;if(playing)FIRE.t+=dt;const u=Math.max(0,Math.min(1,(FIRE.t-GAME.sDelay)/Math.max(1,GAME.sDur)));FIRE.R=FIRE.R0+(GAME.sEnd-FIRE.R0)*u;FIREWALL=FIRE.R;if(FIRE.builtR-FIRE.R>=4)fireBuild(FIRE.R);
-  FIRE.U.uT.value=(now/1000)%3600;FIRE.U.uF.value=((now/1000)%7200)*GAME.fSpd;FIRE.U.uFer.value=GAME.fFer;FIRE.U.uSm.value=GAME.sm;treeFireStep(dt);ringHurt(dt);const ro=document.getElementById('gmR');if(ro&&ro.offsetParent)ro.textContent=Math.round(FIRE.R)+' m';}FIRE_DAY.value=1-DAY.dark*0.8;}
+  FIRE.U.uT.value=(now/1000)%3600;FIRE.U.uF.value=((now/1000)%7200)*GAME.fSpd;FIRE.U.uFer.value=GAME.fFer;FIRE.U.uSm.value=GAME.sm;ringHurt(dt);const ro=document.getElementById('gmR');if(ro&&ro.offsetParent)ro.textContent=Math.round(FIRE.R)+' m';}FIRE_DAY.value=1-DAY.dark*0.8;}
 
 (function(){const el=document.getElementById('audF2'),o=document.getElementById('audF2v');if(!el)return;el.value=Math.round(FSND.vol*100);o.textContent=el.value+'%';
   el.oninput=()=>{FSND.vol=el.value/100;o.textContent=el.value+'%';try{localStorage.setItem('fsFire',String(FSND.vol));}catch(e){}};})();
@@ -3770,28 +3770,6 @@ function fireStep(){fireSound();{const now=performance.now(),dt=Math.min(0.25,(n
 function fireCry(d,dt,dist){if(d.st!=='flee'&&d.st!=='dying'||d.st==='dead')return;const fd=FIRE.R-Math.hypot(d.x,d.z);if(fd>60||dist>650)return;
   d.fcry=(d.fcry==null?Math.random()*1.5:d.fcry)-dt;if(d.fcry>0)return;d.fcry=2.2+Math.random()*2.6;deerSample(d,2.6,d.sex!=='m'&&Math.random()<0.7);}
 
-// ---- trees on fire: the trees just inside the ring burn until the wall passes them (a small pool of instanced flame clusters, rebuilt twice a second)
-const TF=(()=>{const P=[],H=[],PH=[],C=[],hr=(i,k)=>{const s=Math.sin(i*127.1+k*311.7)*43758.5453;return s-Math.floor(s);};
-  const COL=[[1,0.35,0.04],[1,0.5,0.06],[1,0.72,0.14],[0.8,0.15,0.03]];
-  for(let t=0;t<7;t++){const a=hr(t,1)*6.283,r=t?0.5+hr(t,2)*0.9:0,cx=Math.cos(a)*r,cz=Math.sin(a)*r,w=0.45+hr(t,3)*0.4,h=2.6+hr(t,4)*4.2,col=COL[Math.floor(hr(t,5)*4)],ph=hr(t,6)*6.283;
-    const bs=[[w,0],[0,w],[-w,0],[0,-w]];for(let q=0;q<4;q++){const A=bs[q],B=bs[(q+1)%4];
-      P.push(cx+A[0],0,cz+A[1],cx+B[0],0,cz+B[1],cx+(hr(t,7)-0.5)*0.5,h,cz+(hr(t,8)-0.5)*0.5);H.push(0,0,1);for(let z=0;z<3;z++){PH.push(ph);C.push(...col);}}}
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('aH',new THREE.Float32BufferAttribute(H,1));g.setAttribute('aPh',new THREE.Float32BufferAttribute(PH,1));g.setAttribute('aC',new THREE.Float32BufferAttribute(C,3));
-  const m=new THREE.ShaderMaterial({uniforms:FIRE.U,side:THREE.DoubleSide,vertexShader:`uniform float uF,uFer;attribute float aH,aPh;attribute vec3 aC;varying vec3 vC;
-    void main(){vec3 p=position;float ph=aPh+instanceMatrix[3].x*0.37+instanceMatrix[3].z*0.23;float fl=0.72+0.28*sin(uF*7.4+ph)+0.12*sin(uF*15.3+ph*2.3);
-     p.y*=mix(1.0,fl*uFer,aH);p.xz+=vec2(sin(uF*3.0+ph),cos(uF*2.3+ph*1.3))*0.5*aH*uFer;vC=aC*(0.9+0.35*sin(uF*13.0+ph*3.1));
-     gl_Position=projectionMatrix*modelViewMatrix*instanceMatrix*vec4(p,1.0);}`,fragmentShader:`varying vec3 vC;void main(){gl_FragColor=vec4(vC,1.0);}`});
-  const K=56,me=new THREE.InstancedMesh(g,m,K);me.count=0;me.frustumCulled=false;me.renderOrder=3;scene.add(me);
-  return {me,K,t:0,n:0};})();
-const _tfM=new THREE.Matrix4(),_tfV=new THREE.Vector3(),_tfQ=new THREE.Quaternion(),_tfS=new THREE.Vector3();
-function treeFireStep(dt){TF.t-=dt;if(TF.t>0)return;TF.t=0.5;
-  if(!GAME.tOn||typeof TREEPOS==='undefined'){TF.me.count=0;return;}
-  const R=FIRE.R,cx=camera.position.x,cz=camera.position.z,cand=[];
-  for(let i=0;i<TREEPOS.length;i+=4){const x=TREEPOS[i],z=TREEPOS[i+1],d=R-Math.hypot(x,z);if(d<0||d>50)continue;if(hsh(Math.floor(x*7)+3,Math.floor(z*7)+11)>=GAME.tFrac)continue;cand.push([(x-cx)*(x-cx)+(z-cz)*(z-cz),i]);}
-  cand.sort((a,b)=>a[0]-b[0]);const n=Math.min(TF.K,cand.length);
-  for(let j=0;j<n;j++){const i=cand[j][1],x=TREEPOS[i],z=TREEPOS[i+1],h=TREEPOS[i+2],sy=TREEPOS[i+3],s=(0.8+hsh(Math.floor(x*5)+9,Math.floor(z*5)+2)*0.9)*sy;
-    _tfM.compose(_tfV.set(x,h+0.8,z),_tfQ.identity(),_tfS.set(s,s,s));TF.me.setMatrixAt(j,_tfM);}
-  TF.me.count=n;TF.me.instanceMatrix.needsUpdate=true;}
 // ---- Gameplay tab
 (function(){
   const tabs=document.querySelector('.tabs'),paneMp=document.getElementById('paneMp');if(!tabs||!paneMp)return;
@@ -3803,11 +3781,11 @@ function treeFireStep(dt){TF.t-=dt;if(TF.t>0)return;TF.t=0.5;
    ['sec','Smoke and sparks'],['sm','Smoke density',0,2,0.05,2],['sp','Rising sparks',0,2,0.05,2],['spit','Sparks spitting inwards',0,2,0.05,2],
    ['sec','Stamina boost (double-tap W)'],['stStart','Starting stamina (%)',0,100,1,0],['stGain','Stamina per Magic Mushroom cluster (%)',0,25,1,0],['stDrain','Seconds of boost from a full bar',2,60,1,0],['stMult','Boost speed multiplier',1,3,0.1,1],
    ['sec','Ring damage to players'],['rdOn','Ring hurts players (1 = on, 0 = off)',0,1,1,0],['rdBand','Burn zone width inside the ring (m)',2,60,1,0],['rdIn','Damage per second at the wall, inside (hp/s)',0,40,0.5,1],['rdOut','Damage per second outside the ring (hp/s)',0,60,0.5,1],
-   ['sec','Trees on fire'],['tOn','Trees catch fire (1 = on, 0 = off)',0,1,1,0],['tFrac','Share of nearby trees that burn',0,1,0.05,2]];
+   ];
   const rebuildKeys={fDens:1,fWid:1,sp:1,spit:1};let to=0;
   const build=()=>{pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. The ring radius now: <b id="gmR"></b>. In a match each player runs their own ring clock, started at the round start.</p>'+ROWS.map(r=>r[0]==='sec'?`<p class="sec" style="margin-top:12px">${r[1]}</p>`:`<div class="gr"><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${GAME[r[0]]}" data-k="${r[0]}"><output>${(+GAME[r[0]]).toFixed(r[5])}</output></div>`).join('')+'<button type="button" class="btn" id="gmRestart">Restart ring now</button><button type="button" class="btn" id="gmReset">Reset to defaults</button>';
     pn.querySelectorAll('input').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.step<1?2:0);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}
-      if(rebuildKeys[k]){clearTimeout(to);to=setTimeout(()=>fireBuild(FIRE.R),150);}if(k==='tOn'||k==='tFrac')TF.t=0;});
+      if(rebuildKeys[k]){clearTimeout(to);to=setTimeout(()=>fireBuild(FIRE.R),150);}});
     pn.querySelector('#gmRestart').onclick=()=>{FIRE.t=0;FIRE.R=FIRE.R0;fireBuild(FIRE.R0);};
     pn.querySelector('#gmReset').onclick=()=>{Object.assign(GAME,GAME_DEF);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}fireBuild(FIRE.R);build();};};
   build();
@@ -3815,7 +3793,7 @@ function treeFireStep(dt){TF.t-=dt;if(TF.t>0)return;TF.t=0.5;
   tb.onclick=()=>{ids.forEach(n=>{const t=document.getElementById('tab'+n),p=document.getElementById('pane'+n);if(t)t.setAttribute('aria-selected','false');if(p)p.hidden=true;});tb.setAttribute('aria-selected','true');pn.hidden=false;};
   const _st=showTab;showTab=function(w){_st(w);tb.setAttribute('aria-selected','false');pn.hidden=true;};
 })();
-window.SNIPER_RES.fire=()=>({FIRE,GAME,TF,TREEPOS,fireBuild,SND,FSND,ringHurt,playing:()=>playing});
+window.SNIPER_RES.fire=()=>({FIRE,GAME,fireBuild,SND,FSND,ringHurt,playing:()=>playing});
 
 // ---- the ring hurts: a burn zone just inside the wall (strongest at the wall) and everything outside it. Health 0 = dead, which ends the round for the opponent in a match.
 const RH={fl:0,warn:0};
