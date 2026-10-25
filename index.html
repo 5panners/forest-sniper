@@ -139,6 +139,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <label class="rng"><span>Deer calls</span><input type="range" id="audD" min="0" max="200" step="1"><output id="audDv"></output></label>
     <label class="rng"><span>Ring of fire</span><input type="range" id="audF2" min="0" max="200" step="1"><output id="audF2v"></output></label>
     <label class="rng"><span>Owl hoots</span><input type="range" id="audO" min="0" max="200" step="1"><output id="audOv"></output></label>
+    <label class="rng"><span>Bullet-hit thud</span><input type="range" id="audT" min="0" max="200" step="1"><output id="audTv"></output></label>
     <label class="rng"><span>Footsteps</span><input type="range" id="audS" min="0" max="200" step="1"><output id="audSv"></output></label>
     <label class="opt"><input type="checkbox" id="optSndDbg"><span><b>Show playing sounds</b><small>Development: lists each sound as it plays, with its distance, plus the looping ambience levels.</small></span></label>
     <p class="sec" style="margin-top:14px">Sound schedule (game clock)</p>
@@ -2988,8 +2989,8 @@ function stepBullets1(dt){
     if(h||b.t>4||b.p.y<-200){
       if(h){b.end=h.point.clone();impact(h.point,h.normal,h.kind);impactSnd(h.point,h.kind);if(h.kind!=='water'&&h.kind!=='flesh')addMark(h.point,h.normal,h.kind,h.point.distanceTo(b.o),null);const dist=h.point.distanceTo(b.o);stats.last=[h.point.x,h.point.y,h.point.z,h.kind,dist];
         if(!b.rem){if(h.remote)netHitRemote(h,dist);
-        if(h.bird){if(MPM.guest)netBirdHit(h.bird,dist);else hitBird(h.bird,dist);}
-        if(h.deer){if(h.sub==='head')headDing();if(MPM.guest)netDeerHit(h.deer,h.sub,h.leg,dist);else{hitDeer(h.deer,h.sub,dist);if(h.sub==='leg')legHit(h.deer,h.leg);}}}}
+        if(h.bird){hitThud();if(MPM.guest)netBirdHit(h.bird,dist);else hitBird(h.bird,dist);}
+        if(h.deer){if(h.sub==='head')headDing();else hitThud();if(MPM.guest)netDeerHit(h.deer,h.sub,h.leg,dist);else{hitDeer(h.deer,h.sub,dist);if(h.sub==='leg')legHit(h.deer,h.leg);}}}}
       if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}
     b.p.addScaledVector(_bd,len);b.t+=dt;if(b.rem)netCrack(b);
     if(b.tr){const L=Math.min(b.p.distanceTo(b.o),14);_bp.copy(b.p).addScaledVector(_bd,-L);b.tr.position.copy(_bp);const w=0.02+b.p.distanceTo(b.o)*0.0004;b.tr.scale.set(w,w,Math.max(0.01,L));b.tr.lookAt(b.p);}
@@ -3352,7 +3353,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=155;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=157;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3824,6 +3825,15 @@ function ringChipStep(){const d=RCHIP.d;if(!playing){d.hidden=true;return;}d.hid
   if(t!==RCHIP.txt){RCHIP.txt=t;d.innerHTML=t;}if(soon!==RCHIP.soon){RCHIP.soon=soon;d.classList.toggle('soon',soon);}}
 window.SNIPER_RES.pil=()=>MAP.pillars;
 
+// ---- bullet-hit thud: a heavy body *thud* (low sine drop + a dull noise slap) when the player's shot hits an animal. Headshots ring the bell instead.
+const THUD={vol:1};try{const v=localStorage.getItem('fsThud');if(v!=null)THUD.vol=Math.max(0,Math.min(2,+v));}catch(e){}
+function hitThud(){if(!AC||!soundOn||THUD.vol<=0)return;try{const t=AC.currentTime,out=AC.createGain();out.gain.value=0.9*THUD.vol;out.connect(AC.destination);
+  const o=AC.createOscillator(),e=AC.createGain();o.type='sine';o.frequency.setValueAtTime(170,t);o.frequency.exponentialRampToValueAtTime(48,t+0.16);e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(1,t+0.004);e.gain.exponentialRampToValueAtTime(0.001,t+0.28);o.connect(e);e.connect(out);o.start(t);o.stop(t+0.3);
+  if(typeof noiseBuf!=='undefined'&&noiseBuf){const s=AC.createBufferSource();s.buffer=noiseBuf;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=700;const g=AC.createGain();g.gain.setValueAtTime(0.9,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.09);s.connect(f);f.connect(g);g.connect(out);s.start(t,Math.random()*0.5);s.stop(t+0.1);}}catch(e){}}
+(function(){const el=document.getElementById('audT'),o=document.getElementById('audTv');if(!el)return;el.value=Math.round(THUD.vol*100);o.textContent=Math.round(THUD.vol*100)+'%';
+  el.oninput=()=>{THUD.vol=el.value/100;o.textContent=el.value+'%';try{localStorage.setItem('fsThud',String(THUD.vol));}catch(e){}};
+  el.onchange=()=>hitThud();})();
+
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
    - Each player's machine runs its own movement and rifle; its state (position, yaw, the full animation pose, bolt, hp)
@@ -4004,14 +4014,14 @@ function farFlash(o){if(!_fgS){_fgS=new THREE.Sprite(new THREE.SpriteMaterial({m
   const d=o.distanceTo(camera.position);if(d>900){return;}_fgS.position.copy(o);const s=clamp(d*0.016,1.4,16);_fgS.scale.set(s,s,1);_fgS.material.opacity=1;_fgS.visible=true;_fgT=0.14;}
 function farFlashStep(dt){if(_fgT>0){_fgT-=dt;if(_fgS){_fgS.material.opacity=Math.max(0,_fgT/0.14);if(_fgT<=0)_fgS.visible=false;}}}
 function netShot(b){if(!NT.room)return;const v=b.v.clone().normalize();NT.room.emit('shot',{o:[nr2(b.o.x),nr2(b.o.y),nr2(b.o.z)],v:[nr3(v.x),nr3(v.y),nr3(v.z)]}).catch(()=>{});}
-function netHitRemote(h,dist){flashHit();const z=h.zone;if(z==='head')headDing();toast('Opponent hit · '+(z==='head'?'head':z==='torso'?'body':'limb')+' · '+Math.round(dist)+' m');
+function netHitRemote(h,dist){flashHit();const z=h.zone;if(z==='head')headDing();else hitThud();toast('Opponent hit · '+(z==='head'?'head':z==='torso'?'body':'limb')+' · '+Math.round(dist)+' m');
   if(NT.M.ph!=='live'||!NT.room)return;const n=++NT.hitN;NT.pend.set(n,{msg:{n,z,dist:Math.round(dist),r:NT.M.r},next:0,tries:0});}
 function takeHit(d,peer){const key=peer+':'+d.n;if(NT.seen.has(key))return;NT.seen.add(key);
   if(NT.M.ph!=='live'||!player.alive||d.r!==NT.M.r)return;const z=d.z==='head'||d.z==='torso'||d.z==='limb'?d.z:'torso';
   MPM.hp-=MP_DMG[z];flashHit();shake=Math.max(shake,0.35);
   if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed · '+(z==='head'?'headshot':z==='torso'?'body shot':'limb shot')+' from '+(d.dist|0)+' m');}
   else toast('You are hit · '+(z==='torso'?'body':z)+' · '+Math.round(MPM.hp)+' hp left');}
-function netDeerHit(d,sub,leg,dist){flashHit();if(sub==='head')headDing();toast(deerName(d)+' hit · '+sub+' · '+Math.round(dist)+' m');const i=DEER.indexOf(d);if(i<0||!NT.room)return;
+function netDeerHit(d,sub,leg,dist){flashHit();if(sub==='head')headDing();else hitThud();toast(deerName(d)+' hit · '+sub+' · '+Math.round(dist)+' m');const i=DEER.indexOf(d);if(i<0||!NT.room)return;
   NT.room.emit('dhit',{v:NT.rosterV,i,sub,leg:leg|0,dist:Math.round(dist)}).catch(()=>{});}
 function netBirdHit(b,dist){flashHit();toast('Buzzard hit · '+Math.round(dist)+' m');const i=BZ.indexOf(b);if(i<0||!NT.room)return;NT.room.emit('bhit',{i,dist:Math.round(dist)}).catch(()=>{});}
 
