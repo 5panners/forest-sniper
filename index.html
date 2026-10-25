@@ -3353,7 +3353,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=163;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=164;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3811,7 +3811,7 @@ window.SNIPER_RES.heal={eat:(k,q)=>eatFood(k,q),hp:(v)=>{if(v!=null)MPM.hp=v;ret
 function ringReset(){FIRE.t=0;RH.warn=0;if(FIRE.R!==FIRE.R0||FIRE.builtR!==FIRE.R0){FIRE.R=FIRE.R0;fireBuild(FIRE.R0);}}
 
 // ---- headshot bell: a clear struck-bell ding (inharmonic partials, long ring) when the player's shot hits a head
-function ringSiren(){if(!AC||!soundOn)return;try{const t=AC.currentTime,g=AC.createGain(),o=AC.createOscillator();o.type='sawtooth';g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.2,t+0.05);g.gain.setValueAtTime(0.2,t+0.9);g.gain.linearRampToValueAtTime(0,t+1.1);o.frequency.setValueAtTime(600,t);o.frequency.linearRampToValueAtTime(950,t+0.5);o.frequency.linearRampToValueAtTime(600,t+1);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+1.2);}catch(e){}}
+function ringSiren(){if(!AC||!soundOn)return;try{const t=AC.currentTime,g=AC.createGain(),o=AC.createOscillator(),f=AC.createBiquadFilter();o.type='sawtooth';f.type='lowpass';f.frequency.value=1800;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.24,t+3.2);g.gain.setValueAtTime(0.24,t+4.4);g.gain.linearRampToValueAtTime(0,t+6);o.frequency.setValueAtTime(260,t);o.frequency.linearRampToValueAtTime(720,t+3);o.frequency.linearRampToValueAtTime(260,t+6);o.connect(f);f.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+6.1);}catch(e){}}
 function headDing(){if(!AC||!soundOn)return;try{const t=AC.currentTime,out=AC.createGain();out.gain.value=0.55;out.connect(AC.destination);
   for(const [r,g,d] of [[1,0.5,2.1],[2.0,0.3,1.4],[2.76,0.22,1.0],[5.4,0.09,0.45],[0.5,0.18,2.4]]){const o=AC.createOscillator(),e=AC.createGain();o.type='sine';o.frequency.value=1760*r;
     e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(g,t+0.003);e.gain.exponentialRampToValueAtTime(0.0005,t+d);o.connect(e);e.connect(out);o.start(t);o.stop(t+d+0.05);}}catch(e){}}
