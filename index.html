@@ -1,4 +1,4 @@
-<title>FOrest Sniper</title>
+<title>FOrest Sniper Royale</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -97,7 +97,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 <div id="sndDbg" class="chip" hidden></div>
 <div id="mapPanel" hidden><div class="chip"><canvas id="mapCv" width="560" height="560"></canvas><p>1 km playable square · grid 100 m · north up · P1 / P2 spawns · click to teleport (development)</p></div></div>
 <div id="overlay"><div class="card">
-  <h1 aria-label="FOrest Sniper">F<svg class="scopeO" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="9"/><line x1="50" y1="2" x2="50" y2="34" stroke="currentColor" stroke-width="6"/><line x1="50" y1="66" x2="50" y2="98" stroke="currentColor" stroke-width="6"/><line x1="2" y1="50" x2="34" y2="50" stroke="currentColor" stroke-width="6"/><line x1="66" y1="50" x2="98" y2="50" stroke="currentColor" stroke-width="6"/><circle cx="50" cy="50" r="3.5" fill="#d4552e"/></svg>rest Sniper</h1>
+  <h1 aria-label="FOrest Sniper Royale">F<svg class="scopeO" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="9"/><line x1="50" y1="2" x2="50" y2="34" stroke="currentColor" stroke-width="6"/><line x1="50" y1="66" x2="50" y2="98" stroke="currentColor" stroke-width="6"/><line x1="2" y1="50" x2="34" y2="50" stroke="currentColor" stroke-width="6"/><line x1="66" y1="50" x2="98" y2="50" stroke="currentColor" stroke-width="6"/><circle cx="50" cy="50" r="3.5" fill="#d4552e"/></svg>rest Sniper Royale</h1>
   <p class="sub">2 km of low-poly spruce and beech forest, granite tors, a mountain stream and a lake under the Alps. Only the centre 1 km square is playable.</p>
   <div class="tabs" role="tablist">
     <button role="tab" id="tabBrief" aria-selected="true" aria-controls="paneBrief">Briefing</button>
@@ -151,7 +151,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <p class="note">Day sounds are the forest birds and wind; night sounds are the owls. Each fades in after its start time and fades out after its stop time, over the fade length in game minutes. Time flow above sets how quickly game minutes pass.</p>
     <p class="note">100% is the recording at its original level. Press M in game to mute everything.</p>
   </div>
-  <div id="paneMp" role="tabpanel" aria-labelledby="tabMp" hidden><div id="mpBox"><b>1v1 match</b><button id="mpStart" type="button" hidden>Start match</button><button id="mpLeave" type="button" hidden>Leave</button><button id="mpDHost" type="button">Host match</button><button id="mpDJoin" type="button">Join match</button><textarea id="mpDx" rows="3" hidden spellcheck="false" aria-label="Connection code"></textarea><button id="mpDgo" type="button" hidden>Connect</button><div id="mpStat" class="note">Host a match and send the code to your opponent. They paste it and press Join match, then send you their reply code to paste back and Connect. One life per round, first to 3 rounds; 5 rounds loaded plus 15 spare.</div></div><label class="opt"><input type="checkbox" id="optNet" checked><span><b>Show network stats</b><small>While connected: round-trip time, connection path, data rates, lost packets, buffering and wildlife sync, top left.</small></span></label></div>
+  <div id="paneMp" role="tabpanel" aria-labelledby="tabMp" hidden><div id="mpBox"><b>1v1 match</b><button id="mpStart" type="button" hidden>Start match</button><button id="mpLeave" type="button" hidden>Leave</button><button id="mpDHost" type="button">Host match</button><button id="mpDJoin" type="button">Join match</button><textarea id="mpDx" rows="6" style="min-height:8em;resize:vertical" hidden spellcheck="false" aria-label="Connection code"></textarea><button id="mpDgo" type="button" hidden>Connect</button><div id="mpStat" class="note">Host a match and send the code to your opponent. They paste it and press Join match, then send you their reply code to paste back and Connect. One life per round, first to 3 rounds; 5 rounds loaded plus 15 spare.</div></div><label class="opt"><input type="checkbox" id="optNet" checked><span><b>Show network stats</b><small>While connected: round-trip time, connection path, data rates, lost packets, buffering and wildlife sync, top left.</small></span></label></div>
   <button id="deployBtn" disabled>Generating forest…</button><button id="resetBtn" type="button">Reset game</button>
   <div class="note" id="stats"></div>
 </div></div>
@@ -3353,7 +3353,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=164;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=166;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -4182,6 +4182,8 @@ function netStats(dt){const st=NT.st,nd=$('netDbg'),r=NT.room;_fpsS+=(1/Math.max
     'fps '+_fpsS.toFixed(0)+' · my state '+(NT.lastSize||0)+' B/pkt'].join('\n');}
 
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&NT.room&&playing&&!locked&&!fallback)toast('Click the game to capture the mouse');});
+
+;setInterval(()=>{const b=document.getElementById('mpDx');if(b&&!b.hidden&&b.scrollHeight>b.clientHeight+2)b.style.height=(b.scrollHeight+6)+'px';},400);
 
 window.SNIPER={mp:{start:mpStart,fanfare:playFanfare,goodbye:playGoodbye,leave:mpLeave,NT,RPS,MPM,P2RHB,P2PAIRS,packPose,getDeerVer:()=>deerVer,getYaw:()=>player.yaw,getDeer:()=>DEER,getAim:()=>aimPtTP?aimPtTP.toArray():null,getCam:()=>{const d=new THREE.Vector3();camera.getWorldDirection(d);return [camera.position.toArray(),d.toArray(),scoped]}},deerSample,getDCGCD:()=>dcGCD,getP2:()=>P2M,getBoltT:()=>boltT,P1_SPAWN,P2_SPAWN,getFALL:()=>FALL,STREAM,BED,CW,getSE:()=>STREAM_END,hFull,lakeE,LOWR,hitBird,getAmb:()=>amb,SND,playSample,initAudio,getAC:()=>AC,DAY,stepDay,meadowK,resetGame,BZ,BGRP,setBuzzards,STAIRS,TORTOPS,rockTopAt,DEER,MARKS,ROCKS,PGRID,setDeerCounts,disturb,miniZoom,keysDown:keys,player,marine,J,MAP,SEAT_INFO,SUMMIT,LW,chunks,stats,keys,input,camera,scene,renderer,castRay,groundH,setZero,
   set(o){if(o.yaw!=null)camYaw=o.yaw;if(o.pitch!=null)camPitch=o.pitch;if(o.pos)player.pos.set(o.pos[0],o.pos[1],o.pos[2]);if(o.fp!=null)viewFP=o.fp;if(o.zoom!=null)zoomI=o.zoom;},
