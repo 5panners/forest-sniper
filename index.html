@@ -3353,7 +3353,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=166;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=167;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3471,7 +3471,7 @@ function resRemoteCarve(d){const v=MPM.guest?NT.rosterV:deerVer;if(d.v!==v)retur
 function goneCarcass(o,k){o.carved=true;if(k==='b'){o.st='gone';o.root.visible=false;}else o.root.visible=false;}
 function carve(c){goneCarcass(c.o,c.k);let m,h=0,f=0;
   if(c.k==='d'){const y=CARVE[c.o.kind]||CARVE.roe;m=y.meat;h=y.hide;}else{m=1;f=2+(c.i%2);}
-  INV.meat+=m;INV.hide+=h;INV.feather+=f;invUI();toast('Butchered '+carcassName(c)+' · +'+m+' meat'+(h?' · +'+h+' hide':'')+(f?' · +'+f+' feathers':''));try{sfx.click();}catch(e){}
+  INV.meat+=m;INV.hide+=h;INV.feather+=f;invUI();const bh=m*GAME.bMeat;if(bh>0){if(GAME.bInst)MPM.hp=Math.min(HP_MAX,MPM.hp+bh);else HEAL.pool=Math.min(120,HEAL.pool+bh);}toast('Butchered '+carcassName(c)+' · +'+m+' meat'+(h?' · +'+h+' hide':'')+(f?' · +'+f+' feathers':'')+(bh>0?' · +'+bh+'% health':''));try{sfx.click();}catch(e){}
   if(NT.room&&MPM.on)NT.room.emit('carve',{k:c.k,i:c.i,v:MPM.guest?NT.rosterV:deerVer}).catch(()=>{});}
 function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();if(c){carve(c);return;}const i=resNearest();if(i==null)return;const n=RES_NODES[i],R=RES_T[n.ti];
   resSetGot(n,true);const q=R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));INV[R.k]+=q;invUI();toast('+'+q+' '+R.label+eatFood(R.k,q));try{sfx.click();}catch(e){}
@@ -3653,7 +3653,7 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): ring shrink, flame / smoke / spark look, tree fires
-const GAME_DEF={fDens:1.2,fWid:1.1,fFer:0.7,fSpd:0.25,sm:0.6,sp:2,spit:2,sDelay:300,sDur:600,sEnd:200,rdOn:1,rdBand:10,rdIn:0.5,rdOut:2,stStart:50,stGain:10,stDrain:10,stMult:2};
+const GAME_DEF={fDens:1.2,fWid:1.1,fFer:0.7,fSpd:0.25,sm:0.6,sp:2,spit:2,sDelay:300,sDur:600,sEnd:200,rdOn:1,rdBand:10,rdIn:0.5,rdOut:2,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 // ---- ring of fire: flat-shaded animated flame wall, smoke curtain, ember glow on the ground and rising sparks.
 // Four draw calls in all; every bit of motion is done in the vertex shaders, so the CPU only updates one time uniform per frame.
@@ -3781,6 +3781,7 @@ function fireCry(d,dt,dist){if(d.st!=='flee'&&d.st!=='dying'||d.st==='dead')retu
    ['sec','Flames'],['fDens','Flame density',0.3,2,0.05,2],['fWid','Flame width',0.5,2.5,0.05,2],['fFer','Flame ferocity (height and sway)',0.3,2.5,0.05,2],['fSpd','Flame speed',0.1,2,0.05,2],
    ['sec','Smoke and sparks'],['sm','Smoke density',0,2,0.05,2],['sp','Rising sparks',0,2,0.05,2],['spit','Sparks spitting inwards',0,2,0.05,2],
    ['sec','Stamina boost (double-tap W)'],['stStart','Starting stamina (%)',0,100,1,0],['stGain','Stamina per Magic Mushroom cluster (%)',0,25,1,0],['stDrain','Seconds of boost from a full bar',2,60,1,0],['stMult','Boost speed multiplier',1,3,0.1,1],
+   ['sec','Butchering animals'],['bMeat','Health per meat from a butchered animal (%)',0,10,0.5,1],['bInst','Health instantly (1) or over time (0)',0,1,1,0],
    ['sec','Ring damage to players'],['rdOn','Ring hurts players (1 = on, 0 = off)',0,1,1,0],['rdBand','Burn zone width inside the ring (m)',2,60,1,0],['rdIn','Damage per second at the wall, inside (hp/s)',0,40,0.5,1],['rdOut','Damage per second outside the ring (hp/s)',0,60,0.5,1],
    ];
   const rebuildKeys={fDens:1,fWid:1,sp:1,spit:1};let to=0;
