@@ -106,7 +106,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <button role="tab" id="tabAud" aria-selected="false" aria-controls="paneAud">Audio</button>
     <button role="tab" id="tabMp" aria-selected="false" aria-controls="paneMp">Multiplayer</button>
   </div>
-  <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div><p class="sec" style="margin-top:14px">Pickups</p><table class="foodT" style="border-collapse:collapse;font-size:13px;margin-top:6px"><tr><td style="padding:2px 18px 2px 0">Magic Mushrooms</td><td>+2% stamina per cluster</td></tr><tr><td style="padding:2px 18px 2px 0">Raw meat</td><td>no health, cook it first (coming later)</td></tr><tr><td style="padding:2px 18px 2px 0">Wood, lead ore, Tech Chips, gunpowder tins</td><td>for crafting (coming later)</td></tr></table><p class="note">Stamina powers a double-speed boost: double-tap W and keep holding it. The longer you hold, the more it drains. Health starts at 100% and cooked food will raise it up to 200%.</p></div>
+  <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div><p class="sec" style="margin-top:14px">Pickups</p><table class="foodT" style="border-collapse:collapse;font-size:13px;margin-top:6px"><tr><td style="padding:2px 18px 2px 0">Magic Mushrooms</td><td>+2% stamina per cluster</td></tr><tr><td style="padding:2px 18px 2px 0">Raw meat</td><td>gives limited health, cooked meat gives full health</td></tr><tr><td style="padding:2px 18px 2px 0">Wood, lead ore, Tech Chips, gunpowder tins</td><td>for crafting (coming later)</td></tr></table><p class="note">Stamina powers a double-speed boost: double-tap W and keep holding it. The longer you hold, the more it drains. Health starts at 100% and cooked food will raise it up to 200%.</p></div>
   <div id="paneGfx" role="tabpanel" aria-labelledby="tabGfx" hidden>
     <div class="opts">
       <label class="opt"><input type="checkbox" id="optFps"><span><b>Show FPS</b><small>Frame rate and frame time, top left.</small></span></label>
@@ -166,7 +166,7 @@ function init(){
 const PI=Math.PI, HP=PI/2;
 const HIP=0.78, THIGH=0.36, SHIN=0.34, UARM=0.27, FARM=0.25;
 const V=(x,y,z)=>new THREE.Vector3(x,y,z);
-const CAMO={wood:{name:'Hunting camo', cols:['#6f5e40','#4c4630','#8a7a55','#33301f','#5c6a3a'], w:[.3,.24,.2,.12,.14]}};
+const CAMO={wood:{name:'Hunting camo', cols:['#b9ab84','#7b8257','#8e9670','#5c6545','#9a8462'], w:[.3,.24,.2,.12,.14]}};
 const GEAR={wood:'#7e6a4c'};
 const SKINS=['#e7b996','#c68f6a','#9a6646','#5e3b29'];
 let camoKey='wood', skinHex=SKINS[1];
@@ -1254,7 +1254,7 @@ joint('hips',marine,0,HIP,0);
 joint('spine',J.hips,0,0.08,0);
 joint('chest',J.spine,0,0.2,0);
 joint('neck',J.chest,0,0.33,0);
-joint('head',J.neck,0,0.06,0); J.head.scale.setScalar(1.14);
+joint('head',J.neck,0,0.06,0); J.head.scale.setScalar(1.12);
 [['l',1],['r',-1]].forEach(([s,x])=>{
   joint(s+'Thigh',J.hips,x*0.125,-0.02,0); joint(s+'Shin',J[s+'Thigh'],0,-THIGH,0); joint(s+'Foot',J[s+'Shin'],0,-SHIN,0);
   joint(s+'Upper',J.chest,x*0.325,0.25,0); joint(s+'Fore',J[s+'Upper'],0,-UARM,0); joint(s+'Hand',J[s+'Fore'],0,-FARM,0);
@@ -1264,68 +1264,148 @@ const JOINT_NAMES=['hips','spine','chest','neck','head','lThigh','lShin','lFoot'
 
 const BLACK='#24262a', DARK='#3a3d3f', SOLE='#3b2f24', TAN='#8f7a59';
 
-// ---- deer hunter: hunting-camo jacket, green trousers, leather belt and boots, red cap with a white logo ----
-const PANTS='#4a5532', BELT='#4b3423', BOOT='#5a4029', CAPR='#4a2f22', LOGO='#f4f2ec';
-// hips / trousers
-part(J.hips,box(0.4,0.21,0.27,{sx:2,sy:1,sz:2}),'solid',PANTS,[0,-0.01,0]);
-part(J.hips,box(0.415,0.05,0.285),'solid',BELT,[0,0.075,0]);
-part(J.hips,box(0.06,0.04,0.02),'solid','#b59a5a',[0,0.075,0.145]); // buckle
-part(J.hips,box(0.06,0.09,0.07),'solid',BELT,[0.215,0.03,0.07]);    // knife sheath / pouch
-// jacket (hunting camo), a little loose: hem over the belt
-part(J.spine,box(0.42,0.25,0.29,{tt:1.05,sx:2,sy:2,sz:2}),'camo',0,[0,0.09,0.015]);
-part(J.spine,box(0.44,0.06,0.31),'camo',0,[0,-0.03,0.01]); // hem
-part(J.chest,box(0.5,0.36,0.31,{tb:0.9,tt:1.04,sx:2,sy:2,sz:2}),'camo',0,[0,0.15,0]);
-part(J.chest,box(0.22,0.08,0.22,{tt:0.85}),'camo',0,[0,0.34,0]); // collar
-part(J.chest,box(0.02,0.3,0.02),'solid','#3a3324',[0,0.15,0.157]); // zip
-part(J.chest,box(0.11,0.09,0.03),'camo',0,[0.13,0.22,0.16]);part(J.chest,box(0.11,0.09,0.03),'camo',0,[-0.13,0.22,0.16]); // chest pockets
-part(J.chest,box(0.13,0.1,0.035),'camo',0,[0.14,-0.02,0.16]);part(J.chest,box(0.13,0.1,0.035),'camo',0,[-0.14,-0.02,0.16]); // hand-warmer pockets
-// rifle sling across the back
-part(J.chest,box(0.035,0.5,0.015),'solid','#3b2b1d',[0,0.13,-0.16],[0,0,0.75]);
-// neck & head
-part(J.neck,cyl(0.095,0.105,0.12,6),'skin',0,[0,0.03,0]);
-// blocky head: flat cheeks, wide square jaw, slight brow ridge
-const headMesh=part(J.head,box(0.36,0.22,0.34,{tb:0.82,tt:0.8,sx:2,sy:2,sz:2}),'skin',0,[0,0.245,0.015]);
-part(J.head,box(0.39,0.17,0.36,{tb:0.78,tt:1.0,sx:2,sz:2}),'skin',0,[0,0.07,0.03]);             // square jaw
-part(J.head,box(0.32,0.12,0.13,{tb:0.78,tt:1.0,sx:2,sy:2,sz:2}),'skin',0,[0,0.285,-0.12]);                    // back of the skull: fuller towards the top, slim at the nape
-part(J.head,box(0.33,0.035,0.06),'skin',0,[0,0.26,0.19]);                                      // brow ridge
-part(J.head,box(0.055,0.08,0.06,{tt:0.6}),'skin',0,[0,0.15,0.245],[-0.15,0,0]); // nose
-part(J.head,box(0.06,0.1,0.07,{tb:0.85}),'skin',0,[0.205,0.2,0.0]); part(J.head,box(0.06,0.1,0.07,{tb:0.85}),'skin',0,[-0.205,0.2,0.0]);
-part(J.head,box(0.08,0.015,0.02),'solid','#3a2018',[0,0.088,0.262]); // mouth
-part(J.head,box(0.05,0.022,0.02),'solid','#2a2220',[0.085,0.215,0.232]);part(J.head,box(0.05,0.022,0.02),'solid','#2a2220',[-0.085,0.215,0.232]); // eyes
-part(J.head,box(0.07,0.018,0.02),'solid','#4a3626',[0.085,0.25,0.232]);part(J.head,box(0.07,0.018,0.02),'solid','#4a3626',[-0.085,0.25,0.232]); // brows
-part(J.head,box(0.3,0.06,0.2),'solid','#4a3626',[0,0.255,-0.1]); // hair below the cap at the back
-const BEARD='#5a3a22';
-part(J.head,box(0.33,0.13,0.2,{tb:0.8}),'solid',BEARD,[0,0.075,0.12]);   // full beard along the jaw
-part(J.head,box(0.24,0.15,0.12,{tb:0.65}),'solid',BEARD,[0,0.015,0.19]);    // chin
-part(J.head,box(0.17,0.035,0.04),'solid','#4d311c',[0,0.115,0.255]);      // moustache
-// baseball cap (kept as 'helm' so the bake step merges it)
-const helm=new THREE.Group(); helm.position.set(0,0.255,-0.005); helm.rotation.x=-0.05; J.head.add(helm);
-// felt hunting hat: pinched crown with a centre dent, dark hat band, wide brim that droops at the front
-const FELT='#8a7550', FELT2='#74603f', HBAND='#3f3a2e';
-part(helm,new THREE.CylinderGeometry(0.18,0.27,0.22,8),'solid',FELT,[0,0.11,0.0],null,[1,1,1.08]);        // crown, tapering to a rounded top
-part(helm,new THREE.CylinderGeometry(0.1,0.18,0.035,8),'solid',FELT2,[0,0.235,0.0],null,[1,1,1.08]);   // soft top
-part(helm,cyl(0.253,0.258,0.07,8,true),'solid',HBAND,[0,0.045,0],null,[1,1,1.08]);                  // band
-part(helm,new THREE.CylinderGeometry(0.4,0.42,0.018,12),'solid',FELT,[0,0.005,0.015],[0.03,0,0],[0.9,1,0.98]);   // brim
-part(helm,new THREE.CylinderGeometry(0.36,0.385,0.02,12,1,false,-0.9,1.8),'solid',FELT2,[0,-0.012,0.18],[0.16,0,0],[0.95,1,0.6]); // front droop
-// arms (jacket sleeves, bare hands)
+// ---- hunter (reference look): ushanka with red cords and pom, sunglasses, full beard and grin, camo shirt, pack with bedroll, cargo trousers, chunky boots ----
+const PANTS='#6f7d5c', POCK='#64714f', BELT='#6b5443', BOOT='#7a6151', HATC=['#a8987f','#9d8d75','#b3a38a','#a29179'], HAIR=['#c49a5c','#b88a4c','#d4ab6a'], BEARDC=['#8b725a','#7e6650','#967d63','#856c55'], PACK=['#a3957f','#998b75','#ab9d87'], STRAP='#6e5644', CORD='#b04a3e';
+const _hv=new THREE.Vector3(),_hm=new THREE.Matrix4(),_hq=new THREE.Quaternion(),_he=new THREE.Euler();
+function hH(x,y,z){let h=Math.sin(x*127.1+y*311.7+z*74.7)*43758.5453;return h-Math.floor(h);}
+function vN(x,y,z){const xi=Math.floor(x),yi=Math.floor(y),zi=Math.floor(z),xf=x-xi,yf=y-yi,zf=z-zi,s=t=>t*t*(3-2*t),u=s(xf),v=s(yf),w=s(zf);
+  const L=(a,b,t)=>a+(b-a)*t;
+  return L(L(L(hH(xi,yi,zi),hH(xi+1,yi,zi),u),L(hH(xi,yi+1,zi),hH(xi+1,yi+1,zi),u),v),L(L(hH(xi,yi,zi+1),hH(xi+1,yi,zi+1),u),L(hH(xi,yi+1,zi+1),hH(xi+1,yi+1,zi+1),u),v),w);}
+// rounded box: subdivided box with its corners pulled onto spheres of radius r
+function rbox(w,h,d,r,s){const g=new THREE.BoxGeometry(w,h,d,s||4,s||4,s||4),p=g.attributes.position,hx=w/2-r,hy=h/2-r,hz=d/2-r;
+  for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i);const cx=Math.max(-hx,Math.min(hx,x)),cy=Math.max(-hy,Math.min(hy,y)),cz=Math.max(-hz,Math.min(hz,z));
+    _hv.set(x-cx,y-cy,z-cz);if(_hv.lengthSq()>1e-9)_hv.setLength(r);p.setXYZ(i,cx+_hv.x,cy+_hv.y,cz+_hv.z);}
+  return g;}
+const ell=(rx,ry,rz,ws,hs)=>{const g=new THREE.SphereGeometry(1,ws||12,hs||9);g.scale(rx,ry,rz);return g;};
+const tcyl=(rt,rb,h,s,hs)=>new THREE.CylinderGeometry(rt,rb,h,s||10,hs||2);
+// facet jitter: same position -> same push, so seams stay closed
+function rough(g,a){const p=g.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
+  p.setXYZ(i,x+(hH(x*91,y*37,z*53)-0.5)*a,y+(hH(y*71,z*29,x*43)-0.5)*a,z+(hH(z*61,x*17,y*83)-0.5)*a);}return g;}
+// bake transform into the geometry, optionally drop triangles, then colour per triangle
+function hp(parent,geo,col,pos,rot,scl,o){o=o||{};let g=geo;if(o.rough)rough(g,o.rough);
+  _hq.setFromEuler(_he.set(rot?rot[0]:0,rot?rot[1]:0,rot?rot[2]:0));_hm.compose(_hv.set(pos?pos[0]:0,pos?pos[1]:0,pos?pos[2]:0),_hq,new THREE.Vector3(scl?scl[0]:1,scl?scl[1]:1,scl?scl[2]:1));
+  g.applyMatrix4(_hm);if(g.index)g=g.toNonIndexed();
+  if(o.cut){const P=g.attributes.position.array,keep=[];for(let t=0;t<P.length;t+=9){const cx=(P[t]+P[t+3]+P[t+6])/3,cy=(P[t+1]+P[t+4]+P[t+7])/3,cz=(P[t+2]+P[t+5]+P[t+8])/3;if(!o.cut(cx,cy,cz))for(let k=0;k<9;k++)keep.push(P[t+k]);}
+    g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(keep),3));}
+  const m=part(parent,g,col==='SKIN'?'skin':'solid',col==='SKIN'?0:'#ffffff');if(col==='SKIN')return m;
+  const P=m.geometry.attributes.position.array,C=m.geometry.attributes.color.array,off=o.off||0;
+  for(let t=0;t<P.length;t+=9){const cx=(P[t]+P[t+3]+P[t+6])/3+off,cy=(P[t+1]+P[t+4]+P[t+7])/3,cz=(P[t+2]+P[t+5]+P[t+8])/3;let hex,j=1;
+    if(col==='CAMO'){const n=vN(cx*7.5,cy*7.5,cz*7.5)*0.75+vN(cx*17,cy*17,cz*17)*0.25;const cs=CAMO[camoKey].cols;hex=cs[n<0.36?0:n<0.46?1:n<0.55?2:n<0.64?3:4];}
+    else if(Array.isArray(col)){const n=vN(cx*(o.f||14),cy*(o.f||14),cz*(o.f||14));hex=col[Math.max(0,Math.min(col.length-1,Math.floor((n-0.15)/0.7*col.length)))];j=0.96+hH(cx*9,cy*9,cz*9)*0.08;}
+    else{hex=col;j=0.95+hH(cx*13,cy*13,cz*13)*0.09;}
+    HC_.set(hex);HC_.convertSRGBToLinear();for(let v=0;v<3;v++){C[t+v*3]=HC_.r*j;C[t+v*3+1]=HC_.g*j;C[t+v*3+2]=HC_.b*j;}}
+  m.geometry.attributes.color.needsUpdate=true;return m;}
+const HC_=new THREE.Color();
+function tube(parent,pts,r,col){const c=new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(p[0],p[1],p[2])));return hp(parent,new THREE.TubeGeometry(c,Math.max(6,pts.length*4),r,6,false),col);}
+
+
+// ---------- hips: sage cargo trousers seat, belt with a square buckle, olive pouch on the left hip ----------
+hp(J.hips,rbox(0.45,0.25,0.31,0.08,5),PANTS,[0,-0.03,0]);
+hp(J.hips,rbox(0.47,0.065,0.33,0.025,3),BELT,[0,0.075,0]);
+hp(J.hips,rbox(0.09,0.07,0.022,0.008,2),'#a8a39a',[0,0.075,0.168]);hp(J.hips,rbox(0.05,0.034,0.024,0.006,2),'#5a4535',[0,0.075,0.171]);
+hp(J.hips,rbox(0.12,0.12,0.07,0.022,3),'#7e8360',[0.17,0.0,0.15],[0,0.25,0]);
+hp(J.hips,rbox(0.125,0.05,0.078,0.018,3),'#747958',[0.17,0.05,0.152],[0.12,0.25,0]);
+hp(J.hips,rbox(0.024,0.03,0.014,0.004,1),'#a8a39a',[0.18,0.03,0.192],[0,0.25,0]);
+hp(J.hips,rbox(0.1,0.11,0.06,0.02,3),'#7e8360',[-0.215,0.0,0.06],[0,-1.2,0]);
+// ---------- camo shirt: boxy, collar, two flap pockets, button placket ----------
+hp(J.spine,rbox(0.47,0.27,0.31,0.07,5),'CAMO',[0,0.09,0.01]);
+hp(J.spine,rbox(0.49,0.06,0.33,0.025,4),'CAMO',[0,-0.02,0.01],null,null,{off:3});
+hp(J.chest,rbox(0.54,0.42,0.33,0.09,6),'CAMO',[0,0.14,0],null,null,{off:7});
+hp(J.chest,ell(0.11,0.05,0.11,10,6),'SKIN',[0,0.34,0.035]);
+[1,-1].forEach(sx=>{
+  hp(J.chest,rbox(0.12,0.025,0.1,0.01,2),'CAMO',[sx*0.07,0.34,0.125],[0.4,sx*0.45,sx*-0.3],null,{off:11});
+  hp(J.chest,rbox(0.12,0.11,0.03,0.012,3),'CAMO',[sx*0.125,0.19,0.163],null,null,{off:13+sx});
+  hp(J.chest,rbox(0.13,0.045,0.035,0.01,2),'CAMO',[sx*0.125,0.252,0.166],null,null,{off:17+sx});
+  hp(J.chest,rbox(0.018,0.018,0.012,0.005,1),'#4a4236',[sx*0.125,0.238,0.186]);
+});
+for(let i=0;i<4;i++)hp(J.chest,rbox(0.016,0.016,0.01,0.004,1),'#4a4236',[0,0.3-i*0.1,0.168]);
+[1,-1].forEach(sx=>{
+  hp(J.chest,rbox(0.06,0.4,0.03,0.01,2),STRAP,[sx*0.19,0.14,0.168],[0,0,sx*0.05]);
+  hp(J.chest,rbox(0.065,0.03,0.33,0.01,2),STRAP,[sx*0.19,0.34,0.0]);
+  hp(J.chest,rbox(0.06,0.03,0.24,0.01,2),STRAP,[sx*0.25,-0.04,-0.08],[0,0,sx*0.1]);
+});
+// ---------- khaki rucksack: lid, front pocket with a flap and tab, side pockets; bedroll strapped on top ----------
+hp(J.chest,rbox(0.4,0.44,0.2,0.05,4),PACK,[0,0.1,-0.265],null,null,{f:10});
+hp(J.chest,rbox(0.4,0.14,0.215,0.035,3),PACK,[0,0.29,-0.268],[-0.05,0,0],null,{f:12});
+hp(J.chest,rbox(0.27,0.18,0.07,0.025,3),PACK,[0,0.0,-0.385],null,null,{f:11});
+hp(J.chest,rbox(0.28,0.07,0.08,0.02,3),'#978972',[0,0.1,-0.39],[0.15,0,0]);
+hp(J.chest,rbox(0.035,0.05,0.012,0.006,1),'#8a7c66',[0,0.07,-0.43]);
+[0.1,-0.1].forEach(x=>hp(J.chest,rbox(0.04,0.2,0.012,0.006,1),'#958770',[x,0.26,-0.378]));
+[1,-1].forEach(sx=>{hp(J.chest,rbox(0.06,0.2,0.14,0.02,3),PACK,[sx*0.225,0.03,-0.265],null,null,{f:11});hp(J.chest,rbox(0.065,0.05,0.145,0.015,2),'#978972',[sx*0.226,0.115,-0.265]);});
+{const R=[0,0.43,-0.25];
+ hp(J.chest,tcyl(0.085,0.085,0.58,14,4),['#b9a891','#ad9c85','#c3b39b'],R,[0,0,HP],null,{f:18,rough:0.006});
+ [1,-1].forEach(e=>{hp(J.chest,tcyl(0.086,0.086,0.01,14,1),'#a39480',[e*0.291,R[1],R[2]],[0,0,HP]);
+   hp(J.chest,tcyl(0.062,0.062,0.014,12,1),'#c3b39b',[e*0.293,R[1],R[2]],[0,0,HP]);
+   hp(J.chest,tcyl(0.04,0.04,0.018,10,1),'#a39480',[e*0.295,R[1],R[2]],[0,0,HP]);
+   hp(J.chest,tcyl(0.018,0.018,0.022,8,1),'#c3b39b',[e*0.297,R[1],R[2]],[0,0,HP]);});
+ [-0.15,0.15].forEach(x=>hp(J.chest,tcyl(0.09,0.09,0.03,14,1),STRAP,[x,R[1],R[2]],[0,0,HP]));}
+// ---------- neck and head ----------
+hp(J.neck,tcyl(0.09,0.1,0.13,10),'SKIN',[0,0.03,0]);
+const headMesh=hp(J.head,ell(0.2,0.215,0.2,16,12),'SKIN',[0,0.2,0.015]);
+hp(J.head,ell(0.065,0.05,0.045,8,6),'SKIN',[0.1,0.17,0.17]);hp(J.head,ell(0.065,0.05,0.045,8,6),'SKIN',[-0.1,0.17,0.17]);
+hp(J.head,new THREE.ConeGeometry(0.05,0.12,4),'SKIN',[0,0.215,0.232],[-0.45,0,0]);   // wedge nose: narrow bridge between the lenses, wide tip pointing down-forward
+hp(J.head,ell(0.036,0.022,0.03,6,4),'SKIN',[0,0.168,0.252]);
+// sunglasses
+[1,-1].forEach(sx=>{
+  hp(J.head,rbox(0.135,0.085,0.022,0.01,3),'#3e4043',[sx*0.088,0.23,0.222],[0,sx*0.12,0]);
+  hp(J.head,rbox(0.015,0.1,0.006,0.003,1),'#8e9296',[sx*0.072,0.23,0.236],[0,sx*0.12,0.55]);
+  hp(J.head,rbox(0.012,0.014,0.25,0.004,1),'#2a2b2d',[sx*0.198,0.258,0.1]);
+  hp(J.head,rbox(0.09,0.022,0.028,0.008,2),'#9a7a50',[sx*0.09,0.293,0.212],[0,sx*0.12,sx*0.12]);
+});
+hp(J.head,rbox(0.36,0.018,0.028,0.006,2),'#2a2b2d',[0,0.274,0.219]);hp(J.head,rbox(0.045,0.016,0.028,0.006,1),'#2a2b2d',[0,0.248,0.232]);
+// ginger-blond hair: fringe, sides down to the jaw, a curtain of strands at the back
+[[-0.16,0.2,0.05],[-0.11,-0.1,0.04],[0.02,0.15,0.035],[0.11,-0.15,0.04],[0.16,0.2,0.05]].forEach(([x,rz,l],i)=>
+  hp(J.head,new THREE.ConeGeometry(0.05,l+0.05,4),HAIR[i%3],[x,0.34-l*0.45,0.185],[Math.PI-0.3,0,rz]));
+[1,-1].forEach(sx=>{for(let k=0;k<4;k++)hp(J.head,new THREE.ConeGeometry(0.04,0.24+0.04*(k%2),4),HAIR[(k+1)%3],[sx*(0.2+0.008*k),0.16-0.02*(k%2),0.11-k*0.07],[Math.PI,0,sx*0.12]);});
+for(let k=0;k<7;k++){const x=-0.18+k*0.06;hp(J.head,new THREE.ConeGeometry(0.045,0.26+0.05*(k%2),4),HAIR[k%3],[x,0.14-0.025*(k%2),-0.16+Math.abs(x)*0.25],[Math.PI+0.15,0,x*0.4]);}
+hp(J.head,ell(0.19,0.16,0.1,10,8),HAIR,[0,0.22,-0.12],null,null,{f:20});
+// beard: full, juts forward into a rounded block, open grin cut through it
+const mouthCut=(x,y,z)=>z>0.15&&Math.abs(x)<0.082&&y>0.072&&y<0.152;
+const cheekCut=(x,y,z)=>z>0.1&&y>0.168&&Math.abs(x)<0.165;
+// beard: a flat-fronted block with crisp edges, a clean rectangular opening round the grin, and a V-shaped chin
+hp(J.head,box(0.41,0.22,0.31,{tb:0.74,sx:8,sy:6,sz:4}),BEARDC,[0,0.075,0.08],null,null,{rough:0.006,f:12,cut:(x,y,z)=>mouthCut(x,y,z)||cheekCut(x,y,z)});
+hp(J.head,box(0.3,0.13,0.22,{tb:0.25,sx:3,sz:3}),BEARDC,[0,-0.1,0.11],null,null,{rough:0.005,f:12});
+hp(J.head,rbox(0.175,0.034,0.04,0.008,2),BEARDC[1],[0,0.163,0.22]);
+hp(J.head,rbox(0.17,0.085,0.03,0.01,2),'SKIN',[0,0.113,0.205]);
+hp(J.head,rbox(0.108,0.024,0.02,0.008,2),'#f3efe9',[0,0.128,0.219]);
+hp(J.head,rbox(0.1,0.02,0.02,0.008,2),'#c46a60',[0,0.108,0.218]);
+hp(J.head,rbox(0.11,0.008,0.022,0.003,1),'#8e4840',[0,0.117,0.22]);
+// ---------- ushanka: tall faceted beige crown, turned-up front, flat ear flaps, red cord round the crown, pom ----------
+const helm=new THREE.Group(); helm.position.set(0,0.288,-0.005); helm.rotation.x=-0.03; J.head.add(helm);
+hp(helm,tcyl(0.272,0.29,0.27,10,3),HATC,[0,0.15,0],null,[1,1,1.04],{rough:0.01,f:9});
+hp(helm,tcyl(0.215,0.272,0.06,10,1),HATC,[0,0.315,0],null,[1,1,1.04],{rough:0.008,f:9});
+hp(helm,tcyl(0.12,0.215,0.025,10,1),HATC,[0,0.357,0],null,[1,1,1.04]);
+hp(helm,rbox(0.5,0.12,0.07,0.03,4),['#b8a890','#ae9e86','#c1b199'],[0,0.05,0.27],[0.12,0,0],null,{rough:0.008,f:10});
+[1,-1].forEach(sx=>{
+  hp(helm,rbox(0.055,0.32,0.27,0.022,4),HATC,[sx*0.275,-0.12,0.0],[0,0,sx*-0.11],null,{rough:0.008,f:10});
+  tube(helm,[[sx*0.29,0.125,0.06],[sx*0.36,0.0,0.1],[sx*0.41,-0.07,0.08],[sx*0.43,-0.11,0.06]],0.009,CORD);
+  tube(helm,[[sx*0.29,0.125,-0.02],[sx*0.355,-0.01,-0.04],[sx*0.39,-0.08,-0.06]],0.009,CORD);
+  hp(helm,new THREE.IcosahedronGeometry(0.02,0),CORD,[sx*0.432,-0.12,0.06]);hp(helm,new THREE.IcosahedronGeometry(0.02,0),CORD,[sx*0.392,-0.09,-0.06]);
+});
+hp(helm,new THREE.TorusGeometry(0.287,0.009,5,32),CORD,[0,0.125,0],[HP,0,0],[1,1.04,1]);
+hp(helm,rbox(0.48,0.2,0.06,0.025,4),HATC,[0,-0.06,-0.29],[-0.22,0,0],null,{rough:0.008,f:10});
+hp(helm,tcyl(0.012,0.016,0.04,6,1),CORD,[0,0.38,0]);
+hp(helm,new THREE.IcosahedronGeometry(0.065,1),['#a9473b','#9a3e33','#b65245'],[0,0.42,0],null,null,{rough:0.008,f:30});
+// ---------- arms and legs ----------
 ['l','r'].forEach((s,i)=>{
   const sx=i===0?1:-1;
-  part(J[s+'Upper'],cyl(0.088,0.092,0.1,6),'camo',0,[0,-0.01,0]);
-  part(J[s+'Upper'],box(0.15,UARM,0.15,{tb:0.86,sy:2}),'camo',0,[0,-UARM/2,0]);
-  part(J[s+'Fore'],box(0.135,FARM,0.135,{tb:0.8,sy:2}),'camo',0,[0,-FARM/2,0]);
-  part(J[s+'Fore'],box(0.115,0.04,0.115),'solid','#3a3324',[0,-FARM+0.02,0]); // knit cuff
-  part(J[s+'Hand'],box(0.1,0.105,0.078,{tb:0.9}),'skin',0,[0,-0.045,0.005]);
-  part(J[s+'Hand'],box(0.032,0.06,0.032),'skin',0,[-sx*0.0,-0.035,0.05],[0.4,0,0]);
-  // legs: green trousers, leather boots
-  part(J[s+'Thigh'],box(0.195,THIGH,0.205,{tb:0.78,sy:2,sx:2,sz:2}),'solid',PANTS,[0,-THIGH/2,0]);
-  part(J[s+'Thigh'],box(0.035,0.11,0.1),'solid','#414b2b',[sx*0.1,-0.2,0.0]); // cargo pocket
-  part(J[s+'Shin'],box(0.155,SHIN,0.165,{tb:0.8,sy:2}),'solid',PANTS,[0,-SHIN/2,0]);
-  part(J[s+'Shin'],box(0.14,0.1,0.15),'solid',BOOT,[0,-SHIN+0.05,0]); // boot tops
-  part(J[s+'Foot'],box(0.135,0.13,0.2,{tt:0.95}),'solid',BOOT,[0,0.025,0.03]);
-  part(J[s+'Foot'],box(0.135,0.07,0.09,{tt:0.85}),'solid',BOOT,[0,-0.01,0.16]);
-  part(J[s+'Foot'],box(0.145,0.03,0.29),'solid','#2e241a',[0,-0.045,0.06]);
+  hp(J[s+'Upper'],ell(0.095,0.1,0.095,10,8),'CAMO',[0,-0.005,0],null,null,{off:21+i});
+  hp(J[s+'Upper'],tcyl(0.085,0.078,UARM+0.03,10,3),'CAMO',[0,-UARM/2,0],null,null,{off:23+i});
+  hp(J[s+'Fore'],tcyl(0.078,0.068,FARM,10,3),'CAMO',[0,-FARM/2+0.01,0],null,null,{off:25+i});
+  hp(J[s+'Fore'],tcyl(0.08,0.08,0.04,10,1),'CAMO',[0,-FARM+0.03,0],null,null,{off:27+i});
+  hp(J[s+'Hand'],rbox(0.095,0.1,0.08,0.028,3),'SKIN',[0,-0.045,0.005]);
+  hp(J[s+'Hand'],rbox(0.09,0.06,0.065,0.02,2),'SKIN',[0,-0.105,0.015],[0.25,0,0]);
+  hp(J[s+'Hand'],rbox(0.032,0.07,0.032,0.012,2),'SKIN',[0,-0.035,0.055],[0.4,0,0]);
+  hp(J[s+'Thigh'],tcyl(0.13,0.112,THIGH+0.05,12,3),PANTS,[0,-THIGH/2+0.01,0],null,null,{rough:0.008});
+  hp(J[s+'Thigh'],rbox(0.06,0.17,0.15,0.018,3),POCK,[sx*0.125,-0.2,0.0],[0,0,sx*-0.04]);
+  hp(J[s+'Thigh'],rbox(0.066,0.045,0.155,0.012,2),POCK,[sx*0.128,-0.12,0.0],[0,0,sx*-0.04]);
+  hp(J[s+'Shin'],tcyl(0.11,0.1,SHIN,12,3),PANTS,[0,-SHIN/2,0],null,null,{rough:0.008});
+  hp(J[s+'Shin'],tcyl(0.114,0.106,0.07,12,1),PANTS,[0,-SHIN+0.08,0],null,null,{rough:0.01});
+  hp(J[s+'Shin'],tcyl(0.092,0.098,0.1,10,1),BOOT,[0,-SHIN+0.03,0]);
+  hp(J[s+'Foot'],rbox(0.16,0.15,0.18,0.045,3),BOOT,[0,0.03,0.0]);
+  hp(J[s+'Foot'],ell(0.082,0.065,0.11,10,7),BOOT,[0,-0.005,0.11]);
+  hp(J[s+'Foot'],rbox(0.17,0.035,0.32,0.015,3),'#5e4a3e',[0,-0.05,0.05]);
 });
-
 /* ---------------- M27 IAR (origin = pistol grip junction, barrel +Z) ---------------- */
 const gun=new THREE.Group(); J.gun.add(gun); gun.scale.setScalar(1.2);   // rifle 20% larger
 const mag=new THREE.Group(); mag.position.set(0,-0.03,0.11); gun.add(mag);
@@ -2683,7 +2763,7 @@ function deerAI(d,dt){
   if(d.wound==='fatal'||d.wound==='gut'){d.dieT-=dt;if(d.dieT<=0){killDeer(d,false);return;}}
   d.stT-=dt;d.fear=Math.max(0,d.fear-dt*0.025);d.roarA-=dt;
   {const fr=Math.hypot(d.x,d.z),fd=FIREWALL-fr;if(d.st!=='dying'&&(fd<20||(d.inFire&&fd<42))){d.inFire=true;if(d.st!=='flee'){release(d);d.st='flee';d.stT=60;}d.fleeLeft=Math.max(d.fleeLeft,60);d.fear=1.2;d.thx=d.x*(1+30/(fr||1));d.thz=d.z*(1+30/(fr||1));d.fleeOff=0;}else if(d.inFire){d.inFire=false;d.fleeLeft=Math.min(d.fleeLeft,35);}}
-  const K=d.K,wm=d.limp>=0?0.55:d.wound==='gut'?0.7:1;let tS=0,steer=false;
+  const K=d.K,wm=(d.limp>=0?0.55:d.wound==='gut'?0.7:1)*((d.limp>=0||d.wound)?0.75:1);let tS=0,steer=false;
   switch(d.st){
     case 'graze': case 'hold':{d.subT-=dt;if(d.subT<=0)pickSub(d);
       if(d.sub==='step'){tS=0.35;d.tx=d.x+Math.sin(d.yaw+d.wob)*6;d.tz=d.z+Math.cos(d.yaw+d.wob)*6;steer=true;}
@@ -2806,7 +2886,7 @@ function placeP2Stag(){if(P2M)return;P2_SPAWN.y=groundH(P2_SPAWN.x,P2_SPAWN.z);
   const CAMOC=CAMO[camoKey].cols.map(lin),CWT=CAMO[camoKey].w;
   const JACKET=lin('#3d6b34'),POCKET=lin('#355c2c');
   const near=(r,g2,b,c,t)=>Math.abs(r-c.r)<t*Math.max(c.r,0.02)&&Math.abs(g2-c.g)<t*Math.max(c.g,0.02)&&Math.abs(b-c.b)<t*Math.max(c.b,0.02);
-  const src={pants:lin('#4a5532'),pocket:lin('#414b2b'),felt:lin('#8a7550'),felt2:lin('#74603f'),band:lin('#3f3a2e')};
+  const src={pants:lin('#6f7d5c'),pocket:lin('#64714f'),felt:lin('#8a7550'),felt2:lin('#74603f'),band:lin('#3f3a2e')};
   const GREY={felt:lin('#7d8084'),felt2:lin('#6a6d71'),band:lin('#2b2d30')};
   let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
   const camoPickP=r=>{let a=0;for(let i=0;i<CWT.length;i++){a+=CWT[i];if(r<=a)return CAMOC[i];}return CAMOC[0];};
@@ -3353,7 +3433,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=167;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=180;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3523,7 +3603,7 @@ function applyLook(i){lookI=Math.max(0,Math.min(3,i|0));const seen=new Set();
     m.defines=m.defines||{};if(lookI)m.defines.GSTYLE=lookI;else delete m.defines.GSTYLE;m.needsUpdate=true;}});
   try{localStorage.setItem('fsMist2',String(lookI));}catch(e){}}
 (function(){const el=document.getElementById('optMist');if(!el)return;let v=1;try{const q=localStorage.getItem('fsMist2');if(q!=null)v=+q||0;}catch(e){}el.value=String(v);el.onchange=()=>applyLook(+el.value);})();
-function lookStep(){if(!_dmgApplied)dmgApply();fireStep();leadGlowStep();owlStep();vitalsStep();if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
+function lookStep(){edgeStep();if(!_dmgApplied)dmgApply();fireStep();leadGlowStep();owlStep();vitalsStep();if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
 window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial){c++;if(m.defines&&m.defines.GSTYLE)d++;}});return {sh:true,std:c,withDef:d,keys:renderer.info.programs.map(p=>p.cacheKey.includes('GSTYLE')).join(','),lookI};};
 
 // ---- edge glow on every collectible: a slightly enlarged back-face shell per node, additive, pulsing on a 3 s cycle, one colour per resource type
@@ -3799,10 +3879,17 @@ window.SNIPER_RES.fire=()=>({FIRE,GAME,fireBuild,SND,FSND,ringHurt,playing:()=>p
 
 // ---- the ring hurts: a burn zone just inside the wall (strongest at the wall) and everything outside it. Health 0 = dead, which ends the round for the opponent in a match.
 const RH={fl:0,warn:0};
+const EDGE={burn:0,fl:0,lt:0,el:null};
+(function(){const st=document.createElement('style');st.textContent='#edgeGlow{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;background:linear-gradient(90deg,rgba(255,30,20,.75) 0,rgba(255,30,20,0) 22%,rgba(255,30,20,0) 78%,rgba(255,30,20,.75) 100%)}';document.head.appendChild(st);const e=document.createElement('div');e.id='edgeGlow';document.body.appendChild(e);EDGE.el=e;})();
+function edgeFlash(){EDGE.fl=1;}
+function edgeStep(){const now=performance.now(),dt=Math.min(0.25,(now-(EDGE.lt||now))/1000);EDGE.lt=now;let o=0;
+  if(EDGE.burn>0){EDGE.burn-=dt;o=Math.max(o,(0.45+0.55*Math.sin(now/1000*7))*0.5*Math.min(1,EDGE.burn/0.2)+0.12);}
+  if(EDGE.fl>0){EDGE.fl-=dt/0.7;o=Math.max(o,Math.max(0,EDGE.fl)*0.8);}
+  if(!player.alive||!playing)o=0;o=Math.round(o*50)/50;if(EDGE.o!==o){EDGE.o=o;EDGE.el.style.opacity=o;}}
 function ringHurt(dt){if(!FIRE.lit||!GAME.rdOn||!playing||!player.alive||MPM.hp<=0)return;if(MPM.on&&NT.M.ph!=='live')return;
   const d=FIRE.R-Math.hypot(player.pos.x,player.pos.z);let dps=0,out=false;
   if(d<0){dps=GAME.rdOut;out=true;}else if(d<GAME.rdBand){const k=1-d/GAME.rdBand;dps=GAME.rdIn*k*k*(3-2*k);}
-  RH.warn-=dt;if(dps<=0){return;}
+  RH.warn-=dt;if(dps<=0){return;}EDGE.burn=0.35;
   if(RH.warn<=0){RH.warn=4;toast(out?'You are outside the ring of fire · get back inside!':'The ring of fire is burning you · move away from the flames');}
   MPM.hp-=dps*dt;RH.fl-=dt;if(RH.fl<=0){RH.fl=0.5;flashHit();}
   if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Burned to death by the ring of fire');}}
@@ -4020,7 +4107,7 @@ function netHitRemote(h,dist){flashHit();const z=h.zone;if(z==='head')headDing()
   if(NT.M.ph!=='live'||!NT.room)return;const n=++NT.hitN;NT.pend.set(n,{msg:{n,z,dist:Math.round(dist),r:NT.M.r},next:0,tries:0});}
 function takeHit(d,peer){const key=peer+':'+d.n;if(NT.seen.has(key))return;NT.seen.add(key);
   if(NT.M.ph!=='live'||!player.alive||d.r!==NT.M.r)return;const z=d.z==='head'||d.z==='torso'||d.z==='limb'?d.z:'torso';
-  MPM.hp-=MP_DMG[z];flashHit();shake=Math.max(shake,0.35);
+  MPM.hp-=MP_DMG[z];flashHit();edgeFlash();shake=Math.max(shake,0.35);
   if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed · '+(z==='head'?'headshot':z==='torso'?'body shot':'limb shot')+' from '+(d.dist|0)+' m');}
   else toast('You are hit · '+(z==='torso'?'body':z)+' · '+Math.round(MPM.hp)+' hp left');}
 function netDeerHit(d,sub,leg,dist){flashHit();if(sub==='head')headDing();else hitThud();toast(deerName(d)+' hit · '+sub+' · '+Math.round(dist)+' m');const i=DEER.indexOf(d);if(i<0||!NT.room)return;
