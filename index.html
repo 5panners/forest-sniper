@@ -3353,7 +3353,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=162;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=163;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3761,7 +3761,7 @@ function fireSound(){if(!AC||!soundOn)return;
   FSND.out.gain.setTargetAtTime(lvl*1.1,AC.currentTime,0.25);
   const nx=p.x/r*FIRE.R,nz2=p.z/r*FIRE.R,dd=Math.max(8,Math.min(d,200)),sx=p.x+(nx-p.x)/Math.max(1,d)*dd,sz=p.z+(nz2-p.z)/Math.max(1,d)*dd;
   if(FSND.pn.positionX){FSND.pn.positionX.value=sx;FSND.pn.positionY.value=camera.position.y+4;FSND.pn.positionZ.value=sz;}else FSND.pn.setPosition(sx,camera.position.y+4,sz);}
-function fireStep(){fireSound();{const now=performance.now(),dt=Math.min(0.25,(now-(FIRE.lt||now))/1000);FIRE.lt=now;if(playing)FIRE.t+=dt;const u=Math.max(0,Math.min(1,(FIRE.t-GAME.sDelay)/Math.max(1,GAME.sDur)));FIRE.R=FIRE.R0+(GAME.sEnd-FIRE.R0)*u;FIRE.lit=FIRE.t>=GAME.sDelay;FIRE.ign=FIRE.lit?Math.min(1,(FIRE.t-GAME.sDelay)/4):0;FIREWALL=FIRE.lit?FIRE.R:9999;if(FIRE.lit&&!FIRE.wasLit&&GAME.sDelay>0&&playing)toast('The ring of fire has ignited! It starts closing in now');if(FIRE.t-GAME.sDelay<1)ringSiren();FIRE.wasLit=FIRE.lit;if(FIRE.grp)FIRE.grp.visible=FIRE.lit;if(FIRE.builtR-FIRE.R>=4)fireBuild(FIRE.R);
+function fireStep(){fireSound();{const now=performance.now(),dt=Math.min(0.25,(now-(FIRE.lt||now))/1000);FIRE.lt=now;if(playing)FIRE.t+=dt;const u=Math.max(0,Math.min(1,(FIRE.t-GAME.sDelay)/Math.max(1,GAME.sDur)));FIRE.R=FIRE.R0+(GAME.sEnd-FIRE.R0)*u;FIRE.lit=FIRE.t>=GAME.sDelay;FIRE.ign=FIRE.lit?Math.min(1,(FIRE.t-GAME.sDelay)/4):0;FIREWALL=FIRE.lit?FIRE.R:9999;if(FIRE.lit&&!FIRE.wasLit&&GAME.sDelay>0&&playing){toast('The ring of fire has ignited! It starts closing in now');if(FIRE.t-GAME.sDelay<1)ringSiren();}FIRE.wasLit=FIRE.lit;if(FIRE.grp)FIRE.grp.visible=FIRE.lit;if(FIRE.builtR-FIRE.R>=4)fireBuild(FIRE.R);
   FIRE.U.uT.value=(now/1000)%3600;FIRE.U.uF.value=((now/1000)%7200)*GAME.fSpd;FIRE.U.uFer.value=GAME.fFer*FIRE.ign;FIRE.U.uSm.value=GAME.sm*FIRE.ign;ringChipStep();ringHurt(dt);const ro=document.getElementById('gmR');if(ro&&ro.offsetParent)ro.textContent=Math.round(FIRE.R)+' m';}FIRE_DAY.value=1-DAY.dark*0.8;}
 
 (function(){const el=document.getElementById('audF2'),o=document.getElementById('audF2v');if(!el)return;el.value=Math.round(FSND.vol*100);o.textContent=el.value+'%';
