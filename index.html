@@ -2224,7 +2224,7 @@ function endAction(){const a=player.action;if(!a)return;
   if(a.name==='death'){if(MPM.on)return;respawn();}   // in a match you stay down until the next round
   player.action=null;}
 function snapLayer(k){for(const q in player.lw)player.lw[q]=q===k?1:0;}
-function respawn(){ringReset();player.pos.copy(SPAWN);player.vel.set(0,0,0);player.stance='stand';snapLayer('idle');player.alive=true;MPM.hp=100;player.ammo=MAG;player.reloadT=-1;player.yaw=0;camYaw=0;camPitch=-0.05;toast('Respawned');}
+function respawn(){ringReset();STAM.v=GAME.stStart/100;BOOST.on=false;VIT.lh=-1;VIT.ls=-1;VIT.lk=null;player.pos.copy(SPAWN);player.vel.set(0,0,0);player.stance='stand';snapLayer('idle');player.alive=true;MPM.hp=100;player.ammo=MAG;player.reloadT=-1;player.yaw=0;camYaw=0;camPitch=-0.05;toast('Respawned');}
 function canFit(h,px,pz){const x=px==null?player.pos.x:px,z=pz==null?player.pos.z:pz,y=player.pos.y;
   for(const c of colliders){if(!c.on||c.max.y<=y+0.05||c.min.y>=y+h)continue;const cx=clamp(x,c.min.x,c.max.x),cz=clamp(z,c.min.z,c.max.z);if((x-cx)**2+(z-cz)**2<PRAD*PRAD*0.8)return false;}
   for(const p of pillarsNear(x,z)){if(p.y1<=y+0.05||p.y0>=y+h)continue;if(Math.hypot(x-p.x,z-p.z)<p.r+PRAD*0.9)return false;}return true;}
@@ -3267,7 +3267,7 @@ function resetGame(){
   camPivot.copy(player.pos).add(V(0,1.68,0));
   for(const d of DEER.slice())removeDeer(d);setDeerCounts(+$('envM').value,+$('envF').value);
   setBuzzards(+$('envB').value);
-  toast('Game reset');}
+  resReset();toast('Game reset');}
 let resetArm=0;
 $('resetBtn').onclick=()=>{const b=$('resetBtn');if(MPM.on)return;
   if(!resetArm){resetArm=setTimeout(()=>{resetArm=0;b.textContent='Reset game';},3000);b.textContent='Click again to confirm';return;}
@@ -3353,7 +3353,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=157;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=161;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3558,8 +3558,8 @@ const VIT=(()=>{const st=document.createElement('style');st.textContent=`
 #vitals.boost #vs .fl{animation:vpulse .5s ease-in-out infinite}
 @keyframes vpulse{50%{filter:brightness(1.6)}}`;document.head.appendChild(st);
   const d=document.createElement('div');d.id='vitals';d.innerHTML=`
-<div class="vr" id="vh" style="color:#f08070"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.8 4.5 6.4 4.5c2.1 0 3.9 1.1 5.6 3.2 1.7-2.100 3.500-3.200 5.600-3.200 3.600 0 5.500 3.900 4 7.300C19.500 16.400 12 21 12 21z"/></svg><div class="tr"><div class="lag"></div><div class="fl"></div><div class="bo"></div></div><span class="n"></span></div>
-<div class="vr" id="vs" style="color:#6fd3c6"><svg viewBox="0 0 24 24"><path d="M13.500 2 4 13.500h6.500L9 22l10-12.500h-6.700z"/></svg><div class="tr"><div class="lag"></div><div class="fl"></div></div><span class="n"></span></div>`;
+<div class="vr" id="vh" style="color:#f08070"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.8 4.5 6.4 4.5c2.1 0 3.9 1.1 5.6 3.2 1.7-2.100 3.500-3.200 5.600-3.200 3.600 0 5.500 3.900 4 7.300C19.500 16.400 12 21 12 21z"/></svg><div class="tr"><div class="lag"></div><div class="fl"></div><div class="bo"></div></div><span class="n">100%</span></div>
+<div class="vr" id="vs" style="color:#6fd3c6"><svg viewBox="0 0 24 24"><path d="M13.500 2 4 13.500h6.500L9 22l10-12.500h-6.700z"/></svg><div class="tr"><div class="lag"></div><div class="fl"></div></div><span class="n">50%</span></div>`;
   document.body.appendChild(d);
   const q=(id)=>{const r=d.querySelector('#'+id);return {r,bo:r.querySelector('.bo'),fl:r.querySelector('.fl'),lag:r.querySelector('.lag'),n:r.querySelector('.n')};};
   return {d,h:q('vh'),s:q('vs'),lh:-1,ls:-1,lk:null};})();
@@ -3653,7 +3653,7 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): ring shrink, flame / smoke / spark look, tree fires
-const GAME_DEF={fDens:1.2,fWid:1.1,fFer:0.7,fSpd:0.25,sm:0.6,sp:2,spit:2,sDelay:300,sDur:600,sEnd:200,rdOn:1,rdBand:10,rdIn:0.5,rdOut:2,stStart:0,stGain:5,stDrain:10,stMult:2};
+const GAME_DEF={fDens:1.2,fWid:1.1,fFer:0.7,fSpd:0.25,sm:0.6,sp:2,spit:2,sDelay:300,sDur:600,sEnd:200,rdOn:1,rdBand:10,rdIn:0.5,rdOut:2,stStart:50,stGain:10,stDrain:10,stMult:2};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 // ---- ring of fire: flat-shaded animated flame wall, smoke curtain, ember glow on the ground and rising sparks.
 // Four draw calls in all; every bit of motion is done in the vertex shaders, so the CPU only updates one time uniform per frame.
@@ -3761,7 +3761,7 @@ function fireSound(){if(!AC||!soundOn)return;
   FSND.out.gain.setTargetAtTime(lvl*1.1,AC.currentTime,0.25);
   const nx=p.x/r*FIRE.R,nz2=p.z/r*FIRE.R,dd=Math.max(8,Math.min(d,200)),sx=p.x+(nx-p.x)/Math.max(1,d)*dd,sz=p.z+(nz2-p.z)/Math.max(1,d)*dd;
   if(FSND.pn.positionX){FSND.pn.positionX.value=sx;FSND.pn.positionY.value=camera.position.y+4;FSND.pn.positionZ.value=sz;}else FSND.pn.setPosition(sx,camera.position.y+4,sz);}
-function fireStep(){fireSound();{const now=performance.now(),dt=Math.min(0.25,(now-(FIRE.lt||now))/1000);FIRE.lt=now;if(playing)FIRE.t+=dt;const u=Math.max(0,Math.min(1,(FIRE.t-GAME.sDelay)/Math.max(1,GAME.sDur)));FIRE.R=FIRE.R0+(GAME.sEnd-FIRE.R0)*u;FIRE.lit=FIRE.t>=GAME.sDelay;FIRE.ign=FIRE.lit?Math.min(1,(FIRE.t-GAME.sDelay)/4):0;FIREWALL=FIRE.lit?FIRE.R:9999;if(FIRE.lit&&!FIRE.wasLit&&GAME.sDelay>0&&playing)toast('The ring of fire has ignited! It starts closing in now');FIRE.wasLit=FIRE.lit;if(FIRE.grp)FIRE.grp.visible=FIRE.lit;if(FIRE.builtR-FIRE.R>=4)fireBuild(FIRE.R);
+function fireStep(){fireSound();{const now=performance.now(),dt=Math.min(0.25,(now-(FIRE.lt||now))/1000);FIRE.lt=now;if(playing)FIRE.t+=dt;const u=Math.max(0,Math.min(1,(FIRE.t-GAME.sDelay)/Math.max(1,GAME.sDur)));FIRE.R=FIRE.R0+(GAME.sEnd-FIRE.R0)*u;FIRE.lit=FIRE.t>=GAME.sDelay;FIRE.ign=FIRE.lit?Math.min(1,(FIRE.t-GAME.sDelay)/4):0;FIREWALL=FIRE.lit?FIRE.R:9999;if(FIRE.lit&&!FIRE.wasLit&&GAME.sDelay>0&&playing)toast('The ring of fire has ignited! It starts closing in now');ringSiren();FIRE.wasLit=FIRE.lit;if(FIRE.grp)FIRE.grp.visible=FIRE.lit;if(FIRE.builtR-FIRE.R>=4)fireBuild(FIRE.R);
   FIRE.U.uT.value=(now/1000)%3600;FIRE.U.uF.value=((now/1000)%7200)*GAME.fSpd;FIRE.U.uFer.value=GAME.fFer*FIRE.ign;FIRE.U.uSm.value=GAME.sm*FIRE.ign;ringChipStep();ringHurt(dt);const ro=document.getElementById('gmR');if(ro&&ro.offsetParent)ro.textContent=Math.round(FIRE.R)+' m';}FIRE_DAY.value=1-DAY.dark*0.8;}
 
 (function(){const el=document.getElementById('audF2'),o=document.getElementById('audF2v');if(!el)return;el.value=Math.round(FSND.vol*100);o.textContent=el.value+'%';
@@ -3786,7 +3786,7 @@ function fireCry(d,dt,dist){if(d.st!=='flee'&&d.st!=='dying'||d.st==='dead')retu
   const rebuildKeys={fDens:1,fWid:1,sp:1,spit:1};let to=0;
   const build=()=>{pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. The ring radius now: <b id="gmR"></b>. In a match each player runs their own ring clock, started at the round start.</p>'+ROWS.map(r=>r[0]==='sec'?`<p class="sec" style="margin-top:12px">${r[1]}</p>`:`<div class="gr"><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${GAME[r[0]]}" data-k="${r[0]}"><output>${(+GAME[r[0]]).toFixed(r[5])}</output></div>`).join('')+'<button type="button" class="btn" id="gmRestart">Restart ring now</button><button type="button" class="btn" id="gmReset">Reset to defaults</button>';
     pn.querySelectorAll('input').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.step<1?2:0);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}
-      if(rebuildKeys[k]){clearTimeout(to);to=setTimeout(()=>fireBuild(FIRE.R),150);}});
+      if(k==='stStart'){STAM.v=v/100;}if(rebuildKeys[k]){clearTimeout(to);to=setTimeout(()=>fireBuild(FIRE.R),150);}});
     pn.querySelector('#gmRestart').onclick=()=>{FIRE.t=0;FIRE.R=FIRE.R0;fireBuild(FIRE.R0);};
     pn.querySelector('#gmReset').onclick=()=>{Object.assign(GAME,GAME_DEF);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}fireBuild(FIRE.R);build();};};
   build();
@@ -3811,6 +3811,7 @@ window.SNIPER_RES.heal={eat:(k,q)=>eatFood(k,q),hp:(v)=>{if(v!=null)MPM.hp=v;ret
 function ringReset(){FIRE.t=0;RH.warn=0;if(FIRE.R!==FIRE.R0||FIRE.builtR!==FIRE.R0){FIRE.R=FIRE.R0;fireBuild(FIRE.R0);}}
 
 // ---- headshot bell: a clear struck-bell ding (inharmonic partials, long ring) when the player's shot hits a head
+function ringSiren(){if(!AC||!soundOn)return;try{const t=AC.currentTime,g=AC.createGain(),o=AC.createOscillator();o.type='sawtooth';g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.22,t+0.1);g.gain.setValueAtTime(0.22,t+2.3);g.gain.linearRampToValueAtTime(0,t+2.6);for(let i=0;i<3;i++){o.frequency.setValueAtTime(600,t+i*0.8);o.frequency.linearRampToValueAtTime(950,t+i*0.8+0.4);o.frequency.linearRampToValueAtTime(600,t+i*0.8+0.8);}o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+2.7);}catch(e){}}
 function headDing(){if(!AC||!soundOn)return;try{const t=AC.currentTime,out=AC.createGain();out.gain.value=0.55;out.connect(AC.destination);
   for(const [r,g,d] of [[1,0.5,2.1],[2.0,0.3,1.4],[2.76,0.22,1.0],[5.4,0.09,0.45],[0.5,0.18,2.4]]){const o=AC.createOscillator(),e=AC.createGain();o.type='sine';o.frequency.value=1760*r;
     e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(g,t+0.003);e.gain.exponentialRampToValueAtTime(0.0005,t+d);o.connect(e);e.connect(out);o.start(t);o.stop(t+d+0.05);}}catch(e){}}
