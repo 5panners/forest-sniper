@@ -106,7 +106,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <button role="tab" id="tabAud" aria-selected="false" aria-controls="paneAud">Audio</button>
     <button role="tab" id="tabMp" aria-selected="false" aria-controls="paneMp">Multiplayer</button>
   </div>
-  <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div><p class="sec" style="margin-top:14px">Pickups</p><table class="foodT" style="border-collapse:collapse;font-size:13px;margin-top:6px"><tr><td style="padding:2px 18px 2px 0">Magic Mushrooms</td><td>+2% stamina per cluster</td></tr><tr><td style="padding:2px 18px 2px 0">Raw meat</td><td>no health, cook it first (coming later)</td></tr><tr><td style="padding:2px 18px 2px 0">Wood, lead ore, Tech Chips</td><td>for crafting (coming later)</td></tr></table><p class="note">Stamina powers a double-speed boost: double-tap W and keep holding it. The longer you hold, the more it drains. Health starts at 100% and cooked food will raise it up to 200%.</p></div>
+  <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div><p class="sec" style="margin-top:14px">Pickups</p><table class="foodT" style="border-collapse:collapse;font-size:13px;margin-top:6px"><tr><td style="padding:2px 18px 2px 0">Magic Mushrooms</td><td>+2% stamina per cluster</td></tr><tr><td style="padding:2px 18px 2px 0">Raw meat</td><td>no health, cook it first (coming later)</td></tr><tr><td style="padding:2px 18px 2px 0">Wood, lead ore, Tech Chips, gunpowder tins</td><td>for crafting (coming later)</td></tr></table><p class="note">Stamina powers a double-speed boost: double-tap W and keep holding it. The longer you hold, the more it drains. Health starts at 100% and cooked food will raise it up to 200%.</p></div>
   <div id="paneGfx" role="tabpanel" aria-labelledby="tabGfx" hidden>
     <div class="opts">
       <label class="opt"><input type="checkbox" id="optFps"><span><b>Show FPS</b><small>Frame rate and frame time, top left.</small></span></label>
@@ -3351,7 +3351,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=147;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=149;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3393,10 +3393,12 @@ const RES_T=[
   {k:'mushroom',label:'Magic Mushrooms', cell:11, p:0.25, amt:[1,3], n:300},
   {k:'wood',    label:'wood',      cell:11, p:0.060, amt:[2,4]},
   {k:'lead',    label:'lead ore',     cell:13, p:0.25, amt:[1,2], n:300},
-  {k:'scrap',   label:'Tech Chips',     cell:17, p:0.05, amt:[1,2], n:20}];
-const INV={berries:0,mushroom:0,wood:0,lead:0,scrap:0,meat:0,hide:0,feather:0};
-const INV_LABEL={berries:'berries',mushroom:'Magic Mushrooms',wood:'wood',lead:'lead ore',scrap:'Tech Chips',meat:'meat',hide:'hide',feather:'feathers'};
+  {k:'scrap',   label:'Tech Chips',     cell:17, p:0.05, amt:[1,2], n:20},
+  {k:'gunpowder',label:'gunpowder tin', cell:13, p:0.25, amt:[1,1], n:300}];
+const INV={berries:0,mushroom:0,wood:0,lead:0,scrap:0,gunpowder:0,meat:0,hide:0,feather:0};
+const INV_LABEL={berries:'berries',mushroom:'Magic Mushrooms',wood:'wood',lead:'lead ore',scrap:'Tech Chips',gunpowder:'gunpowder tins',meat:'meat',hide:'hide',feather:'feathers'};
 const RES_GEO={
+  gunpowder:build([[B(0.2,0.24,0.2),'#e9c52d',[0,0.12,0]],[B(0.206,0.03,0.206),'#b8921a',[0,0.03,0]],[B(0.212,0.03,0.212),'#c8a21e',[0,0.255,0]],[CY(0.07,0.07,0.012,8),'#4a4a44',[0,0.277,0]],[B(0.13,0.1,0.01),'#f4e08a',[0,0.13,0.103]],[B(0.04,0.04,0.012),'#8a2a1a',[0,0.15,0.106]]]),
   berries:build([[new THREE.IcosahedronGeometry(0.26,0),'#4c8a3c',[0,0.22,0],[0,0.5,0],[1.2,0.8,1.2]],[new THREE.IcosahedronGeometry(0.19,0),'#58a044',[0.22,0.17,0.08]],
     [new THREE.IcosahedronGeometry(0.07,0),'#e03040',[0.1,0.42,0.12]],[new THREE.IcosahedronGeometry(0.07,0),'#e03040',[-0.14,0.36,-0.1]],[new THREE.IcosahedronGeometry(0.07,0),'#cc2c52',[0.3,0.3,0.2]],[new THREE.IcosahedronGeometry(0.07,0),'#e03040',[-0.02,0.3,0.24]]]),
   mushroom:build([[CY(0.035,0.045,0.14,5),'#e6dcc2',[0,0.07,0]],[new THREE.ConeGeometry(0.11,0.08,6),'#d07a44',[0,0.17,0]],
@@ -3426,12 +3428,19 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
   const starts=[['wood',0.3,14],['wood',2.4,20],['lead',1.2,18],['mushroom',3.6,22],['mushroom',4.4,16]];
   near({x:P1_SPAWN.x,z:P1_SPAWN.z},starts);near({x:P2_SPAWN.x,z:P2_SPAWN.z},starts);
   near({x:HUT.x,z:HUT.z},[['scrap',0.4,9],['scrap',2.2,11],['scrap',3.9,8],['scrap',5.4,12]]);
+  // lead ore lies around the foot of rocks; Magic Mushrooms grow along forest edges (a tree close by, open ground in some directions)
+  const rockD=(x,z)=>{let d=1e9;for(const rk of ROCKS){const q=Math.hypot(x-rk.x,z-rk.z)-Math.max(rk.w,rk.d)*0.5;if(q<d)d=q;}return d;};
+  const leadC=[];window._rocks=ROCKS.length;ROCKS.forEach((rk,i)=>{const rr=Math.max(rk.w,rk.d)*0.5;for(let j=0;j<5;j++){const ang=hsh(i*7+j,3+j*11)*PI*2,r=rr+0.9+hsh(i+j*13,5+j)*3.2,x=rk.x+Math.cos(ang)*r,z=rk.z+Math.sin(ang)*r;if(resOK(x,z,'lead'))leadC.push([hsh(i*5+j,17),x,z,i*13+j*7+777]);}});
+  window._leadRock=leadC.length;
+  const edgeOK=(x,z)=>{if(!treeAt(x,z,4.5))return false;let open=0;for(let k=0;k<8;k++){const a=k*0.785;if(!treeAt(x+Math.cos(a)*13,z+Math.sin(a)*13,3.5))open++;}return open>=2&&open<=6;};
   RES_T.forEach((R,ti)=>{const have=RES_NODES.filter(n=>n.t===R.k).length,cand=[];
     for(let iz=-Math.floor(PLAY/R.cell);iz<Math.floor(PLAY/R.cell);iz++)for(let ix=-Math.floor(PLAY/R.cell);ix<Math.floor(PLAY/R.cell);ix++){
       const h0=hsh(ix*31+ti*977,iz*17+ti*613);if(h0>R.p)continue;
       const x=(ix+hsh(ix+ti*5,iz*3+1))*R.cell,z=(iz+hsh(ix*7+2,iz+ti*11))*R.cell;
       if(resOK(x,z,R.k))cand.push([h0,x,z,ix*13+iz*7+ti*101]);}
-    if(R.n!=null){cand.sort((p,q)=>p[0]-q[0]);cand.length=Math.max(0,Math.min(cand.length,R.n-have));}
+    if(R.k==='lead'){const need=R.n-have;let L2=leadC.slice().sort((p,q)=>p[0]-q[0]);if(L2.length<need){const extra=cand.map(c=>[rockD(c[1],c[2]),c[1],c[2],c[3]]).sort((p,q)=>p[0]-q[0]);L2=L2.concat(extra);}cand.length=0;for(const c of L2){if(cand.length>=need)break;cand.push(c);}}
+    else if(R.k==='mushroom'||R.k==='gunpowder'){const E=[],O=[];cand.sort((p,q)=>p[0]-q[0]);for(const c of cand)(edgeOK(c[1],c[2])?E:O).push(c);cand.length=0;for(const c of E.concat(O)){if(cand.length>=R.n-have)break;cand.push(c);}window._mushEdge=E.length;}
+    else if(R.n!=null){cand.sort((p,q)=>p[0]-q[0]);cand.length=Math.max(0,Math.min(cand.length,R.n-have));}
     for(const c of cand)resAdd(R.k,c[1],c[2],c[3]);});
   RES_T.forEach(R=>{const L=RES_NODES.filter(n=>n.t===R.k);R.idx=L.map(n=>RES_NODES.indexOf(n));
     const m=new THREE.InstancedMesh(RES_GEO[R.k],RES_MAT,Math.max(1,L.length));if(!L.length)m.count=0;m.frustumCulled=false;m.castShadow=false;m.receiveShadow=false;
@@ -3516,7 +3525,7 @@ function lookStep(){if(!_dmgApplied)dmgApply();fireStep();leadGlowStep();owlStep
 window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial){c++;if(m.defines&&m.defines.GSTYLE)d++;}});return {sh:true,std:c,withDef:d,keys:renderer.info.programs.map(p=>p.cacheKey.includes('GSTYLE')).join(','),lookI};};
 
 // ---- edge glow on every collectible: a slightly enlarged back-face shell per node, additive, pulsing on a 3 s cycle, one colour per resource type
-const GLOWC={berries:0xff4f8b,mushroom:0xffa03a,wood:0xffd25a,lead:0x4d8dff,scrap:0x45e6c8};
+const GLOWC={berries:0xff4f8b,mushroom:0xffa03a,wood:0xffd25a,lead:0x4d8dff,scrap:0x45e6c8,gunpowder:0xfff04a};
 const LEADGLOW=(()=>{const sc=new THREE.Matrix4().makeScale(1.13,1.13,1.13),ms=[];let k=0;
   for(const t in GLOWC){const L=RES_NODES.filter(n=>n.t===t);if(!L.length||!RES_GEO[t])continue;
     const m=new THREE.MeshBasicMaterial({color:GLOWC[t],side:THREE.BackSide,transparent:true,opacity:0.5,depthWrite:false,blending:THREE.AdditiveBlending,fog:false});
@@ -3631,7 +3640,7 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
 <tr><td>Fallow doe</td><td>${num('hp.fallow',DMG.hp.fallow)}</td><td>rifle (same zones)</td></tr>
 <tr><td>Roe doe</td><td>${num('hp.roe',DMG.hp.roe)}</td><td>rifle (same zones)</td></tr>
 <tr><td>Buzzard</td><td>${num('hp.buzzard',DMG.hp.buzzard)}</td><td>rifle</td></tr></table>
-<p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Magic Mushrooms, wood, lead ore, Tech Chips</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>
+<p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Magic Mushrooms, wood, lead ore, Tech Chips, gunpowder tins</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>
 <button type="button" id="dmgReset" class="btn">Reset to defaults</button>`;
     pn.querySelectorAll('input').forEach(i=>i.oninput=()=>{const v=parseFloat(i.value);if(!(v>=0))return;const ks=i.dataset.p.split('.');let o=DMG;for(let j=0;j<ks.length-1;j++)o=o[ks[j]];o[ks[ks.length-1]]=v;dmgSave();});
     pn.querySelector('#dmgReset').onclick=()=>{const f=JSON.parse(JSON.stringify(DMG_DEF));for(const k in f)DMG[k]=f[k];dmgSave();build();};};
