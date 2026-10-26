@@ -1266,7 +1266,7 @@ const JOINT_NAMES=['hips','spine','chest','neck','head','lThigh','lShin','lFoot'
 const BLACK='#24262a', DARK='#3a3d3f', SOLE='#3b2f24', TAN='#8f7a59';
 
 // ---- hunter (reference look): ushanka with red cords and pom, sunglasses, full beard and grin, camo shirt, pack with bedroll, cargo trousers, chunky boots ----
-const PANTS='#6f7d5c', POCK='#64714f', BELT='#6b5443', BOOT='#7a6151', HATC=['#a8987f','#9d8d75','#b3a38a','#a29179'], HAIR=['#b4572b','#a54d25','#c26332'], BEARDC=['#8b725a','#7e6650','#967d63','#856c55'], PACK=['#a3957f','#998b75','#ab9d87'], STRAP='#6e5644', CORD='#b04a3e';
+const PANTS='#6f7d5c', POCK='#64714f', BELT='#6b5443', BOOT='#7a6151', HATC=['#a8987f','#9d8d75','#b3a38a','#a29179'], HAIR=['#b4572b','#a54d25','#c26332'], BEARDC=['#a24d24','#96461f','#b05a2c','#8c411e'], PACK=['#a3957f','#998b75','#ab9d87'], STRAP='#6e5644', CORD='#b04a3e';
 const _hv=new THREE.Vector3(),_hm=new THREE.Matrix4(),_hq=new THREE.Quaternion(),_he=new THREE.Euler();
 function hH(x,y,z){let h=Math.sin(x*127.1+y*311.7+z*74.7)*43758.5453;return h-Math.floor(h);}
 function vN(x,y,z){const xi=Math.floor(x),yi=Math.floor(y),zi=Math.floor(z),xf=x-xi,yf=y-yi,zf=z-zi,s=t=>t*t*(3-2*t),u=s(xf),v=s(yf),w=s(zf);
@@ -1368,13 +1368,13 @@ const hat=new THREE.Group();hat.name='hat';hat.position.set(0,0.3,-0.01);hat.rot
 const mouthCut=(x,y,z)=>z>0.15&&Math.abs(x)<0.082&&y>0.072&&y<0.152;
 const cheekCut=(x,y,z)=>z>0.1&&y>0.168&&Math.abs(x)<0.165;
 // beard: a flat-fronted block with crisp edges, a clean rectangular opening round the grin, and a V-shaped chin
-hp(J.head,box(0.33,0.17,0.28,{tb:0.74,sx:8,sy:6,sz:4}),BEARDC,[0,0.07,0.09],null,null,{rough:0.006,f:12,cut:(x,y,z)=>mouthCut(x,y,z)||cheekCut(x,y,z)});
-hp(J.head,box(0.22,0.09,0.17,{tb:0.25,sx:3,sz:3}),BEARDC,[0,-0.04,0.1],null,null,{rough:0.005,f:12});
-hp(J.head,rbox(0.175,0.034,0.04,0.008,2),BEARDC[1],[0,0.163,0.22]);
-hp(J.head,rbox(0.17,0.085,0.03,0.01,2),'SKIN',[0,0.113,0.205]);
-hp(J.head,rbox(0.108,0.024,0.02,0.008,2),'#c46a60',[0,0.128,0.219]);
-hp(J.head,rbox(0.1,0.02,0.02,0.008,2),'#c46a60',[0,0.108,0.218]);
-hp(J.head,rbox(0.11,0.008,0.022,0.003,1),'#8e4840',[0,0.117,0.22]);
+hp(J.head,rbox(0.34,0.18,0.29,0.08,14),BEARDC,[0,0.065,0.09],null,null,{rough:0.004,f:12,cut:(x,y,z)=>mouthCut(x,y,z)||cheekCut(x,y,z)});
+hp(J.head,ell(0.115,0.075,0.1,14,10),BEARDC,[0,-0.035,0.1],null,null,{rough:0.004,f:12});
+hp(J.head,rbox(0.175,0.034,0.04,0.015,6),BEARDC[1],[0,0.163,0.22]);
+hp(J.head,rbox(0.205,0.105,0.03,0.014,4),'SKIN',[0,0.113,0.226]);
+hp(J.head,rbox(0.108,0.024,0.02,0.008,2),'#c46a60',[0,0.128,0.243]);
+hp(J.head,rbox(0.1,0.02,0.02,0.008,2),'#c46a60',[0,0.108,0.242]);
+hp(J.head,rbox(0.11,0.008,0.022,0.003,1),'#8e4840',[0,0.117,0.244]);
 // ---------- arms and legs ----------
 ['l','r'].forEach((s,i)=>{
   const sx=i===0?1:-1;
@@ -3453,7 +3453,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=199;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=202;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3755,8 +3755,8 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): ring shrink, flame / smoke / spark look, tree fires
-const GAME_DEF={fDens:1.2,fWid:1.1,fFer:0.7,fSpd:0.25,sm:0.6,sp:2,spit:2,sDelay:300,sDur:600,sEnd:200,rdOn:1,rdBand:10,rdIn:0.5,rdOut:2,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0};
-const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
+const GAME_DEF={fDens:1.2,fWid:1.1,fFer:0.7,fSpd:0.25,sm:0.6,sp:2,spit:2,sDelay:300,sDur:600,sEnd:200,rdOn:1,rdBand:20,rdIn:5,rdOut:10,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0};
+const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];if(v&&!v.rdV){GAME.rdBand=GAME_DEF.rdBand;GAME.rdIn=GAME_DEF.rdIn;GAME.rdOut=GAME_DEF.rdOut;}GAME.rdV=2;}catch(e){}
 // ---- ring of fire: flat-shaded animated flame wall, smoke curtain, ember glow on the ground and rising sparks.
 // Four draw calls in all; every bit of motion is done in the vertex shaders, so the CPU only updates one time uniform per frame.
 const FIRE_DAY={value:1};
@@ -3903,10 +3903,10 @@ window.SNIPER_RES.fire=()=>({FIRE,GAME,fireBuild,SND,FSND,ringHurt,ringReset,rin
 // ---- the ring hurts: a burn zone just inside the wall (strongest at the wall) and everything outside it. Health 0 = dead, which ends the round for the opponent in a match.
 const RH={fl:0,warn:0};
 const EDGE={burn:0,fl:0,lt:0,el:null};
-(function(){const st=document.createElement('style');st.textContent='#edgeGlow{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;background:linear-gradient(90deg,rgba(255,30,20,.75) 0,rgba(255,30,20,0) 22%,rgba(255,30,20,0) 78%,rgba(255,30,20,.75) 100%)}';document.head.appendChild(st);const e=document.createElement('div');e.id='edgeGlow';document.body.appendChild(e);EDGE.el=e;})();
+(function(){const st=document.createElement('style');st.textContent='#edgeGlow{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;background:linear-gradient(90deg,rgba(255,20,10,.95) 0,rgba(255,20,10,0) 30%,rgba(255,20,10,0) 70%,rgba(255,20,10,.95) 100%)}';document.head.appendChild(st);const e=document.createElement('div');e.id='edgeGlow';document.body.appendChild(e);EDGE.el=e;})();
 function edgeFlash(){EDGE.fl=1;}
 function edgeStep(){const now=performance.now(),dt=Math.min(0.25,(now-(EDGE.lt||now))/1000);EDGE.lt=now;let o=0;
-  if(EDGE.burn>0){EDGE.burn-=dt;o=Math.max(o,(0.45+0.55*Math.sin(now/1000*7))*0.5*Math.min(1,EDGE.burn/0.2)+0.12);}
+  if(EDGE.burn>0){EDGE.burn-=dt;o=Math.max(o,(0.5+0.5*Math.sin(now/1000*8))*(0.55+0.45*(EDGE.k||0.5))*Math.min(1,EDGE.burn/0.2)+0.2);}
   if(EDGE.fl>0){EDGE.fl-=dt/0.7;o=Math.max(o,Math.max(0,EDGE.fl)*0.8);}
   if(!player.alive||!playing)o=0;o=Math.round(o*50)/50;if(EDGE.o!==o){EDGE.o=o;EDGE.el.style.opacity=o;}}
 const RW={in:false};
@@ -3918,7 +3918,7 @@ function ringWall(pl){if(!FIRE.lit||!playing||!pl.alive){RW.in=false;return;}
 function ringHurt(dt){if(!FIRE.lit||!GAME.rdOn||!playing||!player.alive||MPM.hp<=0)return;if(MPM.on&&NT.M.ph!=='live')return;
   const d=FIRE.R-Math.hypot(player.pos.x-FCX,player.pos.z-FCZ);let dps=0,out=false;
   if(d<0){dps=GAME.rdOut;out=true;}else if(d<GAME.rdBand){const k=1-d/GAME.rdBand;dps=GAME.rdIn*k*k*(3-2*k);}
-  RH.warn-=dt;if(dps<=0){return;}EDGE.burn=0.35;
+  RH.warn-=dt;if(dps<=0){return;}EDGE.burn=0.35;EDGE.k=Math.min(1,0.35+dps/6);
   if(RH.warn<=0){RH.warn=4;toast(out?'You are outside the ring of fire · get back inside!':'The ring of fire is burning you · move away from the flames');}
   MPM.hp-=dps*dt;RH.fl-=dt;if(RH.fl<=0){RH.fl=0.5;flashHit();}
   if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Burned to death by the ring of fire');}}
