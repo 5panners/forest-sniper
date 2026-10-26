@@ -139,6 +139,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <label class="rng"><span>Deer calls</span><input type="range" id="audD" min="0" max="200" step="1"><output id="audDv"></output></label>
     <label class="rng"><span>Ring of fire</span><input type="range" id="audF2" min="0" max="200" step="1"><output id="audF2v"></output></label>
     <label class="rng"><span>Owl hoots</span><input type="range" id="audO" min="0" max="200" step="1"><output id="audOv"></output></label>
+    <label class="rng"><span>Item pick-up</span><input type="range" id="audPk" min="0" max="200" step="1"><output id="audPkv"></output></label>
     <label class="rng"><span>Bullet-hit thud</span><input type="range" id="audT" min="0" max="200" step="1"><output id="audTv"></output></label>
     <label class="rng"><span>Footsteps</span><input type="range" id="audS" min="0" max="200" step="1"><output id="audSv"></output></label>
     <label class="opt"><input type="checkbox" id="optSndDbg"><span><b>Show playing sounds</b><small>Development: lists each sound as it plays, with its distance, plus the looping ambience levels.</small></span></label>
@@ -3452,7 +3453,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=196;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=198;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3573,7 +3574,7 @@ function carve(c){goneCarcass(c.o,c.k);let m,h=0,f=0;
   INV.meat+=m;INV.hide+=h;INV.feather+=f;invUI();const bh=m*GAME.bMeat;if(bh>0){if(GAME.bInst)MPM.hp=Math.min(HP_MAX,MPM.hp+bh);else HEAL.pool=Math.min(120,HEAL.pool+bh);}toast('Butchered '+carcassName(c)+' · +'+m+' meat'+(h?' · +'+h+' hide':'')+(f?' · +'+f+' feathers':'')+(bh>0?' · +'+bh+'% health':''));try{sfx.click();}catch(e){}
   if(NT.room&&MPM.on)NT.room.emit('carve',{k:c.k,i:c.i,v:MPM.guest?NT.rosterV:deerVer}).catch(()=>{});}
 function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();if(c){carve(c);return;}const i=resNearest();if(i==null)return;const n=RES_NODES[i],R=RES_T[n.ti];
-  resSetGot(n,true);const q=R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));INV[R.k]+=q;invUI();toast('+'+q+' '+R.label+eatFood(R.k,q));try{sfx.click();}catch(e){}
+  resSetGot(n,true);const q=R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));INV[R.k]+=q;invUI();toast('+'+q+' '+R.label+eatFood(R.k,q));pickSnd();
   if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});}
 addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyF')resGather();});
 function resStep(dt){
@@ -3941,14 +3942,22 @@ function headDing(){if(!AC||!soundOn)return;try{const t=AC.currentTime,out=AC.cr
 STAM.v=GAME.stStart/100;
 
 // ---- ring countdown chip (top right, under the clock): time until the fire is lit, then the current radius
-const RCHIP=(()=>{const st=document.createElement('style');st.textContent='#ringChip{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:calc(76px + env(safe-area-inset-top,0px));z-index:3;pointer-events:none;padding:7px 11px;border-radius:8px;background:rgba(14,18,16,.62);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(5px);font:600 12px/1.1 "IBM Plex Mono",ui-monospace,monospace;color:#e8e4d4;letter-spacing:.03em}#ringChip b{color:#ffb25a}#ringChip.soon b{color:#ff6a3a;animation:vpulse .7s ease-in-out infinite}';document.head.appendChild(st);
+const RCHIP=(()=>{const st=document.createElement('style');st.textContent='#ringChip{position:fixed;left:50%;transform:translateX(-50%);top:calc(50px + env(safe-area-inset-top,0px));z-index:3;pointer-events:none;text-align:center;font-family:"IBM Plex Mono",ui-monospace,monospace;color:#ffd9a8;text-transform:uppercase;text-shadow:0 0 10px rgba(255,90,20,.85),0 2px 4px #000;white-space:nowrap}#ringChip i{display:block;font-style:normal;font-weight:700;font-size:13px;letter-spacing:.34em;margin-right:-.34em;opacity:.92}#ringChip b{display:block;font-weight:800;font-size:38px;line-height:1.05;letter-spacing:.08em;margin-top:2px;color:#ffb25a;text-shadow:0 0 14px rgba(255,110,20,.95),0 0 32px rgba(255,60,0,.55),0 3px 5px #000}#ringChip.soon i{color:#ff5a3a;animation:vpulse .7s ease-in-out infinite}#ringChip.soon b{color:#ff3a1a;font-size:52px;text-shadow:0 0 18px rgba(255,40,0,1),0 0 44px rgba(255,30,0,.75),0 3px 6px #000;animation:vpulse .6s ease-in-out infinite}#ringChip.lit b{font-size:26px;color:#ff7a3a}#toast{top:calc(128px + env(safe-area-inset-top,0px))!important}';document.head.appendChild(st);
   const d=document.createElement('div');d.id='ringChip';d.hidden=true;document.body.appendChild(d);return {d,txt:'',soon:null};})();
 function ringChipStep(){const d=RCHIP.d;if(!playing){d.hidden=true;return;}d.hidden=false;let t,soon=false;
-  if(!FIRE.lit){const left=Math.max(0,Math.ceil(GAME.sDelay-FIRE.t));soon=left<=10;t='Ring of fire ignites in <b>'+Math.floor(left/60)+':'+String(left%60).padStart(2,'0')+'</b>';}
-  else t='Ring of fire · radius <b>'+Math.round(FIRE.R)+' m</b>';
-  if(t!==RCHIP.txt){RCHIP.txt=t;d.innerHTML=t;}if(soon!==RCHIP.soon){RCHIP.soon=soon;d.classList.toggle('soon',soon);}}
+  if(!FIRE.lit){const left=Math.max(0,Math.ceil(GAME.sDelay-FIRE.t));soon=left<=10;t='<i>\u{1F525} The ring of fire ignites in \u{1F525}</i><b>'+Math.floor(left/60)+':'+String(left%60).padStart(2,'0')+'</b>';}
+  else t='<i>The ring of fire is closing</i><b>'+Math.round(FIRE.R)+' m</b>';
+  if(t!==RCHIP.txt){RCHIP.txt=t;d.innerHTML=t;}if(soon!==RCHIP.soon){RCHIP.soon=soon;d.classList.toggle('soon',soon);}d.classList.toggle('lit',!!FIRE.lit);}
 window.SNIPER_RES.pil=()=>MAP.pillars;
 
+
+// ---- item pick-up sound (Audio options > Item pick-up): a soft cloth rustle and a short two-note chime
+const PICK={vol:1};try{const v=localStorage.getItem('fsPick');if(v!=null)PICK.vol=Math.max(0,Math.min(2,+v));}catch(e){}
+function pickSnd(){if(!AC||!soundOn||PICK.vol<=0)return;try{const t=AC.currentTime,out=AC.createGain();out.gain.value=0.5*PICK.vol;out.connect(AC.destination);
+  [[660,0],[990,0.07]].forEach(([fq,d])=>{const o=AC.createOscillator(),e=AC.createGain();o.type='triangle';o.frequency.value=fq;e.gain.setValueAtTime(0,t+d);e.gain.linearRampToValueAtTime(0.5,t+d+0.01);e.gain.exponentialRampToValueAtTime(0.001,t+d+0.2);o.connect(e);e.connect(out);o.start(t+d);o.stop(t+d+0.22);});
+  if(typeof noiseBuf!=='undefined'&&noiseBuf){const s=AC.createBufferSource();s.buffer=noiseBuf;const f=AC.createBiquadFilter();f.type='bandpass';f.frequency.value=2200;f.Q.value=0.8;const g=AC.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.35,t+0.02);g.gain.exponentialRampToValueAtTime(0.001,t+0.14);s.connect(f);f.connect(g);g.connect(out);s.start(t,Math.random()*0.5,0.16);}}catch(e){}}
+(function(){const el=document.getElementById('audPk'),o=document.getElementById('audPkv');if(!el)return;el.value=Math.round(PICK.vol*100);o.textContent=el.value+'%';
+  el.oninput=()=>{PICK.vol=el.value/100;o.textContent=el.value+'%';try{localStorage.setItem('fsPick',String(PICK.vol));}catch(e){}};})();
 // ---- bullet-hit thud: a heavy body *thud* (low sine drop + a dull noise slap) when the player's shot hits an animal. Headshots ring the bell instead.
 const THUD={vol:1};try{const v=localStorage.getItem('fsThud');if(v!=null)THUD.vol=Math.max(0,Math.min(2,+v));}catch(e){}
 function hitThud(){if(!AC||!soundOn||THUD.vol<=0)return;try{const t=AC.currentTime,out=AC.createGain();out.gain.value=0.9*THUD.vol;out.connect(AC.destination);
