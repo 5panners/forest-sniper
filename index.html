@@ -1265,7 +1265,7 @@ const JOINT_NAMES=['hips','spine','chest','neck','head','lThigh','lShin','lFoot'
 const BLACK='#24262a', DARK='#3a3d3f', SOLE='#3b2f24', TAN='#8f7a59';
 
 // ---- hunter (reference look): ushanka with red cords and pom, sunglasses, full beard and grin, camo shirt, pack with bedroll, cargo trousers, chunky boots ----
-const PANTS='#6f7d5c', POCK='#64714f', BELT='#6b5443', BOOT='#7a6151', HATC=['#a8987f','#9d8d75','#b3a38a','#a29179'], HAIR=['#17181a','#1f2022','#111213'], BEARDC=['#8b725a','#7e6650','#967d63','#856c55'], PACK=['#a3957f','#998b75','#ab9d87'], STRAP='#6e5644', CORD='#b04a3e';
+const PANTS='#6f7d5c', POCK='#64714f', BELT='#6b5443', BOOT='#7a6151', HATC=['#a8987f','#9d8d75','#b3a38a','#a29179'], HAIR=['#b4572b','#a54d25','#c26332'], BEARDC=['#8b725a','#7e6650','#967d63','#856c55'], PACK=['#a3957f','#998b75','#ab9d87'], STRAP='#6e5644', CORD='#b04a3e';
 const _hv=new THREE.Vector3(),_hm=new THREE.Matrix4(),_hq=new THREE.Quaternion(),_he=new THREE.Euler();
 function hH(x,y,z){let h=Math.sin(x*127.1+y*311.7+z*74.7)*43758.5453;return h-Math.floor(h);}
 function vN(x,y,z){const xi=Math.floor(x),yi=Math.floor(y),zi=Math.floor(z),xf=x-xi,yf=y-yi,zf=z-zi,s=t=>t*t*(3-2*t),u=s(xf),v=s(yf),w=s(zf);
@@ -1348,13 +1348,20 @@ hp(J.head,ell(0.036,0.022,0.03,6,4),'SKIN',[0,0.168,0.252]);
 // sunglasses
 [1,-1].forEach(sx=>{
   hp(J.head,rbox(0.135,0.085,0.022,0.01,3),'#3e4043',[sx*0.088,0.23,0.222],[0,sx*0.12,0]);
-  hp(J.head,rbox(0.012,0.014,0.25,0.004,1),'#2a2b2d',[sx*0.198,0.258,0.1]);
   hp(J.head,rbox(0.09,0.022,0.028,0.008,2),'#9a7a50',[sx*0.09,0.293,0.212],[0,sx*0.12,sx*0.12]);
 });
-hp(J.head,rbox(0.36,0.018,0.028,0.006,2),'#2a2b2d',[0,0.274,0.219]);hp(J.head,rbox(0.045,0.016,0.028,0.006,1),'#2a2b2d',[0,0.248,0.232]);
+hp(J.head,rbox(0.32,0.018,0.028,0.006,2),'#2a2b2d',[0,0.274,0.219]);hp(J.head,rbox(0.045,0.016,0.028,0.006,1),'#2a2b2d',[0,0.248,0.232]);
 // ginger-blond hair: fringe, sides down to the jaw, a curtain of strands at the back
 hp(J.head,ell(0.19,0.16,0.1,10,8),HAIR,[0,0.22,-0.12],null,null,{f:20});
 hp(J.head,ell(0.218,0.2,0.222,14,10),HAIR,[0,0.245,-0.015],null,null,{rough:0.008,f:16,cut:(x,y,z)=>(y<0.3&&z>0.02)||y<0.17||(Math.abs(x)>0.12&&y<0.27&&z>-0.07)});
+// ---------- hunter's bush hat: olive crown with a pinched top, dark band, wide brim sloping down ----------
+const hat=new THREE.Group();hat.name='hat';hat.position.set(0,0.3,-0.01);hat.rotation.x=-0.06;J.head.add(hat);
+{const OL=['#6f6c48','#676442','#78754f','#6a6745'];
+ hp(hat,tcyl(0.235,0.37,0.05,18,1),OL,[0,0.028,0],null,[1,1,1.06],{rough:0.006,f:14});
+ hp(hat,tcyl(0.372,0.372,0.012,18,1),OL[1],[0,0.002,0],null,[1,1,1.06]);
+ hp(hat,tcyl(0.175,0.226,0.17,14,2),OL,[0,0.14,0],null,[1,1,1.05],{rough:0.007,f:14});
+ hp(hat,tcyl(0.12,0.175,0.035,14,1),OL,[0,0.242,0],null,[1,1,1.05],{rough:0.005,f:14});
+ hp(hat,tcyl(0.229,0.229,0.035,14,1),'#4a3a2a',[0,0.072,0],null,[1,1,1.05]);}
 [1,-1].forEach(sx=>{hp(J.head,ell(0.028,0.05,0.04,8,6),'SKIN',[sx*0.202,0.2,0.0],[0,0,sx*0.15]);});
 // beard: full, juts forward into a rounded block, open grin cut through it
 const mouthCut=(x,y,z)=>z>0.15&&Math.abs(x)<0.082&&y>0.072&&y<0.152;
@@ -1418,7 +1425,7 @@ anchor('pouch',J.chest,0.0,0.03,0.29);
 anchor('brow',J.head,-0.17,0.26,0.2);
 anchor('back',J.hips,0.0,0.02,-0.22);
 anchor('chestC',J.chest,-0.02,0.12,0.3);
-anchor('eject',gun,-0.04,0.05,0.06);
+anchor('eject',gun,-0.04,0.05,0.06);anchor('fore',gun,0.0,-0.07,0.2);
 
 // grenade
 function nadeMesh(){const g=new THREE.Group();
@@ -2260,6 +2267,21 @@ const NOMINAL={walk:1.9,run:4.4,sprint:6.6,cwalk:1.5,crawl:0.75};
 const UP_KEYS=['spine','chest','neck','head','lUpper','lFore','lHand','rUpper','rFore','rHand','gunP','gunR','ikR','ikL','R','L','poleR','poleL'];
 const HEIGHT={stand:1.9,crouch:1.3,prone:0.62};
 const SPAWN=MAP.spawn.clone();
+// ---- test mirror at the player-1 spawn (temporary): a camera in the glass looks back at the player and the picture is flipped like a mirror ----
+const MIRROR={on:true,g:null,rt:null,cam:null,n:0};
+function mirrorStep(){if(!MIRROR.on)return;
+  if(!MIRROR.g){const W=2.4,H=2.8;MIRROR.rt=new THREE.WebGLRenderTarget(420,490);const tx=MIRROR.rt.texture;tx.wrapS=THREE.RepeatWrapping;tx.repeat.x=-1;tx.offset.x=1;
+    MIRROR.cam=new THREE.PerspectiveCamera(46,W/H,0.1,80);const g=new THREE.Group();
+    const x=SPAWN.x,z=SPAWN.z+3.6,y=groundH(x,z);g.position.set(x,y,z);
+    const glass=new THREE.Mesh(new THREE.PlaneGeometry(W,H),new THREE.MeshBasicMaterial({map:tx}));glass.position.y=H/2+0.15;g.add(glass);
+    const fm=new THREE.MeshLambertMaterial({color:0x4a3a2a});
+    [[0,H+0.2,W+0.2,0.1],[0,0.1,W+0.2,0.1]].forEach(([px,py,w,h])=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,0.08),fm);b.position.set(px,py,-0.03);g.add(b);});
+    [-1,1].forEach(sx=>{const b=new THREE.Mesh(new THREE.BoxGeometry(0.1,H+0.3,0.08),fm);b.position.set(sx*(W/2+0.05),H/2+0.15,-0.03);g.add(b);});
+    g.lookAt(SPAWN.x,y,SPAWN.z);scene.add(g);MIRROR.g=g;g.updateMatrixWorld(true);
+    MIRROR.cam.position.set(0,1.45,0.05);g.localToWorld(MIRROR.cam.position);const t=new THREE.Vector3(0,1.15,3.6);g.localToWorld(t);MIRROR.cam.lookAt(t);}
+  if(player.pos.distanceTo(MIRROR.g.position)>60)return;
+  if((MIRROR.n++&1)===0){const vis=MIRROR.g.visible;MIRROR.g.visible=false;const mv=marine.visible,hv=J.head.visible;marine.visible=true;J.head.visible=true;
+    renderer.setRenderTarget(MIRROR.rt);renderer.render(scene,MIRROR.cam);renderer.setRenderTarget(null);marine.visible=mv;J.head.visible=hv;MIRROR.g.visible=vis;}}
 const player={pos:SPAWN.clone(),vel:V(0,0,0),yaw:0,grounded:true,stance:'stand',alive:true,
   lw:{idle:1,walk:0,run:0,sprint:0,cidle:0,cwalk:0,prone:0,crawl:0,kneel:0},lt:{idle:0,walk:0,run:0,sprint:0,cidle:0,cwalk:0,prone:0,crawl:0,kneel:0},
   aimW:0,airW:0,action:null,ammo:MAG,reloadT:-1,lastShot:-9,kick:0,fireCD:0,nadeCD:0,dir:1,twist:0,wading:0,splashT:0,landT:0,fallV:0,slide:null,slideW:0,slideCD:0};
@@ -2337,11 +2359,15 @@ function carryOnTank(){const pl=player;
       pl.pos.x=tank.pos.x+ox*c+oz*s;pl.pos.z=tank.pos.z-ox*s+oz*c;pl.yaw+=dy;camYaw+=dy;pl.pos.y=Math.max(pl.pos.y,th);}}
   _tk.x=tank.pos.x;_tk.z=tank.pos.z;_tk.yaw=tank.yaw;_tk.init=true;}
 const _sq=new THREE.Quaternion(),_sq2=new THREE.Quaternion(),_sq3=new THREE.Quaternion(),_sm=new THREE.Matrix4(),_sx=new THREE.Vector3(),_sy=new THREE.Vector3(),_sz=new THREE.Vector3(),_sE=new THREE.Vector3(),_sW=new THREE.Vector3(),_se=new THREE.Euler(0,0,0,'ZYX');
-function raiseScoped(p,k){   // rifle up to the eye: the scope's eyepiece sits just in front of the eye and the barrel points exactly along the line of sight
-  J.head.updateMatrixWorld(true);_sE.set(0,0.2,0.18);J.head.localToWorld(_sE);
+function raiseScoped(p,k){   // shouldered: body turns side-on so the butt sits in the shoulder pocket, scope axis through the eye and along the line of sight
+  const TW=window.SC_TW!==undefined?window.SC_TW:-0.9;
+  p.spine=[p.spine[0],p.spine[1]+TW*0.45*k,p.spine[2]];p.chest=[p.chest[0],p.chest[1]+TW*0.55*k,p.chest[2]];p.head=[p.head[0],p.head[1]-TW*k,p.head[2]];
+  {const NK=window.SC_NK!==undefined?window.SC_NK:0.15;p.neck=[p.neck[0]+NK*k,p.neck[1],p.neck[2]];p.head=[p.head[0]+NK*0.3*k,p.head[1],p.head[2]];}
+  if(k>0.5){p.L={fore:1};p.R={grip:1};if(window.SC_PL)p.poleL=window.SC_PL;if(window.SC_PR)p.poleR=window.SC_PR;if(window.SC_LH)p.lHand=window.SC_LH;}
+  applyPose(p);J.head.updateMatrixWorld(true);_sE.set(0,0.2,0.18);J.head.localToWorld(_sE);
   _sz.copy(_dir).normalize();_sx.set(0,1,0).cross(_sz);if(_sx.lengthSq()<1e-6)_sx.set(1,0,0);_sx.normalize();_sy.crossVectors(_sz,_sx);
   _sm.makeBasis(_sx,_sy,_sz);_sq.setFromRotationMatrix(_sm);                                   // gun world rotation: barrel along the sight line, no roll
-  _sW.copy(_sE).addScaledVector(_sz,0.075).addScaledVector(_sy,-0.118).addScaledVector(_sz,0.03);   // gun origin so the eyepiece (0,0.118,-0.03) lands 7 cm ahead of the eye
+  _sW.copy(_sE).addScaledVector(_sz,(window.SC_EP!==undefined?window.SC_EP:0.02)).addScaledVector(_sy,-0.1416).addScaledVector(_sz,0.036);   // gun origin so the eyepiece (0,0.118,-0.03) lands 7 cm ahead of the eye
   J.chest.updateMatrixWorld(true);J.chest.worldToLocal(_sW);
   J.chest.getWorldQuaternion(_sq2);_sq2.invert();_sq3.copy(_sq2).multiply(_sq);                 // target rotation in chest space
   _se.set(p.gunR[0],p.gunR[1],p.gunR[2],'ZYX');_sq2.setFromEuler(_se);_sq2.slerp(_sq3,k);_se.setFromQuaternion(_sq2,'ZYX');
@@ -2460,7 +2486,7 @@ function updatePlayer(dt,time){
   if(act){const ap=cpose(ACTIONS[act.name].clip,act.t);p=mix(p,ap,clamp(act.w,0,1));p.flash=0;}
   marine.position.copy(pl.pos); marine.rotation.y=pl.yaw;
   {let want=0;try{want=(scoped&&pl.alive&&!pl.slide)?1:0;}catch(e){}pl.scK=(pl.scK||0)+(want-(pl.scK||0))*Math.min(1,dt*14);if(Math.abs(want-pl.scK)<0.004)pl.scK=want;
-   if(pl.scK>0.004){p=Object.assign({},p);applyPose(p);raiseScoped(p,pl.scK);}}
+   if(pl.scK>0.004){p=Object.assign({},p);raiseScoped(p,pl.scK);}}
   applyPose(p);player.pose=p;
   // HUD label
   let lab=act?ACTIONS[act.name].clip:(pl.slide?'Slide':(!pl.grounded?'Jump':null));
@@ -3426,7 +3452,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=191;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=195;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3453,7 +3479,7 @@ let paused=false;
 let lastF=performance.now();
 function frame(now){
   const dt=Math.min(0.05,Math.max(0.0001,(now-last)/1000));last=now;
-  if(!paused){update(dt);renderer.render(scene,camera);perfTick(Math.max(0.0001,(now-lastF)/1000));}lastF=now;requestAnimationFrame(frame);
+  if(!paused){update(dt);try{mirrorStep();}catch(e){MIRROR.on=false;console.warn(e);}renderer.render(scene,camera);perfTick(Math.max(0.0001,(now-lastF)/1000));}lastF=now;requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 const genMs=Math.round(performance.now()-T0);
@@ -4282,7 +4308,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&NT.room&&
 
 window.SNIPER={mp:{start:mpStart,fanfare:playFanfare,goodbye:playGoodbye,leave:mpLeave,NT,RPS,MPM,P2RHB,P2PAIRS,packPose,getDeerVer:()=>deerVer,getYaw:()=>player.yaw,getDeer:()=>DEER,getAim:()=>aimPtTP?aimPtTP.toArray():null,getCam:()=>{const d=new THREE.Vector3();camera.getWorldDirection(d);return [camera.position.toArray(),d.toArray(),scoped]}},deerSample,getDCGCD:()=>dcGCD,getP2:()=>P2M,getBoltT:()=>boltT,P1_SPAWN,P2_SPAWN,getFALL:()=>FALL,STREAM,BED,CW,getSE:()=>STREAM_END,hFull,lakeE,LOWR,hitBird,getAmb:()=>amb,SND,playSample,initAudio,getAC:()=>AC,DAY,stepDay,meadowK,resetGame,BZ,BGRP,setBuzzards,STAIRS,TORTOPS,rockTopAt,DEER,MARKS,ROCKS,PGRID,setDeerCounts,disturb,miniZoom,keysDown:keys,player,marine,J,MAP,SEAT_INFO,SUMMIT,LW,chunks,stats,keys,input,camera,scene,renderer,castRay,groundH,setZero,
   set(o){if(o.yaw!=null)camYaw=o.yaw;if(o.pitch!=null)camPitch=o.pitch;if(o.pos)player.pos.set(o.pos[0],o.pos[1],o.pos[2]);if(o.fp!=null)viewFP=o.fp;if(o.zoom!=null)zoomI=o.zoom;},
-  play(){setPlaying(true);fallback=true;}, pause(v){paused=v;}, lod(){updateLOD();}, tick(dt){update(dt);renderer.render(scene,camera);}, step(dt){update(dt);}, info(){return {genMs,nTrees,nPlants,rocks:ROCKS.length,inst:instCount,LW,tris:renderer.info.render.triangles,calls:renderer.info.render.calls};}};
+  play(){setPlaying(true);fallback=true;}, pause(v){paused=v;}, lod(){updateLOD();}, tick(dt){update(dt);try{mirrorStep();mirrorStep();}catch(e){console.warn(e);}renderer.render(scene,camera);}, step(dt){update(dt);}, info(){return {genMs,nTrees,nPlants,rocks:ROCKS.length,inst:instCount,LW,tris:renderer.info.render.triangles,calls:renderer.info.render.calls};}};
 }
 requestAnimationFrame(()=>setTimeout(init,30));
 })();
