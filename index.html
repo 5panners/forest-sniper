@@ -3452,7 +3452,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=195;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=196;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3622,7 +3622,7 @@ function applyLook(i){lookI=Math.max(0,Math.min(3,i|0));const seen=new Set();
     m.defines=m.defines||{};if(lookI)m.defines.GSTYLE=lookI;else delete m.defines.GSTYLE;m.needsUpdate=true;}});
   try{localStorage.setItem('fsMist2',String(lookI));}catch(e){}}
 (function(){const el=document.getElementById('optMist');if(!el)return;let v=1;try{const q=localStorage.getItem('fsMist2');if(q!=null)v=+q||0;}catch(e){}el.value=String(v);el.onchange=()=>applyLook(+el.value);})();
-function lookStep(){edgeStep();if(!_dmgApplied)dmgApply();fireStep();leadGlowStep();owlStep();vitalsStep();if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
+function lookStep(){const T=(f)=>{try{f();}catch(e){if(!window._lsErr){window._lsErr=1;console.warn('lookStep',e);}}};T(vitalsStep);T(edgeStep);T(()=>{if(!_dmgApplied)dmgApply();});T(fireStep);T(leadGlowStep);T(owlStep);if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
 window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial){c++;if(m.defines&&m.defines.GSTYLE)d++;}});return {sh:true,std:c,withDef:d,keys:renderer.info.programs.map(p=>p.cacheKey.includes('GSTYLE')).join(','),lookI};};
 
 // ---- edge glow on every collectible: a slightly enlarged back-face shell per node, additive, pulsing on a 3 s cycle, one colour per resource type
@@ -3648,17 +3648,19 @@ const VIT=(()=>{const st=document.createElement('style');st.textContent=`
 #vitals .vr{display:flex;align-items:center;gap:8px}
 #vitals svg{width:15px;height:15px;flex:none;fill:currentColor}
 #vitals .tr{position:relative;flex:1;height:9px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.45)}
-#vitals .fl{position:absolute;left:0;top:0;bottom:0;width:50%;border-radius:5px;transition:width .12s linear;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 55%),var(--c)}
+#vitals .fl{position:absolute;left:0;top:0;bottom:0;width:50%;border-radius:5px;transition:width .12s linear;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 55%),var(--c,#47c9bb)}
 #vitals .bo{position:absolute;left:50%;top:0;bottom:0;width:0;transition:width .12s linear;background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,0) 55%),#3dff7c;box-shadow:0 0 9px rgba(61,255,124,.8)}
 #vitals .lag{position:absolute;left:0;top:0;bottom:0;width:50%;background:rgba(255,255,255,.35);transition:width .7s ease .25s}
+#vitals #vh .fl{--c:hsl(115,70%,52%)}
+#vitals #vs .fl{--c:#47c9bb}
 #vitals #vh .tr::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,.55)}
 #vitals .n{width:36px;text-align:right;font-variant-numeric:tabular-nums;opacity:.9}
 #vitals.low #vh .fl{animation:vpulse .8s ease-in-out infinite}
 #vitals.boost #vs .fl{animation:vpulse .5s ease-in-out infinite}
 @keyframes vpulse{50%{filter:brightness(1.6)}}`;document.head.appendChild(st);
   const d=document.createElement('div');d.id='vitals';d.innerHTML=`
-<div class="vr" id="vh" style="color:#f08070"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.8 4.5 6.4 4.5c2.1 0 3.9 1.1 5.6 3.2 1.7-2.100 3.500-3.200 5.600-3.200 3.600 0 5.500 3.900 4 7.300C19.500 16.400 12 21 12 21z"/></svg><div class="tr"><div class="lag"></div><div class="fl"></div><div class="bo"></div></div><span class="n">100%</span></div>
-<div class="vr" id="vs" style="color:#6fd3c6"><svg viewBox="0 0 24 24"><path d="M13.500 2 4 13.500h6.500L9 22l10-12.500h-6.700z"/></svg><div class="tr"><div class="lag"></div><div class="fl"></div></div><span class="n">50%</span></div>`;
+<div class="vr" id="vh" style="color:#f08070"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.8 4.5 6.4 4.5c2.1 0 3.9 1.1 5.6 3.2 1.7-2.100 3.500-3.200 5.600-3.200 3.600 0 5.500 3.900 4 7.300C19.500 16.400 12 21 12 21z"/></svg><div class="tr"><div class="lag"></div><div class="fl" style="--c:hsl(115,70%,52%)"></div><div class="bo"></div></div><span class="n">100%</span></div>
+<div class="vr" id="vs" style="color:#6fd3c6"><svg viewBox="0 0 24 24"><path d="M13.500 2 4 13.500h6.500L9 22l10-12.500h-6.700z"/></svg><div class="tr"><div class="lag"></div><div class="fl" style="--c:#47c9bb"></div></div><span class="n">50%</span></div>`;
   document.body.appendChild(d);
   const q=(id)=>{const r=d.querySelector('#'+id);return {r,bo:r.querySelector('.bo'),fl:r.querySelector('.fl'),lag:r.querySelector('.lag'),n:r.querySelector('.n')};};
   return {d,h:q('vh'),s:q('vs'),lh:-1,ls:-1,lk:null};})();
