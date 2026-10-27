@@ -3465,7 +3465,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=243;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=244;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -4429,7 +4429,7 @@ const CRAFT=(()=>{
   return {get open(){return !!wrap;},openP:open,close,keydown,barUI,pop,render,build,addBench,fill:fillRecipe,bench:()=>bench,match};})();
 window.CRAFT=CRAFT;
 
-// ---- cooking fires: a ring of stones, crossed logs, flickering flame and warm light; burns 4 minutes
+// ---- cooking fires: a ring of stones, crossed logs, flickering flame and warm light; burns 1 minute (or until you are 100 m away)
 const FIRES=[];let _fireGeo=null;
 function fireSpawn(x,z,mine){
   if(!_fireGeo){_fireGeo={stone:new THREE.DodecahedronGeometry(0.13,0),log:new THREE.CylinderGeometry(0.06,0.07,0.78,6),flame:new THREE.ConeGeometry(0.17,0.62,6,1,true),core:new THREE.ConeGeometry(0.1,0.42,6,1,true),
@@ -4443,7 +4443,7 @@ function fireSpawn(x,z,mine){
   const core=new THREE.Mesh(G.core,G.mC.clone());core.position.set(0,0.3,0);g.add(core);fl.push(core);
   let glow=null;try{glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xff8a3a,transparent:true,opacity:0.75,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));glow.scale.set(2.2,2.2,1);glow.position.y=0.45;g.add(glow);}catch(e){}
   const light=new THREE.PointLight(0xff8a3a,2.2,14,2);light.position.y=0.8;g.add(light);
-  scene.add(g);const F={x,z,y,g,fl,logs,light,glow,t:240,mine};FIRES.push(F);return F;}
+  scene.add(g);const F={x,z,y,g,fl,logs,light,glow,t:60,mine};FIRES.push(F);return F;}
 function placeFire(){if(EQUIP.fire<=0){toast('No cooking fire · build one from 10 stick bundles (I)');return;}
   const pl=player;if(!pl.alive)return;const fx=Math.sin(pl.yaw),fz=Math.cos(pl.yaw);let x=pl.pos.x+fx*1.6,z=pl.pos.z+fz*1.6;
   try{if(inWater(x,z)){toast('Too wet to light a fire here');return;}}catch(e){}
@@ -4453,14 +4453,16 @@ function placeFire(){if(EQUIP.fire<=0){toast('No cooking fire · build one from 
 const COOK={t:0,tip:null};
 function craftStep(){const now=performance.now(),dt=Math.min(0.1,(now-(craftStep.lt||now))/1000);craftStep.lt=now;
   let near=null;
-  for(let i=FIRES.length-1;i>=0;i--){const F=FIRES[i];F.t-=dt;const k=F.t>0?Math.min(1,F.t/20):0;   // fades over the last 20 s
+  for(let i=FIRES.length-1;i>=0;i--){const F=FIRES[i];F.t-=dt;
+    if(!F.out&&F.t>3&&player.alive&&Math.hypot(player.pos.x-F.x,player.pos.z-F.z)>100){F.out=true;F.t=3;}   // walk 100 m away and it burns out
+    const k=F.t>0?Math.min(1,F.t/10):0;   // fades over the last 10 s
     const T=now/1000;F.fl.forEach((f,j)=>{const s=(0.75+0.25*Math.sin(T*11+j*2.3+(f.userData.ph||0))+0.12*Math.sin(T*23+j))*k;f.scale.set(0.9+0.2*Math.sin(T*7+j),Math.max(0.001,s),0.9+0.2*Math.cos(T*6+j));f.rotation.y=T*(j%2?1.3:-1.1);f.visible=k>0.01;});
     F.light.intensity=k*(1.9+0.5*Math.sin(T*13)+0.3*Math.sin(T*29));if(F.glow){F.glow.material.opacity=0.7*k;}
     if(F.t<=0&&!F.charred){F.charred=true;F.logs.forEach(l=>l.material=_fireGeo.mChar);}
-    if(F.t<-60){scene.remove(F.g);FIRES.splice(i,1);continue;}
+    if(F.t<(F.out?-6:-60)){scene.remove(F.g);FIRES.splice(i,1);continue;}
     if(F.t>0&&player.alive&&Math.hypot(player.pos.x-F.x,player.pos.z-F.z)<2.6)near=F;}
   const cooking=!!near&&(INV.meat|0)>0;
-  if(cooking){COOK.t+=dt;if(COOK.t>=3.5){COOK.t=0;INV.meat--;try{HEAL.pool=Math.min(120,HEAL.pool+25);}catch(e){}try{invUI();}catch(e){}toast('Cooked meat · +25 health over time'+(INV.meat>0?' · '+INV.meat+' raw left':''));}}
+  if(cooking){COOK.t+=dt;if(COOK.t>=3.5){COOK.t=0;INV.meat--;try{MPM.hp=Math.min(HP_MAX,MPM.hp+HP_MAX/2);STAM.v=Math.min(1,STAM.v+0.5);STAM.lock=false;}catch(e){}try{invUI();}catch(e){}toast('Cooked meat · +50% health & stamina · two pieces restore you fully'+(INV.meat>0?' · '+INV.meat+' raw left':''));}}
   else COOK.t=0;
   if(!COOK.tip){COOK.tip=document.createElement('div');COOK.tip.id='cookTip';COOK.tip.hidden=true;document.body.appendChild(COOK.tip);}
   const tip=near&&playing?(cooking?'Cooking meat… '+Math.round(COOK.t/3.5*100)+'%':'Warm fire · bring raw meat to cook it'):'';
