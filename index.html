@@ -2754,7 +2754,7 @@ function locomote(d,tS,dt,steer){
   d.spd+=(tS-d.spd)*Math.min(1,dt*(tS>d.spd?2.2:3.2));if(d.spd<0.01){d.spd=0;return;}
   if(steer){const des=Math.atan2(d.tx-d.x,d.tz-d.z);const look=Math.max(2.5,d.spd*0.7);let best=null;
     for(const o of ANG){const a=des+o;const px=d.x+Math.sin(a)*look,pz=d.z+Math.cos(a)*look;if(deerOK(px,pz)&&!treeAt(px,pz,0.45*d.s)){best=a;break;}}
-    if(best==null){best=d.yaw+1.2;d.stuck+=dt;}
+    if(best==null){best=d.yaw+(d.spin||(d.spin=Math.random()<0.5?-1:1))*1.2;d.stuck+=dt;}else d.spin=0;
     const turn=(d.spd>4?2.4:1.7)*dt;d.yaw+=clamp(wrapA(best-d.yaw),-turn,turn);}
   const nx=d.x+Math.sin(d.yaw)*d.spd*dt,nz2=d.z+Math.cos(d.yaw)*d.spd*dt;
   if(deerOK(nx,nz2)&&(Math.hypot(nx-FCX,nz2-FCZ)<FIREWALL-3||Math.hypot(nx-FCX,nz2-FCZ)<Math.hypot(d.x-FCX,d.z-FCZ))){d.x=nx;d.z=nz2;}else{d.stuck+=dt;d.yaw+=dt*2;}
@@ -2771,6 +2771,13 @@ function nextActivity(d){
   const [x,z]=wanderPt(d);d.st='walk';d.tx=x;d.tz=z;d.stT=100;}
 function toGraze(d,t){d.st='graze';const op=meadowK(d.x,d.z)>OPEN_K;d.stT=(t||15+Math.random()*45)*(op?1.8:0.7);pickSub(d);}
 
+// flee bearing: away from the threat, but swept for clear ground so a deer never spins on the spot; held 0.5 s so it does not jitter
+function fleeDir(d){const now=performance.now()/1000;if(d.fb!=null&&d.fbN>now)return d.fb;
+  const base=Math.atan2(d.x-d.thx,d.z-d.thz);let best=base+d.fleeOff,bs=-1e9;
+  for(let k=-6;k<=6;k++){const a=base+d.fleeOff*0.5+k*0.3;let clear=0;
+    for(const L of [5,12,22,34]){const px=d.x+Math.sin(a)*L,pz=d.z+Math.cos(a)*L;if(!deerOK(px,pz)||treeAt(px,pz,0.45*d.s))break;clear=L;}
+    const sc=clear+Math.cos(a-base)*14-(d.fb!=null?Math.abs(wrapA(a-d.fb))*2:0);if(sc>bs){bs=sc;best=a;}}
+  d.fb=best;d.fbN=now+0.5;return best;}
 function deerAI(d,dt){
   for(let i=d.ev.length-1;i>=0;i--){const e=d.ev[i];e.t-=dt;if(e.t<=0){d.ev.splice(i,1);hear(d,e);}}
   if(d.st==='dead')return;
@@ -2791,7 +2798,10 @@ function deerAI(d,dt){
     case 'drink':turnTo(d,d.wx,d.wz,dt,1.2);if(d.stT<=0)toGraze(d);break;
     case 'alert':{const rel=wrapA(Math.atan2(d.thx-d.x,d.thz-d.z)-d.yaw);if(Math.abs(rel)>1.1)turnTo(d,d.thx,d.thz,dt,1.2);
       if(d.stT<=0){if(d.fear>1.3)scare(d,d.thx,d.thz);else if(d.fear>0.8){const a=Math.atan2(d.x-d.thx,d.z-d.thz);d.st='walk';d.tx=d.x+Math.sin(a)*45;d.tz=d.z+Math.cos(a)*45;d.stT=60;}else toGraze(d,8+Math.random()*20);}break;}
-    case 'flee': case 'dying':{tS=K.run*0.85*(d.st==='dying'?1:wm);steer=true;let a=Math.atan2(d.x-d.thx,d.z-d.thz)+d.fleeOff;{const fr=Math.hypot(d.x-FCX,d.z-FCZ),fd=FIREWALL-fr;if(fd<90&&fr>1){const ao=Math.atan2(d.x-FCX,d.z-FCZ),oc=Math.cos(a-ao);if(oc>0){const w=Math.min(1,(90-fd)/60),tgt=fd<30?ao+PI:ao+(Math.sin(a-ao)>=0?PI/2:-PI/2);a+=wrapA(tgt-a)*w;}}}d.tx=d.x+Math.sin(a)*40;d.tz=d.z+Math.cos(a)*40;
+    case 'flee': case 'dying':{tS=K.run*0.85*(d.st==='dying'?1:wm);steer=true;let a=fleeDir(d);{const fr=Math.hypot(d.x-FCX,d.z-FCZ),fd=FIREWALL-fr;if(fd<90&&fr>1){const ao=Math.atan2(d.x-FCX,d.z-FCZ),oc=Math.cos(a-ao);if(oc>0){const w=Math.min(1,(90-fd)/60),tgt=fd<30?ao+PI:ao+(Math.sin(a-ao)>=0?PI/2:-PI/2);a+=wrapA(tgt-a)*w;}}}d.tx=d.x+Math.sin(a)*40;d.tz=d.z+Math.cos(a)*40;
+      // anti-circling: a flee that gains no ground (boxed in by trees/water, or the player keeps re-frightening it) gets a new bearing, then gives up and trots off
+      d.pgT=(d.pgT==null?4:d.pgT)-dt;if(d.pgT<=0){const dd=Math.hypot(d.x-d.thx,d.z-d.thz);if(d.pgD!=null&&dd-d.pgD<9){d.fleeOff=(Math.random()<0.5?-1:1)*(0.8+Math.random()*0.9);d.fbN=0;d.pgN=(d.pgN||0)+1;if(d.pgN>=2&&d.st==='flee'){d.pgN=0;d.fleeLeft=0;d.fear=Math.min(d.fear,0.5);}}else d.pgN=0;d.pgD=dd;d.pgT=4;}
+      if(d.stuck>4){d.stuck=0;d.fbN=0;if(d.st==='flee')d.fleeLeft=Math.min(d.fleeLeft,20);}
       d.fleeLeft-=d.spd*dt;if(d.st==='flee'&&d.fleeLeft<=0){if(d.wound==='gut'){d.st='bed';}else{d.st='trot';d.tx=d.x+Math.sin(a)*60;d.tz=d.z+Math.cos(a)*60;d.stT=40;}}break;}
     case 'bed':break;
     case 'roar':{d.roarCD-=dt;if(d.roarCD<=0&&d.roarN>0){dvox.roar(d);d.roarA=2.0;d.roarN--;d.roarCD=3+Math.random()*3;
@@ -3450,7 +3460,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=249;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=250;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
