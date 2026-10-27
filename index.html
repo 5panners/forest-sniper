@@ -3460,7 +3460,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=250;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=252;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3764,7 +3764,7 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): ring shrink, flame / smoke / spark look, tree fires
-const GAME_DEF={fDens:1.2,fWid:1.1,fFer:0.7,fSpd:0.25,sm:0.6,sp:2,spit:2,sDelay:300,sDur:600,sEnd:200,rdOn:1,rdBand:20,rdIn:5,rdOut:10,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:1,bWalk:1.2,bRear:14};
+const GAME_DEF={fDens:1.2,fWid:1.1,fFer:0.7,fSpd:0.25,sm:0.6,sp:2,spit:2,sDelay:300,sDur:600,sEnd:200,rdOn:1,rdBand:20,rdIn:5,rdOut:10,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:1,bWalk:1.2,bRear:14,bAtk:1,bTrig:1,bFight:60,bChance:60,bSense:40,bChSpd:8,bReach:2.8,bDmg:35,bRate:1.6,bChase:25,bCool:25};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];if(v&&!v.rdV){GAME.rdBand=GAME_DEF.rdBand;GAME.rdIn=GAME_DEF.rdIn;GAME.rdOut=GAME_DEF.rdOut;}GAME.rdV=2;}catch(e){}
 // ---- ring of fire: flat-shaded animated flame wall, smoke curtain, ember glow on the ground and rising sparks.
 // Four draw calls in all; every bit of motion is done in the vertex shaders, so the CPU only updates one time uniform per frame.
@@ -3893,7 +3893,6 @@ function fireCry(d,dt,dist){if(d.st!=='flee'&&d.st!=='dying'||d.st==='dead')retu
    ['sec','Flames'],['fDens','Flame density',0.3,2,0.05,2],['fWid','Flame width',0.5,2.5,0.05,2],['fFer','Flame ferocity (height and sway)',0.3,2.5,0.05,2],['fSpd','Flame speed',0.1,2,0.05,2],
    ['sec','Smoke and sparks'],['sm','Smoke density',0,2,0.05,2],['sp','Rising sparks',0,2,0.05,2],['spit','Sparks spitting inwards',0,2,0.05,2],
    ['sec','Stamina boost (double-tap W)'],['stStart','Starting stamina (%)',0,100,1,0],['stGain','Stamina per Magic Mushroom cluster (%)',0,25,1,0],['stDrain','Seconds of boost from a full bar',2,60,1,0],['stMult','Boost speed multiplier',1,3,0.1,1],
-   ['sec','Bears (single player for now)'],['bears','Bears on the map',0,4,1,0],['bWalk','Bear walking pace (m/s · it runs at five times this)',0.4,3,0.1,1],['bRear','Bear rears up when you come within (m)',0,40,1,0],
    ['sec','Butchering animals'],['bMeat','Health per meat from a butchered animal (%)',0,10,0.5,1],['bInst','Health instantly (1) or over time (0)',0,1,1,0],
    ['sec','Ring damage to players'],['rdOn','Ring hurts players (1 = on, 0 = off)',0,1,1,0],['rdBand','Burn zone width inside the ring (m)',2,60,1,0],['rdIn','Damage per second at the wall, inside (hp/s)',0,40,0.5,1],['rdOut','Damage per second outside the ring (hp/s)',0,60,0.5,1],
    ];
@@ -3907,6 +3906,35 @@ function fireCry(d,dt,dist){if(d.st!=='flee'&&d.st!=='dying'||d.st==='dead')retu
   const ids=['Brief','Gfx','Env','Aud','Mp','Dmg'];
   tb.onclick=()=>{ids.forEach(n=>{const t=document.getElementById('tab'+n),p=document.getElementById('pane'+n);if(t)t.setAttribute('aria-selected','false');if(p)p.hidden=true;});tb.setAttribute('aria-selected','true');pn.hidden=false;};
   const _st=showTab;showTab=function(w){_st(w);tb.setAttribute('aria-selected','false');pn.hidden=true;};
+})();
+// ---- Predators tab: bears now (map count, pace, attacks), wolves later
+(function(){
+  const tabs=document.querySelector('.tabs'),gamePn=document.getElementById('paneGame');if(!tabs||!gamePn)return;
+  const css=document.createElement('style');css.textContent=`#panePred .gr{display:grid;grid-template-columns:270px 1fr 64px;gap:10px;align-items:center;margin:5px 0;font-size:13px}#panePred .gr input[type=range],#panePred .gr input[type=checkbox]{accent-color:var(--moss)}#panePred .gr input[type=range]{width:100%}#panePred .gr input[type=checkbox]{width:16px;height:16px}#panePred .gr output{font-variant-numeric:tabular-nums;opacity:.85;text-align:right}#panePred .gr select{grid-column:2/4;justify-self:start;max-width:100%}#panePred button{margin:10px 8px 0 0}#panePred .off{opacity:.38;pointer-events:none}#panePred .soon{margin:6px 0 0;padding:12px 14px;border-radius:12px;border:1px dashed rgba(238,240,228,.22);color:rgba(238,240,228,.6);font-size:13px}`;document.head.appendChild(css);
+  const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabPred';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','panePred');tb.textContent='Predators';tabs.appendChild(tb);
+  const pn=document.createElement('div');pn.id='panePred';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabPred');pn.hidden=true;gamePn.after(pn);
+  const ROWS=[['sec','Bears'],['bears','Bears on the map',0,4,1,0],['bWalk','Walking pace (m/s · it runs at five times this when fleeing)',0.4,3,0.1,1],['bRear','Rears up when you come within (m)',0,40,1,0],
+   ['sec','Bear attacks'],['chk','bAtk','Bears can attack'],['sel','bTrig','A bear goes for you',[[0,'Only when it has been shot'],[1,'When shot, or when you crowd it'],[2,'On sight, it hunts you']]],
+   ['bFight','Chance a wounded bear turns and fights instead of fleeing (%)',0,100,5,0],['bChance','Chance it charges after rearing up at you (%)',0,100,5,0],
+   ['bSense','Notice range when hunting (m · shorter when you creep, crouch or lie prone)',10,120,5,0],['bChSpd','Charge speed (m/s)',3,14,0.5,1],['bReach','Swipe reach (m)',1.5,5,0.1,1],['bDmg','Damage per swipe (hp)',5,100,5,0],['bRate','Time between swipes (s)',0.8,4,0.1,1],
+   ['bChase','Gives up the chase after (s)',5,60,1,0],['bCool','Rests after giving up before it will charge again (s)',5,120,5,0]];
+  const KEYS=ROWS.filter(r=>r[0]!=='sec').map(r=>r[0]==='chk'||r[0]==='sel'?r[1]:r[0]);
+  const save=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}};
+  const dim=()=>{pn.querySelectorAll('[data-atk]').forEach(e=>e.classList.toggle('off',!GAME.bAtk));};
+  const build=()=>{pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. In a match the host runs the bears, and a bear can maul either player.</p>'+ROWS.map(r=>{
+      if(r[0]==='sec')return `<p class="sec" style="margin-top:14px">${r[1]}</p>`;
+      if(r[0]==='chk')return `<div class="gr"><label>${r[2]}</label><input type="checkbox" data-k="${r[1]}" ${GAME[r[1]]?'checked':''}></div>`;
+      if(r[0]==='sel')return `<div class="gr" data-atk="1"><label>${r[2]}</label><select data-k="${r[1]}">${r[3].map(o=>`<option value="${o[0]}" ${+GAME[r[1]]===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div>`;
+      const atk=r[0]!=='bears'&&r[0]!=='bWalk'&&r[0]!=='bRear';
+      return `<div class="gr"${atk?' data-atk="1"':''}><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${GAME[r[0]]}" data-k="${r[0]}"><output>${(+GAME[r[0]]).toFixed(r[5])}</output></div>`;}).join('')
+      +'<p class="sec" style="margin-top:18px">Wolves</p><div class="soon">Coming later: packs that hunt, flank and howl.</div><button type="button" class="btn" id="prReset">Reset predators to defaults</button>';
+    pn.querySelectorAll('input[type=range]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.step<1?(+i.step<0.1?2:1):0);save();});
+    pn.querySelectorAll('input[type=checkbox]').forEach(i=>i.onchange=()=>{GAME[i.dataset.k]=i.checked?1:0;save();dim();});
+    pn.querySelectorAll('select').forEach(i=>i.onchange=()=>{GAME[i.dataset.k]=+i.value;save();});
+    pn.querySelector('#prReset').onclick=()=>{KEYS.forEach(k=>{GAME[k]=GAME_DEF[k];});save();build();};dim();};
+  build();
+  tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};
+  tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
 })();
 window.SNIPER_RES.fire=()=>({FIRE,GAME,fireBuild,SND,FSND,ringHurt,ringReset,ringPick,playing:()=>playing});
 
@@ -4080,7 +4108,7 @@ function bearPose(b,dt){
   const OFF=run?[0.5,0.6,0.0,0.1]:[0.25,0.75,0.0,0.5];   // LF RF LH RH: lateral-sequence walk, lope when running
   const k=Math.min(1,v/Math.max(0.3,GAME.bWalk));
   // rearing: body pitches up around the hind hips
-  b.rearK+=( (b.st==='rear'?1:0)-b.rearK)*Math.min(1,dt*(b.st==='rear'?2.2:1.6));const R=b.rearK;
+  const _rt=b.st==='rear'?1:b.st==='swipe'?(((b.net?(performance.now()/1000)%Math.max(0.8,GAME.bRate):b.swT)<0.55)?0.62:0.04):0;b.rearK+=(_rt-b.rearK)*Math.min(1,dt*(b.st==='rear'?2.2:b.st==='swipe'?6:1.6));const R=b.rearK;
   const pitch=-1.12*R;const py=0.84,pz=-0.72,c=Math.cos(pitch),s=Math.sin(pitch);
   // body position so the hind hip pivot stays put: p' = P + Rx(pitch)(-P)
   const bob=moving?(run?0.06*Math.abs(Math.sin(b.ph*Math.PI*2)):0.025*Math.sin(b.ph*Math.PI*4))*k:0;
@@ -4103,12 +4131,40 @@ function bearPose(b,dt){
 // somewhere a bear cannot stand: water, a trunk or rock, or a steep bank
 function bearBlocked(x,z){try{if(inWater(x,z))return true;}catch(e){}try{if(slopeAt(x,z)>1.0)return true;}catch(e){}
   for(const p of pillarsNear(x,z)){if(Math.hypot(p.x-x,p.z-z)<p.r+1.0)return true;}return false;}
-const BST2=['walk','idle','rear','flee'];
+const BST2=['walk','idle','rear','flee','charge','swipe'];
 // nearest person to a bear: me, or the opponent in a match
-function bearHuman(b){let x=player.pos.x,z=player.pos.z,d=Math.hypot(x-b.x,z-b.z);
-  try{if(MPM&&MPM.on&&NT.opp&&RPS&&RPS.pos&&RPS.al){const d2=Math.hypot(RPS.pos.x-b.x,RPS.pos.z-b.z);if(d2<d){d=d2;x=RPS.pos.x;z=RPS.pos.z;}}}catch(e){}
-  return {x,z,d};}
+function bearHuman(b){let x=player.pos.x,z=player.pos.z,d=Math.hypot(x-b.x,z-b.z),opp=false;
+  try{if(MPM&&MPM.on&&NT.opp&&RPS&&RPS.pos&&RPS.al){const d2=Math.hypot(RPS.pos.x-b.x,RPS.pos.z-b.z);if(d2<d){d=d2;x=RPS.pos.x;z=RPS.pos.z;opp=true;}}}catch(e){}
+  return {x,z,d,opp};}
 // match: the host runs the bears; the guest mirrors them from the wild packets
+// ---- bear attacks (Predators tab): a bear can charge the nearest person and maul them. Host-side only; in a match the guest is told by a 'bmaul' message.
+function bearHumanAlive(H){try{return H.opp?!!RPS.al:(player.alive&&MPM.hp>0);}catch(e){return false;}}
+function bearSense(H){let sp,st;try{if(H.opp){sp=RPS.sp||0;st=RPS.stn;}else{sp=Math.hypot(player.vel.x,player.vel.z);st=player.stance;}}catch(e){sp=0;st='stand';}
+  return GAME.bSense*(sp>4.5?1.4:sp>0.5?1:0.55)*(st==='prone'?0.4:st==='crouch'?0.65:1);}
+function bearAtk(b,H,mode){if(!GAME.bAtk||(b.cool||0)>0||b.dead>0||!H||!bearHumanAlive(H))return false;
+  try{if(MPM.on&&NT.M.ph!=='live')return false;}catch(e){}
+  if(mode===1)return GAME.bTrig>=1&&Math.random()*100<GAME.bChance&&H.d<Math.max(GAME.bRear,10)*1.7;
+  return true;}
+function bearCharge(b,H){b.st='charge';b.stT=GAME.bChase;b.swT=0;b.swHit=false;b.spd=Math.max(b.spd,GAME.bWalk);
+  try{animalCry('bear',b.x,b.y+1.3,b.z,false);if(H&&!H.opp)toast('The bear is charging!');}catch(e){}}
+function bearGiveUp(b){b.st='walk';b.cool=GAME.bCool;bearTarget(b);b.stT=60;b.swT=0;}
+function bearHurtMe(dmg,b){if(!player.alive||MPM.hp<=0)return;try{if(MPM.on&&NT.M.ph!=='live')return;}catch(e){}
+  MPM.hp-=dmg;try{flashHit();edgeFlash();}catch(e){}
+  if(b){const a=Math.atan2(player.pos.x-b.x,player.pos.z-b.z);player.vel.x+=Math.sin(a)*3.5;player.vel.z+=Math.cos(a)*3.5;}
+  toast('Mauled by a bear · -'+Math.round(dmg));
+  if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed by a bear');}}
+function bearMaul(b,H){const dmg=GAME.bDmg*(0.85+Math.random()*0.3);try{animalCry('bear',b.x,b.y+1.3,b.z,false);}catch(e){}
+  if(H.opp){try{if(NT.room)NT.room.emit('bmaul',{d:Math.round(dmg)}).catch(()=>{});}catch(e){}}else bearHurtMe(dmg,b);}
+function bearAtkStep(b,H,dt){
+  if(b.st==='walk'||b.st==='idle'){if(GAME.bTrig>=2&&bearAtk(b,H,2)&&H.d<bearSense(H))bearCharge(b,H);return;}
+  if(b.st!=='charge'&&b.st!=='swipe')return;
+  if(!GAME.bAtk||!bearHumanAlive(H)||H.d>GAME.bSense*2.5+30||b.stT<0){bearGiveUp(b);return;}
+  try{if(FIRE.lit&&Math.hypot(b.x-FCX,b.z-FCZ)>FIREWALL-30){bearGiveUp(b);return;}}catch(e){}
+  b.tx=H.x;b.tz=H.z;
+  if(b.st==='charge'&&H.d<GAME.bReach*0.9){b.st='swipe';b.swT=0;b.swHit=false;}
+  if(b.st==='swipe'){b.swT+=dt;b.yaw+=clamp(wrapA(Math.atan2(H.x-b.x,H.z-b.z)-b.yaw),-3*dt,3*dt);
+    if(!b.swHit&&b.swT>=0.55){b.swHit=true;if(H.d<GAME.bReach*1.35)bearMaul(b,H);}
+    if(b.swT>=GAME.bRate){if(H.d>GAME.bReach*1.35){b.st='charge';b.swT=0;b.stT=Math.max(b.stT,6);}else{b.swT=0;b.swHit=false;}}}}
 function bearStep(dt){
   const gst=!!(MPM&&MPM.on&&MPM.guest),on=playing&&!gst;
   if(BEARS.length!==Math.round(GAME.bears||0)){bearReset();}
@@ -4119,14 +4175,15 @@ function bearStep(dt){
       if(!(b.dead>0))bearPose(b,dt);bearPlace(b,dt);continue;}
     if(!on)continue;
     if(b.dead>0){if(b.dead<1){b.dead+=dt*0.9;bearPlace(b,dt);}continue;}
-    b.stT-=dt;b.rearCD-=dt;let want=0;
+    b.stT-=dt;b.rearCD-=dt;b.cool=(b.cool||0)-dt;let want=0;
     {const H=bearHuman(b),pd=H.d;
-     if(player.alive&&pd<GAME.bRear&&b.st!=='flee'&&b.st!=='rear'&&b.rearCD<=0){b.st='rear';b.stT=2.8+Math.random()*1.8;b.rearCD=14;b.spd=0;}
+     if(player.alive&&pd<GAME.bRear&&b.st!=='flee'&&b.st!=='rear'&&b.st!=='charge'&&b.st!=='swipe'&&b.rearCD<=0){b.st='rear';b.stT=2.8+Math.random()*1.8;b.rearCD=14;b.spd=0;}
      if(b.st==='rear'){const want2=Math.atan2(H.x-b.x,H.z-b.z);b.yaw+=clamp(wrapA(want2-b.yaw),-2*dt,2*dt);
-       if(b.stT<0){const a2=Math.atan2(b.x-H.x,b.z-H.z)+(Math.random()-0.5);b.tx=b.x+Math.sin(a2)*70;b.tz=b.z+Math.cos(a2)*70;b.st='walk';b.stT=40;}}}
+       if(b.stT<0){if(bearAtk(b,H,1))bearCharge(b,H);else{const a2=Math.atan2(b.x-H.x,b.z-H.z)+(Math.random()-0.5);b.tx=b.x+Math.sin(a2)*70;b.tz=b.z+Math.cos(a2)*70;b.st='walk';b.stT=40;}}}
+     bearAtkStep(b,H,dt);}
     if(b.st==='walk'){want=GAME.bWalk;const d=Math.hypot(b.tx-b.x,b.tz-b.z);if(d<3||b.stT<0){if(Math.random()<0.45){b.st='idle';b.stT=5+Math.random()*12;}else{bearTarget(b);b.stT=60;}}}
     else if(b.st==='idle'){want=0;if(b.stT<0){b.st='walk';bearTarget(b);b.stT=60;}}
-    else if(b.st==='rear'){want=0;}
+    else if(b.st==='rear'||b.st==='swipe'){want=0;}else if(b.st==='charge'){want=GAME.bChSpd;}
     else if(b.st==='flee'){want=GAME.bWalk*5;if(b.stT<0){b.st='walk';bearTarget(b);b.stT=60;}}
     if(FIRE.lit){const fr=Math.hypot(b.x-FCX,b.z-FCZ);if(fr>FIREWALL-30&&b.st!=='flee'){b.tx=FCX+(b.x-FCX)*0.6;b.tz=FCZ+(b.z-FCZ)*0.6;b.st='walk';}}
     b.spd+=(want-b.spd)*Math.min(1,dt*(want>b.spd?1.6:3));
@@ -4158,7 +4215,7 @@ function hitBear(b,sub,dist){const R=' · '+Math.round(dist)+' m';flashHit();
   if(b.dead>0){toast('The bear is already down'+R);return;}
   const dm=(DMG.w.rifle.k&&DMG.w.rifle.k[sub]!=null)?DMG.w.rifle.k[sub]:25;try{dmgNum(b.x,b.y+2.4,b.z,Math.min(b.hp,dm));animalCry('bear',b.x,b.y+1.2,b.z,b.hp-dm<=0);}catch(e){}b.hp-=dm;
   if(b.hp<=0){b.hp=0;b.dead=0.001;b.spd=0;toast('Bear down · '+sub+' shot'+R);return;}
-  const p=(typeof hitFrom!=='undefined'&&hitFrom)||player.pos,a=Math.atan2(b.x-p.x,b.z-p.z)+(Math.random()-0.5)*0.8;b.tx=b.x+Math.sin(a)*90;b.tz=b.z+Math.cos(a)*90;b.st='flee';b.stT=9+Math.random()*5;
+  const p=(typeof hitFrom!=='undefined'&&hitFrom)||player.pos,a=Math.atan2(b.x-p.x,b.z-p.z)+(Math.random()-0.5)*0.8;if(GAME.bAtk&&(b.cool||0)<=0&&Math.random()*100<GAME.bFight)bearCharge(b,bearHuman(b));else{b.tx=b.x+Math.sin(a)*90;b.tz=b.z+Math.cos(a)*90;b.st='flee';b.stT=9+Math.random()*5;}
   toast('Bear hit · '+sub+' · '+Math.round(100*b.hp/Math.max(1,DMG.hp.bear))+'% left'+R);}
 function showBearHB(on){BEARS.forEach(b=>b.hb.forEach(m=>m.userData.edge.visible=on));}
 // match packets: host side list, guest side apply, guest-side hit report
@@ -4169,7 +4226,7 @@ function netBearHit(b,sub,dist){flashHit();try{const dm=(DMG.w.rifle.k&&DMG.w.ri
 // bear marker for the map and minimap: dark brown head with round ears, cream outline; a cross when dead
 function drawBearMark(c,x,y,b,k,th){c.save();c.translate(x,y);c.rotate(-th);c.scale(k,k);c.lineWidth=2.5;
   if(b.dead){c.strokeStyle='#e8e2d4';c.beginPath();c.moveTo(-7,-7);c.lineTo(7,7);c.moveTo(7,-7);c.lineTo(-7,7);c.stroke();}
-  else{c.fillStyle=b.st==='rear'||b.st==='flee'?'#ff5a3c':'#4a2a14';c.strokeStyle='#f3e6c8';
+  else{c.fillStyle=b.st==='rear'||b.st==='flee'||b.st==='charge'||b.st==='swipe'?'#ff5a3c':'#4a2a14';c.strokeStyle='#f3e6c8';
     c.beginPath();c.arc(-6,-6,3.2,0,Math.PI*2);c.arc(6,-6,3.2,0,Math.PI*2);c.fill();c.stroke();
     c.beginPath();c.arc(0,0,8,0,Math.PI*2);c.fill();c.stroke();
     c.fillStyle='#c9a27a';c.beginPath();c.ellipse(0,2.5,3.4,2.6,0,0,Math.PI*2);c.fill();}
@@ -4466,7 +4523,7 @@ function craftReset(){EQUIP.fire=0;EQUIP.drone=0;for(const F of FIRES)scene.remo
 resReset=(f=>function(){f.apply(this,arguments);try{craftReset();}catch(e){}})(resReset);
 window.SNIPER_CRAFT={CRAFT,EQUIP,FIRES,RECIPES,fireSpawn,placeFire,step:craftStep};
 
-window.SNIPER_BEAR={list:()=>BEARS,reset:bearReset,step:bearStep,hit:hitBear,ray:rayBear,cast:(o,d,m)=>castRay(o,d,m)};
+window.SNIPER_BEAR={hurt:bearHurtMe,charge:bearCharge,human:bearHuman,list:()=>BEARS,reset:bearReset,step:bearStep,hit:hitBear,ray:rayBear,cast:(o,d,m)=>castRay(o,d,m)};
 
 // ================= comms tower: galvanised lattice mast with an open observation deck near the top, reached by a ladder =================
 // The deck is a sniper's perch: railings all round (gap at the ladder), room to go prone, and a weapons crate for later.
@@ -4758,6 +4815,7 @@ function onMsg(t,d,m){
     try{hitDeer(dr,String(d.sub),+d.dist||0);if(d.sub==='leg')legHit(dr,d.leg|0);}finally{MPM.mute=false;hitFrom=null;}}
   else if(t==='take'){resRemoteTake(d.i|0);}
   else if(t==='carve'){resRemoteCarve(d);}
+  else if(t==='bmaul'){if(MPM.guest)try{bearHurtMe(+d.d||0,null);}catch(e){}}
   else if(t==='campfire'){try{fireSpawn(+d.x,+d.z,false);}catch(e){}}
   else if(t==='brhit'){if(MPM.guest)return;const b=BEARS[d.i|0];if(!b)return;hitFrom=RPS.pos;MPM.mute=true;try{hitBear(b,String(d.sub),+d.dist||0);}finally{MPM.mute=false;hitFrom=null;}}
   else if(t==='bhit'){if(MPM.guest)return;const b=BZ[d.i|0];if(!b)return;MPM.mute=true;try{hitBird(b,+d.dist||0);}finally{MPM.mute=false;}}
@@ -4773,7 +4831,7 @@ function takeHit(d,peer){const key=peer+':'+d.n;if(NT.seen.has(key))return;NT.se
   if(NT.M.ph!=='live'||!player.alive||d.r!==NT.M.r)return;const z=d.z==='head'||d.z==='torso'||d.z==='limb'?d.z:'torso';
   MPM.hp-=MP_DMG[z];try{dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,MP_DMG[z],'#ff3a3a');}catch(e){}flashHit();edgeFlash();shake=Math.max(shake,0.35);
   if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed · '+(z==='head'?'headshot':z==='torso'?'body shot':'limb shot')+' from '+(d.dist|0)+' m');}
-  else toast('You are hit · '+(z==='torso'?'body':z)+' · '+Math.round(MPM.hp)+' hp left');}
+  else toast('You are hit · '+(z==='torso'?'body':z)+' · '+(d.dist|0)+' m · '+Math.round(MPM.hp)+' hp left');}
 function netDeerHit(d,sub,leg,dist){flashHit();try{dmgNum(d.x,d.y+2.0*d.s,d.z,animalDmg(d.kind,sub));animalCry('deer',d.x,d.y+1.2*d.s,d.z,sub==='head'||sub==='neck',d.kind);}catch(e){}if(sub==='head')headDing();else hitThud();toast(deerName(d)+' hit · '+sub+' · '+Math.round(dist)+' m');const i=DEER.indexOf(d);if(i<0||!NT.room)return;
   NT.room.emit('dhit',{v:NT.rosterV,i,sub,leg:leg|0,dist:Math.round(dist)}).catch(()=>{});}
 function netBirdHit(b,dist){flashHit();try{dmgNum(b.x,b.y+1.2,b.z,(DMG.hp&&DMG.hp.buzzard)||10);animalCry('bird',b.x,b.y,b.z,true);}catch(e){}toast('Buzzard hit · '+Math.round(dist)+' m');const i=BZ.indexOf(b);if(i<0||!NT.room)return;NT.room.emit('bhit',{i,dist:Math.round(dist)}).catch(()=>{});}
