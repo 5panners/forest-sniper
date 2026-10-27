@@ -3272,7 +3272,7 @@ addEventListener('keydown',e=>{
     case 'ControlLeft': case 'ControlRight': if(!busy)tryStartSlide(); break;
     case 'KeyC': if(busy)break; if(pl.slide)break; if(pl.stance==='stand'&&Math.hypot(pl.vel.x,pl.vel.z)>(streamAt(pl.pos.x,pl.pos.z)||fallRow(pl.pos.x,pl.pos.z)?2.4:5.2)&&tryStartSlide())break; if(pl.stance==='stand')pl.stance='crouch';else if(pl.stance==='crouch'){if(canFit(HEIGHT.stand))pl.stance='stand';else toast('No headroom');}else if(pl.stance==='prone'){if(canFit(HEIGHT.crouch)){startAction('proneUp',{crouch:true});}else toast('No headroom');} break;
     case 'KeyZ': if(busy||!pl.grounded)break; if(pl.stance==='prone'){if(canFit(HEIGHT.stand))startAction('proneUp');else toast('No headroom');}else{pl.reloadT=-1;startAction('proneDown');} break;
-    case 'Space': if(busy)break; if(pl.slide){endSlide();if(pl.stance==='stand'&&pl.grounded){pl.vel.y=5.6;pl.grounded=false;}break;} if(pl.stance==='prone'){if(canFit(HEIGHT.stand))startAction('proneUp');else toast('No headroom');}else if(pl.grounded){if(pl.stance==='crouch'){if(!canFit(HEIGHT.stand))break;pl.stance='stand';}pl.vel.y=5.6;pl.grounded=false;} break;
+    case 'Space': if(busy)break; if(pl.slide){endSlide();if(pl.stance==='stand'&&pl.grounded){pl.vel.y=5.6*(BOOST.on?(GAME.bJump||1.4):1);pl.grounded=false;}break;} if(pl.stance==='prone'){if(canFit(HEIGHT.stand))startAction('proneUp');else toast('No headroom');}else if(pl.grounded){if(pl.stance==='crouch'){if(!canFit(HEIGHT.stand))break;pl.stance='stand';}pl.vel.y=5.6*(BOOST.on?(GAME.bJump||1.4):1);pl.grounded=false;} break;
     case 'KeyR': startReload(); break;
     case 'KeyG': if(busy||pl.stance==='prone'||pl.nadeCD>0||!pl.grounded)break; pl.reloadT=-1; if(pl.stance==='crouch'&&canFit(HEIGHT.stand))pl.stance='stand'; if(pl.stance==='stand')startAction('throw'); break;
     case 'KeyT': if(busy||pl.stance!=='stand'||!pl.grounded)break; startAction('salute'); break;
@@ -3464,7 +3464,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=229;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=231;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3715,7 +3715,7 @@ window.SNIPER_RES.owlReady=()=>!!SND.ow;
   [['audDs','ds'],['audDe','de'],['audNs','ns'],['audNe','ne']].forEach(([id,k])=>{const el=document.getElementById(id),o=document.getElementById(id+'v');if(el){el.value=VOLS[k];o.textContent=hm(VOLS[k]);}});
   const f=document.getElementById('audF'),fv=document.getElementById('audFv');if(f){f.value=10;fv.textContent='10 min';}
   try{audSave();localStorage.setItem('fsSched2','1');}catch(e){}})();
-window.SNIPER_RES.logs=()=>LOGS;
+window.SNIPER_RES.logs=()=>LOGS;window.SNIPER_RES.boost=BOOST;
 
 // ---- foraged food heals slowly, up to 200% of normal health. Raw meat gives nothing until cooking exists.
 const HEAL={pool:0,t:performance.now()},FOOD={berries:0,mushroom:0,meat:0},HP_MAX=200,HEAL_RATE=1.5;
@@ -4546,6 +4546,7 @@ function netStep(dt){farFlashStep(dt);
   if(opp){NT.oppSeen=now;if(!NT.opp||NT.opp.peer!==opp.peer){NT.opp=opp;if(!NT.wasOpp){try{ringReset();}catch(e){}toast('Opponent connected · click the game to capture the mouse');if(AC&&soundOn)playFanfare();else NT.fan=true;mpAutoDeploy();if(host)setTimeout(()=>{if(NT.room&&NT.role==='h'&&NT.opp&&NT.M.ph==='wait')mpStart();},3000);}NT.wasOpp=true;mpStat('Direct match'+' · '+NT.where+' · opponent connected'+(host?' · press Start match':' · waiting for the host to start'));if(host)sendRoster();mpUI();}
     NT.opp=opp;const pr=opp.presence;feedSnap(pr.s);
     if(!host&&pr.m){const m=pr.m;const prevPh=M.ph;NT.M={ph:String(m.ph),r:m.r|0,sc:[m.sc&&m.sc[0]|0,m.sc&&m.sc[1]|0],left:+m.left||0,lw:m.lw||'',sd:m.sd|0};
+      if(Array.isArray(m.gm)){const K=['sDelay','sDur','sEnd','rdOn','rdBand','rdIn','rdOut'];K.forEach((k,i)=>{if(typeof m.gm[i]==='number'&&GAME[k]!==m.gm[i])GAME[k]=m.gm[i];});}   // ring timing and damage settings come from the host, whatever this laptop has saved
       if(typeof m.ft==='number'&&opp.updatedAt!==NT.ftQ){NT.ftQ=opp.updatedAt;const age=opp.updatedAt?Math.max(0,Math.min(1,(Date.now()-opp.updatedAt)/1000)):0,tg=m.ft+age+0.04;if(Math.abs(FIRE.t-tg)>0.15)FIRE.t=tg;}   // the ring clock follows the host's, so it ignites and closes at the same moment for everyone
       if(typeof m.tod==='number'){DAY.rateI=clamp(m.ri|0,0,RATES.length-1);if(opp.updatedAt!==NT.todQ){NT.todQ=opp.updatedAt;const age=opp.updatedAt?Math.max(0,Math.min(1,(Date.now()-opp.updatedAt)/1000)):0,tg=(m.tod+(age+0.04)*RATES[DAY.rateI]/60+24)%24;if(Math.abs(wrapA((tg-DAY.tod)*PI/12))>0.004){DAY.tod=tg;try{stepDay(0);}catch(e){}}}}   // sun and moon follow the host's clock (one correction per update, aged for transit)
       if(NT.M.r>0&&NT.M.r!==NT.myR&&(NT.M.ph==='count'||NT.M.ph==='live'))roundReset();
@@ -4567,7 +4568,7 @@ function netStep(dt){farFlashStep(dt);
   // send my state
   NT.sendAcc+=dt;if(NT.sendAcc>=1/SEND_HZ){NT.sendAcc=0;const pl=player;
     const s={q:++NT.seq,t:Math.round(now),x:nr2(pl.pos.x),y:nr2(pl.pos.y),z:nr2(pl.pos.z),yw:nr3(wrapA(pl.yaw)),p:pl.pose?packPose(pl.pose):null,b:nr2(boltT),hp:Math.round(MPM.hp),al:pl.alive?1:0,r:NT.myR,sp:nr1(Math.hypot(pl.vel.x,pl.vel.z)),st:pl.stance[0]};
-    const patch={s};if(host)patch.m={ph:M.ph,r:M.r,sd:M.sd|0,sc:M.sc.slice(),left:nr2(M.left),lw:M.lw,tod:nr3(DAY.tod),ri:DAY.rateI,ft:nr2(FIRE.t)};
+    const patch={s};if(host)patch.m={ph:M.ph,r:M.r,sd:M.sd|0,sc:M.sc.slice(),left:nr2(M.left),lw:M.lw,tod:nr3(DAY.tod),ri:DAY.rateI,ft:nr2(FIRE.t),gm:[GAME.sDelay,GAME.sDur,GAME.sEnd,GAME.rdOn,GAME.rdBand,GAME.rdIn,GAME.rdOut]};
     NT.lastSize=JSON.stringify(patch).length;NT.room.presence(patch).catch(()=>{});}
   if(host&&NT.opp){NT.wildAcc+=dt;if(NT.wildAcc>=1/WILD_HZ){NT.wildAcc=0;sendWild();}}
   netStats(dt);
