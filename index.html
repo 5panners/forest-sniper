@@ -2425,7 +2425,7 @@ function updatePlayer(dt,time){
   pl.vel.y-=14*dt;
   const sx0=pl.pos.x,sz0=pl.pos.z;
   pl.pos.x+=pl.vel.x*dt; pl.pos.z+=pl.vel.z*dt;
-  resolvePlayer();ringWall(pl);
+  resolvePlayer();ringWall(pl);try{towerStep(pl,dt);}catch(e){}
   if(pl.slide&&dt>0){const mv=Math.hypot(pl.pos.x-sx0,pl.pos.z-sz0)/dt;if(mv<pl.slide.spd*0.45){pl.slide.spd=mv;if(mv<SL.endSpd)endSlide();}}
   pl.pos.y+=pl.vel.y*dt;
   groundPlayer(dt);
@@ -2837,7 +2837,7 @@ function poseDeer(d,dt){
   const lie=d.lie,dead=d.deadK,mk=d.mountK;
   for(let i=0;i<4;i++){const L=d.legs[i];let tu=L.front?0:-0.25,tl=L.front?0:0.5;
     if(mode){const f=(d.ph+OFF[i])%1;let a=A;if(d.limp===i)a*=0.3;
-      if(f<duty){tu+=-a+2*a*(f/duty);}else{const q=(f-duty)/(1-duty);tu+=a-2*a*(0.5-0.5*Math.cos(PI*q));tl+=(L.front?1.3:0.8)*Math.sin(PI*q)*Math.min(1,a/0.3);}
+      {const SB=[0,0.85,1.5,3.2][mode]*duty*Math.min(1,v/0.4)*(d.limp===i?0.35:1),LF=[0,0.07,0.12,0.2][mode]*Math.min(1,v/0.4);let oz,oy=0;if(f<duty){oz=SB/2-SB*(f/duty);}else{const q=(f-duty)/(1-duty);oz=-SB/2+SB*(0.5-0.5*Math.cos(PI*q));oy=LF*Math.sin(PI*q);}const th=d.body.rotation.x,by=d.body.position.y,ux=L.u.position,c=Math.cos(th),sn=Math.sin(th);const hy=by+ux.y*c-ux.z*sn,hz=-0.40+ux.y*sn+ux.z*c;const Lu=L.front?0.34:0.36,Ll=L.front?0.40:0.42;let dy=-0.04+oy-hy,dz=(L.front?0:-0.015)+(hz-(-0.40+ux.z))*0+ux.z-0.40+oz-hz;let D=Math.hypot(dy,dz);const M=Lu+Ll-0.003;if(D>M){dy*=M/D;dz*=M/D;D=M;}const base=Math.atan2(-dz,-dy),al=Math.acos(clamp((Lu*Lu+D*D-Ll*Ll)/(2*Lu*D),-1,1)),a1=L.front?base-al:base+al;const ky=-Lu*Math.cos(a1),kz=-Lu*Math.sin(a1);const a2=Math.atan2(-(dz-kz),-(dy-ky));tu=a1-th;tl=a2-a1;if(f>=duty&&L.front)tl+=0.25*Math.sin(PI*(f-duty)/(1-duty));}
       if(mode>=2&&L.pf>f&&(i===0||i===2))dvox.hoof(d);L.pf=f;}
     if(d.limp===i)tl+=0.55;
     if(L.front)tu-=0.22*d.grazeK;
@@ -3460,7 +3460,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=214;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=218;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3765,7 +3765,7 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): ring shrink, flame / smoke / spark look, tree fires
-const GAME_DEF={fDens:1.2,fWid:1.1,fFer:0.7,fSpd:0.25,sm:0.6,sp:2,spit:2,sDelay:300,sDur:600,sEnd:200,rdOn:1,rdBand:20,rdIn:5,rdOut:10,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:1,bWalk:1.2};
+const GAME_DEF={fDens:1.2,fWid:1.1,fFer:0.7,fSpd:0.25,sm:0.6,sp:2,spit:2,sDelay:300,sDur:600,sEnd:200,rdOn:1,rdBand:20,rdIn:5,rdOut:10,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:1,bWalk:1.2,bRear:14};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];if(v&&!v.rdV){GAME.rdBand=GAME_DEF.rdBand;GAME.rdIn=GAME_DEF.rdIn;GAME.rdOut=GAME_DEF.rdOut;}GAME.rdV=2;}catch(e){}
 // ---- ring of fire: flat-shaded animated flame wall, smoke curtain, ember glow on the ground and rising sparks.
 // Four draw calls in all; every bit of motion is done in the vertex shaders, so the CPU only updates one time uniform per frame.
@@ -3894,7 +3894,7 @@ function fireCry(d,dt,dist){if(d.st!=='flee'&&d.st!=='dying'||d.st==='dead')retu
    ['sec','Flames'],['fDens','Flame density',0.3,2,0.05,2],['fWid','Flame width',0.5,2.5,0.05,2],['fFer','Flame ferocity (height and sway)',0.3,2.5,0.05,2],['fSpd','Flame speed',0.1,2,0.05,2],
    ['sec','Smoke and sparks'],['sm','Smoke density',0,2,0.05,2],['sp','Rising sparks',0,2,0.05,2],['spit','Sparks spitting inwards',0,2,0.05,2],
    ['sec','Stamina boost (double-tap W)'],['stStart','Starting stamina (%)',0,100,1,0],['stGain','Stamina per Magic Mushroom cluster (%)',0,25,1,0],['stDrain','Seconds of boost from a full bar',2,60,1,0],['stMult','Boost speed multiplier',1,3,0.1,1],
-   ['sec','Bears (single player for now)'],['bears','Bears on the map',0,4,1,0],['bWalk','Bear walking pace (m/s · it runs at five times this)',0.4,3,0.1,1],
+   ['sec','Bears (single player for now)'],['bears','Bears on the map',0,4,1,0],['bWalk','Bear walking pace (m/s · it runs at five times this)',0.4,3,0.1,1],['bRear','Bear rears up when you come within (m)',0,40,1,0],
    ['sec','Butchering animals'],['bMeat','Health per meat from a butchered animal (%)',0,10,0.5,1],['bInst','Health instantly (1) or over time (0)',0,1,1,0],
    ['sec','Ring damage to players'],['rdOn','Ring hurts players (1 = on, 0 = off)',0,1,1,0],['rdBand','Burn zone width inside the ring (m)',2,60,1,0],['rdIn','Damage per second at the wall, inside (hp/s)',0,40,0.5,1],['rdOut','Damage per second outside the ring (hp/s)',0,60,0.5,1],
    ];
@@ -4003,44 +4003,52 @@ function bHB(b,parent,w,h,d,pos,sub){const m=new THREE.Mesh(new THREE.BoxGeometr
 
 // muzzle: an ellipsoid stretched forward that narrows and drops toward the nose, so it reads as a tapering snout
 function bMuzzle(){const g=new THREE.SphereGeometry(1,14,10),p=g.attributes.position;
-  for(let i=0;i<p.count;i++){let x=p.getX(i),y=p.getY(i),z=p.getZ(i);const t=Math.max(0,z);x*=0.13*(1-0.38*t);y*=0.125*(1-0.28*t);z*=0.34;y-=0.04*t*t;if(t>0.86){y+=0.014;x*=1.08;}p.setXYZ(i,x,y,z);}return g;}
+  for(let i=0;i<p.count;i++){let x=p.getX(i),y=p.getY(i),z=p.getZ(i);const t=Math.max(0,z);x*=0.135*(1-0.18*t);y*=0.125*(1-0.12*t);const tz=t>0.7?0.7+(t-0.7)*0.35:t;z=(z<0?z:tz)*0.28;y-=0.03*t*t;if(t>0.8){y+=0.018;x*=1.12;}p.setXYZ(i,x,y,z);}return g;}
 // paw: rounded pad, flat underneath, toes swelling at the front
 function bPaw(front){const g=new THREE.SphereGeometry(1,12,8),p=g.attributes.position;const w=front?0.2:0.19,l=front?0.25:0.23;
   for(let i=0;i<p.count;i++){let x=p.getX(i),y=p.getY(i),z=p.getZ(i);const az=Math.atan2(x,z);x*=w*(1+0.12*Math.max(0,z));y=Math.max(y,-0.5)*0.13;z*=l;if(z>0&&y>-0.04)z+=0.018*Math.max(0,Math.cos(az*9))*Math.max(0,Math.cos(az));p.setXYZ(i,x,y,z);}return g;}
-function bHeadG(){const g=new THREE.SphereGeometry(1,14,10),p=g.attributes.position;
+function bHeadG(){const g=new THREE.SphereGeometry(1,36,28),p=g.attributes.position;
   for(let i=0;i<p.count;i++){let x=p.getX(i),y=p.getY(i),z=p.getZ(i);const f=Math.max(0,z);x*=0.36*(1-0.3*f*f);y*=0.32*(1-0.12*f*f)*(y<0?0.9:1);z*=0.34;if(f>0.5&&y>0)y-=0.04*(f-0.5);p.setXYZ(i,x,y,z);}return g;}
 function makeBear(x,z){
   const root=new THREE.Group(),body=new THREE.Group();root.add(body);
-  const b={root,body,x,z,y:0,yaw:Math.random()*Math.PI*2,spd:0,st:'walk',stT:5,tx:x,tz:z,ph:0,hb:[],hp:DMG.hp.bear,legs:[],dead:0,roll:Math.random()<0.5?-1:1,pitch:0};
+  const b={rearK:0,rearCD:0,root,body,x,z,y:0,yaw:Math.random()*Math.PI*2,spd:0,st:'walk',stT:5,tx:x,tz:z,ph:0,hb:[],hp:DMG.hp.bear,legs:[],dead:0,roll:Math.random()<0.5?-1:1,pitch:0};
   // ---- torso: one deep barrel body, a big shoulder hump, heavy rump, thick neck (one merged mesh). Dark chocolate coat, ruddier on top.
   const S=(w,h)=>new THREE.SphereGeometry(1,w,h);
   bMesh(body,[
     bPart(S(12,8),[0,0.98,-0.02],null,[0.62,0.56,1.08],(x,y,z)=>y<0.6?'#24170f':y>1.38?'#4d301c':fur(x,y,z)),
-    bPart(S(10,7),[0,1.2,0.48],null,[0.56,0.5,0.56],(x,y,z)=>y>1.5?'#5a3820':y>1.38?'#4d301c':fur(x,y,z)),
+    bPart(S(10,7),[0,1.14,0.48],null,[0.5,0.42,0.5],(x,y,z)=>y>1.44?'#5a3820':y>1.34?'#4d301c':fur(x,y,z)),
     bPart(S(10,7),[0,1.0,-0.68],null,[0.6,0.58,0.56],(x,y,z)=>y<0.62?'#24170f':y>1.4?'#462c1a':fur(x,y,z)),
     bPart(S(6,4),[0,1.12,-1.22],null,[0.09,0.08,0.07],()=>'#2e1e14'),
     bPart(S(10,7),[0,1.05,0.95],null,[0.45,0.44,0.42],(x,y,z)=>y<0.82?'#2a1b12':fur(x,y,z)),
   ]);
   // ---- head: broad and heavy, golden-brown brow, dark eye patches, short pale muzzle with a big black nose
   const head=new THREE.Group();head.position.set(0,1.1,1.2);body.add(head);
-  const eye=(x,y,z)=>Math.hypot(Math.abs(x)-0.15,y-0.07,z-0.27)<0.042;
-  const patch=(x,y,z)=>Math.hypot(Math.abs(x)-0.15,y-0.065,z-0.26)<0.075;
+  const ED=(x,y,z)=>Math.hypot(Math.abs(x)-0.128,y-0.094,z-0.286);
+  // eye, painted in rings: glint, black pupil, dark amber-brown iris, black lid rim, sooty socket, pale golden brow ridge above
+  const eyeCol=(x,y,z)=>{const ax=Math.abs(x),d=ED(x,y,z),de=Math.hypot((ax-0.128)*0.8,(y-0.094)*1.25,z-0.286);
+    if(Math.hypot(ax-0.12,y-0.104,z-0.29)<0.01)return '#e6ded0';if(d<0.017)return '#050303';if(d<0.03)return '#4a2c14';if(d<0.04)return '#0c0806';if(d<0.058)return '#22170f';
+    const bd=Math.hypot(ax-0.115,y-0.16,z-0.26);if(bd<0.04)return '#6e4f33';return null;};
   bMesh(head,[
-    bPart(bHeadG(),[0,0.02,0],null,null,(x,y,z)=>eye(x,y,z)?'#0a0705':patch(x,y,z)?'#2c1c12':(z>0.12&&y>0.08&&Math.abs(x)<0.22)?'#8e6842':(z>0.2&&y<0.02)?'#a58761':y>0.2?'#6e4a2c':(Math.abs(x)>0.25)?'#4a2f1c':'#5e3f26'),
-    bPart(bMuzzle(),[0,-0.05,0.3],null,null,(x,y,z)=>(z>0.57&&y>-0.135)?'#151214':(z>0.585)?'#2c2420':(y<-0.115&&z>0.36)?'#3b2b21':(z<0.42&&y>0.02)?'#80633f':'#9a8264'),   // tapering pale muzzle, bulbous black nose, dark lip line
+    bPart(bHeadG(),[0,0.02,0],null,null,(x,y,z)=>eyeCol(x,y,z)||((z>0.12&&y>0.08&&Math.abs(x)<0.2)?'#7a5636':(z>0.22&&y<0.02&&Math.abs(x)<0.11)?'#7d6446':y>0.2?'#5c3e25':(Math.abs(x)>0.2)?'#3f2818':'#4f3420')),
+    bPart(bMuzzle(),[0,-0.05,0.29],null,null,(x,y,z)=>(z>0.462&&y>-0.098)?((z>0.5&&y<-0.06&&Math.abs(x)>0.02&&Math.abs(x)<0.06)?'#050404':'#18151a'):(z>0.47)?'#4a3a30':(y<-0.11&&z>0.36)?'#3b2b21':(z<0.4&&y>0.02)?'#735a3c':'#8a7458'),   // tapering pale muzzle, bulbous black nose, dark lip line
     ...[1,-1].map(sx=>bPart(S(7,5),[sx*0.25,0.25,-0.06],[0,0,sx*-0.35],[0.1,0.1,0.06],(x,y,z)=>z>-0.03?'#22160e':'#4e3320')),
   ]);
   b.head=head;
-  // ---- legs: thick fur columns, near-black lower legs, broad paws with long pale claws painted on the front
-  [[0.33,0.8,0.55],[-0.33,0.8,0.55],[0.33,0.8,-0.72],[-0.33,0.8,-0.72]].forEach(([lx,ly,lz],i)=>{
-    const g=new THREE.Group();g.position.set(lx,ly,lz);body.add(g);
+  // ---- legs: two jointed segments each (shoulder/elbow at the front, hip/knee behind), broad paws with long pale claws painted on the front.
+  //      Feet are placed by two-bone IK so they stay planted on the ground while the body moves over them.
+  const L1=0.42,L2=0.4;
+  [[0.33,0.84,0.55],[-0.33,0.84,0.55],[0.33,0.84,-0.72],[-0.33,0.84,-0.72]].forEach(([lx,ly,lz],i)=>{
     const front=lz>0;
-    bMesh(g,[
-      bPart(new THREE.CylinderGeometry(front?0.23:0.26,0.185,0.74,9,3),[0,-0.36,0],null,null,(x,y,z)=>y>-0.1?fur(x,y,z):y>-0.5?'#2a1a10':'#1f140d'),
-      bPart(bPaw(front),[0,-0.74,0.07],null,null,(x,y,z)=>y>-0.7?'#1f140d':'#1a110b'),
-      ...(front?[-0.11,-0.055,0,0.055,0.11]:[-0.09,-0.045,0,0.045,0.09]).map((cx,ci)=>bPart(new THREE.ConeGeometry(front?0.022:0.018,front?0.17:0.09,5),[cx*1.15,-0.775,(front?0.36:0.3)-Math.abs(cx)*0.4],[Math.PI/2+0.42,0,-cx*1.2],null,(x,y,z)=>z<(front?0.3:0.27)-Math.abs(cx)*0.35?'#5f5a50':'#bdb6a2')),   // long pale claws (short on the hind feet)
-    ]);
-    bHB(b,g,0.36,0.82,0.38,[0,-0.4,0.03],'leg');b.legs.push({g,front,side:lx>0?1:-1});});
+    const up=new THREE.Group();up.position.set(lx,ly,lz);body.add(up);
+    const lo=new THREE.Group();lo.position.set(0,-L1,0);up.add(lo);
+    const paw=new THREE.Group();paw.position.set(0,-L2,0);lo.add(paw);
+    bMesh(up,[bPart(new THREE.CylinderGeometry(front?0.23:0.27,0.2,L1+0.12,9,2),[0,-L1/2+0.02,0],null,null,(x,y,z)=>y>-0.12?fur(x,y,z):'#2e1d12'),
+              bPart(new THREE.SphereGeometry(0.2,9,6),[0,-L1,0],null,[1,1,1.05],()=>'#2a1a10')]);                                   // elbow / knee
+    bMesh(lo,[bPart(new THREE.CylinderGeometry(0.195,0.18,L2+0.04,9,2),[0,-L2/2,0],null,null,(x,y,z)=>y>-0.2?'#2a1a10':'#1f140d')]);
+    bMesh(paw,[bPart(bPaw(front),[0,-0.005,0.07],null,null,(x,y,z)=>y>0.04?'#1f140d':'#1a110b'),
+      ...(front?[-0.11,-0.055,0,0.055,0.11]:[-0.09,-0.045,0,0.045,0.09]).map(cx=>bPart(new THREE.ConeGeometry(front?0.022:0.018,front?0.17:0.09,5),[cx*1.15,-0.04,(front?0.36:0.3)-Math.abs(cx)*0.4],[Math.PI/2+0.42,0,-cx*1.2],null,(x,y,z)=>z<(front?0.3:0.27)-Math.abs(cx)*0.35?'#5f5a50':'#bdb6a2'))]);
+    bHB(b,up,0.38,L1+0.1,0.4,[0,-L1/2,0],'leg');bHB(b,lo,0.34,L2+0.1,0.36,[0,-L2/2,0.02],'leg');
+    b.legs.push({up,lo,paw,front,side:lx>0?1:-1,hip:new THREE.Vector3(lx,ly,lz),L1,L2});});
   bHB(b,body,1.2,1.12,2.4,[0,1.0,-0.05],'body');bHB(b,head,0.72,0.62,0.8,[0,-0.01,0.14],'head');
   root.rotation.order='YXZ';scene.add(root);BEARS.push(b);bearPlace(b,0);return b;}
 
@@ -4059,14 +4067,53 @@ function bearPlace(b,dt){
   b.root.position.set(b.x,gy,b.z);b.root.rotation.y=b.yaw;b.root.rotation.x=b.pitch;
   if(b.dead>0){const k=Math.min(1,b.dead);const e=k*k*(3-2*k);b.root.rotation.z=b.roll*1.45*e;b.root.position.y=gy-0.42*e+0.05;}
   b.root.updateMatrixWorld(true);}
+// ---- pose: gait phase -> foot targets -> two-bone IK; rearing pitches the body up about the hind hips
+const _bv=new THREE.Vector3();
+function bIK(l,ty,tz,pitch,kneeFwd){   // hip and target in the root's y/z plane; returns local angles for the upper and lower segment
+  const hy=l.hy,hz=l.hz;let dy=ty-hy,dz=tz-hz;let D=Math.hypot(dy,dz);const M=l.L1+l.L2-0.002;if(D>M){dy*=M/D;dz*=M/D;D=M;}if(D<0.05)D=0.05;
+  const base=Math.atan2(-dz,-dy);const ca=clamp((l.L1*l.L1+D*D-l.L2*l.L2)/(2*l.L1*D),-1,1);const al=Math.acos(ca);
+  const a1=kneeFwd?base-al:base+al;const ky=hy-l.L1*Math.cos(a1),kz=hz-l.L1*Math.sin(a1);const a2=Math.atan2(-((hz+dz)-kz),-((hy+dy)-ky));
+  return [a1-pitch,a2-a1,a2];}
+function bearPose(b,dt){
+  const v=b.spd,run=v>GAME.bWalk*2.2,moving=v>0.05;
+  const stride=run?2.4:1.15;if(moving)b.ph=(b.ph+dt*v/stride)%1;
+  const duty=run?0.42:0.66,lift=run?0.24:0.13;
+  const OFF=run?[0.5,0.6,0.0,0.1]:[0.25,0.75,0.0,0.5];   // LF RF LH RH: lateral-sequence walk, lope when running
+  const k=Math.min(1,v/Math.max(0.3,GAME.bWalk));
+  // rearing: body pitches up around the hind hips
+  b.rearK+=( (b.st==='rear'?1:0)-b.rearK)*Math.min(1,dt*(b.st==='rear'?2.2:1.6));const R=b.rearK;
+  const pitch=-1.12*R;const py=0.84,pz=-0.72,c=Math.cos(pitch),s=Math.sin(pitch);
+  // body position so the hind hip pivot stays put: p' = P + Rx(pitch)(-P)
+  const bob=moving?(run?0.06*Math.abs(Math.sin(b.ph*Math.PI*2)):0.025*Math.sin(b.ph*Math.PI*4))*k:0;
+  b.body.rotation.x=pitch;b.body.position.set(0,py-(py*c-pz*s)+bob*(1-R),pz-(py*s+pz*c));b.body.rotation.z=moving?Math.sin(b.ph*Math.PI*2)*0.03*k*(1-R):0;
+  b.legs.forEach((l,i)=>{
+    // hip in the root frame
+    l.hy=b.body.position.y+l.hip.y*c-l.hip.z*s;l.hz=b.body.position.z+l.hip.y*s+l.hip.z*c;
+    let f=(b.ph+OFF[i])%1,oz=0,oy=0;
+    if(moving){const S=stride*0.5*k;if(f<duty){oz=S/2-S*(f/duty);}else{const q=(f-duty)/(1-duty);oz=-S/2+S*(0.5-0.5*Math.cos(Math.PI*q));oy=lift*k*Math.sin(Math.PI*q);}}
+    const ty=0.075+oy,tz=l.hip.z+oz+(l.front?0.03:0);
+    let [u,lw,abs]=bIK(l,ty,tz,pitch,!l.front);
+    if(l.front&&R>0.01){const hu=0.95,hl=-0.75;u+=(hu-u)*R;lw+=(hl-lw)*R;abs=pitch+u+lw;}
+    l.up.rotation.x=u;l.lo.rotation.x=lw;
+    // paw stays level with the ground while planted, rolls up as it leaves (and hangs when rearing)
+    let pr=-abs;if(moving&&f>=duty){const q=(f-duty)/(1-duty);pr+=(l.front?0.9:0.6)*Math.sin(Math.PI*q)*k;}if(l.front)pr+=(0.6-pr)*R*0.7;
+    l.paw.rotation.x=pr;});
+  b.head.rotation.x=(b.st==='idle'?0.35+Math.sin(performance.now()/900)*0.15:-0.05+(moving?Math.sin(b.ph*Math.PI*4)*0.05:0))*(1-R)+0.85*R;
+  b.head.rotation.y=b.st==='idle'?Math.sin(performance.now()/2300)*0.4:0;
+}
 function bearStep(dt){
   const on=!(MPM&&MPM.on)&&playing;
   if(BEARS.length!==Math.round(GAME.bears||0)&&!(MPM&&MPM.on)){bearReset();}
   for(const b of BEARS){b.root.visible=!(MPM&&MPM.on);if(!on)continue;
     if(b.dead>0){if(b.dead<1){b.dead+=dt*0.9;bearPlace(b,dt);}continue;}
-    b.stT-=dt;let want=0;
+    b.stT-=dt;b.rearCD-=dt;let want=0;
+    {const pd=Math.hypot(player.pos.x-b.x,player.pos.z-b.z);
+     if(player.alive&&pd<GAME.bRear&&b.st!=='flee'&&b.st!=='rear'&&b.rearCD<=0){b.st='rear';b.stT=2.8+Math.random()*1.8;b.rearCD=14;b.spd=0;}
+     if(b.st==='rear'){const want2=Math.atan2(player.pos.x-b.x,player.pos.z-b.z);b.yaw+=clamp(wrapA(want2-b.yaw),-2*dt,2*dt);
+       if(b.stT<0){const a2=Math.atan2(b.x-player.pos.x,b.z-player.pos.z)+(Math.random()-0.5);b.tx=b.x+Math.sin(a2)*70;b.tz=b.z+Math.cos(a2)*70;b.st='walk';b.stT=40;}}}
     if(b.st==='walk'){want=GAME.bWalk;const d=Math.hypot(b.tx-b.x,b.tz-b.z);if(d<3||b.stT<0){if(Math.random()<0.45){b.st='idle';b.stT=5+Math.random()*12;}else{bearTarget(b);b.stT=60;}}}
     else if(b.st==='idle'){want=0;if(b.stT<0){b.st='walk';bearTarget(b);b.stT=60;}}
+    else if(b.st==='rear'){want=0;}
     else if(b.st==='flee'){want=GAME.bWalk*5;if(b.stT<0){b.st='walk';bearTarget(b);b.stT=60;}}
     if(FIRE.lit){const fr=Math.hypot(b.x-FCX,b.z-FCZ);if(fr>FIREWALL-30&&b.st!=='flee'){b.tx=FCX+(b.x-FCX)*0.6;b.tz=FCZ+(b.z-FCZ)*0.6;b.st='walk';}}
     b.spd+=(want-b.spd)*Math.min(1,dt*(want>b.spd?1.6:3));
@@ -4079,11 +4126,7 @@ function bearStep(dt){
       if(Math.abs(nx)>480||Math.abs(nz)>480)ok=false;
       if(ok){b.x=nx;b.z=nz;}else{bearTarget(b);b.yaw+=Math.PI*0.5;}}
     // gait: diagonal pairs swing together; a lope when fleeing
-    const run=b.spd>GAME.bWalk*2;b.ph=(b.ph+dt*b.spd/(run?2.6:1.25))%1;const A=Math.min(1,b.spd/Math.max(0.3,GAME.bWalk))*(run?0.75:0.42);
-    b.legs.forEach((l,i)=>{const o=run?(l.front?0:0.5)+(l.side>0?0:0.12):((l.front?0:0.5)+(l.side>0?0:0.5))%1;l.g.rotation.x=Math.sin((b.ph+o)*Math.PI*2)*A;});
-    b.body.position.y=Math.abs(Math.sin(b.ph*Math.PI*2))*0.04*Math.min(1,b.spd);b.body.rotation.z=Math.sin(b.ph*Math.PI*2)*0.03*Math.min(1,b.spd);
-    b.head.rotation.x=b.st==='idle'?0.35+Math.sin(performance.now()/900)*0.15:-0.05+Math.sin(b.ph*Math.PI*4)*0.05;
-    b.head.rotation.y=b.st==='idle'?Math.sin(performance.now()/2300)*0.4:0;
+    bearPose(b,dt);
     bearPlace(b,dt);}}
 const _bRay=new THREE.Raycaster();
 function rayBear(o,dir,len){if(MPM&&MPM.on)return null;let best=null;
@@ -4101,6 +4144,102 @@ function hitBear(b,sub,dist){const R=' · '+Math.round(dist)+' m';flashHit();
   toast('Bear hit · '+sub+' · '+Math.round(100*b.hp/Math.max(1,DMG.hp.bear))+'% left'+R);}
 function showBearHB(on){BEARS.forEach(b=>b.hb.forEach(m=>m.userData.edge.visible=on));}
 window.SNIPER_BEAR={list:()=>BEARS,reset:bearReset,step:bearStep,hit:hitBear,ray:rayBear,cast:(o,d,m)=>castRay(o,d,m)};
+
+// ================= comms tower: galvanised lattice mast with an open observation deck near the top, reached by a ladder =================
+// The deck is a sniper's perch: railings all round (gap at the ladder), room to go prone, and a weapons crate for later.
+const TW={built:false,x:0,z:0,y0:0,H:30,B0:2.6,Bt:1.05,Yd:24,D:2.4,Lz:2.68,climb:false,cd:0,mesh:null,grp:null};
+const TW_MAT=new THREE.MeshLambertMaterial({vertexColors:true});
+function twHW(y){return TW.B0+(TW.Bt-TW.B0)*y/TW.H;}
+// a straight member from a to b (local coords), as a low-poly cylinder baked into the merged geometry
+function twBar(list,a,b,r,col,seg){const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),d=B.clone().sub(A),L=d.length();if(L<1e-4)return;
+  const g=new THREE.CylinderGeometry(r,r,L,seg||5,1);const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),d.clone().normalize());
+  const e=new THREE.Euler().setFromQuaternion(q);const m=A.clone().add(B).multiplyScalar(0.5);
+  list.push(bPart(g,[m.x,m.y,m.z],[e.x,e.y,e.z],null,typeof col==='function'?col:()=>col));}
+function twBox(list,c,s,col,seg){list.push(bPart(new THREE.BoxGeometry(s[0],s[1],s[2],seg||1,1,seg||1),c,null,null,typeof col==='function'?col:()=>col));}
+const TWG=['#7d8387','#757b7f','#868c90'],twSteel=(x,y,z)=>TWG[Math.floor(bHash(Math.floor(x*3),Math.floor(y*3),Math.floor(z*3))*3)];
+function towerSite(){
+  let best=null;const sp=(typeof SPAWN!=='undefined')?SPAWN:{x:0,z:0};
+  for(let x=-420;x<=420;x+=15)for(let z=-420;z<=420;z+=15){
+    if(Math.hypot(x-sp.x,z-sp.z)<140)continue;if(typeof HUT!=='undefined'&&Math.hypot(x-HUT.x,z-HUT.z)<40)continue;
+    let ok=true;try{if(inWater(x,z))ok=false;}catch(e){}if(!ok)continue;
+    const h=groundH(x,z);let mx=h,mn=h;for(const [dx,dz] of [[3,3],[-3,3],[3,-3],[-3,-3],[4,0],[-4,0],[0,4],[0,-4]]){const g=groundH(x+dx,z+dz);mx=Math.max(mx,g);mn=Math.min(mn,g);}
+    if(mx-mn>1.6)continue;
+    for(const p of pillarsNear(x,z)){if(Math.hypot(p.x-x,p.z-z)<p.r+5.5){ok=false;break;}}if(!ok)continue;
+    const s=h-Math.min(mx,mn)*0;if(!best||s>best.s)best={x,z,s};}
+  return best||{x:120,z:-120};}
+function towerBuild(){
+  const st=towerSite();TW.x=st.x;TW.z=st.z;
+  let lo=Infinity;for(const [dx,dz] of [[-2.6,-2.6],[2.6,-2.6],[-2.6,2.6],[2.6,2.6],[0,2.7]])lo=Math.min(lo,groundH(TW.x+dx,TW.z+dz));TW.y0=lo-0.05;
+  const H=TW.H,Yd=TW.Yd,D=TW.D,L=[];const C=[[1,1],[-1,1],[-1,-1],[1,-1]];
+  // concrete pads under the legs
+  C.forEach(([sx,sz])=>twBox(L,[sx*TW.B0,-0.2,sz*TW.B0],[0.7,0.9,0.7],'#8f8c86'));
+  // four tapering corner legs
+  C.forEach(([sx,sz])=>twBar(L,[sx*TW.B0,0,sz*TW.B0],[sx*TW.Bt,H,sz*TW.Bt],0.085,twSteel,6));
+  // horizontal girts every 3 m and X bracing on every face (left open in the bay above the deck so the platform is clear)
+  for(let k=0;k<=10;k++){const y=k*3,w=twHW(y);
+    for(let f=0;f<4;f++){const [ax,az]=C[f],[bx,bz]=C[(f+1)%4];twBar(L,[ax*w,y,az*w],[bx*w,y,bz*w],0.045,twSteel);
+      if(k<10&&!(y>=Yd&&y<Yd+3)){const y2=y+3,w2=twHW(y2);twBar(L,[ax*w,y,az*w],[bx*w2,y2,bz*w2],0.035,twSteel);twBar(L,[bx*w,y,bz*w],[ax*w2,y2,az*w2],0.035,twSteel);}}}
+  // ---- observation deck: steel grating with painted grid, kick plates, railings, brackets down to the legs
+  const grate=(x,y,z)=>((Math.floor((x+10)*2.5)+Math.floor((z+10)*2.5))%2?'#55595c':'#4a4e51');
+  twBox(L,[0,Yd-0.06,0],[2*D,0.12,2*D],grate,10);
+  for(let f=0;f<4;f++){const sgn=f<2?1:-1,ax=f%2===0;   // kick plates
+    if(ax){twBox(L,[0,Yd+0.08,sgn*D],[2*D,0.16,0.04],'#3d4144');}else twBox(L,[sgn*D,Yd+0.08,0],[0.04,0.16,2*D],'#3d4144');}
+  const RAIL='#b8941f',GAP=0.45;   // yellow safety rails
+  for(let i=0;i<=8;i++){const t=-D+i*(2*D/8);
+    for(const [px,pz] of [[t,D],[t,-D],[D,t],[-D,t]]){if(Math.abs(pz-D)<1e-6&&Math.abs(px)<GAP+0.05)continue;twBar(L,[px,Yd,pz],[px,Yd+1.1,pz],0.03,RAIL,4);}}
+  for(const h of [0.55,1.1]){
+    twBar(L,[-D,Yd+h,-D],[D,Yd+h,-D],0.028,RAIL,5);twBar(L,[-D,Yd+h,-D],[-D,Yd+h,D],0.028,RAIL,5);twBar(L,[D,Yd+h,-D],[D,Yd+h,D],0.028,RAIL,5);
+    twBar(L,[-D,Yd+h,D],[-GAP,Yd+h,D],0.028,RAIL,5);twBar(L,[GAP,Yd+h,D],[D,Yd+h,D],0.028,RAIL,5);}
+  C.forEach(([sx,sz])=>{const w=twHW(Yd-3);twBar(L,[sx*D*0.98,Yd-0.1,sz*D*0.98],[sx*w,Yd-3,sz*w],0.05,twSteel);twBar(L,[sx*D,Yd-0.1,0],[sx*twHW(Yd-1.5),Yd-1.5,0],0.04,twSteel);twBar(L,[0,Yd-0.1,sz*D],[0,Yd-1.5,sz*twHW(Yd-1.5)],0.04,twSteel);});
+  // weapons crate (closed for now): olive box with stencilled band and dark latches
+  twBox(L,[-1.55,Yd+0.27,-1.6],[1.1,0.54,0.55],(x,y,z)=>Math.abs(y-(Yd+0.32))<0.05?'#c9b98a':'#4f5a3a',3);
+  twBox(L,[-1.55,Yd+0.56,-1.6],[1.14,0.05,0.59],'#434d31');
+  // ---- antennas: two drum microwave antennas, a side dish, panel antennas on the mast, beacon on top
+  const drum=(cx,cy,cz,ry)=>{const g=new THREE.CylinderGeometry(0.58,0.58,0.62,16,1);g.rotateX(Math.PI/2);g.rotateY(ry);
+    L.push(bPart(g,[cx,cy,cz],null,null,(x,y,z)=>{const dz=(x-cx)*Math.sin(ry)+(z-cz)*Math.cos(ry);return dz>0.29?(Math.abs(y-cy-0.38)<0.08?'#b8322b':'#d9dcdc'):'#8e9497';}));
+    twBar(L,[cx-Math.sin(ry)*0.35,cy,cz-Math.cos(ry)*0.35],[Math.sign(cx)*twHW(cy)*0.9,cy,Math.sign(cz||1)*twHW(cy)*0.9],0.05,twSteel);};
+  drum(1.55,27.4,0.6,Math.PI/2);drum(-0.6,28.7,-1.5,Math.PI);
+  {const g=new THREE.SphereGeometry(0.9,14,6,0,Math.PI*2,0,0.75);g.rotateZ(Math.PI/2);L.push(bPart(g,[-twHW(18)-0.55,18,0],null,null,(x,y,z)=>x<-twHW(18)-0.8?'#e3e5e4':'#b9bdbf'));
+   twBar(L,[-twHW(18)-0.5,18,0],[-twHW(18),18,0],0.06,twSteel);twBar(L,[-twHW(18)-0.55,18,0],[-twHW(18)-1.25,18,0],0.025,'#7a7f82');}
+  twBar(L,[0,H,0],[0,H+6,0],0.07,twSteel,6);
+  for(let i=0;i<3;i++){const a=i*Math.PI*2/3;twBox(L,[Math.sin(a)*0.32,H+3.2,Math.cos(a)*0.32],[0.24,1.3,0.1],'#e1e3e3');}
+  L.push(bPart(new THREE.SphereGeometry(0.11,8,6),[0,H+6.1,0],null,null,()=>'#ff3b2a'));
+  // ---- ladder: vertical, just outside the +z face, rungs every 30 cm, stand-off brackets to the tower, rails run past the deck to grab
+  const Lz=TW.Lz,top=Yd+1.15;
+  for(const sx of [-0.24,0.24])twBar(L,[sx,0,Lz],[sx,top,Lz],0.025,'#b8bcbf',5);
+  for(let y=0.3;y<Yd;y+=0.3)twBar(L,[-0.24,y,Lz],[0.24,y,Lz],0.016,'#b8bcbf',4);
+  for(let y=1.5;y<Yd;y+=3)twBar(L,[0,y,Lz],[0,y,twHW(y)],0.03,twSteel);
+  const geo=bMerge(L);const mesh=new THREE.Mesh(geo,TW_MAT);mesh.castShadow=true;mesh.receiveShadow=true;mesh.position.set(TW.x,TW.y0,TW.z);scene.add(mesh);mesh.updateMatrixWorld(true);
+  TW.mesh=mesh;try{MAP.rayMeshes.push(mesh);}catch(e){}
+  {const beacon=new THREE.PointLight(0xff3020,0.6,18);beacon.position.set(TW.x,TW.y0+H+6.1,TW.z);scene.add(beacon);TW.beacon=beacon;}
+  // ---- colliders (world AABBs): leg bases, deck, rails (gap at the ladder), legs through the deck, the crate
+  const X=TW.x,Z=TW.z,Y=TW.y0,box=(x0,x1,y0,y1,z0,z1)=>colliders.push({min:V(X+x0,Y+y0,Z+z0),max:V(X+x1,Y+y1,Z+z1),on:true});
+  C.forEach(([sx,sz])=>box(sx*TW.B0-0.35,sx*TW.B0+0.35,-1,4,sz*TW.B0-0.35,sz*TW.B0+0.35));
+  box(-D,D,Yd-0.12,Yd,-D,D);
+  const T=0.12,RH=Yd+1.15;
+  box(-D-T,D+T,Yd,RH,-D-T,-D+T*0.4);box(-D-T,-D+T*0.4,Yd,RH,-D,D);box(D-T*0.4,D+T,Yd,RH,-D,D);
+  box(-D,-GAP,Yd,RH,D-T*0.4,D+T);box(GAP,D,Yd,RH,D-T*0.4,D+T);
+  C.forEach(([sx,sz])=>{const w=twHW(Yd+1);box(sx*w-0.15,sx*w+0.15,Yd,Yd+2.2,sz*w-0.15,sz*w+0.15);});
+  box(-2.12,-0.98,Yd,Yd+0.6,-1.9,-1.3);
+  TW.built=true;}
+// ---- climbing: walk up to the ladder facing it and hold W; look away from the tower and W climbs down. At the top you step onto the deck.
+function towerStep(pl,dt){
+  if(!TW.built){if(playing)try{towerBuild();}catch(e){console.warn('tower',e);TW.built=true;}return;}
+  TW.cd-=dt;const lx=pl.pos.x-TW.x,lz=pl.pos.z-TW.z,deck=TW.y0+TW.Yd,mi=moveInput();
+  const face=-Math.cos(camYaw);   // > 0 when the camera looks at the tower from the ladder side
+  if(!TW.climb){
+    if(TW.cd>0||!pl.alive)return;
+    const atFoot=Math.abs(lx)<0.65&&lz>TW.Lz-0.1&&lz<TW.Lz+1.3&&pl.pos.y<groundH(pl.pos.x,pl.pos.z)+0.6&&mi.f>0&&face>0.25;
+    const atTop=Math.abs(lx)<0.45&&lz>TW.D-0.32&&Math.abs(pl.pos.y-deck)<0.3;
+    if(atFoot||atTop){TW.climb=true;pl.stance='stand';TW.cy=atTop?deck-0.25:pl.pos.y;toast('On the ladder · W climbs, S descends (look away from the tower and W goes down)');}
+    return;}
+  // on the ladder
+  const dir=mi.f*(face>=0?1:-1);TW.cy+=dir*1.7*dt;pl.pos.y=TW.cy;pl.pos.x=TW.x;pl.pos.z=TW.z+TW.Lz+0.42;pl.vel.set(0,0,0);pl.grounded=false;pl.fallV=0;pl.stance='stand';pl.yaw=Math.PI;
+  const g=groundH(pl.pos.x,pl.pos.z);
+  if(pl.pos.y>=deck){pl.pos.y=deck;pl.grounded=true;pl.pos.z=TW.z+TW.D-0.65;TW.climb=false;TW.cd=0.8;}
+  else if(pl.pos.y<=g&&dir<0){pl.pos.y=g;pl.grounded=true;pl.pos.z=TW.z+TW.Lz+1.0;TW.climb=false;TW.cd=0.8;}
+  if(!pl.alive)TW.climb=false;}
+window.SNIPER_TOWER={TW,build:towerBuild,step:towerStep};
 
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
