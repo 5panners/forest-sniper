@@ -2086,11 +2086,12 @@ for(let k=0,tr=0;k<110&&tr<3000;tr++){const x=wrr(-500,500),z=wrr(-500,500);if(m
 {const buckets=new Map();const bk=(x,z)=>Math.floor((x+HALF)/260)+','+Math.floor((z+HALF)/260);
  const push=(x,z,g)=>{const k=bk(x,z);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(g);};
  ROCKS.forEach((r,i)=>{const g=rockGeo(r.w,r.h,r.d,i*31+7,r.moss);xf(g,[r.x,r.y,r.z],[0,r.ry,0]);push(r.x,r.z,g);});
- LOGS.forEach((l,i)=>{const dx=Math.cos(l.ry),dz=Math.sin(l.ry);const pts=[];let hmin=1e9;for(let s=-l.L/2;s<=l.L/2;s+=0.7){const x=l.x+dx*s,z=l.z+dz*s;hmin=Math.min(hmin,groundH(x,z));pts.push([x,z]);}
-   const yc=Math.max(groundH(l.x-dx*l.L/2,l.z-dz*l.L/2),groundH(l.x+dx*l.L/2,l.z+dz*l.L/2),groundH(l.x,l.z))+l.r*0.7;
-   const g=merge([xf(tint(jitterGeo(CY(l.r,l.r*1.1,l.L,6),0.05,i),l.dead?'#8f8a80':'#5a4733',0.12),[0,0,0],[0,0,HP]),xf(tint(CY(l.r*0.95,l.r,0.06,6),'#b39a6e'),[l.L/2,0,0],[0,0,HP])]);
-   xf(g,[l.x,yc,l.z],[0,-l.ry,0]);push(l.x,l.z,g);
-   pts.forEach(p=>addPillar({x:p[0],z:p[1],r:l.r+0.04,y0:yc-l.r-1,y1:yc+l.r,rock:true,kind:'wood'}));});
+ LOGS.forEach((l,i)=>{const dx=Math.cos(l.ry),dz=Math.sin(l.ry),lx=-dz,lz=dx;const Ls=l.L*0.5,r=l.r,d=r*2.04,hh=d*0.866;   // triangular stack of 6 half-length logs: 3 + 2 + 1
+   const cols=[-d,0,d];let gmax=-1e9;for(const o of cols)for(const s of [-Ls/2,0,Ls/2])gmax=Math.max(gmax,groundH(l.x+dx*s+lx*o,l.z+dz*s+lz*o));
+   const yc=gmax+r*0.75;const lay=[[-d,0],[0,0],[d,0],[-d/2,hh],[d/2,hh],[0,2*hh]];const parts=[];
+   lay.forEach((q,j)=>{parts.push(xf(tint(jitterGeo(CY(r,r*1.08,Ls,6),0.05,i*7+j),l.dead?'#8f8a80':(j%2?'#5a4733':'#654f39'),0.12),[0,q[1],q[0]],[0,0,HP]),xf(tint(CY(r*0.95,r,0.06,6),'#b39a6e'),[Ls/2,q[1],q[0]],[0,0,HP]));});
+   const g=merge(parts);xf(g,[l.x,yc,l.z],[0,-l.ry,0]);push(l.x,l.z,g);
+   cols.forEach((o,ci)=>{for(let s=-Ls/2;s<=Ls/2+0.01;s+=0.7)addPillar({x:l.x+dx*s+lx*o,z:l.z+dz*s+lz*o,r:r*1.05+0.05,y0:yc-r-1,y1:yc+(ci==1?2*hh+r:hh+r),rock:true,kind:'wood'});});});
  buckets.forEach(list=>{const m=new THREE.Mesh(merge(list),envMat);m.castShadow=true;m.receiveShadow=true;scene.add(m);});}
 
 // structures: hunting hut, log piles, boundary posts
@@ -3461,7 +3462,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=220;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=222;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -4299,8 +4300,9 @@ function inflateRaw(src){let pos=0,bit=0,out=[];const LB=[3,4,5,6,7,8,9,10,11,13
 async function zip(txt,dec){const CS=dec?window.DecompressionStream:window.CompressionStream;const src=dec?txt:new TextEncoder().encode(txt);
   if(!CS)return dec?new TextDecoder().decode(inflateRaw(src)):src;
   if(dec){try{const st=new Blob([src]).stream().pipeThrough(new CS('deflate-raw'));return new TextDecoder().decode(new Uint8Array(await new Response(st).arrayBuffer()));}catch(e){return new TextDecoder().decode(inflateRaw(src));}}
-  const st=new Blob([src]).stream().pipeThrough(new CS('deflate-raw'));const buf=new Uint8Array(await new Response(st).arrayBuffer());return dec?new TextDecoder().decode(buf):buf;}
-async function packDesc(kind,desc){const z=!!window.CompressionStream;const body=b64u(await zip(JSON.stringify({s:desc.sdp}),false));return 'FS1'+kind+(z?'z':'p')+'.'+body;}
+  try{const st=new Blob([src]).stream().pipeThrough(new CS('deflate-raw'));const buf=new Uint8Array(await new Response(st).arrayBuffer());ZIPOK=true;return buf;}catch(e){ZIPOK=false;return src;}}
+let ZIPOK=false;
+async function packDesc(kind,desc){const body=b64u(await zip(JSON.stringify({s:desc.sdp}),false));const z=ZIPOK;return 'FS1'+kind+(z?'z':'p')+'.'+body;}
 let UNPACK_ERR='';
 // lenient: ignores spaces, line breaks, invisible characters, quotes and text around the code (chat apps often add these)
 async function unpackDesc(code,kind){UNPACK_ERR='';code=String(code||'').replace(/[\s\u200B-\u200D\uFEFF\u00AD]+/g,'');const m=/FS1([oa])([zp])\.([A-Za-z0-9_-]+)/.exec(code);
