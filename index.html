@@ -3450,7 +3450,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=248;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=249;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3647,11 +3647,10 @@ const VIT=(()=>{const st=document.createElement('style');st.textContent=`
 #vitals svg{width:15px;height:15px;flex:none;fill:currentColor}
 #vitals .tr{position:relative;flex:1;height:9px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.45)}
 #vitals .fl{position:absolute;left:0;top:0;bottom:0;width:50%;border-radius:5px;transition:width .12s linear;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0) 55%),var(--c,#47c9bb)}
-#vitals .bo{position:absolute;left:50%;top:0;bottom:0;width:0;transition:width .12s linear;background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,0) 55%),#3dff7c;box-shadow:0 0 9px rgba(61,255,124,.8)}
+#vitals .bo{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:5px;transition:width .12s linear;background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0) 55%),#ffc93c;box-shadow:0 0 8px rgba(255,201,60,.65)}
 #vitals .lag{position:absolute;left:0;top:0;bottom:0;width:50%;background:rgba(255,255,255,.35);transition:width .7s ease .25s}
 #vitals #vh .fl{--c:hsl(115,70%,52%)}
 #vitals #vs .fl{--c:#47c9bb}
-#vitals #vh .tr::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,.55)}
 #vitals .n{width:36px;text-align:right;font-variant-numeric:tabular-nums;opacity:.9}
 #vitals.low #vh .fl{animation:vpulse .8s ease-in-out infinite}
 #vitals.boost #vs .fl{animation:vpulse .5s ease-in-out infinite}
@@ -3664,7 +3663,7 @@ const VIT=(()=>{const st=document.createElement('style');st.textContent=`
   return {d,h:q('vh'),s:q('vs'),lh:-1,ls:-1,lk:null};})();
 function vitalsStep(){healStep();const hp=Math.max(0,Math.min(HP_MAX,MPM.hp)),sp=STAM.v;
   const hv=Math.round(hp),sv=Math.round(sp*100);
-  if(hv!==VIT.lh){VIT.lh=hv;const c='hsl('+Math.round(Math.min(hp,100)*1.15)+',70%,'+(hp>100?'46':'52')+'%)';VIT.h.fl.style.setProperty('--c',c);VIT.h.fl.style.width=(Math.min(hv,100)/2)+'%';VIT.h.lag.style.width=(Math.min(hv,100)/2)+'%';VIT.h.bo.style.width=(Math.max(0,hv-100)/2)+'%';VIT.h.n.textContent=hv+'%';VIT.d.classList.toggle('low',hp<30);}
+  if(hv!==VIT.lh){VIT.lh=hv;const c='hsl('+Math.round(Math.min(hp,100)*1.15)+',70%,'+(hp>100?'46':'52')+'%)';VIT.h.fl.style.setProperty('--c',c);VIT.h.fl.style.width=Math.min(hv,100)+'%';VIT.h.lag.style.width=Math.min(hv,100)+'%';VIT.h.bo.style.width=Math.max(0,hv-100)+'%';VIT.h.n.textContent=hv+'%';VIT.d.classList.toggle('low',hp<30);}
   {const sv=Math.round(STAM.v*100);if(sv!==VIT.ls||VIT.lk!==BOOST.on){VIT.ls=sv;VIT.lk=BOOST.on;VIT.s.fl.style.setProperty('--c',BOOST.on?'#7df0ff':'#47c9bb');VIT.s.fl.style.width=sv+'%';VIT.s.lag.style.width=sv+'%';VIT.s.n.textContent=sv+'%';VIT.d.classList.toggle('boost',BOOST.on);}}
   VIT.d.style.display=(playing&&player.alive)?'flex':'none';}
 
