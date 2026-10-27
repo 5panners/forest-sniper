@@ -1061,6 +1061,7 @@ function waterLevelAt(x,z){if(lakeE(x,z)<1.02)return LW;return streamWater(x,z);
 
 /* ---------------- rocks (data first: the summit tor decides the spawn) ---------------- */
 const ROCKS=[];   // {x,z,y,w,h,d,ry,moss,col}
+const TWPOS={x:204,z:-167};   // comms tower site: grid 204 E / 167 N
 let SUMMIT={x:SUM0.x,z:SUM0.z,h:-1e9};
 for(let dz=-70;dz<=70;dz+=5)for(let dx=-70;dx<=70;dx+=5){const h=groundH(SUM0.x+dx,SUM0.z+dz);if(h>SUMMIT.h)SUMMIT={x:SUM0.x+dx,z:SUM0.z+dz,h};}
 function addRock(x,z,w,h,d,ry,moss,col,yOff){const g=Math.min(groundH(x-w*0.35,z-d*0.35),groundH(x+w*0.35,z+d*0.35),groundH(x-w*0.35,z+d*0.35),groundH(x+w*0.35,z-d*0.35));
@@ -1809,6 +1810,7 @@ function groundColor(x,z,h,sl,dS,cw,dR,le,out){
   else if(dR<4.4)c=PAL.verge;
   else if(sl>1.05)c=(fbm(x/60,z/40,2)>0.05||sl>1.9)?(n2>0.2?PAL.rock:PAL.rock2):(n2>0?PAL.cliffWood:PAL.cliffWood2);
   else if(sl>0.72)c=PAL.mossRock;
+  else if(Math.hypot(x-TWPOS.x,z-TWPOS.z)<34)c=n1>0?PAL.heath:PAL.dry;   // trampled bare ground round the comms tower, like the tor
   else{const mk=meadowK(x,z),dd=deadK(x,z);
     if(dd>0&&mk<0.3)c=n1>0?PAL.dry:PAL.heath;
     else if(mk>0.3)c=Math.hypot(x-SUMMIT.x,z-SUMMIT.z)<60?(n1>0?PAL.heath:PAL.grass2):(n1>0.15?PAL.grass2:n1<-0.2?PAL.grass3:PAL.grass);
@@ -3220,7 +3222,7 @@ mapCv.addEventListener('click',e=>{if(!mapOpen)return;const r=mapCv.getBoundingC
   camPivot.copy(pl.pos).add(V(0,1.68,0));toast('Teleported · '+Math.round(x)+' E  '+Math.round(-z)+' N');setMap(false);e.stopPropagation();});
 function drawMap(){if(!mapBase)buildMap();const N=mapCv.width;mctx.putImageData(mapBase,0,0);const S=v=>(v+FE)/(FE*2)*N;
   if(FIREWALL<9000){mctx.save();mctx.strokeStyle='rgba(255,90,20,0.95)';mctx.lineWidth=5;mctx.shadowColor='#ff5a14';mctx.shadowBlur=10;mctx.beginPath();mctx.arc(S(FCX),S(FCZ),FIRE.R/(FE*2)*N,0,PI*2);mctx.stroke();mctx.restore();}
-  if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));
+  if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));if($('optDeerMap').checked&&!MPM.on)BEARS.forEach(b=>drawBearMark(mctx,S(b.x),S(b.z),b,0.9,0));
   const p=player.pos;mctx.save();mctx.translate(S(p.x),S(p.z));mctx.rotate(-camYaw+PI);mctx.fillStyle='#ffcc4a';mctx.strokeStyle='#000';mctx.lineWidth=1.5;mctx.beginPath();mctx.moveTo(0,-9);mctx.lineTo(6,7);mctx.lineTo(0,3);mctx.lineTo(-6,7);mctx.closePath();mctx.fill();mctx.stroke();mctx.restore();
   {const x=S(P1_SPAWN.x),y=S(P1_SPAWN.z);mctx.strokeStyle='#4ab0ff';mctx.lineWidth=2;mctx.beginPath();mctx.arc(x,y,7,0,PI*2);mctx.stroke();mctx.fillStyle='#4ab0ff';mctx.font='600 11px "IBM Plex Mono", monospace';mctx.fillText('P1',x+9,y+4);}
   {const x=S(P2_SPAWN.x),y=S(P2_SPAWN.z);mctx.strokeStyle='#ff5a4a';mctx.lineWidth=2;mctx.beginPath();mctx.arc(x,y,7,0,PI*2);mctx.stroke();mctx.fillStyle='#ff5a4a';mctx.font='600 11px "IBM Plex Mono", monospace';mctx.fillText('P2',x+9,y+4);}
@@ -3341,7 +3343,7 @@ function drawMini(){mini.parentNode.style.display=miniOn?'':'none';if(!miniOn)re
   mx.clearRect(0,0,W,W);mx.save();mx.beginPath();mx.arc(W/2,W/2,W/2-3,0,PI*2);mx.clip();mx.fillStyle='#0c120a';mx.fillRect(0,0,W,W);
   mx.translate(W/2,W/2);mx.rotate(th);mx.scale(sc,sc);mx.drawImage(baseCv,-(p.x+FE)*ppm,-(p.z+FE)*ppm);
   if(FIREWALL<9000){mx.save();mx.strokeStyle='rgba(255,90,20,0.95)';mx.lineWidth=5/sc;mx.shadowColor='#ff5a14';mx.shadowBlur=8;mx.beginPath();mx.arc((FCX-p.x)*ppm,(FCZ-p.z)*ppm,FIRE.R*ppm,0,PI*2);mx.stroke();mx.restore();}
-  if($('optDeerMap').checked){const k=1/sc;DEER.forEach(d=>drawDeerMark(mx,(d.x-p.x)*ppm,(d.z-p.z)*ppm,d,k*1.2,th));}
+  if($('optDeerMap').checked){const k=1/sc;DEER.forEach(d=>drawDeerMark(mx,(d.x-p.x)*ppm,(d.z-p.z)*ppm,d,k*1.2,th));if(!MPM.on)BEARS.forEach(b=>drawBearMark(mx,(b.x-p.x)*ppm,(b.z-p.z)*ppm,b,k*1.5,th));}
   mx.restore();
   // view cone and the player
   const hf=2*Math.atan(Math.tan(camera.fov*PI/360)*camera.aspect),cone=W*0.2;mx.fillStyle='rgba(255,204,74,0.2)';mx.beginPath();mx.moveTo(W/2,W/2);mx.arc(W/2,W/2,cone,-HP-hf/2,-HP+hf/2);mx.closePath();mx.fill();
@@ -3462,7 +3464,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=222;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=229;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3876,7 +3878,7 @@ function fireSound(){if(!AC||!soundOn)return;
   FSND.out.gain.setTargetAtTime(lvl*1.1,AC.currentTime,0.25);
   const nx=FCX+px0/r*FIRE.R,nz2=FCZ+pz0/r*FIRE.R,dd=Math.max(8,Math.min(d,200)),sx=p.x+(nx-p.x)/Math.max(1,d)*dd,sz=p.z+(nz2-p.z)/Math.max(1,d)*dd;
   if(FSND.pn.positionX){FSND.pn.positionX.value=sx;FSND.pn.positionY.value=camera.position.y+4;FSND.pn.positionZ.value=sz;}else FSND.pn.setPosition(sx,camera.position.y+4,sz);}
-function fireStep(){if(!FIRE.picked&&playing)ringReset();fireSound();{const now=performance.now(),dt=Math.min(0.25,(now-(FIRE.lt||now))/1000);FIRE.lt=now;if(playing)FIRE.t+=dt;const u=Math.max(0,Math.min(1,(FIRE.t-GAME.sDelay)/Math.max(1,GAME.sDur)));FIRE.R=FIRE.R0+(GAME.sEnd-FIRE.R0)*u;FIRE.cx=FIRE.tx*u;FIRE.cz=FIRE.tz*u;FCX=FIRE.cx;FCZ=FIRE.cz;FIRE.lit=FIRE.t>=GAME.sDelay;FIRE.ign=FIRE.lit?Math.min(1,(FIRE.t-GAME.sDelay)/4):0;FIREWALL=FIRE.lit?FIRE.R:9999;if(FIRE.lit&&!FIRE.wasLit&&GAME.sDelay>0&&playing){toast('The ring of fire has ignited! It starts closing in now');if(FIRE.t-GAME.sDelay<1)ringSiren();}FIRE.wasLit=FIRE.lit;if(FIRE.grp)FIRE.grp.visible=FIRE.lit;if(FIRE.builtR-FIRE.R>=4||Math.hypot(FIRE.cx-FIRE.bcx,FIRE.cz-FIRE.bcz)>=4)fireBuild(FIRE.R);if(FIRE.grp)FIRE.grp.position.set(FIRE.cx,0,FIRE.cz);
+function fireStep(){if(!FIRE.picked&&playing)ringReset();fireSound();{const now=performance.now(),dt=Math.min(0.25,(now-(FIRE.lt||now))/1000);FIRE.lt=now;if(NT.room&&NT.M&&NT.M.ph!=='live')FIRE.t=0;else if(playing)FIRE.t+=dt;const u=Math.max(0,Math.min(1,(FIRE.t-GAME.sDelay)/Math.max(1,GAME.sDur)));FIRE.R=FIRE.R0+(GAME.sEnd-FIRE.R0)*u;FIRE.cx=FIRE.tx*u;FIRE.cz=FIRE.tz*u;FCX=FIRE.cx;FCZ=FIRE.cz;FIRE.lit=FIRE.t>=GAME.sDelay;FIRE.ign=FIRE.lit?Math.min(1,(FIRE.t-GAME.sDelay)/4):0;FIREWALL=FIRE.lit?FIRE.R:9999;if(FIRE.lit&&!FIRE.wasLit&&GAME.sDelay>0&&playing){toast('The ring of fire has ignited! It starts closing in now');if(FIRE.t-GAME.sDelay<1)ringSiren();}FIRE.wasLit=FIRE.lit;if(FIRE.grp)FIRE.grp.visible=FIRE.lit;if(FIRE.builtR-FIRE.R>=4||Math.hypot(FIRE.cx-FIRE.bcx,FIRE.cz-FIRE.bcz)>=4)fireBuild(FIRE.R);if(FIRE.grp)FIRE.grp.position.set(FIRE.cx,0,FIRE.cz);
   FIRE.U.uT.value=(now/1000)%3600;FIRE.U.uF.value=((now/1000)%7200)*GAME.fSpd;FIRE.U.uFer.value=GAME.fFer*FIRE.ign;FIRE.U.uSm.value=GAME.sm*FIRE.ign;ringChipStep();ringHurt(dt);const ro=document.getElementById('gmR');if(ro&&ro.offsetParent)ro.textContent=Math.round(FIRE.R)+' m';}FIRE_DAY.value=1-DAY.dark*0.8;}
 
 (function(){const el=document.getElementById('audF2'),o=document.getElementById('audF2v');if(!el)return;el.value=Math.round(FSND.vol*100);o.textContent=el.value+'%';
@@ -4145,6 +4147,15 @@ function hitBear(b,sub,dist){const R=' · '+Math.round(dist)+' m';flashHit();
   const p=player.pos,a=Math.atan2(b.x-p.x,b.z-p.z)+(Math.random()-0.5)*0.8;b.tx=b.x+Math.sin(a)*90;b.tz=b.z+Math.cos(a)*90;b.st='flee';b.stT=9+Math.random()*5;
   toast('Bear hit · '+sub+' · '+Math.round(100*b.hp/Math.max(1,DMG.hp.bear))+'% left'+R);}
 function showBearHB(on){BEARS.forEach(b=>b.hb.forEach(m=>m.userData.edge.visible=on));}
+// bear marker for the map and minimap: dark brown head with round ears, cream outline; a cross when dead
+function drawBearMark(c,x,y,b,k,th){c.save();c.translate(x,y);c.rotate(-th);c.scale(k,k);c.lineWidth=2.5;
+  if(b.dead){c.strokeStyle='#e8e2d4';c.beginPath();c.moveTo(-7,-7);c.lineTo(7,7);c.moveTo(7,-7);c.lineTo(-7,7);c.stroke();}
+  else{c.fillStyle=b.st==='rear'||b.st==='flee'?'#ff5a3c':'#4a2a14';c.strokeStyle='#f3e6c8';
+    c.beginPath();c.arc(-6,-6,3.2,0,Math.PI*2);c.arc(6,-6,3.2,0,Math.PI*2);c.fill();c.stroke();
+    c.beginPath();c.arc(0,0,8,0,Math.PI*2);c.fill();c.stroke();
+    c.fillStyle='#c9a27a';c.beginPath();c.ellipse(0,2.5,3.4,2.6,0,0,Math.PI*2);c.fill();}
+  c.restore();}
+
 window.SNIPER_BEAR={list:()=>BEARS,reset:bearReset,step:bearStep,hit:hitBear,ray:rayBear,cast:(o,d,m)=>castRay(o,d,m)};
 
 // ================= comms tower: galvanised lattice mast with an open observation deck near the top, reached by a ladder =================
@@ -4159,16 +4170,7 @@ function twBar(list,a,b,r,col,seg){const A=new THREE.Vector3(...a),B=new THREE.V
   list.push(bPart(g,[m.x,m.y,m.z],[e.x,e.y,e.z],null,typeof col==='function'?col:()=>col));}
 function twBox(list,c,s,col,seg){list.push(bPart(new THREE.BoxGeometry(s[0],s[1],s[2],seg||1,1,seg||1),c,null,null,typeof col==='function'?col:()=>col));}
 const TWG=['#7d8387','#757b7f','#868c90'],twSteel=(x,y,z)=>TWG[Math.floor(bHash(Math.floor(x*3),Math.floor(y*3),Math.floor(z*3))*3)];
-function towerSite(){
-  let best=null;const sp=(typeof SPAWN!=='undefined')?SPAWN:{x:0,z:0};
-  for(let x=-420;x<=420;x+=15)for(let z=-420;z<=420;z+=15){
-    if(Math.hypot(x-sp.x,z-sp.z)<140)continue;if(typeof HUT!=='undefined'&&Math.hypot(x-HUT.x,z-HUT.z)<40)continue;
-    let ok=true;try{if(inWater(x,z))ok=false;}catch(e){}if(!ok)continue;
-    const h=groundH(x,z);let mx=h,mn=h;for(const [dx,dz] of [[3,3],[-3,3],[3,-3],[-3,-3],[4,0],[-4,0],[0,4],[0,-4]]){const g=groundH(x+dx,z+dz);mx=Math.max(mx,g);mn=Math.min(mn,g);}
-    if(mx-mn>1.6)continue;
-    for(const p of pillarsNear(x,z)){if(Math.hypot(p.x-x,p.z-z)<p.r+5.5){ok=false;break;}}if(!ok)continue;
-    const s=h-Math.min(mx,mn)*0;if(!best||s>best.s)best={x,z,s};}
-  return best||{x:120,z:-120};}
+function towerSite(){return {x:TWPOS.x,z:TWPOS.z,s:0};}   // fixed site: grid 204 E / 167 N
 function towerBuild(){
   const st=towerSite();TW.x=st.x;TW.z=st.z;
   let lo=Infinity;for(const [dx,dz] of [[-2.6,-2.6],[2.6,-2.6],[-2.6,2.6],[2.6,2.6],[0,2.7]])lo=Math.min(lo,groundH(TW.x+dx,TW.z+dz));TW.y0=lo-0.05;
@@ -4388,7 +4390,7 @@ function setLooks(g){if(!P2M||!P2LOOK.cap)return;
     P2LOOK.mhat=J.head.children.find(c=>c.isGroup||(c.children.length&&c.type==='Group'));P2LOOK.mcap=P2LOOK.cap.clone();P2LOOK.mcap.visible=false;J.head.add(P2LOOK.mcap);
     P2M.getObjectByName('head').add(P2LOOK.felt);P2LOOK.felt.visible=false;}
   for(const [a,b,ga,gb] of P2LOOK.geo){a.geometry=g?gb:ga;b.geometry=g?ga:gb;}
-  P2LOOK.mcap.visible=g;if(P2LOOK.mhat)P2LOOK.mhat.visible=!g;P2LOOK.felt.visible=g;P2LOOK.cap.visible=!g;}
+  P2LOOK.mcap.visible=false;if(P2LOOK.mhat)P2LOOK.mhat.visible=!g;P2LOOK.felt.visible=g;P2LOOK.cap.visible=false;}   // player 2 goes bare-headed: no cap
 function p2Idle(){if(!P2M)return;applyPose(cpose('Idle',0));for(const [s,t] of P2PAIRS){t.position.copy(s.position);t.quaternion.copy(s.quaternion);t.scale.copy(s.scale);if(P2VIS.has(s))t.visible=s.visible;}
   P2M.position.set(P2_SPAWN.x,P2_SPAWN.y,P2_SPAWN.z);P2M.rotation.y=Math.atan2(-P2_SPAWN.x,-P2_SPAWN.z);P2M.visible=true;P2M.updateMatrixWorld(true);}
 
@@ -4541,10 +4543,11 @@ function netStep(dt){farFlashStep(dt);
   const now=performance.now(),host=NT.role==='h',M=NT.M;NT.needT-=dt;
   // who is the opponent
   let opp=null;try{for(const p of NT.room.peers()){if(p.sameTab)continue;const pr=p.presence||{};if(pr.v!==NET_V||pr.role===NT.role||!pr.role)continue;opp=p;break;}}catch(e){}
-  if(opp){NT.oppSeen=now;if(!NT.opp||NT.opp.peer!==opp.peer){NT.opp=opp;if(!NT.wasOpp){toast('Opponent connected · click the game to capture the mouse');if(AC&&soundOn)playFanfare();else NT.fan=true;mpAutoDeploy();if(host)setTimeout(()=>{if(NT.room&&NT.role==='h'&&NT.opp&&NT.M.ph==='wait')mpStart();},3000);}NT.wasOpp=true;mpStat('Direct match'+' · '+NT.where+' · opponent connected'+(host?' · press Start match':' · waiting for the host to start'));if(host)sendRoster();mpUI();}
+  if(opp){NT.oppSeen=now;if(!NT.opp||NT.opp.peer!==opp.peer){NT.opp=opp;if(!NT.wasOpp){try{ringReset();}catch(e){}toast('Opponent connected · click the game to capture the mouse');if(AC&&soundOn)playFanfare();else NT.fan=true;mpAutoDeploy();if(host)setTimeout(()=>{if(NT.room&&NT.role==='h'&&NT.opp&&NT.M.ph==='wait')mpStart();},3000);}NT.wasOpp=true;mpStat('Direct match'+' · '+NT.where+' · opponent connected'+(host?' · press Start match':' · waiting for the host to start'));if(host)sendRoster();mpUI();}
     NT.opp=opp;const pr=opp.presence;feedSnap(pr.s);
     if(!host&&pr.m){const m=pr.m;const prevPh=M.ph;NT.M={ph:String(m.ph),r:m.r|0,sc:[m.sc&&m.sc[0]|0,m.sc&&m.sc[1]|0],left:+m.left||0,lw:m.lw||'',sd:m.sd|0};
-      if(typeof m.tod==='number'){if(Math.abs(wrapA((m.tod-DAY.tod)*PI/12))>0.01)DAY.tod=m.tod;DAY.rateI=m.ri|0;}
+      if(typeof m.ft==='number'&&opp.updatedAt!==NT.ftQ){NT.ftQ=opp.updatedAt;const age=opp.updatedAt?Math.max(0,Math.min(1,(Date.now()-opp.updatedAt)/1000)):0,tg=m.ft+age+0.04;if(Math.abs(FIRE.t-tg)>0.15)FIRE.t=tg;}   // the ring clock follows the host's, so it ignites and closes at the same moment for everyone
+      if(typeof m.tod==='number'){DAY.rateI=clamp(m.ri|0,0,RATES.length-1);if(opp.updatedAt!==NT.todQ){NT.todQ=opp.updatedAt;const age=opp.updatedAt?Math.max(0,Math.min(1,(Date.now()-opp.updatedAt)/1000)):0,tg=(m.tod+(age+0.04)*RATES[DAY.rateI]/60+24)%24;if(Math.abs(wrapA((tg-DAY.tod)*PI/12))>0.004){DAY.tod=tg;try{stepDay(0);}catch(e){}}}}   // sun and moon follow the host's clock (one correction per update, aged for transit)
       if(NT.M.r>0&&NT.M.r!==NT.myR&&(NT.M.ph==='count'||NT.M.ph==='live'))roundReset();
       if(prevPh!==NT.M.ph)mpUI();}}
   else if(NT.opp&&now-NT.oppSeen>6000){NT.opp=null;RPS.vis=false;RPS.buf=[];if(P2M)P2M.visible=false;toast('Opponent connection lost · waiting for them');playGoodbye();
@@ -4564,7 +4567,7 @@ function netStep(dt){farFlashStep(dt);
   // send my state
   NT.sendAcc+=dt;if(NT.sendAcc>=1/SEND_HZ){NT.sendAcc=0;const pl=player;
     const s={q:++NT.seq,t:Math.round(now),x:nr2(pl.pos.x),y:nr2(pl.pos.y),z:nr2(pl.pos.z),yw:nr3(wrapA(pl.yaw)),p:pl.pose?packPose(pl.pose):null,b:nr2(boltT),hp:Math.round(MPM.hp),al:pl.alive?1:0,r:NT.myR,sp:nr1(Math.hypot(pl.vel.x,pl.vel.z)),st:pl.stance[0]};
-    const patch={s};if(host)patch.m={ph:M.ph,r:M.r,sd:M.sd|0,sc:M.sc.slice(),left:nr2(M.left),lw:M.lw,tod:nr3(DAY.tod),ri:DAY.rateI};
+    const patch={s};if(host)patch.m={ph:M.ph,r:M.r,sd:M.sd|0,sc:M.sc.slice(),left:nr2(M.left),lw:M.lw,tod:nr3(DAY.tod),ri:DAY.rateI,ft:nr2(FIRE.t)};
     NT.lastSize=JSON.stringify(patch).length;NT.room.presence(patch).catch(()=>{});}
   if(host&&NT.opp){NT.wildAcc+=dt;if(NT.wildAcc>=1/WILD_HZ){NT.wildAcc=0;sendWild();}}
   netStats(dt);
