@@ -3099,7 +3099,7 @@ function stepBullets1(dt){
     if(h||b.t>4||b.p.y<-200){
       if(h){b.end=h.point.clone();impact(h.point,h.normal,h.kind);impactSnd(h.point,h.kind);if(h.kind!=='water'&&h.kind!=='flesh')addMark(h.point,h.normal,h.kind,h.point.distanceTo(b.o),null);const dist=h.point.distanceTo(b.o);stats.last=[h.point.x,h.point.y,h.point.z,h.kind,dist];
         if(!b.rem){if(h.remote)netHitRemote(h,dist);
-        if(h.bear){if(h.sub==='head')headDing();else hitThud();hitBear(h.bear,h.sub,dist);}
+        if(h.bear){if(h.sub==='head')headDing();else hitThud();(MPM.guest?netBearHit(h.bear,h.sub,dist):hitBear(h.bear,h.sub,dist));}
         if(h.bird){hitThud();if(MPM.guest)netBirdHit(h.bird,dist);else hitBird(h.bird,dist);}
         if(h.deer){if(h.sub==='head')headDing();else hitThud();if(MPM.guest)netDeerHit(h.deer,h.sub,h.leg,dist);else{hitDeer(h.deer,h.sub,dist);if(h.sub==='leg')legHit(h.deer,h.leg);}}}}
       if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}
@@ -3222,7 +3222,7 @@ mapCv.addEventListener('click',e=>{if(!mapOpen)return;const r=mapCv.getBoundingC
   camPivot.copy(pl.pos).add(V(0,1.68,0));toast('Teleported · '+Math.round(x)+' E  '+Math.round(-z)+' N');setMap(false);e.stopPropagation();});
 function drawMap(){if(!mapBase)buildMap();const N=mapCv.width;mctx.putImageData(mapBase,0,0);const S=v=>(v+FE)/(FE*2)*N;
   if(FIREWALL<9000){mctx.save();mctx.strokeStyle='rgba(255,90,20,0.95)';mctx.lineWidth=5;mctx.shadowColor='#ff5a14';mctx.shadowBlur=10;mctx.beginPath();mctx.arc(S(FCX),S(FCZ),FIRE.R/(FE*2)*N,0,PI*2);mctx.stroke();mctx.restore();}
-  if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));if($('optDeerMap').checked&&!MPM.on)BEARS.forEach(b=>drawBearMark(mctx,S(b.x),S(b.z),b,0.9,0));
+  if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));if($('optDeerMap').checked)BEARS.forEach(b=>drawBearMark(mctx,S(b.x),S(b.z),b,0.9,0));
   const p=player.pos;mctx.save();mctx.translate(S(p.x),S(p.z));mctx.rotate(-camYaw+PI);mctx.fillStyle='#ffcc4a';mctx.strokeStyle='#000';mctx.lineWidth=1.5;mctx.beginPath();mctx.moveTo(0,-9);mctx.lineTo(6,7);mctx.lineTo(0,3);mctx.lineTo(-6,7);mctx.closePath();mctx.fill();mctx.stroke();mctx.restore();
   {const x=S(P1_SPAWN.x),y=S(P1_SPAWN.z);mctx.strokeStyle='#4ab0ff';mctx.lineWidth=2;mctx.beginPath();mctx.arc(x,y,7,0,PI*2);mctx.stroke();mctx.fillStyle='#4ab0ff';mctx.font='600 11px "IBM Plex Mono", monospace';mctx.fillText('P1',x+9,y+4);}
   {const x=S(P2_SPAWN.x),y=S(P2_SPAWN.z);mctx.strokeStyle='#ff5a4a';mctx.lineWidth=2;mctx.beginPath();mctx.arc(x,y,7,0,PI*2);mctx.stroke();mctx.fillStyle='#ff5a4a';mctx.font='600 11px "IBM Plex Mono", monospace';mctx.fillText('P2',x+9,y+4);}
@@ -3343,7 +3343,7 @@ function drawMini(){mini.parentNode.style.display=miniOn?'':'none';if(!miniOn)re
   mx.clearRect(0,0,W,W);mx.save();mx.beginPath();mx.arc(W/2,W/2,W/2-3,0,PI*2);mx.clip();mx.fillStyle='#0c120a';mx.fillRect(0,0,W,W);
   mx.translate(W/2,W/2);mx.rotate(th);mx.scale(sc,sc);mx.drawImage(baseCv,-(p.x+FE)*ppm,-(p.z+FE)*ppm);
   if(FIREWALL<9000){mx.save();mx.strokeStyle='rgba(255,90,20,0.95)';mx.lineWidth=5/sc;mx.shadowColor='#ff5a14';mx.shadowBlur=8;mx.beginPath();mx.arc((FCX-p.x)*ppm,(FCZ-p.z)*ppm,FIRE.R*ppm,0,PI*2);mx.stroke();mx.restore();}
-  if($('optDeerMap').checked){const k=1/sc;DEER.forEach(d=>drawDeerMark(mx,(d.x-p.x)*ppm,(d.z-p.z)*ppm,d,k*1.2,th));if(!MPM.on)BEARS.forEach(b=>drawBearMark(mx,(b.x-p.x)*ppm,(b.z-p.z)*ppm,b,k*1.5,th));}
+  if($('optDeerMap').checked){const k=1/sc;DEER.forEach(d=>drawDeerMark(mx,(d.x-p.x)*ppm,(d.z-p.z)*ppm,d,k*1.2,th));BEARS.forEach(b=>drawBearMark(mx,(b.x-p.x)*ppm,(b.z-p.z)*ppm,b,k*1.5,th));}
   mx.restore();
   // view cone and the player
   const hf=2*Math.atan(Math.tan(camera.fov*PI/360)*camera.aspect),cone=W*0.2;mx.fillStyle='rgba(255,204,74,0.2)';mx.beginPath();mx.moveTo(W/2,W/2);mx.arc(W/2,W/2,cone,-HP-hf/2,-HP+hf/2);mx.closePath();mx.fill();
@@ -3464,7 +3464,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=231;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=234;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3634,7 +3634,7 @@ function applyLook(i){lookI=Math.max(0,Math.min(3,i|0));const seen=new Set();
     m.defines=m.defines||{};if(lookI)m.defines.GSTYLE=lookI;else delete m.defines.GSTYLE;m.needsUpdate=true;}});
   try{localStorage.setItem('fsMist2',String(lookI));}catch(e){}}
 (function(){const el=document.getElementById('optMist');if(!el)return;let v=1;try{const q=localStorage.getItem('fsMist2');if(q!=null)v=+q||0;}catch(e){}el.value=String(v);el.onchange=()=>applyLook(+el.value);})();
-function lookStep(){const T=(f)=>{try{f();}catch(e){if(!window._lsErr){window._lsErr=1;console.warn('lookStep',e);}}};T(vitalsStep);T(edgeStep);T(()=>{if(!_dmgApplied)dmgApply();});T(fireStep);T(leadGlowStep);T(owlStep);T(()=>{const now=performance.now(),dt=Math.min(0.1,(now-(lookStep.bt||now))/1000);lookStep.bt=now;bearStep(dt);});if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
+function lookStep(){const T=(f)=>{try{f();}catch(e){if(!window._lsErr){window._lsErr=1;console.warn('lookStep',e);}}};T(vitalsStep);T(edgeStep);T(()=>{if(!_dmgApplied)dmgApply();});T(fireStep);T(leadGlowStep);T(animalGlowStep);T(owlStep);T(()=>{const now=performance.now(),dt=Math.min(0.1,(now-(lookStep.bt||now))/1000);lookStep.bt=now;bearStep(dt);});if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
 window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial){c++;if(m.defines&&m.defines.GSTYLE)d++;}});return {sh:true,std:c,withDef:d,keys:renderer.info.programs.map(p=>p.cacheKey.includes('GSTYLE')).join(','),lookI};};
 
 // ---- edge glow on every collectible: a slightly enlarged back-face shell per node, additive, pulsing on a 3 s cycle, one colour per resource type
@@ -4105,16 +4105,27 @@ function bearPose(b,dt){
   b.head.rotation.x=(b.st==='idle'?0.35+Math.sin(performance.now()/900)*0.15:-0.05+(moving?Math.sin(b.ph*Math.PI*4)*0.05:0))*(1-R)+0.85*R;
   b.head.rotation.y=b.st==='idle'?Math.sin(performance.now()/2300)*0.4:0;
 }
+const BST2=['walk','idle','rear','flee'];
+// nearest person to a bear: me, or the opponent in a match
+function bearHuman(b){let x=player.pos.x,z=player.pos.z,d=Math.hypot(x-b.x,z-b.z);
+  try{if(MPM&&MPM.on&&NT.opp&&RPS&&RPS.pos&&RPS.al){const d2=Math.hypot(RPS.pos.x-b.x,RPS.pos.z-b.z);if(d2<d){d=d2;x=RPS.pos.x;z=RPS.pos.z;}}}catch(e){}
+  return {x,z,d};}
+// match: the host runs the bears; the guest mirrors them from the wild packets
 function bearStep(dt){
-  const on=!(MPM&&MPM.on)&&playing;
-  if(BEARS.length!==Math.round(GAME.bears||0)&&!(MPM&&MPM.on)){bearReset();}
-  for(const b of BEARS){b.root.visible=!(MPM&&MPM.on);if(!on)continue;
+  const gst=!!(MPM&&MPM.on&&MPM.guest),on=playing&&!gst;
+  if(BEARS.length!==Math.round(GAME.bears||0)){bearReset();}
+  for(const b of BEARS){b.root.visible=true;
+    if(gst){const n=b.net;if(n){const age=Math.min(0.5,(performance.now()-n.at)/1000),tx=n.x+Math.sin(n.yaw)*n.spd*age,tz=n.z+Math.cos(n.yaw)*n.spd*age;
+        if(Math.hypot(tx-b.x,tz-b.z)>12){b.x=tx;b.z=tz;b.yaw=n.yaw;}else{const k=Math.min(1,dt*8);b.x+=(tx-b.x)*k;b.z+=(tz-b.z)*k;b.yaw+=wrapA(n.yaw-b.yaw)*k;}
+        b.spd=n.spd;b.st=n.st;b.dead=n.dead;}
+      if(!(b.dead>0))bearPose(b,dt);bearPlace(b,dt);continue;}
+    if(!on)continue;
     if(b.dead>0){if(b.dead<1){b.dead+=dt*0.9;bearPlace(b,dt);}continue;}
     b.stT-=dt;b.rearCD-=dt;let want=0;
-    {const pd=Math.hypot(player.pos.x-b.x,player.pos.z-b.z);
+    {const H=bearHuman(b),pd=H.d;
      if(player.alive&&pd<GAME.bRear&&b.st!=='flee'&&b.st!=='rear'&&b.rearCD<=0){b.st='rear';b.stT=2.8+Math.random()*1.8;b.rearCD=14;b.spd=0;}
-     if(b.st==='rear'){const want2=Math.atan2(player.pos.x-b.x,player.pos.z-b.z);b.yaw+=clamp(wrapA(want2-b.yaw),-2*dt,2*dt);
-       if(b.stT<0){const a2=Math.atan2(b.x-player.pos.x,b.z-player.pos.z)+(Math.random()-0.5);b.tx=b.x+Math.sin(a2)*70;b.tz=b.z+Math.cos(a2)*70;b.st='walk';b.stT=40;}}}
+     if(b.st==='rear'){const want2=Math.atan2(H.x-b.x,H.z-b.z);b.yaw+=clamp(wrapA(want2-b.yaw),-2*dt,2*dt);
+       if(b.stT<0){const a2=Math.atan2(b.x-H.x,b.z-H.z)+(Math.random()-0.5);b.tx=b.x+Math.sin(a2)*70;b.tz=b.z+Math.cos(a2)*70;b.st='walk';b.stT=40;}}}
     if(b.st==='walk'){want=GAME.bWalk;const d=Math.hypot(b.tx-b.x,b.tz-b.z);if(d<3||b.stT<0){if(Math.random()<0.45){b.st='idle';b.stT=5+Math.random()*12;}else{bearTarget(b);b.stT=60;}}}
     else if(b.st==='idle'){want=0;if(b.stT<0){b.st='walk';bearTarget(b);b.stT=60;}}
     else if(b.st==='rear'){want=0;}
@@ -4133,7 +4144,7 @@ function bearStep(dt){
     bearPose(b,dt);
     bearPlace(b,dt);}}
 const _bRay=new THREE.Raycaster();
-function rayBear(o,dir,len){if(MPM&&MPM.on)return null;let best=null;
+function rayBear(o,dir,len){let best=null;
   for(const b of BEARS){const cx=b.x-o.x,cy=b.y+1-o.y,cz=b.z-o.z;const t=cx*dir.x+cy*dir.y+cz*dir.z;if(t<-3||t>len+3)continue;const tt=clamp(t,0,len);
     const ex=cx-dir.x*tt,ey=cy-dir.y*tt,ez=cz-dir.z*tt;if(ex*ex+ey*ey+ez*ez>2.6*2.6)continue;
     _bRay.set(o,dir);_bRay.near=0;_bRay.far=best?best.dist:len;const hs=_bRay.intersectObjects(b.hb,false);if(!hs.length)continue;
@@ -4144,9 +4155,14 @@ function hitBear(b,sub,dist){const R=' · '+Math.round(dist)+' m';flashHit();
   if(b.dead>0){toast('The bear is already down'+R);return;}
   const dm=(DMG.w.rifle.k&&DMG.w.rifle.k[sub]!=null)?DMG.w.rifle.k[sub]:25;b.hp-=dm;
   if(b.hp<=0){b.hp=0;b.dead=0.001;b.spd=0;toast('Bear down · '+sub+' shot'+R);return;}
-  const p=player.pos,a=Math.atan2(b.x-p.x,b.z-p.z)+(Math.random()-0.5)*0.8;b.tx=b.x+Math.sin(a)*90;b.tz=b.z+Math.cos(a)*90;b.st='flee';b.stT=9+Math.random()*5;
+  const p=(typeof hitFrom!=='undefined'&&hitFrom)||player.pos,a=Math.atan2(b.x-p.x,b.z-p.z)+(Math.random()-0.5)*0.8;b.tx=b.x+Math.sin(a)*90;b.tz=b.z+Math.cos(a)*90;b.st='flee';b.stT=9+Math.random()*5;
   toast('Bear hit · '+sub+' · '+Math.round(100*b.hp/Math.max(1,DMG.hp.bear))+'% left'+R);}
 function showBearHB(on){BEARS.forEach(b=>b.hb.forEach(m=>m.userData.edge.visible=on));}
+// match packets: host side list, guest side apply, guest-side hit report
+function bearNetList(){return BEARS.map(b=>[nr1(b.x),nr1(b.z),nr2(wrapA(b.yaw)),Math.max(0,BST2.indexOf(b.st)),nr1(b.spd),nr2(b.dead||0)]);}
+function bearNetApply(arr){if(!Array.isArray(arr))return;if(arr.length!==Math.round(GAME.bears||0)){GAME.bears=arr.length;return;}
+  const now=performance.now();arr.forEach((a,i)=>{const b=BEARS[i];if(b)b.net={x:+a[0],z:+a[1],yaw:+a[2],st:BST2[a[3]]||'walk',spd:+a[4]||0,dead:+a[5]||0,at:now};});}
+function netBearHit(b,sub,dist){flashHit();toast('Bear hit · '+sub+' · '+Math.round(dist)+' m');const i=BEARS.indexOf(b);if(i<0||!NT.room)return;NT.room.emit('brhit',{i,sub,dist:Math.round(dist)}).catch(()=>{});}
 // bear marker for the map and minimap: dark brown head with round ears, cream outline; a cross when dead
 function drawBearMark(c,x,y,b,k,th){c.save();c.translate(x,y);c.rotate(-th);c.scale(k,k);c.lineWidth=2.5;
   if(b.dead){c.strokeStyle='#e8e2d4';c.beginPath();c.moveTo(-7,-7);c.lineTo(7,7);c.moveTo(7,-7);c.lineTo(-7,7);c.stroke();}
@@ -4156,6 +4172,18 @@ function drawBearMark(c,x,y,b,k,th){c.save();c.translate(x,y);c.rotate(-th);c.sc
     c.fillStyle='#c9a27a';c.beginPath();c.ellipse(0,2.5,3.4,2.6,0,0,Math.PI*2);c.fill();}
   c.restore();}
 
+// glowing aura on every dead animal (deer, bear, buzzard): a soft additive ellipsoid that pulses on the same 3 s cycle as the collectibles
+const AGLOW={m:new Map(),geo:null,mat:null};
+function animalGlowStep(){if(!AGLOW.geo){AGLOW.geo=new THREE.IcosahedronGeometry(1,1);}
+  const t=performance.now()/1000,seen=new Set();
+  const add=(o,root,rx,ry,rz,cy,col)=>{seen.add(o);let e=AGLOW.m.get(o);
+    if(!e||e.root!==root){if(e&&e.mesh.parent)e.mesh.parent.remove(e.mesh);const mat=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.4,depthWrite:false,blending:THREE.AdditiveBlending,fog:false});
+      const mesh=new THREE.Mesh(AGLOW.geo,mat);mesh.scale.set(rx,ry,rz);mesh.position.set(0,cy,0);mesh.renderOrder=6;mesh.frustumCulled=false;root.add(mesh);e={root,mesh,mat,ph:Math.random()*3};AGLOW.m.set(o,e);}
+    e.mat.opacity=0.1+0.3*(0.5-0.5*Math.cos((t+e.ph)*Math.PI*2/3));};
+  for(const d of DEER)if(d.st==='dead')d.kind==='stag'?add(d,d.root,0.8,1.0,1.55,0.55,0xff6a30):add(d,d.root,0.65,0.85,1.3,0.45,0xff6a30);
+  for(const b of BEARS)if(b.dead>0)add(b,b.root,1.2,1.1,1.8,0.7,0xff6a30);
+  for(const b of BZ)if(b.st==='dead')add(b,b.root,0.8,0.5,0.8,0.1,0xff6a30);
+  for(const [o,e] of AGLOW.m)if(!seen.has(o)){if(e.mesh.parent)e.mesh.parent.remove(e.mesh);e.mat.dispose();AGLOW.m.delete(o);}}
 window.SNIPER_BEAR={list:()=>BEARS,reset:bearReset,step:bearStep,hit:hitBear,ray:rayBear,cast:(o,d,m)=>castRay(o,d,m)};
 
 // ================= comms tower: galvanised lattice mast with an open observation deck near the top, reached by a ladder =================
@@ -4227,9 +4255,11 @@ function towerStep(pl,dt){
     if(TW.cd>0||!pl.alive)return;
     const atFoot=Math.abs(lx)<0.65&&lz>TW.Lz-0.1&&lz<TW.Lz+1.3&&pl.pos.y<groundH(pl.pos.x,pl.pos.z)+0.6&&mi.f>0&&face>0.25;
     const atTop=Math.abs(lx)<0.45&&lz>TW.D-0.32&&Math.abs(pl.pos.y-deck)<0.3;
-    if(atFoot||atTop){TW.climb=true;pl.stance='stand';TW.cy=atTop?deck-0.25:pl.pos.y;toast('On the ladder · W climbs, S descends (look away from the tower and W goes down)');}
+    if(atFoot||atTop){TW.climb=true;TW.sp=!!keys.Space;pl.stance='stand';TW.cy=atTop?deck-0.25:pl.pos.y;toast('On the ladder · W climbs, S descends (look away from the tower and W goes down)');}
     return;}
   // on the ladder
+  if(keys.Space&&!TW.sp){TW.sp=true;TW.climb=false;TW.cd=0.5;pl.grounded=false;pl.fallV=0;pl.vel.set(0,4.6,3.4);pl.pos.z=TW.z+TW.Lz+0.7;toast('Jumped off the ladder');return;}   // Space: kick off backwards
+  TW.sp=!!keys.Space;
   const dir=mi.f*(face>=0?1:-1);TW.cy+=dir*1.7*dt;pl.pos.y=TW.cy;pl.pos.x=TW.x;pl.pos.z=TW.z+TW.Lz+0.42;pl.vel.set(0,0,0);pl.grounded=false;pl.fallV=0;pl.stance='stand';pl.yaw=Math.PI;
   const g=groundH(pl.pos.x,pl.pos.z);
   if(pl.pos.y>=deck){pl.pos.y=deck;pl.grounded=true;pl.pos.z=TW.z+TW.D-0.65;TW.climb=false;TW.cd=0.8;}
@@ -4357,7 +4387,7 @@ function mpAttach(room,kind,role,code,why){
   NT.pend.clear();NT.seen.clear();RPS.buf=[];RPS.off=null;RPS.lastT=0;RPS.vis=false;RPS.al=false;
   MPM.on=true;MPM.guest=role==='g';MPM.hp=100;player.reserve=SPARE;
   room.presence({v:NET_V,role}).catch(()=>{});
-  ['shot','hit','ack','wild','need','roster','dhit','bhit','take','carve'].forEach(t=>room.on(t,m=>{if(m.sameTab||NT.room!==room)return;try{onMsg(t,m.data||{},m);}catch(e){console.warn('net',t,e);}},()=>{}));
+  ['shot','hit','ack','wild','need','roster','dhit','bhit','brhit','take','carve'].forEach(t=>room.on(t,m=>{if(m.sameTab||NT.room!==room)return;try{onMsg(t,m.data||{},m);}catch(e){console.warn('net',t,e);}},()=>{}));
   if(MPM.guest)clearWildlife();
   setLooks(MPM.guest);
   if(P2M)P2M.visible=false;
@@ -4446,6 +4476,7 @@ function onMsg(t,d,m){
     try{hitDeer(dr,String(d.sub),+d.dist||0);if(d.sub==='leg')legHit(dr,d.leg|0);}finally{MPM.mute=false;hitFrom=null;}}
   else if(t==='take'){resRemoteTake(d.i|0);}
   else if(t==='carve'){resRemoteCarve(d);}
+  else if(t==='brhit'){if(MPM.guest)return;const b=BEARS[d.i|0];if(!b)return;hitFrom=RPS.pos;MPM.mute=true;try{hitBear(b,String(d.sub),+d.dist||0);}finally{MPM.mute=false;hitFrom=null;}}
   else if(t==='bhit'){if(MPM.guest)return;const b=BZ[d.i|0];if(!b)return;MPM.mute=true;try{hitBird(b,+d.dist||0);}finally{MPM.mute=false;}}
 }
 let RFL=0;const P2FL={g:null,l:null};let _fgS=null,_fgT=0;
@@ -4475,7 +4506,7 @@ function netCrack(b){const dd=b.p.distanceTo(camera.position);if(!b.cr&&b.pd!=nu
 function sendWild(){NT.wq=((NT.wq|0)+1)%1000000;const D=DEER.map(d=>d.st==='dead'?[nr1(d.x),nr1(d.z),nr2(wrapA(d.yaw)),13,0,0,-1,d.rollSide]
     :[nr1(d.x),nr1(d.z),nr2(wrapA(d.yaw)),Math.max(0,DST.indexOf(d.st)),nr1(d.spd),d.sub==='look'?1:d.sub==='step'?2:0,d.limp,d.rollSide,nr2(d.nyR||0)].concat(d.st==='alert'?[Math.round(d.thx),Math.round(d.thz)]:[]));
   const B=BZ.map(b=>[nr1(b.x),nr1(b.y),nr1(b.z),nr2(b.yaw),nr2(b.pitch),nr2(b.roll),BST.indexOf(b.st),nr2(b.e||0)]);
-  const N=40;for(let o=0;o<Math.max(1,D.length);o+=N)NT.room.emit('wild',{v:deerVer,s:NT.wq,o,d:D.slice(o,o+N),b:o===0?B:null,nb:BZ.length}).catch(()=>{});}
+  const N=40;for(let o=0;o<Math.max(1,D.length);o+=N)NT.room.emit('wild',{v:deerVer,s:NT.wq,o,d:D.slice(o,o+N),b:o===0?B:null,br:o===0?bearNetList():null,nb:BZ.length}).catch(()=>{});}
 function sendRoster(){const L=DEER.map(d=>[DKINDS.indexOf(d.kind),nr3(d.s),d.coatI|0,nr1(d.x),nr1(d.z)]);const N=80,n=Math.max(1,Math.ceil(L.length/N));
   for(let k=0;k<n;k++)NT.room.emit('roster',{v:deerVer,k,n,o:k*N,d:L.slice(k*N,k*N+N),total:L.length,nb:BZ.length}).catch(()=>{});}
 function gotRoster(m){if(!NT.rost||NT.rost.v!==m.v)NT.rost={v:m.v,n:m.n,parts:{},total:m.total,nb:m.nb};NT.rost.parts[m.k]=m;
@@ -4490,6 +4521,7 @@ function applyWild(m){NT.st.wild++;if(m.s!=null){if(m.s<(NT.wlast|0)&&NT.wlast-m
   const now=performance.now();
   m.d.forEach((a,j)=>{const d=DEER[(m.o|0)+j];if(!d)return;const st=DST[a[3]]||'graze';
     d.net={x:+a[0],z:+a[1],yaw:+a[2],st,spd:+a[4]||0,sub:a[5]===1?'look':a[5]===2?'step':'eat',limp:a[6]==null?-1:a[6],rs:a[7]||1,nyR:+a[8]||0,thx:a[9],thz:a[10],at:now};});
+  if(m.br)bearNetApply(m.br);
   if(m.b&&m.b.length===BZ.length)m.b.forEach((a,i)=>{const b=BZ[i],p=b.net;const n={x:+a[0],y:+a[1],z:+a[2],yaw:+a[3],pitch:+a[4],roll:+a[5],st:BST[a[6]]||'fly',e:+a[7],at:now,vx:0,vy:0,vz:0};
     if(p){const dt=Math.max(0.05,(now-p.at)/1000);if(dt<1){n.vx=(n.x-p.x)/dt;n.vy=(n.y-p.y)/dt;n.vz=(n.z-p.z)/dt;}}
     if(!p||Math.hypot(n.x-b.x,n.z-b.z)>60){b.x=n.x;b.y=n.y;b.z=n.z;b.yaw=n.yaw;b.pitch=n.pitch;b.roll=n.roll;}b.net=n;});}
