@@ -2493,6 +2493,7 @@ function updatePlayer(dt,time){
   marine.position.copy(pl.pos); marine.rotation.y=pl.yaw;
   {let want=0;try{want=(scoped&&pl.alive&&!pl.slide)?1:0;}catch(e){}pl.scK=(pl.scK||0)+(want-(pl.scK||0))*Math.min(1,dt*14);if(Math.abs(want-pl.scK)<0.004)pl.scK=want;
    if(pl.scK>0.004){p=Object.assign({},p);raiseScoped(p,pl.scK);}}
+  try{if(TW.climb)p=climbPose(p,pl);}catch(e){}
   applyPose(p);player.pose=p;
   // HUD label
   let lab=act?ACTIONS[act.name].clip:(pl.slide?'Slide':(!pl.grounded?'Jump':null));
@@ -3460,7 +3461,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=218;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=219;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -4184,12 +4185,7 @@ function towerBuild(){
   twBox(L,[0,Yd-0.06,0],[2*D,0.12,2*D],grate,10);
   for(let f=0;f<4;f++){const sgn=f<2?1:-1,ax=f%2===0;   // kick plates
     if(ax){twBox(L,[0,Yd+0.08,sgn*D],[2*D,0.16,0.04],'#3d4144');}else twBox(L,[sgn*D,Yd+0.08,0],[0.04,0.16,2*D],'#3d4144');}
-  const RAIL='#b8941f',GAP=0.45;   // yellow safety rails
-  for(let i=0;i<=8;i++){const t=-D+i*(2*D/8);
-    for(const [px,pz] of [[t,D],[t,-D],[D,t],[-D,t]]){if(Math.abs(pz-D)<1e-6&&Math.abs(px)<GAP+0.05)continue;twBar(L,[px,Yd,pz],[px,Yd+1.1,pz],0.03,RAIL,4);}}
-  for(const h of [0.55,1.1]){
-    twBar(L,[-D,Yd+h,-D],[D,Yd+h,-D],0.028,RAIL,5);twBar(L,[-D,Yd+h,-D],[-D,Yd+h,D],0.028,RAIL,5);twBar(L,[D,Yd+h,-D],[D,Yd+h,D],0.028,RAIL,5);
-    twBar(L,[-D,Yd+h,D],[-GAP,Yd+h,D],0.028,RAIL,5);twBar(L,[GAP,Yd+h,D],[D,Yd+h,D],0.028,RAIL,5);}
+  const GAP=0.45;
   C.forEach(([sx,sz])=>{const w=twHW(Yd-3);twBar(L,[sx*D*0.98,Yd-0.1,sz*D*0.98],[sx*w,Yd-3,sz*w],0.05,twSteel);twBar(L,[sx*D,Yd-0.1,0],[sx*twHW(Yd-1.5),Yd-1.5,0],0.04,twSteel);twBar(L,[0,Yd-0.1,sz*D],[0,Yd-1.5,sz*twHW(Yd-1.5)],0.04,twSteel);});
   // weapons crate (closed for now): olive box with stencilled band and dark latches
   twBox(L,[-1.55,Yd+0.27,-1.6],[1.1,0.54,0.55],(x,y,z)=>Math.abs(y-(Yd+0.32))<0.05?'#c9b98a':'#4f5a3a',3);
@@ -4205,7 +4201,7 @@ function towerBuild(){
   for(let i=0;i<3;i++){const a=i*Math.PI*2/3;twBox(L,[Math.sin(a)*0.32,H+3.2,Math.cos(a)*0.32],[0.24,1.3,0.1],'#e1e3e3');}
   L.push(bPart(new THREE.SphereGeometry(0.11,8,6),[0,H+6.1,0],null,null,()=>'#ff3b2a'));
   // ---- ladder: vertical, just outside the +z face, rungs every 30 cm, stand-off brackets to the tower, rails run past the deck to grab
-  const Lz=TW.Lz,top=Yd+1.15;
+  const Lz=TW.Lz,top=Yd+0.15;
   for(const sx of [-0.24,0.24])twBar(L,[sx,0,Lz],[sx,top,Lz],0.025,'#b8bcbf',5);
   for(let y=0.3;y<Yd;y+=0.3)twBar(L,[-0.24,y,Lz],[0.24,y,Lz],0.016,'#b8bcbf',4);
   for(let y=1.5;y<Yd;y+=3)twBar(L,[0,y,Lz],[0,y,twHW(y)],0.03,twSteel);
@@ -4216,9 +4212,6 @@ function towerBuild(){
   const X=TW.x,Z=TW.z,Y=TW.y0,box=(x0,x1,y0,y1,z0,z1)=>colliders.push({min:V(X+x0,Y+y0,Z+z0),max:V(X+x1,Y+y1,Z+z1),on:true});
   C.forEach(([sx,sz])=>box(sx*TW.B0-0.35,sx*TW.B0+0.35,-1,4,sz*TW.B0-0.35,sz*TW.B0+0.35));
   box(-D,D,Yd-0.12,Yd,-D,D);
-  const T=0.12,RH=Yd+1.15;
-  box(-D-T,D+T,Yd,RH,-D-T,-D+T*0.4);box(-D-T,-D+T*0.4,Yd,RH,-D,D);box(D-T*0.4,D+T,Yd,RH,-D,D);
-  box(-D,-GAP,Yd,RH,D-T*0.4,D+T);box(GAP,D,Yd,RH,D-T*0.4,D+T);
   C.forEach(([sx,sz])=>{const w=twHW(Yd+1);box(sx*w-0.15,sx*w+0.15,Yd,Yd+2.2,sz*w-0.15,sz*w+0.15);});
   box(-2.12,-0.98,Yd,Yd+0.6,-1.9,-1.3);
   TW.built=true;}
@@ -4240,6 +4233,19 @@ function towerStep(pl,dt){
   else if(pl.pos.y<=g&&dir<0){pl.pos.y=g;pl.grounded=true;pl.pos.z=TW.z+TW.Lz+1.0;TW.climb=false;TW.cd=0.8;}
   if(!pl.alive)TW.climb=false;}
 window.SNIPER_TOWER={TW,build:towerBuild,step:towerStep};
+
+// ---- climbing pose: rifle slung across the back, hands grab rungs and feet stand on rungs, alternating (left hand with right foot)
+function twStepper(u){const f=Math.floor(u),q=u-f;const k=Math.min(1,Math.max(0,(q-0.5)*2));return f+k*k*(3-2*k);}
+function climbPose(p0,pl){const p=Object.assign({},p0);if(!A.rungL){anchor('rungL',marine,0,0,0);anchor('rungR',marine,0,0,0);}
+  const u=(TW.cy-TW.y0)/0.6,top=TW.y0+TW.Yd;
+  const hy=o=>Math.min(top+0.05,TW.y0+0.6*twStepper(u+o)+1.5)-pl.pos.y, fy=o=>Math.max(0,TW.y0+0.6*twStepper(u+o))-pl.pos.y;
+  A.rungL.position.set(0.19,hy(0.5),0.33);A.rungR.position.set(-0.19,hy(0),0.33);
+  p.ikL=1;p.ikR=1;p.L={rungL:1};p.R={rungR:1};p.poleL=[1,-0.6,-0.2];p.poleR=[-1,-0.6,-0.2];
+  p.legIK=1;p.lF=[0.15,fy(0),0.22];p.rF=[-0.15,fy(0.5),0.22];p.lKP=[0.25,0,1];p.rKP=[-0.25,0,1];
+  p.hipsP=[0,-0.06,0];p.hipsR=[0,0,0];p.spine=[0.08,0,0];p.chest=[0.04,0,0];p.neck=[-0.15,0,0];p.head=[-0.2,0,0];
+  p.lFoot=[0,0,0];p.rFoot=[0,0,0];
+  p.gunP=[0.05,0.05,-0.42];p.gunR=[-1.5,0,0.55];p.flash=0;p.mag=0;p.magHide=0;
+  return p;}
 
 /* ================= 1v1 multiplayer =================
    Transport: a WebRTC data channel between the two browsers (no server; the players swap one code each way).
