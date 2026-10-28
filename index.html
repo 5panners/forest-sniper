@@ -1061,7 +1061,7 @@ function waterLevelAt(x,z){if(lakeE(x,z)<1.02)return LW;return streamWater(x,z);
 
 /* ---------------- rocks (data first: the summit tor decides the spawn) ---------------- */
 const ROCKS=[];   // {x,z,y,w,h,d,ry,moss,col}
-const TWPOS={x:204,z:-167};const SILO_POS={x:-48,z:368};   // missile silo: open meadow near the southern edge
+const TWPOS={x:204,z:-167};const SILO_POS={x:-48,z:368};const SILO_SITES=[SILO_POS];   // every silo on the map: more sites get added here   // missile silo: open meadow near the southern edge
    // comms tower site: grid 204 E / 167 N
 let SUMMIT={x:SUM0.x,z:SUM0.z,h:-1e9};
 for(let dz=-70;dz<=70;dz+=5)for(let dx=-70;dx<=70;dx+=5){const h=groundH(SUM0.x+dx,SUM0.z+dz);if(h>SUMMIT.h)SUMMIT={x:SUM0.x+dx,z:SUM0.z+dz,h};}
@@ -3227,6 +3227,7 @@ mapCv.addEventListener('click',e=>{if(!mapOpen)return;const r=mapCv.getBoundingC
 function drawMap(){if(!mapBase)buildMap();const N=mapCv.width;mctx.putImageData(mapBase,0,0);const S=v=>(v+FE)/(FE*2)*N;
   if(FIREWALL<9000){mctx.save();mctx.strokeStyle='rgba(255,90,20,0.95)';mctx.lineWidth=5;mctx.shadowColor='#ff5a14';mctx.shadowBlur=10;mctx.beginPath();mctx.arc(S(FCX),S(FCZ),FIRE.R/(FE*2)*N,0,PI*2);mctx.stroke();mctx.restore();}
   if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));if($('optDeerMap').checked)BEARS.forEach(b=>drawBearMark(mctx,S(b.x),S(b.z),b,0.9,0));
+  SILO_SITES.forEach(q=>drawSiloMark(mctx,S(q.x),S(q.z),1,0,true));
   const p=player.pos;mctx.save();mctx.translate(S(p.x),S(p.z));mctx.rotate(-camYaw+PI);mctx.fillStyle='#ffcc4a';mctx.strokeStyle='#000';mctx.lineWidth=1.5;mctx.beginPath();mctx.moveTo(0,-9);mctx.lineTo(6,7);mctx.lineTo(0,3);mctx.lineTo(-6,7);mctx.closePath();mctx.fill();mctx.stroke();mctx.restore();
   {const x=S(P1_SPAWN.x),y=S(P1_SPAWN.z);mctx.strokeStyle='#4ab0ff';mctx.lineWidth=2;mctx.beginPath();mctx.arc(x,y,7,0,PI*2);mctx.stroke();mctx.fillStyle='#4ab0ff';mctx.font='600 11px "IBM Plex Mono", monospace';mctx.fillText('P1',x+9,y+4);}
   {const x=S(P2_SPAWN.x),y=S(P2_SPAWN.z);mctx.strokeStyle='#ff5a4a';mctx.lineWidth=2;mctx.beginPath();mctx.arc(x,y,7,0,PI*2);mctx.stroke();mctx.fillStyle='#ff5a4a';mctx.font='600 11px "IBM Plex Mono", monospace';mctx.fillText('P2',x+9,y+4);}
@@ -3349,12 +3350,18 @@ function drawMini(){mini.parentNode.style.display=miniOn?'':'none';if(!miniOn)re
   mx.translate(W/2,W/2);mx.rotate(th);mx.scale(sc,sc);mx.drawImage(baseCv,-(p.x+FE)*ppm,-(p.z+FE)*ppm);
   if(FIREWALL<9000){mx.save();mx.strokeStyle='rgba(255,90,20,0.95)';mx.lineWidth=5/sc;mx.shadowColor='#ff5a14';mx.shadowBlur=8;mx.beginPath();mx.arc((FCX-p.x)*ppm,(FCZ-p.z)*ppm,FIRE.R*ppm,0,PI*2);mx.stroke();mx.restore();}
   if($('optDeerMap').checked){const k=1/sc;DEER.forEach(d=>drawDeerMark(mx,(d.x-p.x)*ppm,(d.z-p.z)*ppm,d,k*1.2,th));BEARS.forEach(b=>drawBearMark(mx,(b.x-p.x)*ppm,(b.z-p.z)*ppm,b,k*1.5,th));}
+  SILO_SITES.forEach(q=>drawSiloMark(mx,(q.x-p.x)*ppm,(q.z-p.z)*ppm,1/sc*1.5,th,false));
   mx.restore();
   // view cone and the player
   const hf=2*Math.atan(Math.tan(camera.fov*PI/360)*camera.aspect),cone=W*0.2;mx.fillStyle='rgba(255,204,74,0.2)';mx.beginPath();mx.moveTo(W/2,W/2);mx.arc(W/2,W/2,cone,-HP-hf/2,-HP+hf/2);mx.closePath();mx.fill();
   mx.fillStyle='#ffcc4a';mx.strokeStyle='#000';mx.lineWidth=2.5;mx.beginPath();mx.moveTo(W/2,W/2-16);mx.lineTo(W/2+10,W/2+12);mx.lineTo(W/2,W/2+6);mx.lineTo(W/2-10,W/2+12);mx.closePath();mx.fill();mx.stroke();
   mx.strokeStyle='rgba(255,255,255,0.35)';mx.lineWidth=3;mx.beginPath();mx.arc(W/2,W/2,W/2-3,0,PI*2);mx.stroke();
   mx.fillStyle='#ff6a4a';mx.font='700 26px "IBM Plex Mono", monospace';mx.textAlign='center';mx.textBaseline='middle';mx.fillText('N',W/2+Math.sin(th)*(W/2-22),W/2-Math.cos(th)*(W/2-22));}
+function drawSiloMark(c,x,y,k,th,lab){const used=typeof SILO!=='undefined'&&(SILO.st==='gone'||SILO.st==='broken');c.save();c.translate(x,y);c.rotate(-th);c.scale(k,k);c.lineWidth=2.5;
+  c.fillStyle=used?'#4a4a48':'#2a2c2a';c.strokeStyle=used?'#9a9a94':'#ff9a2a';c.beginPath();c.arc(0,0,8,0,PI*2);c.fill();c.stroke();
+  c.strokeStyle=used?'#9a9a94':'#ffd24a';c.lineWidth=2;c.beginPath();c.moveTo(0,-5);c.lineTo(0,5);c.moveTo(-5,0);c.lineTo(5,0);c.stroke();   // hatch cross
+  if(lab){c.fillStyle='#ffb04a';c.font='600 11px "IBM Plex Mono", monospace';c.textAlign='left';c.textBaseline='alphabetic';c.fillText('SILO',11,4);}
+  c.restore();}
 function drawDeerMark(c,x,y,d,k,th){if(d.carved)return;c.save();c.translate(x,y);c.rotate(-th);c.scale(k,k);c.lineWidth=2.5;
   if(d.st==='dead'){c.strokeStyle='#e8e2d4';c.beginPath();c.moveTo(-6,-6);c.lineTo(6,6);c.moveTo(6,-6);c.lineTo(-6,6);c.stroke();}
   else if(d.sex==='m'){c.fillStyle=d.wound?'#ff5a3c':'#5a3420';c.strokeStyle='#f3e6c8';c.beginPath();c.moveTo(0,-8);c.lineTo(7,6);c.lineTo(-7,6);c.closePath();c.fill();c.stroke();}
@@ -3469,7 +3476,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=263;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=265;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -4611,19 +4618,19 @@ function towerStep(pl,dt){
   else if(pl.pos.y<=g&&dir<0){pl.pos.y=g;pl.grounded=true;pl.pos.z=TW.z+TW.Lz+1.0;TW.climb=false;TW.cd=0.8;}
   if(!pl.alive)TW.climb=false;}
 window.SNIPER_TOWER={TW,build:towerBuild,step:towerStep};
-// ================= ICBM silo: reinforced concrete pad and collar sunk into an open meadow, a 20 m shaft, a sliding blast hatch and a launchable missile =================
+// ================= ICBM silo (compact: everything is modelled at full size and built at scale K): reinforced concrete pad and collar sunk into an open meadow, a deep shaft, a sliding blast hatch and a launchable missile =================
 // The shaft is seen through the ground with a stencil: the opening writes a mask, then the shaft walls draw only inside it (ignoring the terrain's depth).
 // Walk to the launch console beside the pad and press L: klaxon, hatch rolls back, ignition, the missile climbs out on a column of smoke and pitches over.
-const SILO={built:false,x:SILO_POS.x,z:SILO_POS.z,y0:0,R:2.15,D:20,hx:0,st:'idle',t:0,mis:null,hatch:null,hcol:null,blk:null,beac:[],tip:null,lt:0,v:0,pos:null,dir:null,yaw:0.7,flame:null,glow:null};
+const SILO={built:false,x:SILO_POS.x,z:SILO_POS.z,K:0.55,y0:0,R:2.15,D:20,hx:0,st:'idle',t:0,mis:null,hatch:null,hcol:null,blk:null,beac:[],tip:null,lt:0,v:0,pos:null,dir:null,yaw:0.7,flame:null,glow:null};
 const SILO_MAT=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:0.92,metalness:0});
 const SILO_MIS=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.6,metalness:0.1});
 const SILO_SMOKE=new THREE.MeshLambertMaterial({color:0xd9d6cf,transparent:true,opacity:0.62,depthWrite:false});
 function siloConc(x,y,z){if(y<-0.05)return '#85827b';const h=bHash(Math.floor((x+40)/3.05),7,Math.floor((z+40)/3.05));return h<0.33?'#9d9a92':h<0.66?'#a5a299':'#97948c';}   // poured in 3 m bays
 function siloBox(L,x0,x1,y0,y1,z0,z1,col,seg){L.push(bPart(new THREE.BoxGeometry(x1-x0,y1-y0,z1-z0,seg||1,1,seg||1),[(x0+x1)/2,(y0+y1)/2,(z0+z1)/2],null,null,typeof col==='function'?col:()=>col));}
 function siloBuild(){
-  const S=SILO,X0=-7.5,X1=10.8,Z0=-7,Z1=7,h=2.4;let hi=-1e9,lo=1e9;
-  for(let x=X0;x<=X1;x+=1.5)for(let z=Z0;z<=Z1;z+=1.5){const g=groundH(S.x+x,S.z+z);hi=Math.max(hi,g);lo=Math.min(lo,g);}
-  S.y0=hi+0.12;const deep=-(S.y0-lo)-0.9;
+  const S=SILO,K=S.K,X0=-7.5,X1=10.8,Z0=-7,Z1=7,h=2.4;let hi=-1e9,lo=1e9;
+  for(let x=X0;x<=X1;x+=1)for(let z=Z0;z<=Z1;z+=1){const g=groundH(S.x+x*K,S.z+z*K);hi=Math.max(hi,g);lo=Math.min(lo,g);}
+  S.y0=hi+0.1;const deep=(-(S.y0-lo)-0.6)/K;
   const L=[];
   // ---- pad: a slab round a square hole (the collar hides the corners), its skirt runs down into the ground so no edge floats
   siloBox(L,X0,-h,deep,0,Z0,Z1,siloConc,4);siloBox(L,h,X1,deep,0,Z0,Z1,siloConc,4);siloBox(L,-h,h,deep,0,Z0,-h,siloConc,2);siloBox(L,-h,h,deep,0,h,Z1,siloConc,2);
@@ -4634,31 +4641,32 @@ function siloBuild(){
   for(const sz of [-2.05,2.05]){siloBox(L,3.0,10.4,0,0.45,sz-0.28,sz+0.28,siloConc);siloBox(L,3.0,10.4,0.45,0.55,sz-0.09,sz+0.09,'#5b5f61');}
   siloBox(L,10.4,10.8,0,0.9,-2.5,2.5,'#c9a227');
   // ---- launch console beside the pad: pedestal, sloped panel, green screen, keyed switches
-  {const cx=-5.4,cz=4.6;siloBox(L,cx-0.45,cx+0.45,0,1.0,cz-0.3,cz+0.3,'#4c5a3f');
-   const g=new THREE.BoxGeometry(1.0,0.12,0.7);g.rotateX(-0.6);L.push(bPart(g,[cx,1.1,cz-0.05],null,null,(x,y,z)=>{const lx=x-cx;return (Math.abs(lx+0.15)<0.22&&y>1.08)?'#3df07a':(Math.abs(lx-0.3)<0.08&&y>1.1)?'#d12a1f':'#39432f';}));
+  {const cx=-5.4*K,cz=4.6*K,C=[];siloBox(C,-0.45,0.45,0,1.0,-0.3,0.3,'#4c5a3f');   // the console stays full size so it is at hand height
+   const g=new THREE.BoxGeometry(1.0,0.12,0.7);g.rotateX(-0.6);C.push(bPart(g,[0,1.1,-0.05],null,null,(x,y,z)=>(Math.abs(x+0.15)<0.22&&y>1.08)?'#3df07a':(Math.abs(x-0.3)<0.08&&y>1.1)?'#d12a1f':'#39432f'));
+   const cm=new THREE.Mesh(bMerge(C),SILO_MAT);cm.castShadow=true;cm.position.set(S.x+cx,S.y0,S.z+cz);scene.add(cm);try{MAP.rayMeshes.push(cm);}catch(e){}
    S.con={x:S.x+cx,z:S.z+cz};}
   // ---- beacon posts at two corners
   for(const [bx,bz] of [[X0+0.4,Z0+0.4],[X1-0.6,Z1-0.4]])siloBox(L,bx-0.08,bx+0.08,0,2.4,bz-0.08,bz+0.08,'#c9a227');
-  const mesh=new THREE.Mesh(bMerge(L),SILO_MAT);mesh.castShadow=true;mesh.receiveShadow=true;mesh.position.set(S.x,S.y0,S.z);scene.add(mesh);mesh.updateMatrixWorld(true);
+  const mesh=new THREE.Mesh(bMerge(L),SILO_MAT);mesh.castShadow=true;mesh.receiveShadow=true;mesh.position.set(S.x,S.y0,S.z);mesh.scale.setScalar(K);scene.add(mesh);mesh.updateMatrixWorld(true);
   try{MAP.rayMeshes.push(mesh);}catch(e){}
-  for(const [bx,bz] of [[X0+0.4,Z0+0.4],[X1-0.6,Z1-0.4]]){const m=new THREE.Mesh(new THREE.SphereGeometry(0.17,10,6,0,Math.PI*2,0,Math.PI/2),new THREE.MeshBasicMaterial({color:0x5a2a10}));m.position.set(S.x+bx,S.y0+2.4,S.z+bz);scene.add(m);S.beac.push(m);}
+  for(const [bx,bz] of [[X0+0.4,Z0+0.4],[X1-0.6,Z1-0.4]]){const m=new THREE.Mesh(new THREE.SphereGeometry(0.17,10,6,0,Math.PI*2,0,Math.PI/2),new THREE.MeshBasicMaterial({color:0x5a2a10}));m.position.set(S.x+bx*K,S.y0+2.4*K,S.z+bz*K);scene.add(m);S.beac.push(m);}
   // ---- the shaft, seen only through the opening: mask, then walls and floor that ignore the terrain's depth inside the mask
   const R=S.R,D=S.D;
   const mask=new THREE.Mesh(new THREE.CircleGeometry(R,32).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false,stencilWrite:true,stencilRef:1,stencilFunc:THREE.AlwaysStencilFunc,stencilZPass:THREE.ReplaceStencilOp}));
-  mask.position.set(S.x,S.y0+0.552,S.z);mask.renderOrder=30;scene.add(mask);
+  mask.position.set(S.x,S.y0+0.552*K,S.z);mask.scale.setScalar(K);mask.renderOrder=30;scene.add(mask);
   const stOpt=(side)=>({vertexColors:true,flatShading:true,roughness:0.95,metalness:0,side,depthFunc:THREE.AlwaysDepth,stencilWrite:true,stencilRef:1,stencilFunc:THREE.EqualStencilFunc,stencilFail:THREE.KeepStencilOp,stencilZFail:THREE.KeepStencilOp,stencilZPass:THREE.KeepStencilOp});
   {const g=new THREE.CylinderGeometry(R,R,D+0.55,28,Math.round(D/1.5),true);
    const wall=new THREE.Mesh(bMerge([bPart(g,[0,(0.55-D)/2,0],null,null,(x,y,z)=>{const a=Math.atan2(z,x),k=((a/(Math.PI*2))*28+28)%7;const ring=Math.abs(((y+40)%2.5)-1.25)>1.15;
      if(k<0.5)return '#3f4447';                                  // steel guide strips
      if(ring&&Math.floor((a+Math.PI)*2)%3===0&&y<-1.5)return '#ff5a3a';   // red lamps at every ring
      return ring?'#5e5c57':y>-1.2?'#8d8a83':(y<-14?'#4f4d49':'#6e6b65');})]),new THREE.MeshStandardMaterial(stOpt(THREE.BackSide)));
-   wall.position.set(S.x,S.y0,S.z);wall.renderOrder=31;scene.add(wall);}
+   wall.position.set(S.x,S.y0,S.z);wall.scale.setScalar(K);wall.renderOrder=31;scene.add(wall);}
   {const g=new THREE.CircleGeometry(R,28).rotateX(-Math.PI/2);
    const fl=new THREE.Mesh(bMerge([bPart(g,[0,-D,0],null,null,(x,y,z)=>((Math.floor((x+9)*2)+Math.floor((z+9)*2))%2?'#2c2e2f':'#3a3c3d'))]),new THREE.MeshStandardMaterial(stOpt(THREE.FrontSide)));
-   fl.position.set(S.x,S.y0,S.z);fl.renderOrder=31;scene.add(fl);}
+   fl.position.set(S.x,S.y0,S.z);fl.scale.setScalar(K);fl.renderOrder=31;scene.add(fl);}
   {const I=[];for(let i=0;i<4;i++){const a=i*Math.PI/2+Math.PI/4;siloBox(I,Math.cos(a)*1.95-0.09,Math.cos(a)*1.95+0.09,-D,-0.3,Math.sin(a)*1.95-0.09,Math.sin(a)*1.95+0.09,'#4a4f52');}
    for(let y=-D+1;y<-1;y+=4.5){const g=new THREE.TorusGeometry(R-0.06,0.06,4,28);g.rotateX(Math.PI/2);I.push(bPart(g,[0,y,0],null,null,()=>'#3b3f41'));}
-   const m=new THREE.Mesh(bMerge(I),SILO_MAT);m.position.set(S.x,S.y0,S.z);m.renderOrder=32;scene.add(m);}
+   const m=new THREE.Mesh(bMerge(I),SILO_MAT);m.position.set(S.x,S.y0,S.z);m.scale.setScalar(K);m.renderOrder=32;scene.add(m);}
   // ---- the missile: three stages, interstage bands, roll pattern, dark re-entry shroud, nozzle bells; origin at the base
   {const M=[],body='#e6e6df';
    const cyl=(r0,r1,y0,y1,col,seg)=>{const g=new THREE.CylinderGeometry(r1,r0,y1-y0,seg||20,1);M.push(bPart(g,[0,(y0+y1)/2,0],null,null,typeof col==='function'?col:()=>col));};
@@ -4671,26 +4679,26 @@ function siloBuild(){
    const flame=new THREE.Mesh(new THREE.ConeGeometry(0.75,6,12,1,true).translate(0,-3,0).rotateX(Math.PI),new THREE.MeshBasicMaterial({color:0xffb347,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
    flame.rotation.x=Math.PI;flame.position.y=-0.1;flame.visible=false;flame.renderOrder=33;grp.add(flame);
    let glow=null;try{glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffa040,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));glow.scale.set(14,14,1);glow.position.y=-1.5;glow.visible=false;glow.renderOrder=33;grp.add(glow);}catch(e){}
-   scene.add(grp);S.mis=grp;S.flame=flame;S.glow=glow;}
+   grp.scale.setScalar(K);scene.add(grp);S.mis=grp;S.flame=flame;S.glow=glow;}
   // ---- blast hatch: a thick armoured slab with a hazard border, lifting lugs and a centre plate; it rolls out along the rails
   {const H=[],hz=(x,y,z)=>{const e=Math.max(Math.abs(x),Math.abs(z));if(y>0.8&&e>2.35){return Math.floor((x+z+20)*1.4)%2?'#e0b11e':'#1d1d1b';}if(y>0.8&&Math.hypot(x,z)<0.9)return '#55595b';return y>0.8?'#6a6d64':'#585b54';};
    H.push(bPart(new THREE.BoxGeometry(5.4,0.85,5.4,4,1,4),[0,0.425,0],null,null,hz));
    for(const [lx,lz] of [[-1.9,-1.9],[1.9,-1.9],[-1.9,1.9],[1.9,1.9]])H.push(bPart(new THREE.TorusGeometry(0.18,0.05,4,10),[lx,0.92,lz],null,null,()=>'#3b3f41'));
    for(const sz of [-2.05,2.05])H.push(bPart(new THREE.BoxGeometry(5.0,0.12,0.3),[0,-0.04,sz],null,null,()=>'#3b3f41'));
-   const hm=new THREE.Mesh(bMerge(H),SILO_MAT);hm.castShadow=true;hm.receiveShadow=true;hm.position.set(S.x,S.y0+0.55,S.z);scene.add(hm);S.hatch=hm;try{MAP.rayMeshes.push(hm);}catch(e){}}
+   const hm=new THREE.Mesh(bMerge(H),SILO_MAT);hm.castShadow=true;hm.receiveShadow=true;hm.position.set(S.x,S.y0+0.55*K,S.z);hm.scale.setScalar(K);scene.add(hm);S.hatch=hm;try{MAP.rayMeshes.push(hm);}catch(e){}}
   // ---- colliders: the pad's slabs, the collar ring (four boxes), the hatch, and a tall blocker over the open shaft
-  const box=(x0,x1,y0,y1,z0,z1)=>{const c={min:V(S.x+x0,S.y0+y0,S.z+z0),max:V(S.x+x1,S.y0+y1,S.z+z1),on:true};colliders.push(c);return c;};
+  const box=(x0,x1,y0,y1,z0,z1)=>{const c={min:V(S.x+x0*K,S.y0+y0*K,S.z+z0*K),max:V(S.x+x1*K,S.y0+y1*K,S.z+z1*K),on:true};colliders.push(c);return c;};
   box(X0,-h,deep,0,Z0,Z1);box(h,X1,deep,0,Z0,Z1);box(-h,h,deep,0,Z0,-h);box(-h,h,deep,0,h,Z1);
   box(-3.45,3.45,0,0.62,2.15,3.45);box(-3.45,3.45,0,0.62,-3.45,-2.15);box(-3.45,-2.15,0,0.62,-2.15,2.15);box(2.15,3.45,0,0.62,-2.15,2.15);
-  S.hcol=box(-2.7,2.7,0.55,1.4,-2.7,2.7);S.blk=box(-2.2,2.2,-30,3,-2.2,2.2);S.blk.on=false;
-  try{addPillar({x:S.x,z:S.z,r:3.45,y0:S.y0-30,y1:S.y0+0.62,kind:'rock'});}catch(e){}   // keeps deer and bears off the collar; bullets stop on it
-  try{for(const n of RES_NODES)if(Math.abs(n.x-S.x-1.6)<10&&Math.abs(n.z-S.z)<8.5&&!n.got){resSetGot(n,true);n.silo=1;}}catch(e){}
+  S.hcol=box(-2.7,2.7,0.55,1.4,-2.7,2.7);S.blk=box(-2.2,2.2,-30,3,-2.2,2.2);S.blk.max.y=S.y0+3.2;S.blk.on=false;   // tall enough that nobody can jump onto it
+  try{addPillar({x:S.x,z:S.z,r:3.45*K,y0:S.y0-30,y1:S.y0+0.62*K,kind:'rock'});}catch(e){}   // keeps deer and bears off the collar; bullets stop on it
+  try{for(const n of RES_NODES)if(Math.abs(n.x-S.x-1.6*K)<10*K+1&&Math.abs(n.z-S.z)<8.5*K+1&&!n.got){resSetGot(n,true);n.silo=1;}}catch(e){}
   {const st=document.createElement('style');st.textContent='#siloTip{position:fixed;left:50%;bottom:calc(120px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:4;pointer-events:none;padding:7px 14px;border-radius:999px;background:rgba(30,10,8,.74);border:1px solid rgba(255,90,60,.5);color:#ffd9cf;font:600 13px/1.2 "IBM Plex Mono",monospace;letter-spacing:.04em}';document.head.appendChild(st);
    const d=document.createElement('div');d.id='siloTip';d.hidden=true;document.body.appendChild(d);S.tip=d;}
   siloPose();S.built=true;}
 function siloPose(){const S=SILO;
-  S.hatch.position.x=S.x+S.hx;S.hatch.updateMatrixWorld(true);S.hcol.min.x=S.x+S.hx-2.7;S.hcol.max.x=S.x+S.hx+2.7;S.blk.on=S.hx>0.4;
-  if(S.st==='idle'||S.st==='count'){S.mis.position.set(S.x,S.y0-19.4,S.z);S.mis.quaternion.identity();}}
+  S.hatch.position.x=S.x+S.hx*S.K;S.hatch.updateMatrixWorld(true);S.hcol.min.x=S.x+(S.hx-2.7)*S.K;S.hcol.max.x=S.x+(S.hx+2.7)*S.K;S.blk.on=S.hx>0.4;
+  if(S.st==='idle'||S.st==='count'){S.mis.position.set(S.x,S.y0-19.4*S.K,S.z);S.mis.quaternion.identity();}}
 // ---- sounds: klaxon at the pad, the hatch grinding back, and the launch roar
 function siloKlaxon(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,700);if(!c)return;for(let i=0;i<14;i++)tn(c,c.t0+i*0.5,i%2?520:700,0,0.42,0.32,'square');}
 function siloGrind(){const c=sp3(SILO.x,SILO.y0+1,SILO.z,500);if(!c)return;nz(c,c.t0,5,160,0.8,1.2,'lowpass');nz(c,c.t0,5,900,5,0.18);}
@@ -4717,7 +4725,7 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
   if(S.st==='count'){
     if(S.t>1.5&&S.sfx<1){S.sfx=1;try{siloGrind();}catch(e){}toast('Silo hatch opening');}
     const u=Math.max(0,Math.min(1,(S.t-1.5)/5));S.hx=6.2*u*u*(3-2*u);siloPose();
-    if(S.t>=8){S.st='fly';S.ft=0;S.v=0;S.bacc=0;S.tacc=0;S.pos=new THREE.Vector3(S.x,S.y0-19.4,S.z);S.dir=new THREE.Vector3(0,1,0);S.flame.visible=true;if(S.glow)S.glow.visible=true;try{siloRoar();}catch(e){}toast('Ignition!');}
+    if(S.t>=8){S.st='fly';S.ft=0;S.v=0;S.bacc=0;S.tacc=0;S.pos=new THREE.Vector3(S.x,S.y0-19.4*S.K,S.z);S.dir=new THREE.Vector3(0,1,0);S.flame.visible=true;if(S.glow)S.glow.visible=true;try{siloRoar();}catch(e){}toast('Ignition!');}
     return;}
   // flight: slow climb out of the tube, then hard acceleration and a pitch-over to the north-east
   S.ft+=dt;const f=S.ft;
@@ -4726,12 +4734,12 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
   S.pos.addScaledVector(S.dir,S.v*dt);S.mis.position.copy(S.pos);S.mis.quaternion.setFromUnitVectors(V(0,1,0),S.dir);
   S.flame.scale.set(0.9+Math.random()*0.25,(f<1.6?0.6:1.2)+Math.random()*0.35,0.9+Math.random()*0.25);
   // smoke: a billow out of the shaft at ignition, then a thick trail behind the missile
-  const ex=S.pos.clone().addScaledVector(S.dir,-0.6);
+  const ex=S.pos.clone().addScaledVector(S.dir,-0.6*S.K);
   // (rate-limited per second, not per frame, so a fast machine does not drown in puffs)
-  if(f<2.5){S.bacc=(S.bacc||0)+dt*36;while(S.bacc>=1){S.bacc--;const a=Math.random()*Math.PI*2,sp=3+Math.random()*5;emit(gPuff,SILO_SMOKE,V(S.x+Math.cos(a)*1.8,S.y0+0.8,S.z+Math.sin(a)*1.8),V(Math.cos(a)*sp,1.5+Math.random()*3,Math.sin(a)*sp),5+Math.random()*3,{s:1.5,grow:0.9,drag:0.6});}}
-  if(f<28&&ex.y>S.y0-2){S.tacc=(S.tacc||0)+dt*(f<6?45:32);while(S.tacc>=1){S.tacc--;const p=ex.clone().addScaledVector(S.dir,-Math.random()*S.v*dt);emit(gPuff,SILO_SMOKE,p,rv(1.6).clone().addScaledVector(S.dir,-3),6.5+Math.random()*3,{s:1.4+Math.min(3,f*0.3),grow:0.8,drag:0.4});}}
+  if(f<2.5){S.bacc=(S.bacc||0)+dt*36;while(S.bacc>=1){S.bacc--;const a=Math.random()*Math.PI*2,sp=3+Math.random()*5;emit(gPuff,SILO_SMOKE,V(S.x+Math.cos(a)*1.8*S.K,S.y0+0.5,S.z+Math.sin(a)*1.8*S.K),V(Math.cos(a)*sp*0.7,1.2+Math.random()*2.5,Math.sin(a)*sp*0.7),4+Math.random()*3,{s:1.0,grow:0.9,drag:0.6});}}
+  if(f<28&&ex.y>S.y0-2){S.tacc=(S.tacc||0)+dt*(f<6?45:32);while(S.tacc>=1){S.tacc--;const p=ex.clone().addScaledVector(S.dir,-Math.random()*S.v*dt);emit(gPuff,SILO_SMOKE,p,rv(1.6).clone().addScaledVector(S.dir,-3),6.5+Math.random()*3,{s:0.9+Math.min(2.2,f*0.22),grow:0.8,drag:0.4});}}
   // the blast burns anyone standing at the pad during lift-off
-  if(f<6&&player.alive&&MPM.hp>0&&Math.hypot(player.pos.x-S.x,player.pos.z-S.z)<10&&player.pos.y<S.y0+8){
+  if(f<6&&player.alive&&MPM.hp>0&&Math.hypot(player.pos.x-S.x,player.pos.z-S.z)<7&&player.pos.y<S.y0+6){
     MPM.hp-=55*dt;try{EDGE.burn=0.35;EDGE.k=1;}catch(e){}if(!S.burnT||now-S.burnT>1500){S.burnT=now;toast('Caught in the rocket blast!');}
     if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed by the missile launch');}}
   if(f>45||S.pos.y>S.y0+9000){S.st='gone';S.mis.visible=false;S.flame.visible=false;if(S.glow)S.glow.visible=false;}}
