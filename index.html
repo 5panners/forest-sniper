@@ -3366,6 +3366,7 @@ addEventListener('keydown',e=>{
     case 'Escape': if(fallback||(MPM.on&&!locked))setPlaying(false); break;
     case 'KeyW': wTap(); break;
     case 'KeyV': viewFP=!viewFP; break;
+    case 'Backquote': godSet(!GOD.on); break;
     case 'KeyM': soundOn=!soundOn;toast(soundOn?'Sound on':'Sound muted'); break;
     case 'KeyB': setHB(!hbShown);toast(hbShown?'Hit boxes shown · red head, yellow torso, blue limbs':'Hit boxes hidden'); break;
     case 'KeyE': setZero(zeroM+50);toast('Zero '+zeroM+' m'); break;
@@ -3391,7 +3392,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;});
 
-const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (bolt action)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Select weapon','1 rifle · 2 AT4 (X swaps)'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Switch rifle / AT4','X'],['Reload (rifle or AT4)','R'],['Launch the missile (at the silo console)','L'],['Shadows','O'],['Mute','M']];
+const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (bolt action)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Select weapon','1 rifle · 2 AT4 (X swaps)'],['God mode (dev)','` backquote'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Switch rifle / AT4','X'],['Reload (rifle or AT4)','R'],['Launch the missile (at the silo console)','L'],['Shadows','O'],['Mute','M']];
 $('keyList').innerHTML=KEYS.map(k=>`<div><kbd>${k[1]}</kbd><span>${k[0]}</span></div>`).join('');
 
 /* ---------------- menu tabs + graphics options ---------------- */
@@ -3577,10 +3578,10 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=282;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=284;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
-  netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
+  netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);
   stepBolt(dt);stepBullets(dt);stepParts(dt);stepBrass(dt);
   stepDeer(dt);stepHerds(dt);stepBirds(dt,clockT);stepMarks(dt);if(fallFX)fallFX.step(dt);_rdt=dt;
   updateCamera(dt);updateLOD();updListener();
@@ -3926,7 +3927,7 @@ ${sp([['Damage / hit',GAME.uDmg+' hp'],['Rate of fire',GAME.uRpm+' rpm'],['Burst
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:15,pk762:10,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:1,bWalk:1.2,bRear:14,bAtk:1,bTrig:1,bFight:60,bChance:60,bSense:40,bChSpd:8,bReach:2.8,bDmg:35,bRate:1.6,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10};
+const GAME_DEF={siloAcc:0.45,siloShake:1,siloVol:1,at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:15,pk762:10,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:1,bWalk:1.2,bRear:14,bAtk:1,bTrig:1,bFight:60,bChance:60,bSense:40,bChSpd:8,bReach:2.8,bDmg:35,bRate:1.6,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 function balApply(){V0=GAME.bV0;DRAG=GAME.bDrag;GBUL=9.81*GAME.bDrop;try{setZero(zeroM);}catch(e){}}balApply();
 function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw,CCw)+0.6;}
@@ -3937,7 +3938,8 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
   const css=document.createElement('style');css.textContent=`#paneGame .gr{display:grid;grid-template-columns:230px 1fr 64px;gap:10px;align-items:center;margin:5px 0;font-size:13px}#paneGame .gr input[type=range]{width:100%}#paneGame .gr output{font-variant-numeric:tabular-nums;opacity:.85;text-align:right}#paneGame button{margin:10px 8px 0 0}`;document.head.appendChild(css);
   const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabGame';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','paneGame');tb.textContent='Gameplay';tabs.appendChild(tb);
   const pn=document.createElement('div');pn.id='paneGame';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabGame');pn.hidden=true;paneMp.after(pn);
-  const ROWS=[['sec','Stamina boost (double-tap W)'],['stStart','Starting stamina (%)',0,100,1,0],['stGain','Stamina per Magic Mushroom cluster (%)',0,25,1,0],['mHeal','Health per Magic Mushroom (heals over time)',0,60,1,0],['stDrain','Seconds of boost from a full bar',2,60,1,0],['stMult','Boost speed multiplier',1,3,0.1,1],
+  const ROWS=[['sec','ICBM launch'],['siloAcc','Missile acceleration (1 = original, lower = slower climb)',0.1,2,0.05,2],['siloShake','Screen shake near a launch',0,3,0.1,1],['siloVol','Launch loudness',0,4,0.1,1],
+    ['sec','Stamina boost (double-tap W)'],['stStart','Starting stamina (%)',0,100,1,0],['stGain','Stamina per Magic Mushroom cluster (%)',0,25,1,0],['mHeal','Health per Magic Mushroom (heals over time)',0,60,1,0],['stDrain','Seconds of boost from a full bar',2,60,1,0],['stMult','Boost speed multiplier',1,3,0.1,1],
     ['sec','Butchering animals'],['bMeat','Health per meat from a butchered animal (%)',0,10,0.5,1],['bInst','Health instantly (1) or over time (0)',0,1,1,0],
     ['sec','Falling'],['fallOn','Fall damage (1 = on, 0 = off)',0,1,1,0],['fallSafe','Safe drop height (m)',1,30,0.5,1],['fallDmg','Damage per metre above that (hp)',1,50,1,0],
     ];
@@ -4369,6 +4371,20 @@ const EQB=(()=>{
   function pop(id){const el=$e(id);if(!el)return;el.classList.remove('hl');void el.offsetWidth;el.classList.add('hl');bar.classList.add('pop');setTimeout(()=>el.classList.remove('hl'),650);}
   return {ui,pop};})();
 function eqStep(){EQB.ui();}
+
+// ================= god mode (development): invulnerable, no gravity, fly anywhere. Toggle with ` (backquote) =================
+const GOD={on:false,p:null};
+(function(){const st=document.createElement('style');st.textContent='#godChip{position:fixed;left:50%;top:calc(52px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:4;display:none;pointer-events:none;font:700 12px/1.4 "IBM Plex Mono",monospace;letter-spacing:.08em;color:#1a1408;background:#ffc93c;border-radius:8px;padding:5px 12px;box-shadow:0 4px 14px rgba(0,0,0,.4);white-space:nowrap}#godChip i{font-style:normal;font-weight:500;opacity:.75;margin-left:8px}';document.head.appendChild(st);
+  const c=document.createElement('div');c.id='godChip';c.innerHTML='GOD MODE<i>WASD fly · Space up · Ctrl down · Shift fast · ` exit</i>';document.body.appendChild(c);})();
+function godSet(on){GOD.on=on;if(on){GOD.p=player.pos.clone();player.alive=true;}$('godChip').style.display=on?'block':'none';toast(on?'God mode on · invulnerable, fly with WASD, Space / Ctrl for up / down, Shift for speed':'God mode off');if(!on){player.vel.set(0,0,0);player.fallV=0;}}
+function godStep(dt){if(!GOD.on||!playing)return;const pl=player;if(!GOD.p)GOD.p=pl.pos.clone();
+  const cy=Math.cos(camPitch),fx=Math.sin(camYaw)*cy,fy=Math.sin(camPitch),fz=Math.cos(camYaw)*cy,rx=-Math.cos(camYaw),rz=Math.sin(camYaw);
+  let mx=0,my=0,mz=0;if(keys.KeyW){mx+=fx;my+=fy;mz+=fz;}if(keys.KeyS){mx-=fx;my-=fy;mz-=fz;}if(keys.KeyD){mx+=rx;mz+=rz;}if(keys.KeyA){mx-=rx;mz-=rz;}
+  if(keys.Space)my+=1;if(keys.ControlLeft||keys.ControlRight||keys.KeyC)my-=1;
+  const L=Math.hypot(mx,my,mz);const sp=(keys.ShiftLeft||keys.ShiftRight)?160:30;if(L>0.001){GOD.p.x+=mx/L*sp*dt;GOD.p.y+=my/L*sp*dt;GOD.p.z+=mz/L*sp*dt;}
+  GOD.p.x=Math.max(-1000,Math.min(1000,GOD.p.x));GOD.p.z=Math.max(-1000,Math.min(1000,GOD.p.z));GOD.p.y=Math.max(groundH(GOD.p.x,GOD.p.z)+0.05,Math.min(900,GOD.p.y));
+  pl.pos.copy(GOD.p);pl.vel.set(0,0,0);pl.grounded=true;pl.fallV=0;pl._lx=pl.pos.x;pl._lz=pl.pos.z;pl.alive=true;MPM.hp=Math.max(MPM.hp,100);STAM.v=1;}
+{const _sa=startAction;startAction=function(n){if(GOD.on&&n==='death'){MPM.hp=Math.max(MPM.hp,100);return;}return _sa.apply(this,arguments);};}
 window.SNIPER_EQ=EQB;
 
 window.SNIPER_BEAR={hurt:bearHurtMe,charge:bearCharge,human:bearHuman,list:()=>BEARS,reset:bearReset,step:bearStep,hit:hitBear,ray:rayBear,cast:(o,d,m)=>castRay(o,d,m)};
@@ -4535,9 +4551,9 @@ function siloPose(){const S=SILO;
   S.hatch.position.x=S.x+S.hx*S.K;S.hatch.updateMatrixWorld(true);S.hcol.min.x=S.x+(S.hx-2.7)*S.K;S.hcol.max.x=S.x+(S.hx+2.7)*S.K;S.blk.on=S.hx>0.4;
   if(S.st==='idle'||S.st==='count'){S.mis.position.set(S.x,S.y0-19.4*S.K,S.z);S.mis.quaternion.identity();}}
 // ---- sounds: klaxon at the pad, the hatch grinding back, and the launch roar
-function siloKlaxon(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,700);if(!c)return;for(let i=0;i<14;i++)tn(c,c.t0+i*0.5,i%2?520:700,0,0.42,0.32,'square');}
-function siloGrind(){const c=sp3(SILO.x,SILO.y0+1,SILO.z,500);if(!c)return;nz(c,c.t0,5,160,0.8,1.2,'lowpass');nz(c,c.t0,5,900,5,0.18);}
-function siloRoar(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,6000);if(!c)return;nz(c,c.t0,14,110,0.7,3.2,'lowpass');nz(c,c.t0,10,420,0.6,1.3);nz(c,c.t0+0.05,2.5,2200,0.5,0.6);}
+function siloKlaxon(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,700);if(!c)return;for(let i=0;i<14;i++)tn(c,c.t0+i*0.5,i%2?520:700,0,0.42,0.32*GAME.siloVol,'square');}
+function siloGrind(){const c=sp3(SILO.x,SILO.y0+1,SILO.z,500);if(!c)return;nz(c,c.t0,5,160,0.8,1.2*GAME.siloVol,'lowpass');nz(c,c.t0,5,900,5,0.18*GAME.siloVol);}
+function siloRoar(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,6000);if(!c)return;const V=GAME.siloVol,L=Math.min(2.4,1/Math.max(0.42,GAME.siloAcc));nz(c,c.t0,14*L,110,0.7,3.2*V,'lowpass');nz(c,c.t0,10*L,420,0.6,1.3*V);nz(c,c.t0+0.05,2.5*L,2200,0.5,0.6*V);}
 function siloTryLaunch(){const S=SILO;if(!S.built||!playing||!player.alive)return false;
   if(Math.hypot(player.pos.x-S.con.x,player.pos.z-S.con.z)>3)return false;
   if(S.st!=='idle'){toast(S.st==='gone'?'The silo is empty':'Launch sequence already running');return true;}
@@ -4560,24 +4576,27 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
   if(S.st==='count'){
     if(S.t>1.5&&S.sfx<1){S.sfx=1;try{siloGrind();}catch(e){}toast('Silo hatch opening');}
     const u=Math.max(0,Math.min(1,(S.t-1.5)/5));S.hx=6.2*u*u*(3-2*u);siloPose();
+    {const dp=Math.hypot(player.pos.x-S.x,player.pos.z-S.z);if(S.t>1.5&&S.t<6.5&&dp<60)shake=Math.max(shake,GAME.siloShake*0.18*(1-dp/60));}
     if(S.t>=8){S.st='fly';S.ft=0;S.v=0;S.bacc=0;S.tacc=0;S.pos=new THREE.Vector3(S.x,S.y0-19.4*S.K,S.z);S.dir=new THREE.Vector3(0,1,0);S.flame.visible=true;if(S.glow)S.glow.visible=true;try{siloRoar();}catch(e){}toast('Ignition!');}
     return;}
   // flight: slow climb out of the tube, then hard acceleration and a pitch-over to the north-east
   S.ft+=dt;const f=S.ft;
-  const acc=f<1.6?7:f<6?24:38;S.v=Math.min(900,S.v+acc*dt);
+  const acc=(f<1.6?7:f<6?24:38)*GAME.siloAcc;S.v=Math.min(900,S.v+acc*dt);
   if(f>4.5){const tgt=new THREE.Vector3(Math.sin(S.yaw)*0.8,0.6,Math.cos(S.yaw)*0.8).normalize();S.dir.lerp(tgt,Math.min(1,dt*0.12)).normalize();}
+  // the ground shakes and the screen with it: strongest at the pad during lift-off, fading with distance from the missile
+  {const dm=Math.hypot(player.pos.x-S.pos.x,player.pos.y-S.pos.y,player.pos.z-S.pos.z),R=450,th=f<1.6?0.55:f<10?1:0.7;if(dm<R)shake=Math.max(shake,GAME.siloShake*th*Math.pow(1-dm/R,1.6)*1.6);}
   S.pos.addScaledVector(S.dir,S.v*dt);S.mis.position.copy(S.pos);S.mis.quaternion.setFromUnitVectors(V(0,1,0),S.dir);
   S.flame.scale.set(0.9+Math.random()*0.25,(f<1.6?0.6:1.2)+Math.random()*0.35,0.9+Math.random()*0.25);
   // smoke: a billow out of the shaft at ignition, then a thick trail behind the missile
   const ex=S.pos.clone().addScaledVector(S.dir,-0.6*S.K);
   // (rate-limited per second, not per frame, so a fast machine does not drown in puffs)
   if(f<2.5){S.bacc=(S.bacc||0)+dt*36;while(S.bacc>=1){S.bacc--;const a=Math.random()*Math.PI*2,sp=3+Math.random()*5;emit(gPuff,SILO_SMOKE,V(S.x+Math.cos(a)*1.8*S.K,S.y0+0.5,S.z+Math.sin(a)*1.8*S.K),V(Math.cos(a)*sp*0.7,1.2+Math.random()*2.5,Math.sin(a)*sp*0.7),4+Math.random()*3,{s:1.0,grow:0.9,drag:0.6});}}
-  if(f<28&&ex.y>S.y0-2){S.tacc=(S.tacc||0)+dt*(f<6?45:32);while(S.tacc>=1){S.tacc--;const p=ex.clone().addScaledVector(S.dir,-Math.random()*S.v*dt);emit(gPuff,SILO_SMOKE,p,rv(1.6).clone().addScaledVector(S.dir,-3),6.5+Math.random()*3,{s:0.9+Math.min(2.2,f*0.22),grow:0.8,drag:0.4});}}
+  if(f<28/Math.max(0.45,GAME.siloAcc)&&ex.y>S.y0-2){S.tacc=(S.tacc||0)+dt*(f<6?45:32);while(S.tacc>=1){S.tacc--;const p=ex.clone().addScaledVector(S.dir,-Math.random()*S.v*dt);emit(gPuff,SILO_SMOKE,p,rv(1.6).clone().addScaledVector(S.dir,-3),6.5+Math.random()*3,{s:0.9+Math.min(2.2,f*0.22),grow:0.8,drag:0.4});}}
   // the blast burns anyone standing at the pad during lift-off
   if(f<6&&player.alive&&MPM.hp>0&&Math.hypot(player.pos.x-S.x,player.pos.z-S.z)<7&&player.pos.y<S.y0+6){
     MPM.hp-=55*dt;try{EDGE.burn=0.35;EDGE.k=1;}catch(e){}if(!S.burnT||now-S.burnT>1500){S.burnT=now;toast('Caught in the rocket blast!');}
     if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed by the missile launch');}}
-  if(f>45||S.pos.y>S.y0+9000){S.st='gone';S.mis.visible=false;S.flame.visible=false;if(S.glow)S.glow.visible=false;}}
+  if(f>110||S.pos.y>S.y0+9000){S.st='gone';S.mis.visible=false;S.flame.visible=false;if(S.glow)S.glow.visible=false;}}
 addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyL')siloTryLaunch();});
 resReset=(f=>function(){f.apply(this,arguments);try{siloReset();}catch(e){}})(resReset);
 window.SNIPER_SILO={S:SILO,build:siloBuild,step:siloStep,launch:siloLaunch,reset:siloReset};
