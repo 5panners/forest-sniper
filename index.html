@@ -2117,8 +2117,10 @@ for(let k=0,tr=0;k<110&&tr<3000;tr++){const x=wrr(-500,500),z=wrr(-500,500);if(m
  ROCKS.forEach((r,i)=>{const g=rockGeo(r.w,r.h,r.d,i*31+7,r.moss,r.bl,r.jit);xf(g,[r.x,r.y,r.z],[0,r.ry,0]);push(r.x,r.z,g);});
  LOGS.forEach((l,i)=>{const dx=Math.cos(l.ry),dz=Math.sin(l.ry),lx=-dz,lz=dx;const Ls=l.L*0.5,r=l.r,d=r*2.04,hh=d*0.866;   // triangular stack of 6 half-length logs: 3 + 2 + 1
    const cols=[-d,0,d];let gmax=-1e9;for(const o of cols)for(const s of [-Ls/2,0,Ls/2])gmax=Math.max(gmax,groundH(l.x+dx*s+lx*o,l.z+dz*s+lz*o));
+   let gmin=1e9;for(const o of cols)for(const s of [-Ls/2,0,Ls/2])gmin=Math.min(gmin,groundH(l.x+dx*s+lx*o,l.z+dz*s+lz*o));
    const yc=gmax+r*0.75;const lay=[[-d,0],[0,0],[d,0],[-d/2,hh],[d/2,hh],[0,2*hh]];const parts=[];
    lay.forEach((q,j)=>{parts.push(xf(tint(jitterGeo(CY(r,r*1.08,Ls,6),0.05,i*7+j),l.dead?'#8f8a80':(j%2?'#5a4733':'#654f39'),0.12),[0,q[1],q[0]],[0,0,HP]),xf(tint(CY(r*0.95,r,0.06,6),'#b39a6e'),[Ls/2,q[1],q[0]],[0,0,HP]));});
+   if(gmax-gmin>0.02){const bh=gmax-gmin+0.5,yb=-r*0.55;parts.push(xf(tint(new THREE.BoxGeometry(Ls*0.96,bh,2*(d+r)*0.8),'#3e3226'),[0,yb-bh/2+0.05,0]));}   // fills the gap under the downhill side so the stack never hovers
    const g=merge(parts);xf(g,[l.x,yc,l.z],[0,-l.ry,0]);push(l.x,l.z,g);
    cols.forEach((o,ci)=>{for(let s=-Ls/2;s<=Ls/2+0.01;s+=0.7)addPillar({x:l.x+dx*s+lx*o,z:l.z+dz*s+lz*o,r:r*1.05+0.05,y0:yc-r-1,y1:yc+(ci==1?2*hh+r:hh+r),rock:true,kind:'wood'});});});
  buckets.forEach(list=>{const m=new THREE.Mesh(merge(list),envMat);m.castShadow=true;m.receiveShadow=true;scene.add(m);});}
@@ -2152,7 +2154,8 @@ const HUT={x:300,z:212};
 const PILES=[];
 for(let k=0;k<6;k++){const i=Math.floor((k+0.3)/6*ROAD.n);const j=(i+1)%ROAD.n;const tx=ROAD.x[j]-ROAD.x[i],tz=ROAD.z[j]-ROAD.z[i],L=Math.hypot(tx,tz)||1;const side=k%2?1:-1;
   const x=ROAD.x[i]-tz/L*6.5*side,z=ROAD.z[i]+tx/L*6.5*side;if(fieldF(x,z,FdS,CdS)<12||Math.abs(x)>490||Math.abs(z)>490)continue;
-  const alongX=Math.abs(tx)>Math.abs(tz);const len=4,w=2.4,g=groundH(x,z);PILES.push({x,z});
+  const alongX=Math.abs(tx)>Math.abs(tz);const len=4,w=2.4;let g=-1e9,gl=1e9;{const hx0=alongX?len/2:w/2,hz0=alongX?w/2:len/2;for(let a=-1;a<=1;a+=0.5)for(let b=-1;b<=1;b+=0.5){const h0=groundH(x+a*hx0,z+b*hz0);g=Math.max(g,h0);gl=Math.min(gl,h0);}}PILES.push({x,z});
+  if(g-gl>0.02){const bh=g-gl+0.5;sp(new THREE.BoxGeometry(alongX?len*0.97:w*0.8,bh,alongX?w*0.8:len*0.97),'#3e3226',[x,g+0.02-bh/2,z],[0,0,0]);}   // timber bearers: the pile sits level on its highest point and this fills the gap on the downhill side
   for(let row=0;row<4;row++)for(let c=0;c<6-row;c++){const off=-w/2+0.2+c*0.4+row*0.2;const y=g+0.2+row*0.36;
     const p=alongX?[x,y,z+off]:[x+off,y,z];sp(CY(0.19,0.2,len,7),c%3?'#6d543a':'#5d4732',p,alongX?[0,0,HP]:[HP,0,0],null,0.15);
     const e=alongX?[x+len/2+0.01,y,z+off]:[x+off,y,z+len/2+0.01];sp(CY(0.18,0.18,0.03,7),'#c2a578',e,alongX?[0,0,HP]:[HP,0,0]);}
@@ -2608,6 +2611,11 @@ function at4Switch(){if(!player.alive)return;if(!WPN.has){toast('No AT4 · find 
 const AT4_RK=(()=>{const g=build([[CY(0.038,0.038,0.3,10),'#59633a',[0,0,0],[HP,0,0]],[new THREE.ConeGeometry(0.038,0.12,10),'#4b5432',[0,0,0.21],[HP,0,0]],[CY(0.02,0.03,0.1,8),'#3a3a36',[0,0,-0.2],[HP,0,0]],
   [B(0.004,0.11,0.06),'#2c2c2a',[0,0,-0.22]],[B(0.11,0.004,0.06),'#2c2c2a',[0,0,-0.22]]]);return g;})();
 const ROCKETS=[];
+// light from the rocket motor (follows the nearest rocket) and a flash at the burst. Both lights live in the scene permanently, at intensity 0 when idle, so the shader light count never changes mid-game.
+const RKL=new THREE.PointLight(0xffa24a,0,45,2),BLL=new THREE.PointLight(0xffc070,0,80,2);scene.add(RKL);scene.add(BLL);const BL={t:9},AT4L={k:0.02};
+function at4Lights(dt){let best=null,bd=1e9;for(const r of ROCKETS){const d=r.p.distanceToSquared(camera.position);if(d<bd){bd=d;best=r;}}
+  if(best){RKL.position.copy(best.p).addScaledVector(best.v,-0.012);RKL.intensity=AT4L.k*(best.mine?1.2:1.5)*(0.8+Math.random()*0.4);}else RKL.intensity=0;
+  BL.t+=dt;BLL.intensity=BL.t<1.2?AT4L.k*12*Math.exp(-BL.t*6)*(BL.t<0.05?BL.t/0.05:1):0;}
 function at4Spawn(o,dir,mine){const g=new THREE.Group();const m=new THREE.Mesh(AT4_RK,envMat);g.add(m);
   const fl=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffb050,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));fl.position.set(0,0,-0.32);fl.scale.setScalar(0.9);g.add(fl);
   g.position.copy(o);scene.add(g);const r={p:o.clone(),o:o.clone(),v:dir.clone().normalize().multiplyScalar(GAME.at4Spd),t:0,g,fl,mine,sm:0};g.lookAt(_v9.copy(o).add(r.v));ROCKETS.push(r);
@@ -2628,6 +2636,7 @@ function at4Fire(){const pl=player;input.lmb=false;
   try{EQB.ui(true);}catch(e){}if((INV.at4r|0)>0)setTimeout(()=>{if(WPN.cur==='at4'&&!WPN.ld)at4Reload();},700);}
 function at4Reload(){if(!WPN.has||WPN.ld||WPN.rl>=0)return;if(!((INV.at4r|0)>0)){toast('No AT4 rounds · look for the pale pink glow');return;}WPN.rl=0;try{sfx.click();}catch(e){}toast('Loading the AT4…');}
 function at4Step(dt){
+  at4Lights(dt);
   if(WPN.rl>=0){WPN.rl+=dt;if(!player.alive)WPN.rl=-1;else if(WPN.rl>=GAME.at4Reload){WPN.rl=-1;if((INV.at4r|0)>0){INV.at4r--;WPN.ld=1;try{invUI();sfx.click();}catch(e){}toast('AT4 loaded');try{EQB.ui(true);}catch(e){}}}}
   for(let i=ROCKETS.length-1;i>=0;i--){const r=ROCKETS[i];let done=false;const n=Math.max(1,Math.ceil(dt/0.008));
     for(let k=0;k<n&&!done;k++){const d=dt/n;r.v.y-=GRAV*GAME.at4Drop*d;const len=r.v.length()*d;const dir=_v9.copy(r.v).normalize();
@@ -2642,6 +2651,7 @@ function at4Step(dt){
     r.sm-=dt;if(r.sm<=0){r.sm=0.025;emit(gPuff,matSmoke,r.p.clone().addScaledVector(r.v,-0.004),rv(0.4),1.6,{s:0.1,grow:1.4,drag:1.5});}}}
 // ---- the burst: fire ball, smoke, a ground shock; damage falls off to nothing at the blast radius
 function at4Blast(p,r){
+  BL.t=0;BLL.position.copy(p).y+=1.2;
   emit(gFire,matFire,p,V(0,1,0),0.45,{s:0.7,grow:5});emit(gFire,matFire,p,V(0,2,0),0.3,{s:0.4,grow:3.5});
   for(let i=0;i<16;i++){const a=Math.random()*PI*2;emit(gPuff,i%3?matSmoke:matDust,p,V(Math.cos(a)*4,1.5+Math.random()*4.5,Math.sin(a)*4),2.2,{s:0.35,grow:1.6,drag:1.6});}
   for(let i=0;i<10;i++)emit(gSpark,matFire,p,rv(14).add(V(0,5,0)),0.5,{s:1.2,grav:9});
@@ -2672,7 +2682,7 @@ const P2_RIFLE=[],P2_AT4=[];let _p2w=null;
 function at4P2Vis(w){if(!P2PAIRS.length)return;if(!P2_RIFLE.length){const rs=new Set(RIFLE_MESH);for(const [s,t] of P2PAIRS){if(rs.has(s))P2_RIFLE.push(t);if(s===AT4G)P2_AT4.push(t);}}
   for(const t of P2_RIFLE)t.visible=!w;for(const t of P2_AT4)t.visible=!!w;}
 function at4Reset(){try{uavReset();}catch(e){}WPN.has=false;WPN.ld=0;WPN.rl=-1;setWeapon('rifle');for(const r of ROCKETS){scene.remove(r.g);r.fl.material.dispose();}ROCKETS.length=0;}
-window.SNIPER_AT4={WPN,ROCKETS,fire:at4Fire,step:at4Step,set:setWeapon,blast:at4Blast,spawn:at4Spawn,reload:at4Reload,switch:at4Switch};
+window.SNIPER_AT4={AT4L,WPN,ROCKETS,fire:at4Fire,step:at4Step,set:setWeapon,blast:at4Blast,spawn:at4Spawn,reload:at4Reload,switch:at4Switch};
 
 /* ---------------- wildlife: red deer stags, fallow and roe does ---------------- */
 // Each deer is a small rig: root (yaw, slope pitch, death roll) > body pivot at the hind hips > torso, legs (two segments each), neck > head, tail.
@@ -3586,7 +3596,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=289;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=291;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
