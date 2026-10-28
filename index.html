@@ -2585,7 +2585,7 @@ function at4Reload(){if(!WPN.has||WPN.ld||WPN.rl>=0)return;if(!((INV.at4r|0)>0))
 function at4Step(dt){
   if(WPN.rl>=0){WPN.rl+=dt;if(!player.alive)WPN.rl=-1;else if(WPN.rl>=GAME.at4Reload){WPN.rl=-1;if((INV.at4r|0)>0){INV.at4r--;WPN.ld=1;try{invUI();sfx.click();}catch(e){}toast('AT4 loaded');try{EQB.ui(true);}catch(e){}}}}
   for(let i=ROCKETS.length-1;i>=0;i--){const r=ROCKETS[i];let done=false;const n=Math.max(1,Math.ceil(dt/0.008));
-    for(let k=0;k<n&&!done;k++){const d=dt/n;r.v.y-=GRAV*0.25*d;const len=r.v.length()*d;const dir=_v9.copy(r.v).normalize();
+    for(let k=0;k<n&&!done;k++){const d=dt/n;r.v.y-=GRAV*GAME.at4Drop*d;const len=r.v.length()*d;const dir=_v9.copy(r.v).normalize();
       let h=castRay(r.p,dir,len,!r.mine);
       if(!r.mine&&player.alive){const ph=rayPlayerZones(r.p,dir,h?Math.min(len,h.dist):len);if(ph)h={point:ph.point,dist:ph.dist,kind:'flesh'};}
       if(h&&r.t<0.04&&h.dist<0.3)h=null;   // never on the launcher itself
@@ -3110,9 +3110,9 @@ function hitBird(b,dist){flashHit();if(b.st!=='fly'){return;}b.hpL=(b.hpL==null?
 
 /* ---------------- ballistics: .308-class round with gravity and drag; zeroing solved numerically ---------------- */
 const ray=new THREE.Raycaster(), _cd=V(0,0,0), _mz=V(0,0,0), _bp=V(0,0,0), _bd=V(0,0,0);
-const GRAV=9.81, V0=850, DRAG=0.28; let zeroM=100;
+const GRAV=9.81; let V0=850, DRAG=0.28, GBUL=9.81; let zeroM=100;
 const bullets=[]; let roundNo=0, stats={shots:0};
-function dropAt(dist){let x=0,y=0,vx=V0,vy=0,t=0;const h=0.01;while(x<dist&&t<5){vy-=GRAV*h;const k=Math.exp(-DRAG*h);vx*=k;vy*=k;x+=vx*h;y+=vy*h;t+=h;}return {y,t};}
+function dropAt(dist){let x=0,y=0,vx=V0,vy=0,t=0;const h=0.01;while(x<dist&&t<5){vy-=GBUL*h;const k=Math.exp(-DRAG*h);vx*=k;vy*=k;x+=vx*h;y+=vy*h;t+=h;}return {y,t};}
 let zeroComp=0;function setZero(m){zeroM=clamp(m,100,1000);const r=dropAt(zeroM);zeroComp=Math.atan2(-r.y,zeroM);}
 setZero(100);
 function rayPillars(o,d,len){return rayGrid(PGRID,o,d,len,0);}
@@ -3162,7 +3162,7 @@ function stepBolt(dt){if(boltT<0){poseBolt();return;}const t0=boltT;boltT+=dt;co
 function stepBullets(dt){const n=Math.max(1,Math.ceil(dt/0.0101));for(let k=0;k<n;k++)stepBullets1(dt/n);}
 function stepBullets1(dt){
   for(let i=bullets.length-1;i>=0;i--){const b=bullets[i];
-    b.v.y-=GRAV*dt;b.v.multiplyScalar(Math.exp(-DRAG*dt));
+    b.v.y-=GBUL*dt;b.v.multiplyScalar(Math.exp(-DRAG*dt));
     const len=b.v.length()*dt;_bd.copy(b.v).normalize();
     const h=castRay(b.p,_bd,len,b.rem);
     if(b.ugv&&player.alive){const ph=rayPlayerZones(b.p,_bd,h?Math.min(len,h.dist):len);if(ph){ugvHurtMe(ph.zone);impact(ph.point,_bd.clone().negate(),'flesh');b.end=ph.point.clone();if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}}
@@ -3228,7 +3228,7 @@ function updateCamera(dt){
     {const nb=d<camBoom?damp(camBoom,d,12,dt):damp(camBoom,d,2.5,dt);camBoom+=clamp(nb-camBoom,-16*dt,6*dt);}
     camera.position.copy(piv).addScaledVector(_dir,-camBoom);
     const g=groundH(camera.position.x,camera.position.z)+0.25;if(camera.position.y<g)camera.position.y=g;
-    if(aim)fov=56;fov+=7*pl.slideW;
+    if(aim)fov=(WPN.cur==='at4'&&input.rmb)?56/1.25:56;fov+=7*pl.slideW;
   }
   camera.fov=scoped?fov:damp(camera.fov,fov,12,dt);camera.updateProjectionMatrix();
   camera.lookAt(_v9.copy(camera.position).add(_dir));camera.updateMatrixWorld();
@@ -3533,7 +3533,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=272;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=273;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3849,19 +3849,21 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
     pn.innerHTML=`<p class="note">Everything about each weapon in one place. Every value saves as you change it. In a 1v1 match damage to a player comes from that player's own settings and damage to animals from the host's, so keep both players the same.</p>
 <div class="wgrid">
 <section class="wc"><div class="wh">${IC.rifle}<div><h3>Bolt-action rifle</h3><p>7.62 mm scoped sniper rifle · your starting weapon</p></div><span class="key">LMB fire · R reload · RMB scope</span></div>
-${sp([['Calibre','7.62 mm'],['Magazine',mag+' rounds'],['Bolt cycle',bolt+' s'],['Muzzle velocity',v0+' m/s'],['Scope','2× 3× 4× (wheel)'],['Ammo','7.62 boxes']])}
+${sp([['Calibre','7.62 mm'],['Magazine',mag+' rounds'],['Bolt cycle',bolt+' s'],['Muzzle velocity',GAME.bV0+' m/s'],['Drop at 300 m',dropAt(300).y.toFixed(2).replace('-','')+' m'],['Drop at 600 m',dropAt(600).y.toFixed(2).replace('-','')+' m'],['Scope','2× 3× 4× (wheel)'],['Ammo','7.62 boxes']])}
 <h4>Pickups</h4>${sl('pk762','Rounds per ammo box',1,60,1,0)}
+<h4>Ballistics</h4>${sl('bDrop','Bullet drop (0 flat · 1 real)',0,3,0.1,1)}${sl('bV0','Muzzle velocity (m/s)',300,1200,10,0)}${sl('bDrag','Air drag (slows the bullet)',0,1,0.02,2)}
 ${dt('Damage to players','p',[['head','Head'],['torso','Torso'],['limb','Limbs']])}
 ${dt('Damage to deer','d',[['head','Head'],['neck','Neck'],['vitals','Heart / lungs'],['gut','Gut'],['leg','Leg']])}
 ${dt('Damage to a bear','k',[['head','Head'],['body','Body'],['leg','Leg']])}
 <h4>Damage to a buzzard</h4><table><tr><th>Any hit</th></tr><tr><td>${num('w.rifle.b',W.b)}</td></tr></table>
+<p class="tn">Drop is measured over a flat shot at the same height. The scope zero (E / Q) re-adjusts to the new ballistics. Bullets always fall in a real arc, so a lower muzzle velocity means more time to target and more lead.</p>
 <p class="tn">Heart / lung deer hits leave a fatal wound, a gut hit bleeds out over one to two minutes, a leg hit causes a limp. A second hit on a wounded deer always kills.</p></section>
 <section class="wc"><div class="wh">${IC.at4}<div><h3>AT4</h3><p>Shoulder-mounted light anti-armour weapon · single shot</p></div><span class="key">X switch · LMB fire · R load</span></div>
 ${sp([['Rocket speed',GAME.at4Spd+' m/s'],['Blast radius',GAME.at4R+' m'],['Person, centre',GAME.at4Dmg+' hp'],['UGV, direct',GAME.at4Ugv+' hp'],['Reload',GAME.at4Reload+' s'],['Bears','2× person damage']])}
 <h4>Pickups</h4>${sl('pkAt4','AT4 rounds per round pickup',1,10,1,0)}
-<h4>Rocket and blast</h4>${sl('at4Spd','Rocket speed (m/s)',60,300,10,0)}${sl('at4R','Blast radius (m)',2,15,0.5,1)}${sl('at4Reload','Reload time (s)',0.5,8,0.5,1)}
+<h4>Rocket and blast</h4>${sl('at4Spd','Rocket speed (m/s)',60,300,10,0)}${sl('at4R','Blast radius (m)',2,15,0.5,1)}${sl('at4Drop','Rocket drop (1 = full gravity)',0,1,0.05,2)}${sl('at4Reload','Reload time (s)',0.5,8,0.5,1)}
 <h4>Damage</h4>${sl('at4Dmg','Person at the centre (hp)',20,300,10,0)}${sl('at4Ugv','UGV, direct hit (hp)',100,1500,20,0)}
-<p class="tn">Damage falls off to nothing at the blast radius, and you can hurt yourself. Deer within 80% of the radius die. The launcher is a rare pink pickup; rounds are the pale pink glow.</p></section>
+<p class="tn">Holding the right mouse button aims and zooms the view by 25%. Damage falls off to nothing at the blast radius, and you can hurt yourself. Deer within 80% of the radius die. The launcher is a rare pink pickup; rounds are the pale pink glow.</p></section>
 <section class="wc"><div class="wh">${IC.rpg}<div><h3>RPG rounds</h3><p>Collected only · no launcher in the game yet</p></div><span class="tag">pickup</span></div>
 <h4>Pickups</h4>${sl('pkRpg','RPG rounds per RPG pickup',1,10,1,0)}</section>
 <section class="wc"><div class="wh">${IC.ugv}<div><h3>Termit UGV .50 cal</h3><p>Fired by the patrolling robot, not by players</p></div><span class="tag">AI weapon</span></div>
@@ -3879,17 +3881,18 @@ ${sp([['Damage / hit',GAME.uDmg+' hp'],['Rate of fire',GAME.uRpm+' rpm'],['Burst
 <p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Magic Mushrooms, sticks, ammo boxes, rounds, Tech Chips</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>
 <button type="button" id="dmgReset" class="btn">Reset weapons to defaults</button>`;
     pn.querySelectorAll('input[data-p]').forEach(i=>i.oninput=()=>{const v=parseFloat(i.value);if(!(v>=0))return;const ks=i.dataset.p.split('.');let o=DMG;for(let j=0;j<ks.length-1;j++)o=o[ks[j]];o[ks[ks.length-1]]=v;dmgSave();});
-    pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.dataset.dp);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}});
+    pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;if(k==='bDrop'||k==='bV0'||k==='bDrag')balApply();i.nextElementSibling.textContent=v.toFixed(+i.dataset.dp);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}});
     pn.querySelectorAll('input[data-k]').forEach(i=>i.addEventListener('change',()=>{const keep=pn.scrollTop;build();}));
-    pn.querySelector('#dmgReset').onclick=()=>{const f=JSON.parse(JSON.stringify(DMG_DEF));for(const k in f)DMG[k]=f[k];for(const k of['pk762','pkRpg','pkAt4','at4Spd','at4R','at4Dmg','at4Ugv','at4Reload'])GAME[k]=GAME_DEF[k];try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}dmgSave();build();};};
+    pn.querySelector('#dmgReset').onclick=()=>{const f=JSON.parse(JSON.stringify(DMG_DEF));for(const k in f)DMG[k]=f[k];for(const k of['at4Drop','bDrop','bV0','bDrag','pk762','pkRpg','pkAt4','at4Spd','at4R','at4Dmg','at4Ugv','at4Reload'])GAME[k]=GAME_DEF[k];try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}dmgSave();balApply();build();};};
   const ids=['Brief','Gfx','Env','Aud','Mp'];
   tb.onclick=()=>{build();ids.concat(['Game']).forEach(n=>{const t=document.getElementById('tab'+n),p=document.getElementById('pane'+n);if(t)t.setAttribute('aria-selected','false');if(p)p.hidden=true;});tb.setAttribute('aria-selected','true');pn.hidden=false;};
   const _st=showTab;showTab=function(w){_st(w);tb.setAttribute('aria-selected','false');pn.hidden=true;};
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={mHeal:15,pk762:10,pkRpg:1,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:1,bWalk:1.2,bRear:14,bAtk:1,bTrig:1,bFight:60,bChance:60,bSense:40,bChSpd:8,bReach:2.8,bDmg:35,bRate:1.6,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10};
+const GAME_DEF={at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:15,pk762:10,pkRpg:1,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:1,bWalk:1.2,bRear:14,bAtk:1,bTrig:1,bFight:60,bChance:60,bSense:40,bChSpd:8,bReach:2.8,bDmg:35,bRate:1.6,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
+function balApply(){V0=GAME.bV0;DRAG=GAME.bDrag;GBUL=9.81*GAME.bDrop;try{setZero(zeroM);}catch(e){}}balApply();
 function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw,CCw)+0.6;}
 
 // ---- Gameplay tab
@@ -4684,7 +4687,7 @@ function ugvSlew(u,rel,wp,dt){const r=GAME.uTurn*Math.PI/180;const e=wrapA(rel-u
 // ---- firing
 function ugvMuzzle(u){return u.pitG.localToWorld(new THREE.Vector3(0,0.01,1.72));}
 function ugvShoot(u,T){const o=ugvMuzzle(u),d=Math.hypot(T.x-o.x,T.z-o.z);const tf=d/V0*1.12;
-  const lead=0.4+Math.random()*0.5;_ua.set(T.x+(T.vx||0)*tf*lead,ugvChestY(T)+0.5*GRAV*tf*tf*1.15,T.z+(T.vz||0)*tf*lead);
+  const lead=0.4+Math.random()*0.5;_ua.set(T.x+(T.vx||0)*tf*lead,ugvChestY(T)+0.5*GBUL*tf*tf*1.15,T.z+(T.vz||0)*tf*lead);
   const dir=_ua.clone().sub(o).normalize();const sd=GAME.uSpread/1000*(1+Math.min(2,(T.sp||0)*0.25))*(u.shots<3?1.6:1)*(u.blind>0?3:1);
   const g=()=>(Math.random()+Math.random()+Math.random()-1.5)*1.15;const s1=new THREE.Vector3(dir.z,0,-dir.x).normalize(),s2=new THREE.Vector3().crossVectors(dir,s1);
   dir.addScaledVector(s1,g()*sd).addScaledVector(s2,g()*sd).normalize();
