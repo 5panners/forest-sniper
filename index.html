@@ -3532,7 +3532,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=269;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=270;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3553,6 +3553,7 @@ function update(dt){
   hudL.innerHTML='<span>'+player.ammo+' loaded · '+(player.reserve|0)+' spare'+(boltT>=0?' · chambering':'')+'</span><span>grid '+Math.round(player.pos.x)+' E  '+Math.round(-player.pos.z)+' N  ·  '+Math.round(player.pos.y)+' m</span>';
   const edge=PLAY-Math.max(Math.abs(player.pos.x),Math.abs(player.pos.z));warnEl.textContent=edge<20&&!scoped?'Edge of the operating area':'';
   if(mapOpen)drawMap();
+  cmp.style.display=playing?'block':'none';if(playing)drawCompass();
   drawMini();
 }
 let paused=false;
@@ -3572,14 +3573,14 @@ $('stats').textContent=nTrees.toLocaleString()+' trees · '+nPlants.toLocaleStri
 const RES_T=[
   {k:'berries', label:'berries',   cell:11, p:0.050, amt:[2,4], n:0},
   {k:'mushroom',label:'Magic Mushrooms', cell:11, p:0.25, amt:[1,3], n:300},
-  {k:'wood',    label:'wood',      cell:11, p:0.060, amt:[2,4]},
+  {k:'wood',    label:'sticks',      cell:11, p:0.060, amt:[2,4]},
   {k:'rpg',     label:'RPG rounds',   cell:13, p:0.25, amt:[1,1], n:150},
   {k:'at4r',    label:'AT4 rounds',   cell:13, p:0.25, amt:[1,1], n:150},
   {k:'at4',     label:'AT4 launcher', cell:31, p:0.3, amt:[1,1], n:8},
   {k:'scrap',   label:'Tech Chips',     cell:17, p:0.05, amt:[1,2], n:20},
   {k:'r762',    label:'7.62 rounds',  cell:13, p:0.25, amt:[1,1], n:300}];
 const INV={berries:0,mushroom:0,wood:0,rpg:0,at4r:0,scrap:0,meat:0,hide:0};
-const INV_LABEL={berries:'berries',mushroom:'Magic Mushrooms',wood:'wood',rpg:'RPG rounds',at4r:'AT4 rounds',scrap:'Tech Chips',meat:'meat',hide:'hide'};
+const INV_LABEL={berries:'berries',mushroom:'Magic Mushrooms',wood:'sticks',rpg:'RPG rounds',at4r:'AT4 rounds',scrap:'Tech Chips',meat:'meat',hide:'hide'};
 const RES_GEO={
   r762:build([[B(0.3,0.17,0.14),'#4e5934',[0,0.085,0]],[B(0.312,0.032,0.152),'#5c683f',[0,0.186,0]],[B(0.13,0.018,0.022),'#2c3120',[0,0.212,0]],[B(0.03,0.06,0.03),'#3a4228',[0.16,0.13,0]],
     [B(0.17,0.035,0.004),'#d9c24a',[0,0.1,0.071]],[B(0.06,0.02,0.004),'#d9c24a',[-0.09,0.05,0.071]],
@@ -3648,7 +3649,7 @@ function resNearest(){const p=player.pos;let best=null,bd=2.7*2.7;const cx=Math.
 const invEl=document.createElement('div');invEl.id='inv';invEl.className='chip';invEl.hidden=true;document.body.appendChild(invEl);
 const resPrompt=document.createElement('div');resPrompt.id='resPrompt';resPrompt.className='chip';resPrompt.hidden=true;document.body.appendChild(resPrompt);
 let _invS='',_prS='';
-function invUI(){const s=Object.keys(INV).filter(k=>INV[k]>0).map(k=>'<b>'+INV[k]+'</b> '+INV_LABEL[k]).join(' · ');if(s===_invS)return;_invS=s;invEl.innerHTML=s;invEl.hidden=!s;}
+function invUI(){invEl.hidden=true;try{EQB.ui(true);}catch(e){}return;const s=Object.keys(INV).filter(k=>INV[k]>0).map(k=>'<b>'+INV[k]+'</b> '+INV_LABEL[k]).join(' · ');if(s===_invS)return;_invS=s;invEl.innerHTML=s;invEl.hidden=!s;}
 // ---- dead animals: walk up and press F to take the meat ----
 const CARVE={stag:{meat:8,hide:2},fallow:{meat:6,hide:1},roe:{meat:4,hide:1}};
 function carcassNearest(){const p=player.pos;let best=null,bd=3.2*3.2;
@@ -3666,7 +3667,7 @@ function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();i
   resSetGot(n,true);const q=R.k==='r762'?Math.max(1,GAME.pk762|0):R.k==='rpg'?Math.max(1,GAME.pkRpg|0):R.k==='at4r'?Math.max(1,GAME.pkAt4|0):R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));
   if(R.k==='at4'){if(!WPN.has){WPN.has=true;WPN.ld=1;try{EQB.pop('eqAt4');}catch(e){}invUI();toast('AT4 picked up · loaded · press X to switch to it');pickSnd();}else{INV.at4r=(INV.at4r|0)+1;invUI();toast('+1 AT4 round (you already carry an AT4)');pickSnd();}
     if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});return;}
-  if(R.k==='r762'){player.reserve=(player.reserve|0)+q;try{EQB.pop('eqRifle');}catch(e){}}else{if(R.k==='at4r')try{EQB.pop('eqAt4');}catch(e){}INV[R.k]+=q;if(R.k==='rpg')try{EQB.pop('eqRpg');}catch(e){}}
+  if(R.k==='r762'){player.reserve=(player.reserve|0)+q;try{EQB.pop('eqRifle');}catch(e){}}else{if(R.k==='at4r')try{EQB.pop('eqAt4');}catch(e){}INV[R.k]+=q;if(R.k==='rpg')try{EQB.pop('eqRpg');}catch(e){}if(R.k==='wood')try{EQB.pop('eqWood');}catch(e){}}
   invUI();toast('+'+q+' '+R.label+eatFood(R.k,q));pickSnd();
   if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});}
 addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyF')resGather();});
@@ -3801,7 +3802,7 @@ window.SNIPER_RES.logs=()=>LOGS;window.SNIPER_RES.boost=BOOST;
 
 // ---- foraged food heals slowly, up to 200% of normal health. Raw meat gives nothing until cooking exists.
 const HEAL={pool:0,t:performance.now()},FOOD={berries:0,mushroom:0,meat:0},HP_MAX=200,HEAL_RATE=1.5;
-function eatFood(k,q){if(k==='mushroom'){const g=GAME.stGain/100;STAM.v=Math.min(1,STAM.v+g);return ' · +'+GAME.stGain+'% stamina';}const v=(FOOD[k]||0);if(v<=0)return '';HEAL.pool=Math.min(120,HEAL.pool+v);return ' · +'+v+' health over time';}
+function eatFood(k,q){if(k==='mushroom'){const g=GAME.stGain/100;STAM.v=Math.min(1,STAM.v+g);const hh=GAME.mHeal*q;if(hh>0)HEAL.pool=Math.min(120,HEAL.pool+hh);return ' · +'+GAME.stGain+'% stamina'+(hh>0?' · +'+hh+' health over time':'');}const v=(FOOD[k]||0);if(v<=0)return '';HEAL.pool=Math.min(120,HEAL.pool+v);return ' · +'+v+' health over time';}
 function healStep(){const now=performance.now(),dt=Math.min(0.25,(now-HEAL.t)/1000);HEAL.t=now;
   if(HEAL.pool>0&&player.alive&&MPM.hp>0){if(MPM.hp>=HP_MAX){HEAL.pool=0;return;}const h=Math.min(HEAL.pool,HEAL_RATE*dt,HP_MAX-MPM.hp);MPM.hp+=h;HEAL.pool-=h;}}
 
@@ -3850,7 +3851,7 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={pk762:10,pkRpg:1,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:1,bWalk:1.2,bRear:14,bAtk:1,bTrig:1,bFight:60,bChance:60,bSense:40,bChSpd:8,bReach:2.8,bDmg:35,bRate:1.6,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10};
+const GAME_DEF={mHeal:15,pk762:10,pkRpg:1,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:1,bWalk:1.2,bRear:14,bAtk:1,bTrig:1,bFight:60,bChance:60,bSense:40,bChSpd:8,bReach:2.8,bDmg:35,bRate:1.6,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw,CCw)+0.6;}
 
@@ -3862,7 +3863,7 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
   const pn=document.createElement('div');pn.id='paneGame';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabGame');pn.hidden=true;paneMp.after(pn);
   const ROWS=[['sec','Pickups'],['pk762','7.62 rounds in each ammo box pickup',1,60,1,0],['pkRpg','RPG rounds in each RPG pickup',1,10,1,0],['pkAt4','AT4 rounds in each AT4 round pickup',1,10,1,0],
     ['sec','AT4 (light anti-armour)'],['at4Spd','Rocket speed (m/s)',60,300,10,0],['at4R','Blast radius (m)',2,15,0.5,1],['at4Dmg','Damage to a person at the centre (hp)',20,300,10,0],['at4Ugv','Damage to the UGV from a direct hit (hp)',100,1500,20,0],['at4Reload','Reload time (s)',0.5,8,0.5,1],
-    ['sec','Stamina boost (double-tap W)'],['stStart','Starting stamina (%)',0,100,1,0],['stGain','Stamina per Magic Mushroom cluster (%)',0,25,1,0],['stDrain','Seconds of boost from a full bar',2,60,1,0],['stMult','Boost speed multiplier',1,3,0.1,1],
+    ['sec','Stamina boost (double-tap W)'],['stStart','Starting stamina (%)',0,100,1,0],['stGain','Stamina per Magic Mushroom cluster (%)',0,25,1,0],['mHeal','Health per Magic Mushroom (heals over time)',0,60,1,0],['stDrain','Seconds of boost from a full bar',2,60,1,0],['stMult','Boost speed multiplier',1,3,0.1,1],
     ['sec','Butchering animals'],['bMeat','Health per meat from a butchered animal (%)',0,10,0.5,1],['bInst','Health instantly (1) or over time (0)',0,1,1,0],
     ['sec','Falling'],['fallOn','Fall damage (1 = on, 0 = off)',0,1,1,0],['fallSafe','Safe drop height (m)',1,30,0.5,1],['fallDmg','Damage per metre above that (hp)',1,50,1,0],
     ];
@@ -4255,7 +4256,7 @@ function animalCry(kind,x,y,z,dying,sp){const c=sp3(x,y,z,kind==='bear'?900:600)
 // ================= equipment bar: the rifle (loaded · spare 7.62 rounds) and RPG rounds picked up =================
 const EQB=(()=>{
   const css=`
-#eqBar{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:4;display:flex;align-items:stretch;gap:6px;padding:6px;border-radius:16px;pointer-events:none;
+#eqBar{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:4;display:flex;align-items:stretch;gap:6px;padding:6px;border-radius:16px;pointer-events:none;
   background:linear-gradient(180deg,rgba(26,32,24,.78),rgba(10,13,10,.66));border:1px solid rgba(238,240,228,.13);box-shadow:0 10px 28px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.07);backdrop-filter:blur(8px) saturate(1.2);-webkit-backdrop-filter:blur(8px) saturate(1.2);font-family:"Barlow Semi Condensed",system-ui,sans-serif;color:#eef0e4}
 #eqBar .eq{position:relative;display:flex;align-items:center;gap:8px;padding:5px 24px 5px 6px;white-space:nowrap;border-radius:11px;min-width:58px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.05);transition:opacity .25s,background .25s}
 #eqBar .eq svg{width:34px;height:34px;flex:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
@@ -4277,20 +4278,22 @@ const EQB=(()=>{
   const S=b=>'<svg viewBox="0 0 48 48" aria-hidden="true">'+b+'</svg>';
   const IC={rifle:S('<path d="M3 27h20l3-2h16l3 1v3H28l-4 2H13l-3 6H5l2-6H3z" fill="#4a3a2a" stroke="#e7d2ae" stroke-width="1.4" stroke-linejoin="round"/><rect x="18" y="19" width="13" height="4" rx="2" fill="#20262a" stroke="#e7d2ae" stroke-width="1.2"/><path d="M21 23v2M28 23v2" stroke="#e7d2ae" stroke-width="1.2"/>'),
     at4:S('<g stroke="#ffd0ee" stroke-width="1.3" stroke-linejoin="round"><rect x="9" y="19" width="30" height="8" rx="2" fill="#6e7944"/><rect x="38" y="16" width="5" height="14" rx="1.5" fill="#262624"/><path d="M9 19 3 16v14l6-3z" fill="#262624"/><rect x="28" y="27" width="4" height="9" fill="#2d2e2b"/><rect x="17" y="16" width="8" height="3" fill="#2b3046"/></g>'),
+    wood:S('<g stroke="#f0d3a2" stroke-width="1.3" stroke-linecap="round"><path d="M6 36 38 12" stroke-width="4.5" stroke="#9a6a3c"/><path d="M8 14 40 34" stroke-width="4" stroke="#a97a46"/><path d="M10 40 42 28" stroke-width="3.5" stroke="#865a30"/></g>'),
     rpg:S('<g stroke="#ffd9b0" stroke-width="1.3" stroke-linejoin="round"><path d="M33 17c5 1 9 4 11 7-2 3-6 6-11 7z" fill="#5d6a3c"/><rect x="21" y="18" width="12" height="12" rx="2" fill="#4f5c33"/><path d="M21 21 13 22.5v3L21 27z" fill="#7a7d72"/><rect x="7" y="22.5" width="7" height="3" fill="#8b8e84"/><path d="M8 22.5 3 17v6zM8 25.5 3 31v-6z" fill="#3d4136"/></g>')};
   const bar=document.createElement('div');bar.id='eqBar';
   bar.innerHTML='<div class="eq act" id="eqRifle">'+IC.rifle+'<div class="t"><b>Rifle</b><i id="eqAmmo">12 · 0 spare</i></div></div>'+
     '<div class="sep"></div>'+
     '<div class="eq off" id="eqAt4">'+IC.at4+'<div class="t"><b>AT4</b><i id="eqAt4T">none</i></div><kbd>X</kbd></div><div class="sep"></div>'+
-    '<div class="eq off" id="eqRpg">'+IC.rpg+'<div class="t"><b>RPG</b><i>rounds</i></div><span class="n" id="eqRpgN">0</span></div>';
+    '<div class="eq off" id="eqRpg">'+IC.rpg+'<div class="t"><b>RPG</b><i>rounds</i></div><span class="n" id="eqRpgN">0</span></div><div class="sep"></div>'+
+    '<div class="eq off" id="eqWood">'+IC.wood+'<div class="t"><b>Sticks</b><i>gathered</i></div><span class="n" id="eqWoodN">0</span></div>';
   document.body.appendChild(bar);
   const $e=id=>document.getElementById(id);let barS='';
-  function ui(f){const pl=player,n=INV.rpg|0,a=INV.at4r|0,s=(pl.ammo|0)+'|'+(pl.reserve|0)+'|'+n+'|'+(playing?1:0)+'|'+WPN.cur+WPN.has+WPN.ld+(WPN.rl>=0)+a;if(s===barS&&!f)return;barS=s;
+  function ui(f){const pl=player,n=INV.rpg|0,a=INV.at4r|0,s=(pl.ammo|0)+'|'+(pl.reserve|0)+'|'+n+'|'+(playing?1:0)+'|'+(INV.wood|0)+'|'+WPN.cur+WPN.has+WPN.ld+(WPN.rl>=0)+a;if(s===barS&&!f)return;barS=s;
     $e('eqRifle').classList.toggle('act',WPN.cur==='rifle');$e('eqAt4').classList.toggle('act',WPN.cur==='at4');$e('eqAt4').classList.toggle('off',!WPN.has);
     $e('eqAt4T').textContent=!WPN.has?'none':(WPN.rl>=0?'loading':(WPN.ld?'loaded':'empty'))+' · '+a+' spare';
     bar.style.display=playing?'flex':'none';
     $e('eqAmmo').textContent=(pl.ammo|0)+' · '+(pl.reserve|0)+' spare';
-    $e('eqRpgN').textContent=n;$e('eqRpg').classList.toggle('off',n<=0);}
+    $e('eqWoodN').textContent=INV.wood|0;$e('eqWood').classList.toggle('off',(INV.wood|0)<=0);$e('eqRpgN').textContent=n;$e('eqRpg').classList.toggle('off',n<=0);}
   function pop(id){const el=$e(id);if(!el)return;el.classList.remove('hl');void el.offsetWidth;el.classList.add('hl');bar.classList.add('pop');setTimeout(()=>el.classList.remove('hl'),650);}
   return {ui,pop};})();
 function eqStep(){EQB.ui();}
