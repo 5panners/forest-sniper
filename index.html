@@ -21,7 +21,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-ui);o
 #game canvas{display:block;width:100%;height:100%;outline:none}
 #scopeCv{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
 .chip{background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:6px 10px;backdrop-filter:blur(4px)}
-#hudL{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono);display:flex;flex-direction:column;gap:2px}
+#hudL{display:none!important;position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono);display:flex;flex-direction:column;gap:2px}
 #scFlame{position:fixed;left:0;top:0;width:100%;height:100%;z-index:2;pointer-events:none;display:none;background:radial-gradient(ellipse 70% 60% at 58% 108%,rgba(255,244,214,.95) 0%,rgba(255,196,110,.75) 22%,rgba(255,150,50,.35) 50%,rgba(255,120,30,0) 78%);mix-blend-mode:screen}#scFlame.on{display:block}#scFlame i{display:none}#inv{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono)}#inv b,#resPrompt b{color:var(--amber);font-weight:600}#resPrompt{position:fixed;left:50%;top:60%;transform:translateX(-50%);z-index:3;pointer-events:none;font:14px/1.5 var(--f-mono)}
 #hudL b{color:var(--amber);font-weight:600}
 #hudR{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono);text-align:right}
@@ -96,7 +96,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 <div id="miniW"><canvas id="miniCv" width="400" height="400"></canvas><div id="miniT"></div></div>
 <div id="perf" class="chip" hidden></div>
 <div id="sndDbg" class="chip" hidden></div>
-<div id="mapPanel" hidden><div class="chip"><canvas id="mapCv" width="560" height="560"></canvas><p>1 km playable square · grid 100 m · north up · P1 / P2 spawns · click to teleport (development)</p></div></div>
+<div id="mapPanel" hidden><div class="chip"><canvas id="mapCv" width="560" height="560"></canvas><p id="mapGrid" style="font:600 14px var(--f-mono);margin:6px 0 2px"></p><p>1 km playable square · grid 100 m · north up · P1 / P2 spawns · click to teleport (development)</p></div></div>
 <div id="overlay"><div class="card">
   <h1 aria-label="FOrest Sniper Royale">F<svg class="scopeO" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="9"/><line x1="50" y1="2" x2="50" y2="34" stroke="currentColor" stroke-width="6"/><line x1="50" y1="66" x2="50" y2="98" stroke="currentColor" stroke-width="6"/><line x1="2" y1="50" x2="34" y2="50" stroke="currentColor" stroke-width="6"/><line x1="66" y1="50" x2="98" y2="50" stroke="currentColor" stroke-width="6"/><circle cx="50" cy="50" r="3.5" fill="#d4552e"/></svg>rest Sniper Royale</h1>
   <p class="sub">2 km of low-poly spruce and beech forest, granite tors, a mountain stream and a lake under the Alps. Only the centre 1 km square is playable.</p>
@@ -1067,6 +1067,7 @@ let SUMMIT={x:SUM0.x,z:SUM0.z,h:-1e9};
 for(let dz=-70;dz<=70;dz+=5)for(let dx=-70;dx<=70;dx+=5){const h=groundH(SUM0.x+dx,SUM0.z+dz);if(h>SUMMIT.h)SUMMIT={x:SUM0.x+dx,z:SUM0.z+dz,h};}
 function addRock(x,z,w,h,d,ry,moss,col,yOff){const g=Math.min(groundH(x-w*0.35,z-d*0.35),groundH(x+w*0.35,z+d*0.35),groundH(x-w*0.35,z+d*0.35),groundH(x+w*0.35,z-d*0.35));
   const r={x,z,y:(yOff!=null?yOff:g-h*0.28),w,h,d,ry,moss,col:col!==false,i:ROCKS.length};ROCKS.push(r);return r;}
+const _nTor0=ROCKS.length;
 // granite tor on the summit: a broad base, a second tier, then flat-topped capstones (the spawn point)
 let SPAWN_Y=0;
 {const S=SUMMIT;const base=[];for(let i=0;i<7;i++){const a=i/7*PI*2+0.3;const rr=i?wrr(4.5,7.5):0;base.push(addRock(S.x+Math.cos(a)*rr,S.z+Math.sin(a)*rr,wrr(5,7.5),wrr(2.6,3.6),wrr(4.5,7),wr()*PI,0.35));}
@@ -1081,7 +1082,7 @@ TORS.forEach(t=>{const n=4+Math.floor(wr()*5);for(let i=0;i<n;i++){const a=wr()*
   const top=addRock(t.x,t.z,wrr(2.5,3.5),wrr(1.2,1.8),wrr(2.5,3.5),wr()*PI,0.3,true,groundH(t.x,t.z)+1.4);TORTOPS.push({x:t.x,z:t.z,y:top.y+top.h*0.92+1.5});});
 
 // exact rock surfaces: the same triangles as the rendered mesh, used for standing, blocking and bullets
-function rockTris(r){if(r.T)return r.T;const g=rockShape(r.w,r.h,r.d,r.i*31+7);const c=Math.cos(r.ry),s=Math.sin(r.ry);const p=g.attributes.position;const T=new Float32Array(p.count*3);let R=0,top=-1e9;
+function rockTris(r){if(r.T)return r.T;const g=rockShape(r.w,r.h,r.d,r.i*31+7,r.bl,r.jit);const c=Math.cos(r.ry),s=Math.sin(r.ry);const p=g.attributes.position;const T=new Float32Array(p.count*3);let R=0,top=-1e9;
   for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i);const wx=x*c+z*s,wz=-x*s+z*c;T[i*3]=wx+r.x;T[i*3+1]=y+r.y;T[i*3+2]=wz+r.z;R=Math.max(R,Math.hypot(wx,wz));top=Math.max(top,y+r.y);}
   r.T=T;r.R=R;r.top=top;return T;}
 function rockTopAt(r,x,z){const T=rockTris(r);if((x-r.x)*(x-r.x)+(z-r.z)*(z-r.z)>r.R*r.R)return -1e9;let best=-1e9;
@@ -1126,6 +1127,47 @@ const STAIRS=[],LOWR=[];
      // every other boulder gets a smaller, lower one tucked against it, so the pair reads as something that tumbled down together
      if(placed.length%2===1){const b=sr()*PI*2,w2=0.9+sr()*0.7,t2=0.3+sr()*0.25,x2=x+Math.cos(b)*(w*0.55+w2*0.45),z2=z+Math.sin(b)*(w*0.55+w2*0.45);
        if(slopeAt(x2,z2)<0.5&&!ROCKS.some(r=>Math.hypot(r.x-x2,r.z-z2)<Math.max(r.w,r.d)*0.5+w2*0.5+0.4)){const sm=addRock(x2,z2,w2,t2/0.655,w2*(0.8+sr()*0.4),sr()*PI,0.35);LOWR.push(sm);}}}}
+ // ---- granite tors, rebuilt: broad flat-topped slabs buried in the ground, tier on tier, every tier sitting inside the one below.
+ // Each step up is a comfortable hop, the heights run on from slab to slab with no air underneath, and a flood-fill check makes sure the top can be reached.
+ ROCKS.length=_nTor0;
+ function surfR(x,z,list){let h=groundH(x,z);for(const r of list){const t=rockTopAt(r,x,z);if(t>h)h=t;}return h;}
+ function slab(list,x,z,w,d,top,bot,ry,moss){const hgt=Math.max(1.0,(top-bot)/0.97);const r=addRock(x,z,w,hgt,d,ry,moss,true,bot);r.bl=0.16;r.jit=0.10;
+   const t=rockTopAt(r,x,z);if(t>-1e8){r.y+=top-t;delete r.T;}list.push(r);return r;}
+ function supportedOn(list,x,z,w,d,top,depth){for(let k=0;k<8;k++){const a=k/8*PI*2;if(surfR(x+Math.cos(a)*w*0.42,z+Math.sin(a)*d*0.42,list)<top-depth+0.3)return false;}return true;}
+ function groundMin(x,z,w,d){let g=1e9;for(let k=0;k<9;k++){const b=k/8*PI*2,q=k?0.42:0;g=Math.min(g,groundH(x+Math.cos(b)*w*q,z+Math.sin(b)*d*q));}return g;}
+ function climbable(cx,cz,R,tx,tz){const ST=0.35,n=Math.ceil(2*R/ST),x0=cx-R,z0=cz-R,HOP=0.8;const near=ROCKS.filter(r=>Math.hypot(r.x-cx,r.z-cz)<R+12);
+   const H=new Float32Array(n*n),E=new Uint8Array(n*n),q=[];
+   for(let j=0;j<n;j++)for(let i=0;i<n;i++){const x=x0+i*ST,z=z0+j*ST;H[j*n+i]=surfR(x,z,near);if(Math.hypot(x-cx,z-cz)>R-1.0){E[j*n+i]=1;q.push(j*n+i);}}
+   for(let qi=0;qi<q.length;qi++){const c=q[qi],ci=c%n,cj=(c-ci)/n;for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){if(!di&&!dj)continue;const ni=ci+di,nj=cj+dj;if(ni<0||nj<0||ni>=n||nj>=n)continue;const m=nj*n+ni;if(!E[m]&&H[m]-H[c]<=HOP){E[m]=1;q.push(m);}}}
+   const ti=Math.round((tx-x0)/ST),tj=Math.round((tz-z0)/ST);return E[tj*n+ti]===1;}
+ const TORINFO=[];
+ function buildTor(cx,cz,big){const list=[];const nR=big?8:6,r0=big?5.4:3.6,w0=big?6.8:5.2,a0=sr()*PI*2;const tops=[];
+   // tier 0: a ring of broad slabs, each one walkable from the ground just outside it, and a plug filling the middle
+   for(let i=0;i<nR;i++){const a=a0+i/nR*PI*2+(sr()-0.5)*0.35,rr=r0*(0.9+sr()*0.22),x=cx+Math.cos(a)*rr,z=cz+Math.sin(a)*rr,w=w0*(0.9+sr()*0.28),d=w0*(0.78+sr()*0.35);
+     const go=groundH(cx+Math.cos(a)*(rr+w*0.62),cz+Math.sin(a)*(rr+w*0.62)),gc=groundH(x,z);const top=Math.max(go+0.62+sr()*0.12,gc+0.5);
+     slab(list,x,z,w,d,top,Math.min(groundMin(x,z,w,d),top-1.2)-0.7,a+PI/2+(sr()-0.5)*0.7,0.3);tops.push(top);}
+   {const m=tops.reduce((s,v)=>s+v,0)/tops.length,w=w0*0.95,d=w0*0.9;slab(list,cx,cz,w,d,m+0.1,Math.min(groundMin(cx,cz,w,d),m-1.2)-0.7,sr()*PI,0.3);}
+   // the tiers above: each block sits on the lower tier, a hop above the lower surface at its outer edge, and is pulled inwards until all of it rests on rock
+   function tier(n,rad,wk,depth){const a1=sr()*PI*2;for(let i=0;i<n;i++){const a=a1+i/n*PI*2+(sr()-0.5)*0.5;let x=cx+Math.cos(a)*rad,z=cz+Math.sin(a)*rad,w=w0*wk*(0.9+sr()*0.2),d=w0*wk*(0.8+sr()*0.3);
+       let top=0;for(let it=0;it<6;it++){const so=surfR(x+Math.cos(a)*w*0.55,z+Math.sin(a)*w*0.55,list),sc=surfR(x,z,list);top=Math.max(so+0.62+sr()*0.1,sc+0.2);
+         if(supportedOn(list,x,z,w,d,top,depth))break;x=cx+(x-cx)*0.82;z=cz+(z-cz)*0.82;w*=0.93;d*=0.93;}
+       slab(list,x,z,w,d,top,top-depth,a+PI/2+(sr()-0.5)*0.8,0.25);}}
+   tier(big?4:3,r0*0.45,0.7,1.5);
+   if(big)tier(2,r0*0.2,0.5,1.5);
+   // the capstone: lowest surface round it plus a hop
+   const cw=w0*(big?0.62:0.72),cd=cw*(0.85+sr()*0.2);let cm=1e9;for(let k=0;k<8;k++){const b=k/8*PI*2;cm=Math.min(cm,surfR(cx+Math.cos(b)*cw*0.62,cz+Math.sin(b)*cd*0.62,list));}
+   const ctop=Math.max(cm+0.62,surfR(cx,cz,list)+0.2);slab(list,cx,cz,cw,cd,ctop,ctop-1.5,sr()*PI,0.2);const cap=list[list.length-1];
+   // a tall block or two behind the capstone on the big tor, for a skyline (not climbable, but nothing underneath either)
+   if(big){const b0=sr()*PI*2;for(let k=0;k<2;k++){const a=b0+k*2.3,x=cx+Math.cos(a)*w0*0.2,z=cz+Math.sin(a)*w0*0.2,w=w0*0.34;const sc=surfR(x,z,list);if(supportedOn(list,x,z,w,w,sc+1.9,2.2))slab(list,x,z,w,w*(0.8+sr()*0.4),sc+1.7+sr()*0.5,sc-1.2,sr()*PI,0.2);}}
+   // loose blocks round the foot, part buried, each a short hop
+   const nC=big?6:4;for(let k=0,placed=[],tries=0;k<nC&&tries<40;tries++){const a=sr()*PI*2,rad=r0+w0*0.62+0.6+sr()*1.6,x=cx+Math.cos(a)*rad,z=cz+Math.sin(a)*rad,w=1.3+sr()*1.0;
+     if(lakeE(x,z)<1.1||placed.some(q=>Math.hypot(q.x-x,q.z-z)<2.0)||list.some(r=>Math.hypot(r.x-x,r.z-z)<Math.max(r.w,r.d)*0.5+w*0.5))continue;
+     const g=groundMin(x,z,w,w),top=groundH(x,z)+0.4+sr()*0.3,hg=(top-(g-0.4))/0.935;const r=addRock(x,z,w,hg,w*(0.8+sr()*0.4),sr()*PI,0.4,true,g-0.4);placed.push(r);list.push(r);k++;}
+   const R=r0+w0*0.62+6,ok=climbable(cx,cz,R,cx,cz);if(!ok)stair(cx,cz);
+   TORINFO.push({x:cx,z:cz,big,ok,top:rockTopAt(cap,cx,cz)});return cap;}
+ TORS.forEach(t=>buildTor(t.x,t.z,false));
+ {const cap=buildTor(SUMMIT.x,SUMMIT.z,true);SPAWN_Y=rockTopAt(cap,SUMMIT.x,SUMMIT.z)+0.05;}
+ window.__TORINFO=TORINFO;
  lowRocks(SUMMIT.x,SUMMIT.z);
  // one of the loose boulders is dragged hard against the tor, and a short run of ledge blocks leads from the tor's lower tier up to the capstone (the spawn)
  const ASC=[];
@@ -1159,8 +1201,7 @@ const STAIRS=[],LOWR=[];
      const rk=addRock(bestN.x,bestN.z,w,hg,w*(0.9+sr()*0.2),sr()*PI,0.3+sr()*0.2,true,bestN.T-hg*0.935);rk.asc=true;
      px=bestN.x;pz=bestN.z;Tc=rockTopAt(rk,px,pz);ASC.push({x:px,z:pz,top:Tc});}
    ASC.base=B;ASC.cap=cap;}
- ascent(SUMMIT.x,SUMMIT.z);window.__ASC=ASC;
- TORS.forEach(t=>stair(t.x,t.z));
+ window.__ASC=ASC;
  // pit check: find any pocket between the boulders that a player could drop into but not hop out of, and wedge a rock into it
  const TRAPFIX=[];
  function trapFill(cx,cz,R){const ST=0.35,n=Math.ceil(R*2/ST),x0=cx-R,z0=cz-R,HOP=0.85;let fixed=0;
@@ -2041,13 +2082,13 @@ chunks.forEach(c=>{const it=c.items;
   c.box.set(V(c.x0-6,c.ymin-5,c.z0-6),V(c.x1+6,c.ymax+8,c.z1+6));c.items=null;});
 
 /* ---------------- rocks, fallen logs, structures ---------------- */
-function rockGeo(w,h,d,seedk,moss){const g=rockShape(w,h,d,seedk);g.computeVertexNormals();const n=g.attributes.normal,q=g.attributes.position;const col=new Float32Array(q.count*3);
+function rockGeo(w,h,d,seedk,moss,bl,jit){const g=rockShape(w,h,d,seedk,bl,jit);g.computeVertexNormals();const n=g.attributes.normal,q=g.attributes.position;const col=new Float32Array(q.count*3);
   for(let t=0;t<q.count;t+=3){const ny=(n.getY(t)+n.getY(t+1)+n.getY(t+2))/3;const mm=ny>0.55&&hsh(seedk,t)<0.35+moss;const c=mm?(hsh(t,seedk)>0.5?PAL.moss2:PAL.mossRock):(hsh(t+1,seedk)>0.45?PAL.rock:PAL.rock2);const j=1+(hsh(t,seedk+9)-0.5)*0.12;
     for(let v=t;v<t+3;v++){col[v*3]=c.r*j;col[v*3+1]=c.g*j;col[v*3+2]=c.b*j;}}
   g.setAttribute('color',new THREE.BufferAttribute(col,3));return g;}
-function rockShape(w,h,d,seedk){const g0=new THREE.BoxGeometry(1,1,1,2,2,2);const p=g0.attributes.position;const cache={};
+function rockShape(w,h,d,seedk,bl,jit){const g0=new THREE.BoxGeometry(1,1,1,2,2,2);const p=g0.attributes.position;const cache={};
   for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i);const k=Math.round(x*4)+'_'+Math.round(y*4)+'_'+Math.round(z*4);
-    if(!cache[k]){const v=V(x,y,z);const s=v.clone().normalize().multiplyScalar(0.5*0.9);v.lerp(s,0.5);const hh=hsh(seedk+Math.round(x*4)*13,Math.round(y*4)*7+Math.round(z*4)*3);v.multiplyScalar(1+(hh-0.5)*0.22);if(y>0.4)v.y-=0.04;cache[k]=v;}
+    if(!cache[k]){const v=V(x,y,z);const s=v.clone().normalize().multiplyScalar(0.5*0.9);v.lerp(s,bl==null?0.5:bl);const hh=hsh(seedk+Math.round(x*4)*13,Math.round(y*4)*7+Math.round(z*4)*3);v.multiplyScalar(1+(hh-0.5)*(jit==null?0.22:jit));if(y>0.4)v.y-=0.04;cache[k]=v;}
     const v=cache[k];p.setXYZ(i,v.x*w,v.y*h+h/2,v.z*d);}
   return g0.toNonIndexed();}
 // boulders through the woods, mossy blocks along the stream, blocks in the windthrow
@@ -2070,7 +2111,7 @@ for(let k=0,tr=0;k<110&&tr<3000;tr++){const x=wrr(-500,500),z=wrr(-500,500);if(m
 // merge rocks + logs into static chunk meshes
 {const buckets=new Map();const bk=(x,z)=>Math.floor((x+HALF)/260)+','+Math.floor((z+HALF)/260);
  const push=(x,z,g)=>{const k=bk(x,z);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(g);};
- ROCKS.forEach((r,i)=>{const g=rockGeo(r.w,r.h,r.d,i*31+7,r.moss);xf(g,[r.x,r.y,r.z],[0,r.ry,0]);push(r.x,r.z,g);});
+ ROCKS.forEach((r,i)=>{const g=rockGeo(r.w,r.h,r.d,i*31+7,r.moss,r.bl,r.jit);xf(g,[r.x,r.y,r.z],[0,r.ry,0]);push(r.x,r.z,g);});
  LOGS.forEach((l,i)=>{const dx=Math.cos(l.ry),dz=Math.sin(l.ry),lx=-dz,lz=dx;const Ls=l.L*0.5,r=l.r,d=r*2.04,hh=d*0.866;   // triangular stack of 6 half-length logs: 3 + 2 + 1
    const cols=[-d,0,d];let gmax=-1e9;for(const o of cols)for(const s of [-Ls/2,0,Ls/2])gmax=Math.max(gmax,groundH(l.x+dx*s+lx*o,l.z+dz*s+lz*o));
    const yc=gmax+r*0.75;const lay=[[-d,0],[0,0],[d,0],[-d/2,hh],[d/2,hh],[0,2*hh]];const parts=[];
@@ -3534,7 +3575,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=275;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=278;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3554,7 +3595,7 @@ function update(dt){
   brgEl.textContent=hhmm(DAY.tod);
   hudL.innerHTML='<span>'+player.ammo+' loaded · '+(player.reserve|0)+' spare'+(boltT>=0?' · chambering':'')+'</span><span>grid '+Math.round(player.pos.x)+' E  '+Math.round(-player.pos.z)+' N  ·  '+Math.round(player.pos.y)+' m</span>';
   const edge=PLAY-Math.max(Math.abs(player.pos.x),Math.abs(player.pos.z));warnEl.textContent=edge<20&&!scoped?'Edge of the operating area':'';
-  if(mapOpen)drawMap();
+  if(mapOpen){drawMap();const g=$('mapGrid');if(g)g.textContent='You are at grid '+Math.round(player.pos.x)+' E  '+Math.round(-player.pos.z)+' N  ·  '+Math.round(player.pos.y)+' m';}
   cmp.style.display=playing?'block':'none';if(playing)drawCompass();
   drawMini();
 }
@@ -3740,7 +3781,7 @@ function wTap(){const t=performance.now();if(t-BOOST.lastW<320&&STAM.v>0&&player
 function boostStep(ok,dt){if(!(keys.KeyW||keys.ArrowUp)){BOOST.on=false;return false;}if(!BOOST.on)return false;if(!ok){BOOST.on=false;return false;}STAM.v=Math.max(0,STAM.v-dt/GAME.stDrain);if(STAM.v<=0){BOOST.on=false;toast('Out of stamina');return false;}return true;}
 function stamStep(sp,dt){return;if(sp){STAM.v-=dt/12;if(STAM.v<=0){STAM.v=0;STAM.lock=true;}}else STAM.v=Math.min(1,STAM.v+dt/7);if(STAM.lock&&STAM.v>0.28)STAM.lock=false;}
 const VIT=(()=>{const st=document.createElement('style');st.textContent=`
-#vitals{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(78px + env(safe-area-inset-bottom,0px));z-index:3;pointer-events:none;width:210px;padding:9px 12px 10px;border-radius:10px;background:linear-gradient(180deg,rgba(14,18,16,.62),rgba(10,13,12,.5));border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(5px);box-shadow:0 4px 14px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:7px;font:600 11px/1 "IBM Plex Mono",ui-monospace,monospace;color:#e8e4d4}
+#vitals{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:3;pointer-events:none;width:210px;padding:9px 12px 10px;border-radius:10px;background:linear-gradient(180deg,rgba(14,18,16,.62),rgba(10,13,12,.5));border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(5px);box-shadow:0 4px 14px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:7px;font:600 11px/1 "IBM Plex Mono",ui-monospace,monospace;color:#e8e4d4}
 #vitals .vr{display:flex;align-items:center;gap:8px}
 #vitals svg{width:15px;height:15px;flex:none;fill:currentColor}
 #vitals .tr{position:relative;flex:1;height:9px;border-radius:5px;background:rgba(255,255,255,.1);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.45)}
@@ -4319,13 +4360,15 @@ const EQB=(()=>{
     wood:S('<g stroke="#f0d3a2" stroke-width="1.3" stroke-linecap="round"><path d="M6 36 38 12" stroke-width="4.5" stroke="#9a6a3c"/><path d="M8 14 40 34" stroke-width="4" stroke="#a97a46"/><path d="M10 40 42 28" stroke-width="3.5" stroke="#865a30"/></g>'),
     rpg:S('<g stroke="#ffd9b0" stroke-width="1.3" stroke-linejoin="round"><path d="M33 17c5 1 9 4 11 7-2 3-6 6-11 7z" fill="#5d6a3c"/><rect x="21" y="18" width="12" height="12" rx="2" fill="#4f5c33"/><path d="M21 21 13 22.5v3L21 27z" fill="#7a7d72"/><rect x="7" y="22.5" width="7" height="3" fill="#8b8e84"/><path d="M8 22.5 3 17v6zM8 25.5 3 31v-6z" fill="#3d4136"/></g>')};
   const bar=document.createElement('div');bar.id='eqBar';
-  bar.innerHTML='<div class="eq act" id="eqRifle">'+IC.rifle+'<div class="t"><b>Rifle</b></div><kbd>1</kbd></div>'+
+  bar.innerHTML='<div class="eq act" id="eqRifle">'+IC.rifle+'<div class="t"><b>Rifle</b><i id="eqAmmo">12 · 0 spare</i></div><kbd>1</kbd></div>'+
     '<div class="sep"></div>'+
-    '<div class="eq off" id="eqAt4">'+IC.at4+'<div class="t"><b>AT4</b></div><kbd>2</kbd></div>';
+    '<div class="eq off" id="eqAt4">'+IC.at4+'<div class="t"><b>AT4</b><i id="eqAt4T">none</i></div><kbd>2</kbd></div>';
   document.body.appendChild(bar);
   const $e=id=>document.getElementById(id);let barS='';
-  function ui(f){const s=(playing?1:0)+'|'+WPN.cur+WPN.has;if(s===barS&&!f)return;barS=s;
+  function ui(f){const pl=player,a=INV.at4r|0,s=(playing?1:0)+'|'+(pl.ammo|0)+'|'+(pl.reserve|0)+'|'+WPN.cur+WPN.has+WPN.ld+(WPN.rl>=0)+a;if(s===barS&&!f)return;barS=s;
     $e('eqRifle').classList.toggle('act',WPN.cur==='rifle');$e('eqAt4').classList.toggle('act',WPN.cur==='at4');$e('eqAt4').classList.toggle('off',!WPN.has);
+    $e('eqAmmo').textContent=(pl.ammo|0)+' · '+(pl.reserve|0)+' spare';
+    $e('eqAt4T').textContent=!WPN.has?'none':(WPN.rl>=0?'loading':(WPN.ld?'loaded':'empty'))+' · '+a+' spare';
     bar.style.display=playing?'flex':'none';}
   function pop(id){const el=$e(id);if(!el)return;el.classList.remove('hl');void el.offsetWidth;el.classList.add('hl');bar.classList.add('pop');setTimeout(()=>el.classList.remove('hl'),650);}
   return {ui,pop};})();
