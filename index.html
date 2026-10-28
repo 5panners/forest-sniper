@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>FOrest Sniper Royale</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2548,7 +2549,7 @@ function at4Parts(){const OL='#6e7944',OL2='#646f3d',DK='#262624',BL='#2b3046',G
   [B(0.032,0.13,0.045),GR,[0,0.0,0.0],[-0.12,0,0]],[B(0.036,0.02,0.07),GR,[0,0.07,0.0]],                                                                     // pistol grip
   [B(0.018,0.045,0.2),OL2,[0.045,c+0.02,-0.3]],[B(0.02,0.01,0.03),'#d8322a',[0.056,c+0.045,-0.22]],                                                         // cocking lever housing, red tab
   [B(0.03,0.02,0.18),OL2,[0,c-0.05,-0.3]],[B(0.004,0.07,0.004),'#b8b8b0',[0.01,c-0.09,-0.33]],[B(0.012,0.12,0.004),'#c9b23c',[-0.01,c-0.11,-0.36],[0.3,0,0]]];}   // shoulder rest, pin, sling end
-const AT4G=new THREE.Group();AT4G.scale.setScalar(1/1.2);AT4G.visible=false;gun.add(AT4G);
+const AT4G=new THREE.Group();AT4G.scale.setScalar(1.4/1.2);AT4G.visible=false;gun.add(AT4G);
 {const m=new THREE.Mesh(build(at4Parts()),envMat);m.castShadow=true;AT4G.add(m);}
 const AT4_MUZ=new THREE.Object3D();AT4_MUZ.position.set(0,AT4_TY,0.42);AT4G.add(AT4_MUZ);
 const AT4_BACK=new THREE.Object3D();AT4_BACK.position.set(0,AT4_TY,-0.66);AT4G.add(AT4_BACK);
@@ -3532,7 +3533,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=270;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=272;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);
@@ -3806,7 +3807,7 @@ function eatFood(k,q){if(k==='mushroom'){const g=GAME.stGain/100;STAM.v=Math.min
 function healStep(){const now=performance.now(),dt=Math.min(0.25,(now-HEAL.t)/1000);HEAL.t=now;
   if(HEAL.pool>0&&player.alive&&MPM.hp>0){if(MPM.hp>=HP_MAX){HEAL.pool=0;return;}const h=Math.min(HEAL.pool,HEAL_RATE*dt,HP_MAX-MPM.hp);MPM.hp+=h;HEAL.pool-=h;}}
 
-// ---- damage model: every weapon's damage per target zone, hit points, and the list of what can be damaged (menu tab "Damage Model")
+// ---- damage model: every weapon's damage per target zone, hit points, and the list of what can be damaged (menu tab "Weapons")
 const DMG_DEF={
   w:{rifle:{n:'Rifle',on:1,p:{head:100,torso:70,limb:35},d:{head:999,neck:999,vitals:70,gut:40,leg:25},k:{head:120,body:70,leg:25},b:100}},
   hp:{stag:120,fallow:100,roe:80,buzzard:10,bear:360},
@@ -3819,34 +3820,70 @@ function dmgApply(){if(typeof MP_DMG!=='undefined'){Object.assign(MP_DMG,DMG.w.r
 function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(e){}dmgApply();}
 (function(){
   const tabs=document.querySelector('.tabs'),paneMp=document.getElementById('paneMp');if(!tabs||!paneMp)return;
-  const css=document.createElement('style');css.textContent=`#paneDmg table{border-collapse:collapse;margin:6px 0 4px;font-size:13px}#paneDmg th{font:600 11px var(--f-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:3px 10px 3px 0}
-#paneDmg td{padding:2px 10px 2px 0;vertical-align:middle}#paneDmg input{width:62px;background:rgba(255,255,255,.06);color:inherit;border:1px solid var(--line);border-radius:4px;padding:3px 5px;font:inherit}
-#paneDmg tr.off td:first-child{opacity:.6}#paneDmg .tag{font-size:11px;opacity:.65;margin-left:6px}#paneDmg .nd td{opacity:.8;padding-right:14px}#paneDmg button{margin-top:10px}`;document.head.appendChild(css);
-  const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabDmg';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','paneDmg');tb.textContent='Damage Model';tabs.appendChild(tb);
+  const css=document.createElement('style');css.textContent=`
+#paneDmg .wgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;margin:10px 0 6px}
+#paneDmg .wc{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:12px;padding:14px 16px 12px;display:flex;flex-direction:column;gap:10px}
+#paneDmg .wc.wide{grid-column:1/-1}
+#paneDmg .wh{display:flex;align-items:center;gap:12px}#paneDmg .wh svg{width:54px;height:40px;flex:none}
+#paneDmg .wh h3{margin:0;font:700 15px var(--f-ui);letter-spacing:.1em;text-transform:uppercase}#paneDmg .wh p{margin:2px 0 0;font-size:12px;opacity:.7}
+#paneDmg .wh .key{margin-left:auto;font:700 11px "IBM Plex Mono",monospace;padding:2px 7px;border:1px solid var(--line);border-radius:5px;opacity:.85;white-space:nowrap}
+#paneDmg .sp{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px 14px}
+#paneDmg .sp div{display:flex;flex-direction:column;font-size:12px;line-height:1.25}#paneDmg .sp span{font:600 10px var(--f-ui);letter-spacing:.09em;text-transform:uppercase;opacity:.55}#paneDmg .sp b{font:600 13px "IBM Plex Mono",monospace}
+#paneDmg .wc h4{margin:2px 0 -2px;font:600 11px var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+#paneDmg .gr{display:grid;grid-template-columns:minmax(120px,190px) 1fr 54px;gap:10px;align-items:center;font-size:13px}#paneDmg .gr input[type=range]{width:100%}#paneDmg .gr output{font-variant-numeric:tabular-nums;text-align:right;opacity:.9}
+#paneDmg table{border-collapse:collapse;font-size:13px;width:100%}#paneDmg th{font:600 10px var(--f-ui);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);text-align:left;padding:2px 8px 4px 0}
+#paneDmg td{padding:2px 8px 2px 0;vertical-align:middle}#paneDmg input[type=number]{width:60px;background:rgba(255,255,255,.06);color:inherit;border:1px solid var(--line);border-radius:4px;padding:3px 5px;font:inherit}
+#paneDmg .nd td{opacity:.8;padding-right:14px}#paneDmg .tn{font-size:12px;opacity:.65;margin:0;line-height:1.4}#paneDmg .tag{font-size:10px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);border-radius:4px;padding:1px 5px;opacity:.7}
+#paneDmg button.btn{margin-top:12px}`;document.head.appendChild(css);
+  const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabDmg';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','paneDmg');tb.textContent='Weapons';tabs.appendChild(tb);
   const pn=document.createElement('div');pn.id='paneDmg';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabDmg');pn.hidden=true;paneMp.after(pn);
-  const num=(path,val,step)=>`<input type="number" min="0" step="${step||1}" data-p="${path}" value="${val}">`;
-  const wrows=(g,keys)=>Object.keys(DMG.w).map(w=>{const W=DMG.w[w];return `<tr class="${W.on?'':'off'}"><td>${W.n}${W.on?'':'<span class="tag">not in game yet</span>'}</td>${keys.map(k=>`<td>${num('w.'+w+'.'+g+'.'+k,W[g][k])}</td>`).join('')}</tr>`;}).join('');
-  const build=()=>{pn.innerHTML=`<p class="note">Damage is in health points. Every value saves as you type. In a 1v1 match, damage to a player is taken from that player's own table and damage to animals from the host's table, so keep both players' values the same.</p>
-<p class="sec">Players · damage per hit</p><table><tr><th>Weapon</th><th>Head</th><th>Torso</th><th>Limbs</th></tr>${wrows('p',['head','torso','limb'])}</table>
-<p class="sec" style="margin-top:12px">Deer · damage per hit</p><table><tr><th>Weapon</th><th>Head</th><th>Neck</th><th>Heart / lungs</th><th>Gut</th><th>Leg</th></tr>${wrows('d',['head','neck','vitals','gut','leg'])}</table>
-<p class="note">Deer die when their hit points run out. Heart / lung hits that do not kill outright leave a fatal wound (it runs, then dies within seconds), a gut hit bleeds out over one to two minutes, and a leg hit causes a limp. A second hit on a wounded deer always kills.</p>
-<p class="sec" style="margin-top:12px">Bear · damage per hit</p><table><tr><th>Weapon</th><th>Head</th><th>Body</th><th>Leg</th></tr>${wrows('k',['head','body','leg'])}</table>
-<p class="note">The bear dies when its hit points run out; until then a hit sends it running for a few seconds.</p>
-<p class="sec" style="margin-top:12px">Buzzard · damage per hit (any part)</p><table><tr><th>Weapon</th><th>Any hit</th></tr>${Object.keys(DMG.w).map(w=>{const W=DMG.w[w];return `<tr class="${W.on?'':'off'}"><td>${W.n}${W.on?'':'<span class="tag">not in game yet</span>'}</td><td>${num('w.'+w+'.b',W.b)}</td></tr>`;}).join('')}</table>
-<p class="sec" style="margin-top:12px">Everything that can be damaged · hit points</p><table><tr><th>Target</th><th>Hit points</th><th>Hit by</th></tr>
-<tr><td>Player (you or the opponent)</td><td>100 at the start of a round, up to 200 with food</td><td>rifle (head, torso, limbs)</td></tr>
-<tr><td>Red deer stag</td><td>${num('hp.stag',DMG.hp.stag)}</td><td>rifle (head, neck, heart / lungs, gut, legs)</td></tr>
-<tr><td>Fallow doe</td><td>${num('hp.fallow',DMG.hp.fallow)}</td><td>rifle (same zones)</td></tr>
-<tr><td>Roe doe</td><td>${num('hp.roe',DMG.hp.roe)}</td><td>rifle (same zones)</td></tr>
-<tr><td>Brown bear</td><td>${num('hp.bear',DMG.hp.bear)}</td><td>rifle (head, body, legs) · default is three times the stag</td></tr>
-<tr><td>Buzzard</td><td>${num('hp.buzzard',DMG.hp.buzzard)}</td><td>rifle</td></tr></table>
-<p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Magic Mushrooms, wood, 7.62 ammo boxes, RPG rounds, Tech Chips</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>
-<button type="button" id="dmgReset" class="btn">Reset to defaults</button>`;
-    pn.querySelectorAll('input').forEach(i=>i.oninput=()=>{const v=parseFloat(i.value);if(!(v>=0))return;const ks=i.dataset.p.split('.');let o=DMG;for(let j=0;j<ks.length-1;j++)o=o[ks[j]];o[ks[ks.length-1]]=v;dmgSave();});
-    pn.querySelector('#dmgReset').onclick=()=>{const f=JSON.parse(JSON.stringify(DMG_DEF));for(const k in f)DMG[k]=f[k];dmgSave();build();};};
-  build();
+  const num=(path,val)=>`<input type="number" min="0" step="1" data-p="${path}" value="${val}">`;
+  const sl=(k,label,mn,mx,st,dp)=>`<div class="gr"><label>${label}</label><input type="range" min="${mn}" max="${mx}" step="${st}" value="${GAME[k]}" data-k="${k}" data-dp="${dp}"><output>${(+GAME[k]).toFixed(dp)}</output></div>`;
+  const sp=a=>'<div class="sp">'+a.map(x=>`<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join('')+'</div>';
+  const dt=(title,g,cols)=>{const W=DMG.w.rifle;return `<h4>${title}</h4><table><tr>${cols.map(c=>`<th>${c[1]}</th>`).join('')}</tr><tr>${cols.map(c=>`<td>${num('w.rifle.'+g+'.'+c[0],W[g][c[0]])}</td>`).join('')}</tr></table>`;};
+  const IC={rifle:'<svg viewBox="0 0 48 48"><path d="M3 27h20l3-2h16l3 1v3H28l-4 2H13l-3 6H5l2-6H3z" fill="#4a3a2a" stroke="#e7d2ae" stroke-width="1.4" stroke-linejoin="round"/><rect x="18" y="19" width="13" height="4" rx="2" fill="#20262a" stroke="#e7d2ae" stroke-width="1.2"/></svg>',
+    at4:'<svg viewBox="0 0 48 48"><g stroke="#ffd0ee" stroke-width="1.3" stroke-linejoin="round"><rect x="9" y="19" width="30" height="8" rx="2" fill="#6e7944"/><rect x="38" y="16" width="5" height="14" rx="1.5" fill="#262624"/><path d="M9 19 3 16v14l6-3z" fill="#262624"/><rect x="28" y="27" width="4" height="9" fill="#2d2e2b"/><rect x="17" y="16" width="8" height="3" fill="#2b3046"/></g></svg>',
+    rpg:'<svg viewBox="0 0 48 48"><g stroke="#ffd9b0" stroke-width="1.3" stroke-linejoin="round"><path d="M33 17c5 1 9 4 11 7-2 3-6 6-11 7z" fill="#5d6a3c"/><rect x="21" y="18" width="12" height="12" rx="2" fill="#4f5c33"/><path d="M21 21 13 22.5v3L21 27z" fill="#7a7d72"/><rect x="7" y="22.5" width="7" height="3" fill="#8b8e84"/></g></svg>',
+    ugv:'<svg viewBox="0 0 48 48"><g stroke="#e8d9b0" stroke-width="1.3" stroke-linejoin="round"><rect x="6" y="28" width="36" height="8" rx="3" fill="#6b5f3e"/><rect x="14" y="21" width="18" height="8" rx="2" fill="#7b6e48"/><rect x="30" y="23" width="14" height="3" fill="#2a2a28"/><circle cx="12" cy="37" r="3.5" fill="#222"/><circle cx="24" cy="37" r="3.5" fill="#222"/><circle cx="36" cy="37" r="3.5" fill="#222"/></g></svg>'};
+  const build=()=>{const W=DMG.w.rifle,mag=typeof MAG!=='undefined'?MAG:5,bolt=typeof BOLT!=='undefined'?BOLT:1.35,v0=typeof V0!=='undefined'?V0:850;
+    pn.innerHTML=`<p class="note">Everything about each weapon in one place. Every value saves as you change it. In a 1v1 match damage to a player comes from that player's own settings and damage to animals from the host's, so keep both players the same.</p>
+<div class="wgrid">
+<section class="wc"><div class="wh">${IC.rifle}<div><h3>Bolt-action rifle</h3><p>7.62 mm scoped sniper rifle · your starting weapon</p></div><span class="key">LMB fire · R reload · RMB scope</span></div>
+${sp([['Calibre','7.62 mm'],['Magazine',mag+' rounds'],['Bolt cycle',bolt+' s'],['Muzzle velocity',v0+' m/s'],['Scope','2× 3× 4× (wheel)'],['Ammo','7.62 boxes']])}
+<h4>Pickups</h4>${sl('pk762','Rounds per ammo box',1,60,1,0)}
+${dt('Damage to players','p',[['head','Head'],['torso','Torso'],['limb','Limbs']])}
+${dt('Damage to deer','d',[['head','Head'],['neck','Neck'],['vitals','Heart / lungs'],['gut','Gut'],['leg','Leg']])}
+${dt('Damage to a bear','k',[['head','Head'],['body','Body'],['leg','Leg']])}
+<h4>Damage to a buzzard</h4><table><tr><th>Any hit</th></tr><tr><td>${num('w.rifle.b',W.b)}</td></tr></table>
+<p class="tn">Heart / lung deer hits leave a fatal wound, a gut hit bleeds out over one to two minutes, a leg hit causes a limp. A second hit on a wounded deer always kills.</p></section>
+<section class="wc"><div class="wh">${IC.at4}<div><h3>AT4</h3><p>Shoulder-mounted light anti-armour weapon · single shot</p></div><span class="key">X switch · LMB fire · R load</span></div>
+${sp([['Rocket speed',GAME.at4Spd+' m/s'],['Blast radius',GAME.at4R+' m'],['Person, centre',GAME.at4Dmg+' hp'],['UGV, direct',GAME.at4Ugv+' hp'],['Reload',GAME.at4Reload+' s'],['Bears','2× person damage']])}
+<h4>Pickups</h4>${sl('pkAt4','AT4 rounds per round pickup',1,10,1,0)}
+<h4>Rocket and blast</h4>${sl('at4Spd','Rocket speed (m/s)',60,300,10,0)}${sl('at4R','Blast radius (m)',2,15,0.5,1)}${sl('at4Reload','Reload time (s)',0.5,8,0.5,1)}
+<h4>Damage</h4>${sl('at4Dmg','Person at the centre (hp)',20,300,10,0)}${sl('at4Ugv','UGV, direct hit (hp)',100,1500,20,0)}
+<p class="tn">Damage falls off to nothing at the blast radius, and you can hurt yourself. Deer within 80% of the radius die. The launcher is a rare pink pickup; rounds are the pale pink glow.</p></section>
+<section class="wc"><div class="wh">${IC.rpg}<div><h3>RPG rounds</h3><p>Collected only · no launcher in the game yet</p></div><span class="tag">pickup</span></div>
+<h4>Pickups</h4>${sl('pkRpg','RPG rounds per RPG pickup',1,10,1,0)}</section>
+<section class="wc"><div class="wh">${IC.ugv}<div><h3>Termit UGV .50 cal</h3><p>Fired by the patrolling robot, not by players</p></div><span class="tag">AI weapon</span></div>
+${sp([['Damage / hit',GAME.uDmg+' hp'],['Rate of fire',GAME.uRpm+' rpm'],['Burst',GAME.uBurst+' rounds'],['Spread',GAME.uSpread+' mrad'],['Opens fire',GAME.uRange+' m'],['Armour',GAME.uHp+' hp']])}
+<p class="tn">Headshots count double, limbs 60%. Change these in the UGV tab.</p></section>
+</div>
+<p class="sec" style="margin-top:14px">Targets · hit points</p><table><tr><th>Target</th><th>Hit points</th><th>Hit by</th></tr>
+<tr><td>Player (you or the opponent)</td><td>100 at the start of a round, up to 200 with food</td><td>rifle, AT4 blast, UGV</td></tr>
+<tr><td>Red deer stag</td><td>${num('hp.stag',DMG.hp.stag)}</td><td>rifle, AT4 blast</td></tr>
+<tr><td>Fallow doe</td><td>${num('hp.fallow',DMG.hp.fallow)}</td><td>rifle, AT4 blast</td></tr>
+<tr><td>Roe doe</td><td>${num('hp.roe',DMG.hp.roe)}</td><td>rifle, AT4 blast</td></tr>
+<tr><td>Brown bear</td><td>${num('hp.bear',DMG.hp.bear)}</td><td>rifle, AT4 blast · default is three times the stag</td></tr>
+<tr><td>Buzzard</td><td>${num('hp.buzzard',DMG.hp.buzzard)}</td><td>rifle</td></tr>
+<tr><td>Termit UGV</td><td>${GAME.uHp}</td><td>rifle (sensors, optic, hull), AT4</td></tr></table>
+<p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Magic Mushrooms, sticks, ammo boxes, rounds, Tech Chips</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>
+<button type="button" id="dmgReset" class="btn">Reset weapons to defaults</button>`;
+    pn.querySelectorAll('input[data-p]').forEach(i=>i.oninput=()=>{const v=parseFloat(i.value);if(!(v>=0))return;const ks=i.dataset.p.split('.');let o=DMG;for(let j=0;j<ks.length-1;j++)o=o[ks[j]];o[ks[ks.length-1]]=v;dmgSave();});
+    pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.dataset.dp);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}});
+    pn.querySelectorAll('input[data-k]').forEach(i=>i.addEventListener('change',()=>{const keep=pn.scrollTop;build();}));
+    pn.querySelector('#dmgReset').onclick=()=>{const f=JSON.parse(JSON.stringify(DMG_DEF));for(const k in f)DMG[k]=f[k];for(const k of['pk762','pkRpg','pkAt4','at4Spd','at4R','at4Dmg','at4Ugv','at4Reload'])GAME[k]=GAME_DEF[k];try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}dmgSave();build();};};
   const ids=['Brief','Gfx','Env','Aud','Mp'];
-  tb.onclick=()=>{ids.concat(['Game']).forEach(n=>{const t=document.getElementById('tab'+n),p=document.getElementById('pane'+n);if(t)t.setAttribute('aria-selected','false');if(p)p.hidden=true;});tb.setAttribute('aria-selected','true');pn.hidden=false;};
+  tb.onclick=()=>{build();ids.concat(['Game']).forEach(n=>{const t=document.getElementById('tab'+n),p=document.getElementById('pane'+n);if(t)t.setAttribute('aria-selected','false');if(p)p.hidden=true;});tb.setAttribute('aria-selected','true');pn.hidden=false;};
   const _st=showTab;showTab=function(w){_st(w);tb.setAttribute('aria-selected','false');pn.hidden=true;};
 })();
 
@@ -3861,9 +3898,7 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
   const css=document.createElement('style');css.textContent=`#paneGame .gr{display:grid;grid-template-columns:230px 1fr 64px;gap:10px;align-items:center;margin:5px 0;font-size:13px}#paneGame .gr input[type=range]{width:100%}#paneGame .gr output{font-variant-numeric:tabular-nums;opacity:.85;text-align:right}#paneGame button{margin:10px 8px 0 0}`;document.head.appendChild(css);
   const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabGame';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','paneGame');tb.textContent='Gameplay';tabs.appendChild(tb);
   const pn=document.createElement('div');pn.id='paneGame';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabGame');pn.hidden=true;paneMp.after(pn);
-  const ROWS=[['sec','Pickups'],['pk762','7.62 rounds in each ammo box pickup',1,60,1,0],['pkRpg','RPG rounds in each RPG pickup',1,10,1,0],['pkAt4','AT4 rounds in each AT4 round pickup',1,10,1,0],
-    ['sec','AT4 (light anti-armour)'],['at4Spd','Rocket speed (m/s)',60,300,10,0],['at4R','Blast radius (m)',2,15,0.5,1],['at4Dmg','Damage to a person at the centre (hp)',20,300,10,0],['at4Ugv','Damage to the UGV from a direct hit (hp)',100,1500,20,0],['at4Reload','Reload time (s)',0.5,8,0.5,1],
-    ['sec','Stamina boost (double-tap W)'],['stStart','Starting stamina (%)',0,100,1,0],['stGain','Stamina per Magic Mushroom cluster (%)',0,25,1,0],['mHeal','Health per Magic Mushroom (heals over time)',0,60,1,0],['stDrain','Seconds of boost from a full bar',2,60,1,0],['stMult','Boost speed multiplier',1,3,0.1,1],
+  const ROWS=[['sec','Stamina boost (double-tap W)'],['stStart','Starting stamina (%)',0,100,1,0],['stGain','Stamina per Magic Mushroom cluster (%)',0,25,1,0],['mHeal','Health per Magic Mushroom (heals over time)',0,60,1,0],['stDrain','Seconds of boost from a full bar',2,60,1,0],['stMult','Boost speed multiplier',1,3,0.1,1],
     ['sec','Butchering animals'],['bMeat','Health per meat from a butchered animal (%)',0,10,0.5,1],['bInst','Health instantly (1) or over time (0)',0,1,1,0],
     ['sec','Falling'],['fallOn','Fall damage (1 = on, 0 = off)',0,1,1,0],['fallSafe','Safe drop height (m)',1,30,0.5,1],['fallDmg','Damage per metre above that (hp)',1,50,1,0],
     ];
@@ -4272,6 +4307,7 @@ const EQB=(()=>{
 #eqBar .eq .ring{position:absolute;inset:-1px;border-radius:11px;border:2px solid #ff8a3a;opacity:0;pointer-events:none}
 #eqBar .sep{width:1px;margin:6px 2px;background:linear-gradient(180deg,transparent,rgba(255,255,255,.22),transparent)}
 #eqBar.pop .eq.hl{animation:eqpop .6s ease-out}
+@media(max-width:1180px){#eqBar{gap:4px;padding:4px}#eqBar .eq{padding:4px 22px 4px 5px;gap:6px;min-width:0}#eqBar .eq .t b{display:none}#eqBar .eq svg{width:30px;height:30px}#eqBar .eq .n{left:25px}#eqBar .sep{margin:6px 0}}
 @keyframes eqpulse{0%,100%{opacity:.35}50%{opacity:1}}
 @keyframes eqpop{0%{transform:scale(1)}35%{transform:scale(1.18);background:rgba(227,163,59,.35)}100%{transform:scale(1)}}`;
   const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
