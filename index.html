@@ -1061,7 +1061,7 @@ function waterLevelAt(x,z){if(lakeE(x,z)<1.02)return LW;return streamWater(x,z);
 
 /* ---------------- rocks (data first: the summit tor decides the spawn) ---------------- */
 const ROCKS=[];   // {x,z,y,w,h,d,ry,moss,col}
-const TWPOS={x:204,z:-167};const SILO_POS={x:-48,z:368};const SILO_SITES=[SILO_POS];   // every silo on the map: more sites get added here   // missile silo: open meadow near the southern edge
+const TWPOS={x:204,z:-167};const TWPOS2={x:-119,z:-242};const SILO_POS={x:-48,z:368};const SILO_SITES=[SILO_POS];   // every silo on the map: more sites get added here   // missile silo: open meadow near the southern edge
    // comms tower site: grid 204 E / 167 N
 let SUMMIT={x:SUM0.x,z:SUM0.z,h:-1e9};
 for(let dz=-70;dz<=70;dz+=5)for(let dx=-70;dx<=70;dx+=5){const h=groundH(SUM0.x+dx,SUM0.z+dz);if(h>SUMMIT.h)SUMMIT={x:SUM0.x+dx,z:SUM0.z+dz,h};}
@@ -1833,7 +1833,7 @@ function groundColor(x,z,h,sl,dS,cw,dR,le,out){
   else if(dR<4.4)c=PAL.verge;
   else if(sl>1.05)c=(fbm(x/60,z/40,2)>0.05||sl>1.9)?(n2>0.2?PAL.rock:PAL.rock2):(n2>0?PAL.cliffWood:PAL.cliffWood2);
   else if(sl>0.72)c=PAL.mossRock;
-  else if(Math.hypot(x-TWPOS.x,z-TWPOS.z)<34)c=n1>0?PAL.heath:PAL.dry;
+  else if(Math.hypot(x-TWPOS.x,z-TWPOS.z)<34||Math.hypot(x-TWPOS2.x,z-TWPOS2.z)<34)c=n1>0?PAL.heath:PAL.dry;
   else if(Math.hypot(x-SILO_POS.x-1.6,z-SILO_POS.z)<20)c=n1>0.15?PAL.heath:PAL.dry;   // worn ground round the missile silo   // trampled bare ground round the comms tower, like the tor
   else{const mk=meadowK(x,z),dd=deadK(x,z);
     if(dd>0&&mk<0.3)c=n1>0?PAL.dry:PAL.heath;
@@ -2047,6 +2047,7 @@ function placeTree(x,z,inner){
     else{type=wr()<0.5?'spruceA':'spruceB';sc=wrr(0.68,1.18);col=SPR[Math.floor(wr()*4)];r=0.32;}}
   {const ds=Math.hypot(x-SUMMIT.x,z-SUMMIT.z);if(ds<230&&type!=='young')sc*=0.4+0.6*sst(50,230,ds);}
   const sy=sc*wrr(0.92,1.08);
+  if(Math.hypot(x-TWPOS2.x,z-TWPOS2.z)<9)return;   // clear ground round the second comms tower (checked after the random draws so the rest of the forest is unchanged)
   const tilt=(type==='snag'?wrr(-0.06,0.06):wrr(-0.02,0.02));if(skipT)return;
   {const cn=vn(x/80+31.7,z/80-12.4)*0.8+vn(x/37+5.1,z/37+8.8)*0.2;if(cn>0.5)return;if(cn>0.38&&hsh(Math.floor(x*3)+41,Math.floor(z*3)+7)<(cn-0.38)/0.12)return;}
   {const rr=Math.hypot(x,z),pk=Math.max(0,Math.min(1,(320-rr)/320))*0.6;if(hsh(Math.floor(x*4)+83,Math.floor(z*4)+29)<pk)return;}
@@ -3585,7 +3586,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=288;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=289;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4530,7 +4531,8 @@ window.SNIPER_BEAR={hurt:bearHurtMe,charge:bearCharge,human:bearHuman,list:()=>B
 
 // ================= comms tower: galvanised lattice mast with an open observation deck near the top, reached by a ladder =================
 // The deck is a sniper's perch: railings all round (gap at the ladder), room to go prone, and a weapons crate for later.
-const TW={built:false,x:0,z:0,y0:0,H:30,B0:2.6,Bt:1.05,Yd:24,D:2.4,Lz:2.68,climb:false,cd:0,mesh:null,grp:null};
+const TW_NEW=site=>({built:false,x:0,z:0,y0:0,H:30,B0:2.6,Bt:1.05,Yd:24,D:2.4,Lz:2.68,climb:false,cd:0,mesh:null,grp:null,site});
+const TWS=[TW_NEW({x:TWPOS.x,z:TWPOS.z}),TW_NEW({x:TWPOS2.x,z:TWPOS2.z})];let TW=TWS[0];   // every tower on the map; TW is the one being built / stepped / climbed
 const TW_MAT=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.92,metalness:0});
 function twHW(y){return TW.B0+(TW.Bt-TW.B0)*y/TW.H;}
 // a straight member from a to b (local coords), as a low-poly cylinder baked into the merged geometry
@@ -4540,7 +4542,7 @@ function twBar(list,a,b,r,col,seg){const A=new THREE.Vector3(...a),B=new THREE.V
   list.push(bPart(g,[m.x,m.y,m.z],[e.x,e.y,e.z],null,typeof col==='function'?col:()=>col));}
 function twBox(list,c,s,col,seg){list.push(bPart(new THREE.BoxGeometry(s[0],s[1],s[2],seg||1,1,seg||1),c,null,null,typeof col==='function'?col:()=>col));}
 const TWG=['#7d8387','#757b7f','#868c90'],twSteel=(x,y,z)=>TWG[Math.floor(bHash(Math.floor(x*3),Math.floor(y*3),Math.floor(z*3))*3)];
-function towerSite(){return {x:TWPOS.x,z:TWPOS.z,s:0};}   // fixed site: grid 204 E / 167 N
+function towerSite(){return {x:TW.site.x,z:TW.site.z,s:0};}   // fixed sites: grid 204 E / 167 N and -119 E / 242 N
 function towerBuild(){
   const st=towerSite();TW.x=st.x;TW.z=st.z;
   let lo=Infinity;for(const [dx,dz] of [[-2.6,-2.6],[2.6,-2.6],[-2.6,2.6],[2.6,2.6],[0,2.7]])lo=Math.min(lo,groundH(TW.x+dx,TW.z+dz));TW.y0=lo-0.05;
@@ -4589,7 +4591,8 @@ function towerBuild(){
   box(-2.12,-0.98,Yd,Yd+0.6,-1.9,-1.3);
   TW.built=true;}
 // ---- climbing: walk up to the ladder facing it and hold W; look away from the tower and W climbs down. At the top you step onto the deck.
-function towerStep(pl,dt){
+function towerStep(pl,dt){const cl=TWS.find(t=>t.climb);if(cl){TW=cl;return towerStep1(pl,dt);}for(const t of TWS){TW=t;towerStep1(pl,dt);if(t.climb)return;}}
+function towerStep1(pl,dt){
   if(!TW.built){if(playing)try{towerBuild();}catch(e){console.warn('tower',e);TW.built=true;}return;}
   TW.cd-=dt;const lx=pl.pos.x-TW.x,lz=pl.pos.z-TW.z,deck=TW.y0+TW.Yd,mi=moveInput();
   const face=-Math.cos(camYaw);   // > 0 when the camera looks at the tower from the ladder side
@@ -4607,7 +4610,7 @@ function towerStep(pl,dt){
   if(pl.pos.y>=deck){pl.pos.y=deck;pl.grounded=true;pl.pos.z=TW.z+TW.D-0.65;TW.climb=false;TW.cd=0.8;}
   else if(pl.pos.y<=g&&dir<0){pl.pos.y=g;pl.grounded=true;pl.pos.z=TW.z+TW.Lz+1.0;TW.climb=false;TW.cd=0.8;}
   if(!pl.alive)TW.climb=false;}
-window.SNIPER_TOWER={TW,build:towerBuild,step:towerStep};
+window.SNIPER_TOWER={TW,TWS,build:towerBuild,step:towerStep};
 // ================= ICBM silo (compact: everything is modelled at full size and built at scale K): reinforced concrete pad and collar sunk into an open meadow, a deep shaft, a sliding blast hatch and a launchable missile =================
 // The shaft is seen through the ground with a stencil: the opening writes a mask, then the shaft walls draw only inside it (ignoring the terrain's depth).
 // Walk to the launch console beside the pad and press L: klaxon, hatch rolls back, ignition, the missile climbs out on a column of smoke and pitches over.
