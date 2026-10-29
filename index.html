@@ -1067,7 +1067,7 @@ const TWPOS={x:204,z:-167};const TWPOS2={x:-119,z:-242};const SILO_POS={x:-48,z:
 // Worked out from the tower sites before the forest is placed, so the cable corridors are kept clear of trees.
 const TW_SITES=[TWPOS,TWPOS2];               // more towers: add the site here (and to TWS in the tower block), then link it below
 const ZIP_LINKS=[[0,1]];                     // tower pairs joined by a long line
-const ZIP_DECK=24,ZIP_D=2.4,ZIP_HANG=2.05;
+const ZIP_DECK=24,ZIP_D=2.4,ZIP_HANG=2.2;
 function zipBaseY(p){let lo=Infinity;for(const [dx,dz] of [[-2.6,-2.6],[2.6,-2.6],[-2.6,2.6],[2.6,2.6],[0,2.7]])lo=Math.min(lo,groundH(p.x+dx,p.z+dz));return lo-0.05;}
 function zipEdge(h){const sx=Math.sin(h),sz=Math.cos(h);return (ZIP_D+0.45)/Math.max(Math.abs(sx),Math.abs(sz));}   // distance from the mast to just outside the deck rail in direction h
 const ZIPS=(()=>{const L=[];const top=s=>zipBaseY(s)+ZIP_DECK+ZIP_HANG+0.25;
@@ -2312,7 +2312,7 @@ function stepBrass(dt){for(let i=brass.length-1;i>=0;i--){const b=brass[i];b.lif
 
 /* ---------------- tuning ---------------- */
 const DM={headMult:4,limbMult:0.6,rifleDmg:34};
-const MAG=12, BOLT=1.35;
+let MAG=12, BOLT=1.35;
 let hitT=0;function flashHit(){$('hit').style.opacity=1;hitT=0.14;}
 let toastT=0;function toast(s){if(MPM.mute)return;const e=$('toast');e.textContent=s;e.style.opacity=1;toastT=3;}
 const hud={anim:'Idle'};
@@ -2406,15 +2406,18 @@ function carryOnTank(){const pl=player;
       pl.pos.x=tank.pos.x+ox*c+oz*s;pl.pos.z=tank.pos.z-ox*s+oz*c;pl.yaw+=dy;camYaw+=dy;pl.pos.y=Math.max(pl.pos.y,th);}}
   _tk.x=tank.pos.x;_tk.z=tank.pos.z;_tk.yaw=tank.yaw;_tk.init=true;}
 const _sq=new THREE.Quaternion(),_sq2=new THREE.Quaternion(),_sq3=new THREE.Quaternion(),_sm=new THREE.Matrix4(),_sx=new THREE.Vector3(),_sy=new THREE.Vector3(),_sz=new THREE.Vector3(),_sE=new THREE.Vector3(),_sW=new THREE.Vector3(),_se=new THREE.Euler(0,0,0,'ZYX');
-function raiseScoped(p,k){   // shouldered: body turns side-on so the butt sits in the shoulder pocket, scope axis through the eye and along the line of sight
-  const TW=window.SC_TW!==undefined?window.SC_TW:-0.9;
+function _isAR(){return WPN.cur==='ar15';}
+function raiseScoped(p,k,ar){   // shouldered: body turns side-on so the butt sits in the shoulder pocket, scope axis through the eye and along the line of sight
+  const TW=ar?(window.AR_TW!==undefined?window.AR_TW:-0.3):(window.SC_TW!==undefined?window.SC_TW:-0.9);
   p.spine=[p.spine[0],p.spine[1]+TW*0.45*k,p.spine[2]];p.chest=[p.chest[0],p.chest[1]+TW*0.55*k,p.chest[2]];p.head=[p.head[0],p.head[1]-TW*k,p.head[2]];
   {const NK=window.SC_NK!==undefined?window.SC_NK:0.15;p.neck=[p.neck[0]+NK*k,p.neck[1],p.neck[2]];p.head=[p.head[0]+NK*0.3*k,p.head[1],p.head[2]];}
+  if(ar){const HR=window.AR_HR!==undefined?window.AR_HR:0.4,SP=window.AR_SP!==undefined?window.AR_SP:0.2;p.head=[p.head[0],p.head[1],p.head[2]+HR*k];p.chest=[p.chest[0]+SP*k,p.chest[1],p.chest[2]];p.spine=[p.spine[0]+SP*0.6*k,p.spine[1],p.spine[2]];}   // cheek down onto the stock
   if(k>0.5){p.L={fore:1};p.R={grip:1};if(window.SC_PL)p.poleL=window.SC_PL;if(window.SC_PR)p.poleR=window.SC_PR;if(window.SC_LH)p.lHand=window.SC_LH;}
   applyPose(p);J.head.updateMatrixWorld(true);_sE.set(-0.05,0.2,0.18);J.head.localToWorld(_sE);
-  _sz.copy(_dir).normalize();_sx.set(0,1,0).cross(_sz);if(_sx.lengthSq()<1e-6)_sx.set(1,0,0);_sx.normalize();_sy.crossVectors(_sz,_sx);
+  if(ar&&aimYawV!=null&&aimPitchV!=null)_sz.set(Math.sin(aimYawV)*Math.cos(aimPitchV),Math.sin(aimPitchV),Math.cos(aimYawV)*Math.cos(aimPitchV));else _sz.copy(_dir).normalize();_sx.set(0,1,0).cross(_sz);if(_sx.lengthSq()<1e-6)_sx.set(1,0,0);_sx.normalize();_sy.crossVectors(_sz,_sx);
   _sm.makeBasis(_sx,_sy,_sz);_sq.setFromRotationMatrix(_sm);                                   // gun world rotation: barrel along the sight line, no roll
   _sW.copy(_sE).addScaledVector(_sz,(window.SC_EP!==undefined?window.SC_EP:0.02)).addScaledVector(_sy,-0.1416).addScaledVector(_sz,0.036);   // gun origin so the eyepiece (0,0.118,-0.03) lands 7 cm ahead of the eye
+  if(ar){_sW.copy(_sE).addScaledVector(_sz,(window.AR_ER!==undefined?window.AR_ER:0.12)+0.045).addScaledVector(_sy,-0.165);}   // AR: the rear sight (0,0.165,-0.045) sits AR_ER ahead of the eye
   J.chest.updateMatrixWorld(true);J.chest.worldToLocal(_sW);
   J.chest.getWorldQuaternion(_sq2);_sq2.invert();_sq3.copy(_sq2).multiply(_sq);                 // target rotation in chest space
   _se.set(p.gunR[0],p.gunR[1],p.gunR[2],'ZYX');_sq2.setFromEuler(_se);_sq2.slerp(_sq3,k);_se.setFromQuaternion(_sq2,'ZYX');
@@ -2492,6 +2495,7 @@ function updatePlayer(dt,time){
   // shooting
   if(firing&&pl.alive&&!(A_&&A_.lock)&&pl.reloadT<0&&pl.fireCD<=0){
     if(WPN.cur==='none'){input.lmb=false;}
+    else if(WPN.cur==='ar15'){if(pl.ammo<=0){input.lmb=false;startReload();}else if(pl.aimW>0.6||pl.stance==='prone'){shootAR(time);pl.fireCD=60/Math.max(60,GAME.arRpm);}}
     else if(WPN.cur==='at4'){if(pl.aimW>0.6||pl.stance==='prone'){at4Fire();pl.fireCD=1.0;}}
     else if(pl.ammo<=0){startReload();}
     else if(pl.aimW>0.6||pl.stance==='prone'){shoot(time);pl.fireCD=BOLT;}
@@ -2533,8 +2537,8 @@ function updatePlayer(dt,time){
   // full-body action
   if(act){const ap=cpose(ACTIONS[act.name].clip,act.t);p=mix(p,ap,clamp(act.w,0,1));p.flash=0;}
   marine.position.copy(pl.pos); marine.rotation.y=pl.yaw;
-  {let want=0;try{want=(scoped&&pl.alive&&!pl.slide)?1:0;}catch(e){}pl.scK=(pl.scK||0)+(want-(pl.scK||0))*Math.min(1,dt*14);if(Math.abs(want-pl.scK)<0.004)pl.scK=want;
-   if(pl.scK>0.004){p=Object.assign({},p);raiseScoped(p,pl.scK);}}
+  {let want=0;try{want=((scoped||(input.rmb&&WPN.cur==='ar15'&&pl.aimW>0.5&&pl.reloadT<0&&!(pl.action&&ACTIONS[pl.action.name].lock)))&&pl.alive&&!pl.slide)?1:0;}catch(e){}pl.scK=(pl.scK||0)+(want-(pl.scK||0))*Math.min(1,dt*14);if(Math.abs(want-pl.scK)<0.004)pl.scK=want;
+   if(pl.scK>0.004){p=Object.assign({},p);raiseScoped(p,pl.scK,_isAR());}}
   try{if(TW.climb)p=climbPose(p,pl);else if(ZIP.on)p=zipPose(p,pl);}catch(e){}
   applyPose(p);player.pose=p;
   // HUD label
@@ -2636,7 +2640,7 @@ const AT4G=new THREE.Group();AT4G.scale.setScalar(1.4/1.2);AT4G.visible=false;gu
 const AT4_MUZ=new THREE.Object3D();AT4_MUZ.position.set(0,AT4_TY,0.42);AT4G.add(AT4_MUZ);
 const AT4_BACK=new THREE.Object3D();AT4_BACK.position.set(0,AT4_TY,-0.66);AT4G.add(AT4_BACK);
 const RIFLE_MESH=[];gun.traverse(o=>{if(!o.isMesh)return;let p=o;while(p&&p!==gun){if(p===AT4G||p===flashGrp)return;p=p.parent;}RIFLE_MESH.push(o);});
-function setWeapon(w){if(w==='at4'&&!WPN.has)w=slotHas('rifle')?'rifle':'none';if(w==='rifle'&&!slotHas('rifle'))w=WPN.has?'at4':'none';WPN.cur=w;AT4G.visible=w==='at4';for(const m of RIFLE_MESH)m.visible=w==='rifle';
+function setWeapon(w){const prev=WPN.cur;if(w==='at4'&&!WPN.has)w=slotHas('rifle')?'rifle':'none';if(w==='rifle'&&!slotHas('rifle'))w=WPN.has?'at4':'none';if(w==='ar15'&&!slotHas('ar15'))w=slotHas('rifle')?'rifle':WPN.has?'at4':'none';WPN.cur=w;AT4G.visible=w==='at4';for(const m of RIFLE_MESH)m.visible=w==='rifle';try{arSwitch(prev,w);}catch(e){}
   if(w==='at4'){player.reloadT=-1;boltT=-1;}try{EQB.ui(true);}catch(e){}}
 function at4Select(n){slotSelW(n-1);}
 function at4Switch(){slotCycleW();}
@@ -2716,6 +2720,50 @@ function at4P2Vis(w){if(!P2PAIRS.length)return;if(!P2_RIFLE.length){const rs=new
   for(const t of P2_RIFLE)t.visible=!w;for(const t of P2_AT4)t.visible=!!w;}
 function at4Reset(){try{uavReset();}catch(e){}WPN.has=false;WPN.ld=0;WPN.rl=-1;setWeapon('rifle');for(const r of ROCKETS){scene.remove(r.g);r.fl.material.dispose();}ROCKETS.length=0;}
 window.SNIPER_AT4={AT4L,WPN,ROCKETS,fire:at4Fire,step:at4Step,set:setWeapon,blast:at4Blast,spawn:at4Spawn,reload:at4Reload,switch:at4Switch};
+// ================= AR-15: semi-automatic / automatic carbine in 7.62, 30-round magazine, iron sights =================
+// Picked up (orange glow) into a weapon slot. Shares the 7.62 reserve with the bolt rifle; each rifle keeps the rounds in its own magazine.
+// Hold LMB for automatic fire; RMB aims down the iron sights (no scope). Lower damage per hit than the bolt rifle, more spread and recoil.
+var HITW='rifle';
+function arParts(){const BK='#1f2022',GM='#2e3033',ST='#55595d',PL='#26272a';const c=0.075;   // bore height above the pistol grip
+  return [
+  [B(0.044,0.05,0.2),GM,[0,0.035,0.03]],[B(0.05,0.055,0.215),GM,[0,0.088,0.035]],                                   // lower and upper receiver
+  [B(0.022,0.012,0.2),ST,[0,0.121,0.035]],[B(0.03,0.008,0.012),ST,[0,0.129,-0.02]],[B(0.03,0.008,0.012),ST,[0,0.129,0.02]],[B(0.03,0.008,0.012),ST,[0,0.129,0.06]],[B(0.03,0.008,0.012),ST,[0,0.129,0.1]],   // flat-top rail
+  [B(0.03,0.05,0.03),ST,[0,0.15,-0.045]],[B(0.03,0.012,0.02),'#7d8387',[0,0.17,-0.045]],                              // flip-up rear sight
+  [B(0.052,0.03,0.04),ST,[0.004,0.085,-0.055]],[B(0.012,0.01,0.03),ST,[0.03,0.095,-0.03]],                             // charging handle, forward assist
+  [B(0.036,0.115,0.048),PL,[0,-0.035,-0.035],[0.38,0,0]],[B(0.04,0.02,0.055),PL,[0,-0.095,-0.06],[0.38,0,0]],         // pistol grip
+  [B(0.008,0.006,0.07),GM,[0,-0.002,0.02]],[B(0.008,0.03,0.006),GM,[0,0.01,0.054]],[B(0.006,0.02,0.006),ST,[0,0.012,0.012],[0.3,0,0]],   // trigger guard, trigger
+  [B(0.028,0.1,0.07),GM,[0,-0.03,0.085]],[B(0.028,0.1,0.066),GM,[0,-0.12,0.098],[-0.22,0,0]],[B(0.03,0.012,0.074),BK,[0,-0.175,0.11],[-0.22,0,0]],   // curved magazine
+  [CY(0.018,0.018,0.3,10),PL,[0,c,-0.23],[HP,0,0]],[B(0.048,0.07,0.2),PL,[0,0.05,-0.33]],[B(0.05,0.13,0.025),BK,[0,0.035,-0.44]],   // buffer tube, stock, butt plate
+  [B(0.052,0.03,0.06),PL,[0,0.0,-0.36],[-0.2,0,0]],                                                                      // stock lower lip
+  [CY(0.036,0.036,0.02,12),GM,[0,c,0.155],[HP,0,0]],                                                                     // delta ring
+  [CY(0.032,0.032,0.21,12),BK,[0,c,0.27],[HP,0,0]],[CY(0.034,0.034,0.012,12),'#2a2b2d',[0,c,0.2],[HP,0,0]],[CY(0.034,0.034,0.012,12),'#2a2b2d',[0,c,0.25],[HP,0,0]],[CY(0.034,0.034,0.012,12),'#2a2b2d',[0,c,0.3],[HP,0,0]],[CY(0.034,0.034,0.012,12),'#2a2b2d',[0,c,0.35],[HP,0,0]],   // ribbed handguard
+  [CY(0.028,0.03,0.016,10),GM,[0,c,0.383],[HP,0,0]],                                                                     // handguard cap
+  [CY(0.01,0.01,0.22,8),ST,[0,c,0.49],[HP,0,0]],                                                                         // barrel
+  [B(0.016,0.075,0.022),GM,[0,c+0.035,0.44]],[B(0.03,0.012,0.022),GM,[0,c+0.075,0.44]],[CY(0.016,0.016,0.03,8),GM,[0,c,0.44],[HP,0,0]],   // front sight post
+  [CY(0.013,0.013,0.055,8),ST,[0,c,0.625],[HP,0,0]]];}                                                                  // flash hider
+const AR_C=0.075,AR_MZ=0.655;
+const ARG=new THREE.Group();ARG.visible=false;gun.add(ARG);
+{const m=new THREE.Mesh(build(arParts()),envMat);m.castShadow=true;ARG.add(m);}
+var FLASH0=null;
+// called by setWeapon on every change: keep each rifle's magazine with it, set the magazine size, move the muzzle flash to the right barrel
+function arSwitch(prev,w){const pl=player;if(prev===w)return;
+  if((prev==='rifle'||prev==='ar15')&&typeof SLOT!=='undefined'&&SLOT){const it=SLOT.w.find(q=>q&&q.k===prev);if(it)it.ammo=pl.ammo|0;}
+  if(w==='rifle'||w==='ar15'){try{MAG=w==='ar15'?Math.max(5,GAME.arMag|0):12;let it=null;if(typeof SLOT!=='undefined'&&SLOT)it=SLOT.w.find(q=>q&&q.k===w);
+    pl.ammo=it&&it.ammo!=null?Math.min(MAG,it.ammo|0):MAG;}catch(e){}}
+  pl.reloadT=-1;ARG.visible=w==='ar15';try{if(w==='ar15'){A.grip.position.set(0,-0.05,-0.05);A.guard.position.set(0,0.03,0.27);A.fore.position.set(0,0.03,0.25);}else{A.grip.position.set(-0.005,-0.075,-0.06);A.guard.position.set(0,-0.055,0.25);A.fore.position.set(0,-0.07,0.2);}}catch(e){}if(w==='ar15'){if(!FLASH0)FLASH0=flashGrp.position.clone();flashGrp.position.set(0,AR_C,AR_MZ);}else if(FLASH0)flashGrp.position.copy(FLASH0);}
+// one round: a little looser than the bolt rifle, wider from the hip, climbing recoil
+function shootAR(time){const pl=player;pl.ammo--;pl.lastShot=time;pl.kick=0.55;stats.shots++;roundNo++;
+  const mv=Math.hypot(pl.vel.x,pl.vel.z),ads=input.rmb;
+  const spread=(GAME.arSpread/1000)*(ads?1:2.4)*(pl.stance==='prone'?0.6:pl.stance==='crouch'?0.8:1)+Math.min(0.03,mv*0.006);
+  camera.getWorldDirection(_cd);const h=castRay(camera.position,_cd,1500);const aimPt=h?h.point:camera.position.clone().addScaledVector(_cd,1500);
+  flashGrp.getWorldPosition(_mz);const origin=_mz.clone();const dir=launchDir(origin,aimPt,spread,V(0,0,0));
+  const b={p:origin.clone(),o:origin.clone(),v:dir.multiplyScalar(V0*0.92),t:0,tr:getP(gTracer,matTracer),w:'ar15'};bullets.push(b);mkStreak(b);if(MPM.on)netShot(b);
+  try{if(!playSample('rifle',0.62*VOLS.gun,1.18+Math.random()*0.08)){noise(0.12,3200,0.8,0.32,'bandpass');noise(0.25,800,0.7,0.35);}}catch(e){}
+  try{ejectBrass();}catch(e){}disturb(origin.x,origin.z,180,600);
+  const rk=GAME.arRecoil;camPitch+=0.0065*rk*(ads?0.8:1);camYaw+=(Math.random()-0.5)*0.004*rk;
+  if(pl.ammo<=0){input.lmb=false;setTimeout(()=>{if(WPN.cur==='ar15'&&player.ammo<=0&&player.reloadT<0)startReload();},350);}}
+function arIcon(){return '<svg viewBox="0 0 48 48"><g stroke="#ffcf9a" stroke-width="1.2" stroke-linejoin="round"><path d="M3 21h9v-2h20v3h8v2h5v2h-5v1h-8v2H22l-2 1-1 7h-5l1-8h-3l-1 3H4z" fill="#2e3033"/><path d="M22 28h5l-1 9h-5z" fill="#26272a"/><rect x="19" y="16" width="4" height="3" fill="#55595d"/><rect x="34" y="18" width="2" height="4" fill="#55595d"/></g></svg>';}
+window.SNIPER_AR={ARG,shoot:shootAR,parts:arParts,inp:()=>input};
 
 /* ---------------- wildlife: red deer stags, fallow and roe does ---------------- */
 // Each deer is a small rig: root (yaw, slope pitch, death roll) > body pivot at the hind hips > torso, legs (two segments each), neck > head, tail.
@@ -3259,12 +3307,12 @@ function stepBullets1(dt){
     if(b.hostile&&player.alive){const ph=rayPlayerZones(b.p,_bd,h?Math.min(len,h.dist):len);if(ph){damagePlayer(ph.zone,b.dmg);impact(ph.point,_bd.clone().negate(),'dirt');if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}}
     if(h||b.t>4||b.p.y<-200){
       if(h){b.end=h.point.clone();impact(h.point,h.normal,h.kind);impactSnd(h.point,h.kind);if(h.kind!=='water'&&h.kind!=='flesh'&&h.kind!=='metal')addMark(h.point,h.normal,h.kind,h.point.distanceTo(b.o),null);const dist=h.point.distanceTo(b.o);stats.last=[h.point.x,h.point.y,h.point.z,h.kind,dist];
-        if(!b.rem){if(h.remote)netHitRemote(h,dist);
+        if(!b.rem){const _W=DMG.w.rifle;HITW=b.w||'rifle';if(b.w==='ar15'&&DMG.w.ar15)DMG.w.rifle=DMG.w.ar15;try{if(h.remote)netHitRemote(h,dist);
         if(h.uav){ugvSparks(h.point,h.normal);uavShot(h.uav,h.sub,dist);}
         if(h.ugv){ugvSparks(h.point,h.normal);(MPM.guest?netUgvHit(h.ugv,h.sub,dist):hitUgv(h.ugv,h.sub,dist,false));}
         if(h.bear){if(h.sub==='head')headDing();else hitThud();(MPM.guest?netBearHit(h.bear,h.sub,dist):hitBear(h.bear,h.sub,dist));}
         if(h.bird){hitThud();if(MPM.guest)netBirdHit(h.bird,dist);else hitBird(h.bird,dist);}
-        if(h.deer){if(h.sub==='head')headDing();else hitThud();if(MPM.guest)netDeerHit(h.deer,h.sub,h.leg,dist);else{hitDeer(h.deer,h.sub,dist);if(h.sub==='leg')legHit(h.deer,h.leg);}}}}
+        if(h.deer){if(h.sub==='head')headDing();else hitThud();if(MPM.guest)netDeerHit(h.deer,h.sub,h.leg,dist);else{hitDeer(h.deer,h.sub,dist);if(h.sub==='leg')legHit(h.deer,h.leg);}}}finally{DMG.w.rifle=_W;HITW='rifle';}}}
       if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}
     b.p.addScaledVector(_bd,len);b.t+=dt;if(b.rem)netCrack(b);
     if(b.tr){const L=Math.min(b.p.distanceTo(b.o),14);_bp.copy(b.p).addScaledVector(_bd,-L);b.tr.position.copy(_bp);const w=0.02+b.p.distanceTo(b.o)*0.0004;b.tr.scale.set(w,w,Math.max(0.01,L));b.tr.lookAt(b.p);}
@@ -3319,7 +3367,7 @@ function updateCamera(dt){
     {const nb=d<camBoom?damp(camBoom,d,12,dt):damp(camBoom,d,2.5,dt);camBoom+=clamp(nb-camBoom,-16*dt,6*dt);}
     camera.position.copy(piv).addScaledVector(_dir,-camBoom);
     const g=groundH(camera.position.x,camera.position.z)+0.25;if(camera.position.y<g)camera.position.y=g;
-    if(aim)fov=(WPN.cur==='at4'&&input.rmb)?56/1.25:56;fov+=7*pl.slideW;
+    if(aim)fov=(input.rmb&&WPN.cur==='at4')?56/1.25:(input.rmb&&WPN.cur==='ar15')?56/1.45:56;fov+=7*pl.slideW;
   }
   camera.fov=scoped?fov:damp(camera.fov,fov,12,dt);camera.updateProjectionMatrix();
   camera.lookAt(_v9.copy(camera.position).add(_dir));camera.updateMatrixWorld();
@@ -3434,7 +3482,7 @@ addEventListener('keydown',e=>{
     case 'KeyC': if(busy)break; if(pl.slide)break; if(pl.stance==='stand'&&Math.hypot(pl.vel.x,pl.vel.z)>(streamAt(pl.pos.x,pl.pos.z)||fallRow(pl.pos.x,pl.pos.z)?2.4:5.2)&&tryStartSlide())break; if(pl.stance==='stand')pl.stance='crouch';else if(pl.stance==='crouch'){if(canFit(HEIGHT.stand))pl.stance='stand';else toast('No headroom');}else if(pl.stance==='prone'){if(canFit(HEIGHT.crouch)){startAction('proneUp',{crouch:true});}else toast('No headroom');} break;
     case 'KeyZ': if(busy||!pl.grounded)break; if(pl.stance==='prone'){if(canFit(HEIGHT.stand))startAction('proneUp');else toast('No headroom');}else{pl.reloadT=-1;startAction('proneDown');} break;
     case 'Space': if(busy)break; if(pl.slide){endSlide();if(pl.stance==='stand'&&pl.grounded){pl.vel.y=5.6*(BOOST.on?(GAME.bJump||1.4):1);pl.grounded=false;}break;} if(pl.stance==='prone'){if(canFit(HEIGHT.stand))startAction('proneUp');else toast('No headroom');}else if(pl.grounded){if(pl.stance==='crouch'){if(!canFit(HEIGHT.stand))break;pl.stance='stand';}pl.vel.y=5.6*(BOOST.on?(GAME.bJump||1.4):1);pl.grounded=false;} break;
-    case 'KeyR': if(WPN.cur==='at4')at4Reload();else if(WPN.cur==='rifle')startReload(); break;
+    case 'KeyR': if(WPN.cur==='at4')at4Reload();else if(WPN.cur==='rifle'||WPN.cur==='ar15')startReload(); break;
     case 'KeyX': at4Switch(); break;
     case 'KeyG': if(busy||pl.stance==='prone'||pl.nadeCD>0||!pl.grounded)break; pl.reloadT=-1; if(pl.stance==='crouch'&&canFit(HEIGHT.stand))pl.stance='stand'; if(pl.stance==='stand')startAction('throw'); break;
     case 'KeyT': if(busy||pl.stance!=='stand'||!pl.grounded)break; startAction('salute'); break;
@@ -3444,7 +3492,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;});
 
-const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (bolt action)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['God mode (dev)','` backquote'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Launch the missile (at the silo console)','L'],['Shadows','O'],['Mute','M']];
+const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['God mode (dev)','` backquote'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Launch the missile (at the silo console)','L'],['Shadows','O'],['Mute','M']];
 $('keyList').innerHTML=KEYS.map(k=>`<div><kbd>${k[1]}</kbd><span>${k[0]}</span></div>`).join('');
 
 /* ---------------- menu tabs + graphics options ---------------- */
@@ -3632,7 +3680,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=295;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=298;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3676,6 +3724,7 @@ const RES_T=[
   {k:'at4r',    label:'AT4 rounds',   cell:13, p:0.25, amt:[1,1], n:150},
   {k:'at4',     label:'AT4 launcher', cell:31, p:0.3, amt:[1,1], n:8},
   {k:'radio',   label:'Radio',        cell:41, p:0.3, amt:[1,1], n:6},
+  {k:'ar15',    label:'AR-15 rifle',  cell:31, p:0.3, amt:[1,1], n:6},
   {k:'scrap',   label:'Tech Chips',     cell:17, p:0.05, amt:[1,2], n:20},
   {k:'r762',    label:'7.62 rounds',  cell:13, p:0.25, amt:[1,1], n:300}];
 const INV={radio:0,berries:0,mushroom:0,at4r:0,scrap:0,meat:0,hide:0};
@@ -3690,6 +3739,7 @@ const RES_GEO={
   mushroom:build([[CY(0.035,0.045,0.14,5),'#e6dcc2',[0,0.07,0]],[new THREE.ConeGeometry(0.11,0.08,6),'#d07a44',[0,0.17,0]],
     [CY(0.025,0.032,0.1,5),'#e6dcc2',[0.17,0.05,0.07]],[new THREE.ConeGeometry(0.08,0.06,6),'#dc8850',[0.17,0.12,0.07]],[CY(0.02,0.028,0.08,5),'#e6dcc2',[-0.12,0.04,-0.1]],[new THREE.ConeGeometry(0.065,0.05,6),'#d07a44',[-0.12,0.1,-0.1]]]),
   wood:build([[B(0.05,0.05,0.8),'#9a6a3c',[0,0.05,0],[0.05,0.3,0]],[B(0.045,0.045,0.7),'#a97a46',[0.07,0.1,0.05],[0.1,-0.4,0.05]],[B(0.05,0.05,0.65),'#865a30',[-0.06,0.1,-0.04],[0.0,0.9,-0.05]],[B(0.04,0.04,0.5),'#a97a46',[0.0,0.15,0.0],[0.1,0.1,0.1]]]),
+  ar15:(()=>{const g=build(arParts());g.rotateZ(PI/2);g.translate(0.03,0.05,0);g.scale(0.9,0.9,0.9);g.rotateY(0.6);return g;})(),
   at4:(()=>{const g=build(at4Parts());g.rotateZ(PI/2);g.translate(AT4_TY,0.072,0);g.scale(0.68,0.68,0.68);g.rotateY(0.4);return g;})(),
   radio:build([[B(0.075,0.04,0.17),'#f2d21b',[0,0.022,0]],[B(0.05,0.006,0.045),'#9fb98a',[0,0.045,0.035]],[B(0.05,0.006,0.03),'#1d1e20',[0,0.045,-0.02]],[CY(0.009,0.009,0.12,6),'#1d1e20',[0.02,0.03,0.14],[HP,0,0]],[B(0.03,0.012,0.02),'#ff6a2a',[-0.02,0.046,0.08]]]),
   at4r:build([[CY(0.04,0.04,0.34,12),'#1f1f1e',[-0.1,0.045,0],[0,0,PI/2]],[CY(0.046,0.046,0.014,12),'#161615',[-0.267,0.045,0],[0,0,PI/2]],[CY(0.022,0.022,0.012,10),'#3b3b39',[-0.276,0.045,0],[0,0,PI/2]],
@@ -3714,7 +3764,7 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
   // a few at each starting point so the first minute has something to do, and Tech Chips around the hut
   const near=(c,list)=>list.forEach(([t,a,d],i)=>{for(let k=0;k<12;k++){const ang=a+k*0.7+hsh(i,k+Math.round(c.x))*0.6,r=d+k*2.2,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
       if(resOK(x,z,t)){resAdd(t,x,z,i*53+k*7+Math.round(c.x+c.z));break;}}});
-  const starts=[['r762',1.2,18],['r762',2.4,12],['mushroom',3.6,22],['mushroom',4.4,16],['at4',5.0,8],['at4r',0.6,9],['at4r',3.0,11],['radio',2.0,7]];
+  const starts=[['r762',1.2,18],['r762',2.4,12],['mushroom',3.6,22],['mushroom',4.4,16],['at4',5.0,8],['ar15',1.7,10],['at4r',0.6,9],['at4r',3.0,11],['radio',2.0,7]];
   near({x:P1_SPAWN.x,z:P1_SPAWN.z},starts);near({x:P2_SPAWN.x,z:P2_SPAWN.z},starts);
   near({x:HUT.x,z:HUT.z},[['scrap',0.4,9],['scrap',2.2,11],['scrap',3.9,8],['scrap',5.4,12]]);
   // RPG rounds lie around the foot of rocks; Magic Mushrooms grow along forest edges (a tree close by, open ground in some directions)
@@ -3763,6 +3813,9 @@ function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();i
   if((R.k==='radio'||(R.k==='at4'&&!WPN.has))&&!slotCanTake(R.k)){toast('Gadget slots full · drop or use one first');return;}
   resSetGot(n,true);const q=R.k==='r762'?Math.max(1,GAME.pk762|0):R.k==='at4r'?Math.max(1,GAME.pkAt4|0):R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));
   if(R.k==='radio'){const out=slotGive({k:'radio'});toast((out?'Swapped your '+out+' for a radio':'Radio picked up')+' · press '+slotKeyOf('radio')+' to call in a recon drone');pickSnd();if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});return;}
+  if(R.k==='ar15'){if(slotHas('ar15')){player.reserve=(player.reserve|0)+Math.max(1,GAME.arMag|0);invUI();toast('+'+Math.max(1,GAME.arMag|0)+' 7.62 rounds from the spare AR-15');}
+    else{const out=slotGive({k:'ar15',ammo:Math.max(5,GAME.arMag|0)});invUI();toast(out?'Swapped your '+out+' for the AR-15 · it dropped at your feet':'AR-15 picked up · '+Math.max(5,GAME.arMag|0)+' rounds · press '+slotKeyOf('ar15')+' to use it');}
+    pickSnd();if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});return;}
   if(R.k==='at4'){if(!WPN.has){const out=slotGive({k:'at4',ld:1});invUI();toast(out?'Swapped your '+out+' for the AT4 · loaded · it dropped at your feet':'AT4 picked up · loaded · press '+slotKeyOf('at4')+' to use it');pickSnd();}else{INV.at4r=(INV.at4r|0)+1;invUI();toast('+1 AT4 round (you already carry an AT4)');pickSnd();}
     if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});return;}
   if(R.k==='r762'){player.reserve=(player.reserve|0)+q;try{EQB.pop('eqRifle');}catch(e){}}else{if(R.k==='at4r')try{EQB.pop('eqAt4');}catch(e){}INV[R.k]+=q;if(R.k==='wood')try{EQB.pop('eqWood');}catch(e){}}
@@ -3770,7 +3823,7 @@ function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();i
   if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});}
 addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyF')resGather();});
 function resStep(dt){
-  let s='';if(playing&&player.alive&&!scoped&&!mapOpen){const c=carcassNearest(),zt=zipPromptTxt();if(zt)s=zt;else if(c)s='<b>F</b> · butcher '+carcassName(c);else{const d=dropNearest();if(d)s='<b>F</b> · '+(d.k==='at4'&&WPN.has?'take the round from the AT4':d.k==='rifle'&&slotHas('rifle')?'take the rounds from the rifle':slotTip(d.k));else{const i=resNearest();if(i!=null){const k=RES_T[RES_NODES[i].ti].k;s='<b>F</b> · '+(k==='at4'||k==='radio'?slotTip(k):'gather '+RES_T[RES_NODES[i].ti].label);}}}}
+  let s='';if(playing&&player.alive&&!scoped&&!mapOpen){const c=carcassNearest(),zt=zipPromptTxt();if(zt)s=zt;else if(c)s='<b>F</b> · butcher '+carcassName(c);else{const d=dropNearest();if(d)s='<b>F</b> · '+(d.k==='at4'&&WPN.has?'take the round from the AT4':(d.k==='rifle'||d.k==='ar15')&&slotHas(d.k)?'take the rounds from the '+ITEM[d.k].name:slotTip(d.k));else{const i=resNearest();if(i!=null){const k=RES_T[RES_NODES[i].ti].k;s='<b>F</b> · '+(k==='at4'||k==='radio'||k==='ar15'?slotTip(k):'gather '+RES_T[RES_NODES[i].ti].label);}}}}
   if(s!==_prS){_prS=s;resPrompt.innerHTML=s;resPrompt.hidden=!s;}}
 window.SNIPER_RES={INV,RES_NODES};
 
@@ -3819,7 +3872,7 @@ function lookStep(){const T=(f)=>{try{f();}catch(e){if(!window._lsErr){window._l
 window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial){c++;if(m.defines&&m.defines.GSTYLE)d++;}});return {sh:true,std:c,withDef:d,keys:renderer.info.programs.map(p=>p.cacheKey.includes('GSTYLE')).join(','),lookI};};
 
 // ---- edge glow on every collectible: a slightly enlarged back-face shell per node, additive, pulsing on a 3 s cycle, one colour per resource type
-const GLOWC={berries:0xff4f8b,mushroom:0xffa03a,scrap:0x45e6c8,r762:0xfff04a,at4:0xff2fbf,at4r:0xffa0dc,radio:0x3ad8ff};
+const GLOWC={ar15:0xff8a2a,berries:0xff4f8b,mushroom:0xffa03a,scrap:0x45e6c8,r762:0xfff04a,at4:0xff2fbf,at4r:0xffa0dc,radio:0x3ad8ff};
 const LEADGLOW=(()=>{const sc=new THREE.Matrix4().makeScale(1.13,1.13,1.13),ms=[];let k=0;
   for(const t in GLOWC){const L=RES_NODES.filter(n=>n.t===t);if(!L.length||!RES_GEO[t])continue;
     const m=new THREE.MeshBasicMaterial({color:GLOWC[t],side:THREE.BackSide,transparent:true,opacity:0.5,depthWrite:false,blending:THREE.AdditiveBlending,fog:false});
@@ -3906,7 +3959,8 @@ function healStep(){const now=performance.now(),dt=Math.min(0.25,(now-HEAL.t)/10
 
 // ---- damage model: every weapon's damage per target zone, hit points, and the list of what can be damaged (menu tab "Weapons")
 const DMG_DEF={
-  w:{rifle:{n:'Rifle',on:1,p:{head:100,torso:70,limb:35},d:{head:999,neck:999,vitals:70,gut:40,leg:25},k:{head:120,body:70,leg:25},b:100}},
+  w:{rifle:{n:'Rifle',on:1,p:{head:100,torso:70,limb:35},d:{head:999,neck:999,vitals:70,gut:40,leg:25},k:{head:120,body:70,leg:25},b:100},
+    ar15:{n:'AR-15',on:1,p:{head:60,torso:28,limb:15},d:{head:999,neck:150,vitals:50,gut:25,leg:15},k:{head:60,body:28,leg:10},b:100}},
   hp:{stag:120,fallow:100,roe:80,buzzard:10,bear:360},
   };
 const DMG=JSON.parse(JSON.stringify(DMG_DEF));
@@ -3937,7 +3991,7 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
   const num=(path,val)=>`<input type="number" min="0" step="1" data-p="${path}" value="${val}">`;
   const sl=(k,label,mn,mx,st,dp)=>`<div class="gr"><label>${label}</label><input type="range" min="${mn}" max="${mx}" step="${st}" value="${GAME[k]}" data-k="${k}" data-dp="${dp}"><output>${(+GAME[k]).toFixed(dp)}</output></div>`;
   const sp=a=>'<div class="sp">'+a.map(x=>`<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join('')+'</div>';
-  const dt=(title,g,cols)=>{const W=DMG.w.rifle;return `<h4>${title}</h4><table><tr>${cols.map(c=>`<th>${c[1]}</th>`).join('')}</tr><tr>${cols.map(c=>`<td>${num('w.rifle.'+g+'.'+c[0],W[g][c[0]])}</td>`).join('')}</tr></table>`;};
+  const dt=(title,g,cols,w)=>{w=w||'rifle';const W=DMG.w[w];return `<h4>${title}</h4><table><tr>${cols.map(c=>`<th>${c[1]}</th>`).join('')}</tr><tr>${cols.map(c=>`<td>${num('w.'+w+'.'+g+'.'+c[0],W[g][c[0]])}</td>`).join('')}</tr></table>`;};
   const IC={rifle:'<svg viewBox="0 0 48 48"><path d="M3 27h20l3-2h16l3 1v3H28l-4 2H13l-3 6H5l2-6H3z" fill="#4a3a2a" stroke="#e7d2ae" stroke-width="1.4" stroke-linejoin="round"/><rect x="18" y="19" width="13" height="4" rx="2" fill="#20262a" stroke="#e7d2ae" stroke-width="1.2"/></svg>',
     at4:'<svg viewBox="0 0 48 48"><g stroke="#ffd0ee" stroke-width="1.3" stroke-linejoin="round"><rect x="9" y="19" width="30" height="8" rx="2" fill="#6e7944"/><rect x="38" y="16" width="5" height="14" rx="1.5" fill="#262624"/><path d="M9 19 3 16v14l6-3z" fill="#262624"/><rect x="28" y="27" width="4" height="9" fill="#2d2e2b"/><rect x="17" y="16" width="8" height="3" fill="#2b3046"/></g></svg>',
     rpg:'<svg viewBox="0 0 48 48"><g stroke="#ffd9b0" stroke-width="1.3" stroke-linejoin="round"><path d="M33 17c5 1 9 4 11 7-2 3-6 6-11 7z" fill="#5d6a3c"/><rect x="21" y="18" width="12" height="12" rx="2" fill="#4f5c33"/><path d="M21 21 13 22.5v3L21 27z" fill="#7a7d72"/><rect x="7" y="22.5" width="7" height="3" fill="#8b8e84"/></g></svg>',
@@ -3947,7 +4001,7 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
     pn.innerHTML=`<p class="note">Everything about each weapon in one place. Every value saves as you change it. In a 1v1 match damage to a player comes from that player's own settings and damage to animals from the host's, so keep both players the same.</p>
 <div class="wgrid">
 <section class="wc"><div class="wh">${IC.radio}<div><h3>Carry slots</h3><p>What you can carry at once · weapons on the first keys, gadgets after</p></div><span class="key">G drop · F pick up</span></div>
-${sp([['Weapon slots',GAME.slotW+' (keys 1'+(GAME.slotW>1?'–'+GAME.slotW:'')+')'],['Gadget slots',GAME.slotG+' (keys '+(+GAME.slotW+1)+(GAME.slotG>1?'–'+(+GAME.slotW+ +GAME.slotG):'')+')'],['Start kit','rifle'],['Weapons','rifle, AT4'],['Gadgets','radio (recon drone)']])}
+${sp([['Weapon slots',GAME.slotW+' (keys 1'+(GAME.slotW>1?'–'+GAME.slotW:'')+')'],['Gadget slots',GAME.slotG+' (keys '+(+GAME.slotW+1)+(GAME.slotG>1?'–'+(+GAME.slotW+ +GAME.slotG):'')+')'],['Start kit','rifle'],['Weapons','rifle, AR-15, AT4'],['Gadgets','radio (recon drone)']])}
 ${sl('slotW','Weapon slots',1,3,1,0)}${sl('slotG','Gadget slots',1,3,1,0)}
 <p class="tn">Picking up a weapon with the weapon slots full swaps it for the one in your hands, which drops at your feet. Dropped items glow and either player can pick them up; an AT4 keeps its loaded round and a rifle the rounds in its magazine. A radio stays in its slot while its drone is up. Each round starts with the rifle only.</p></section>
 <section class="wc"><div class="wh">${IC.rifle}<div><h3>Bolt-action rifle</h3><p>7.62 mm scoped sniper rifle · your starting weapon</p></div><span class="key">LMB fire · R reload · RMB scope</span></div>
@@ -3960,6 +4014,13 @@ ${dt('Damage to a bear','k',[['head','Head'],['body','Body'],['leg','Leg']])}
 <h4>Damage to a buzzard</h4><table><tr><th>Any hit</th></tr><tr><td>${num('w.rifle.b',W.b)}</td></tr></table>
 <p class="tn">Drop is measured over a flat shot at the same height. The scope zero (E / Q) re-adjusts to the new ballistics. Bullets always fall in a real arc, so a lower muzzle velocity means more time to target and more lead.</p>
 <p class="tn">Heart / lung deer hits leave a fatal wound, a gut hit bleeds out over one to two minutes, a leg hit causes a limp. A second hit on a wounded deer always kills.</p></section>
+<section class="wc"><div class="wh">${arIcon()}<div><h3>AR-15</h3><p>7.62 carbine · automatic · iron sights · orange pickup</p></div><span class="key">hold LMB · R reload · RMB sights</span></div>
+${sp([['Calibre','7.62 mm (shares the rifle ammo)'],['Magazine',GAME.arMag+' rounds'],['Rate of fire',GAME.arRpm+' rpm'],['Spread aimed',GAME.arSpread+' mrad'],['Spread from the hip',(GAME.arSpread*2.4).toFixed(1)+' mrad'],['Torso hits to kill (100 hp)',Math.ceil(100/Math.max(1,DMG.w.ar15.p.torso))]])}
+${sl('arMag','Magazine (rounds)',10,60,5,0)}${sl('arRpm','Rate of fire (rounds per minute)',200,1000,20,0)}${sl('arSpread','Spread when aimed (mrad · ×2.4 from the hip)',0.5,12,0.5,1)}${sl('arRecoil','Recoil (1 = normal)',0,3,0.1,1)}
+${dt('Damage to players','p',[['head','Head'],['torso','Torso'],['limb','Limbs']],'ar15')}
+${dt('Damage to deer','d',[['head','Head'],['neck','Neck'],['vitals','Heart / lungs'],['gut','Gut'],['leg','Leg']],'ar15')}
+${dt('Damage to a bear (also the drone and the UGV body)','k',[['head','Head'],['body','Body'],['leg','Leg']],'ar15')}
+<p class="tn">Uses the same 7.62 boxes as the bolt rifle; each rifle keeps the rounds in its own magazine. A second AR-15 pickup adds a magazine's worth of rounds. Crouch or go prone to tighten the spread.</p></section>
 <section class="wc"><div class="wh">${IC.at4}<div><h3>AT4</h3><p>Shoulder-mounted light anti-armour weapon · single shot</p></div><span class="key">X switch · LMB fire · R load</span></div>
 ${sp([['Rocket speed',GAME.at4Spd+' m/s'],['Blast radius',GAME.at4R+' m'],['Person, centre',GAME.at4Dmg+' hp'],['UGV, direct',GAME.at4Ugv+' hp'],['Reload',GAME.at4Reload+' s'],['Bears','2× person damage']])}
 <h4>Pickups</h4>${sl('pkAt4','AT4 rounds per round pickup',1,10,1,0)}
@@ -3988,14 +4049,14 @@ ${sp([['Damage / hit',GAME.uDmg+' hp'],['Rate of fire',GAME.uRpm+' rpm'],['Burst
     pn.querySelectorAll('input[data-p]').forEach(i=>i.oninput=()=>{const v=parseFloat(i.value);if(!(v>=0))return;const ks=i.dataset.p.split('.');let o=DMG;for(let j=0;j<ks.length-1;j++)o=o[ks[j]];o[ks[ks.length-1]]=v;dmgSave();});
     pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;if(k==='bDrop'||k==='bV0'||k==='bDrag')balApply();if(k==='slotW'||k==='slotG')try{slotFit();}catch(e){}i.nextElementSibling.textContent=v.toFixed(+i.dataset.dp);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}});
     pn.querySelectorAll('input[data-k]').forEach(i=>i.addEventListener('change',()=>{const keep=pn.scrollTop;build();}));
-    pn.querySelector('#dmgReset').onclick=()=>{const f=JSON.parse(JSON.stringify(DMG_DEF));for(const k in f)DMG[k]=f[k];for(const k of['slotW','slotG','uavDur','uavR','uavAlt','uavSpd','uavHp','uavVol','at4Drop','bDrop','bV0','bDrag','pk762','pkAt4','at4Spd','at4R','at4Dmg','at4Ugv','at4Reload'])GAME[k]=GAME_DEF[k];try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}dmgSave();balApply();try{slotFit();}catch(e){}build();};};
+    pn.querySelector('#dmgReset').onclick=()=>{const f=JSON.parse(JSON.stringify(DMG_DEF));for(const k in f)DMG[k]=f[k];for(const k of['arMag','arRpm','arSpread','arRecoil','slotW','slotG','uavDur','uavR','uavAlt','uavSpd','uavHp','uavVol','at4Drop','bDrop','bV0','bDrag','pk762','pkAt4','at4Spd','at4R','at4Dmg','at4Ugv','at4Reload'])GAME[k]=GAME_DEF[k];try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}dmgSave();balApply();try{slotFit();}catch(e){}build();};};
   const ids=['Brief','Gfx','Env','Aud','Mp'];
   tb.onclick=()=>{build();ids.concat(['Game']).forEach(n=>{const t=document.getElementById('tab'+n),p=document.getElementById('pane'+n);if(t)t.setAttribute('aria-selected','false');if(p)p.hidden=true;});tb.setAttribute('aria-selected','true');pn.hidden=false;};
   const _st=showTab;showTab=function(w){_st(w);tb.setAttribute('aria-selected','false');pn.hidden=true;};
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={slotW:2,slotG:2,uavDur:60,uavR:300,uavAlt:70,uavSpd:40,uavHp:140,uavVol:1,siloAcc:0.45,siloShake:1,siloVol:1,at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:15,pk762:10,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:4,bWalk:1.5,bRear:14,bAtk:1,bTrig:2,bFight:60,bChance:60,bSense:80,bChSpd:8,bReach:2.8,bDmg:30,bRate:1.6,bChase:25,bCool:60,fallOn:1,fallSafe:4,fallDmg:10};
+const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:2,slotG:2,uavDur:60,uavR:300,uavAlt:70,uavSpd:40,uavHp:140,uavVol:1,siloAcc:0.45,siloShake:1,siloVol:1,at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:15,pk762:10,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:4,bWalk:1.5,bRear:14,bAtk:1,bTrig:2,bFight:60,bChance:60,bSense:80,bChSpd:8,bReach:2.8,bDmg:30,bRate:1.6,bChase:25,bCool:60,fallOn:1,fallSafe:4,fallDmg:10};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 function balApply(){V0=GAME.bV0;DRAG=GAME.bDrag;GBUL=9.81*GAME.bDrop;try{setZero(zeroM);}catch(e){}}balApply();
 function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw,CCw)+0.6;}
@@ -4428,6 +4489,7 @@ const EQB=(()=>{
     wood:S('<g stroke="#f0d3a2" stroke-width="1.3" stroke-linecap="round"><path d="M6 36 38 12" stroke-width="4.5" stroke="#9a6a3c"/><path d="M8 14 40 34" stroke-width="4" stroke="#a97a46"/><path d="M10 40 42 28" stroke-width="3.5" stroke="#865a30"/></g>'),
     rpg:S('<g stroke="#ffd9b0" stroke-width="1.3" stroke-linejoin="round"><path d="M33 17c5 1 9 4 11 7-2 3-6 6-11 7z" fill="#5d6a3c"/><rect x="21" y="18" width="12" height="12" rx="2" fill="#4f5c33"/><path d="M21 21 13 22.5v3L21 27z" fill="#7a7d72"/><rect x="7" y="22.5" width="7" height="3" fill="#8b8e84"/><path d="M8 22.5 3 17v6zM8 25.5 3 31v-6z" fill="#3d4136"/></g>')};
   const bar=document.createElement('div');bar.id='eqBar';document.body.appendChild(bar);
+  IC.ar15=arIcon();
   const EMPTY=S('<rect x="9" y="13" width="30" height="22" rx="5" fill="none" stroke="#9aa38c" stroke-width="1.4" stroke-dasharray="3 3"/>');
   const $e=id=>document.getElementById(id);let barS='',barN='';
   function layout(){const nw=SLOT.w.length,ng=SLOT.g.length,key=nw+'/'+ng;if(key===barN)return;barN=key;barS='';let h='';
@@ -4444,7 +4506,8 @@ const EQB=(()=>{
     if(s===barS&&!f)return;barS=s;
     SLOT.w.forEach((it,i)=>{const el=$e('eqW'+i);if(!el)return;
       if(!it)cell(el,'',"Empty",'weapon slot',false,true);
-      else if(it.k==='rifle')cell(el,'rifle','Rifle',(pl.ammo|0)+' · '+(pl.reserve|0)+' spare',WPN.cur==='rifle',false);
+      else if(it.k==='rifle')cell(el,'rifle','Rifle',(WPN.cur==='rifle'?(pl.ammo|0):(it.ammo!=null?it.ammo|0:12))+' · '+(pl.reserve|0)+' spare',WPN.cur==='rifle',false);
+      else if(it.k==='ar15')cell(el,'ar15','AR-15',(WPN.cur==='ar15'?(pl.ammo|0):(it.ammo!=null?it.ammo|0:GAME.arMag|0))+' · '+(pl.reserve|0)+' spare',WPN.cur==='ar15',false);
       else if(it.k==='at4')cell(el,'at4','AT4',(WPN.rl>=0?'loading':(WPN.ld?'loaded':'empty'))+' · '+a+' spare',WPN.cur==='at4',false);});
     SLOT.g.forEach((it,i)=>{const el=$e('eqG'+i);if(!el)return;
       if(!it)cell(el,'','Empty','gadget slot',false,true);
@@ -4464,7 +4527,7 @@ function eqStep(){try{slotStep();}catch(e){}EQB.ui();}
 // Counts are set on the Weapons tab (Carry slots), 1-3 of each.
 var SLOT={w:[{k:'rifle'},null],g:[null,null]};
 var DROPS=[];
-const ITEM={rifle:{name:'Rifle',kind:'w',col:0xffe08a},at4:{name:'AT4',kind:'w',col:0xff2fbf},radio:{name:'Radio',kind:'g',col:0x3ad8ff}};
+const ITEM={rifle:{name:'Rifle',kind:'w',col:0xffe08a},ar15:{name:'AR-15',kind:'w',col:0xff8a2a},at4:{name:'AT4',kind:'w',col:0xff2fbf},radio:{name:'Radio',kind:'g',col:0x3ad8ff}};
 function slotN(t){return Math.max(1,Math.min(3,Math.round(+(t==='w'?GAME.slotW:GAME.slotG))||2));}
 function slotHas(k){if(!SLOT)return k==='rifle';return SLOT.w.some(i=>i&&i.k===k)||SLOT.g.some(i=>i&&i.k===k);}
 function slotKeyOf(k){if(!SLOT)return '';let j=SLOT.w.findIndex(i=>i&&i.k===k);if(j>=0)return String(j+1);j=SLOT.g.findIndex(i=>i&&i.k===k&&!i.used);return j>=0?String(SLOT.w.length+j+1):'';}
@@ -4488,10 +4551,10 @@ function slotGive(it){const t=ITEM[it.k].kind,L=SLOT[t];let j=L.indexOf(null),ou
   if(t==='w'&&slotHas(it.k)){if(it.k==='at4')INV.at4r=(INV.at4r|0)+(it.ld?1:0);else player.reserve=(player.reserve|0)+(it.ammo|0);slotSync();return '';}   // one of each weapon: a second copy gives up its ammo
   if(j<0){if(t==='w'){j=L.findIndex(q=>q&&q.k===WPN.cur);if(j<0)j=0;}else{j=L.findIndex(q=>q&&q.k!==it.k&&!q.used);if(j<0)return null;}
     out=ITEM[L[j].k].name;dropItem(L[j]);L[j]=null;}
-  L[j]=it;if(it.k==='at4'){WPN.ld=it.ld?1:0;WPN.rl=-1;}if(it.k==='rifle'&&it.ammo!=null){player.ammo=it.ammo|0;}
+  L[j]=it;if(it.k==='at4'){WPN.ld=it.ld?1:0;WPN.rl=-1;}
   slotSync();if(out&&t==='w')setWeapon(it.k);try{EQB.pop(t==='w'?'eqW'+j:'eqG'+j);}catch(e){}return out;}
-function slotTip(k){if(k==='at4'&&WPN.has)return 'AT4 launcher (+1 round)';const t=ITEM[k].kind,L=SLOT[t];
-  if(L.some(q=>!q))return 'pick up '+(k==='at4'?'AT4 launcher':ITEM[k].name);
+function slotTip(k){if(k==='at4'&&WPN.has)return 'AT4 launcher (+1 round)';if(k==='ar15'&&slotHas('ar15'))return 'AR-15 (+'+(GAME.arMag|0)+' rounds)';const t=ITEM[k].kind,L=SLOT[t];
+  if(L.some(q=>!q))return 'pick up '+(k==='at4'?'AT4 launcher':k==='ar15'?'AR-15 rifle':ITEM[k].name);
   if(t==='w'){const h=L.find(q=>q&&q.k===WPN.cur)||L[0];return 'swap your '+ITEM[h.k].name+' for the '+ITEM[k].name;}
   const h=L.find(q=>q&&q.k!==k&&!q.used);return h?'swap your '+ITEM[h.k].name+' for the '+ITEM[k].name:ITEM[k].name+' · gadget slots full';}
 // ---- selecting and using
@@ -4507,7 +4570,7 @@ function slotDrop(){if(!player.alive||!playing)return;const k=WPN.cur;if(k==='no
   if(SLOT.w.filter(Boolean).length<=1){toast("You can't drop your last weapon");return;}
   const j=SLOT.w.findIndex(q=>q&&q.k===k);if(j<0)return;dropItem(SLOT.w[j]);SLOT.w[j]=null;slotSync();toast('Dropped the '+ITEM[k].name+' · F picks it up again');try{sfx.click();}catch(e){}}
 // ---- items on the ground
-const DROP_GEO={rifle:build([[B(0.62,0.07,0.05),'#4a3a2a',[-0.05,0.035,0]],[B(0.2,0.1,0.05),'#4a3a2a',[-0.38,0.05,0]],[CY(0.012,0.012,0.5,6),'#2a2c2e',[0.5,0.045,0],[0,0,HP]],
+const DROP_GEO={ar15:(()=>{const g=build(arParts());g.rotateZ(PI/2);g.translate(0.03,0.05,0);return g;})(),rifle:build([[B(0.62,0.07,0.05),'#4a3a2a',[-0.05,0.035,0]],[B(0.2,0.1,0.05),'#4a3a2a',[-0.38,0.05,0]],[CY(0.012,0.012,0.5,6),'#2a2c2e',[0.5,0.045,0],[0,0,HP]],
   [CY(0.026,0.026,0.32,8),'#20262a',[0.04,0.1,0],[0,0,HP]],[B(0.05,0.05,0.02),'#2a2c2e',[0.02,0.06,0]],[B(0.06,0.03,0.04),'#3a3020',[-0.08,0.0,0]]])};
 function dropGeo(k){return DROP_GEO[k]||RES_GEO[k];}
 function dropMake(id,k,x,y,z,ld,ammo,ry){if(!ITEM[k]||DROPS.some(d=>d.id===id))return null;const m=new THREE.Mesh(dropGeo(k),RES_MAT);m.position.set(x,y,z);m.rotation.y=ry||0;
@@ -4516,13 +4579,13 @@ function dropMake(id,k,x,y,z,ld,ammo,ry){if(!ITEM[k]||DROPS.some(d=>d.id===id))r
 function dropKill(d){scene.remove(d.m);d.gm.material.dispose();}
 function dropItem(it){const pl=player,fx=Math.sin(camYaw),fz=Math.cos(camYaw);const x=pl.pos.x+fx*0.9,z=pl.pos.z+fz*0.9;
   let y=pl.pos.y+0.02;try{const g=groundH(x,z);if(Math.abs(g-pl.pos.y)<0.8)y=g+0.02;}catch(e){}
-  if(it.k==='at4'){it.ld=WPN.ld?1:0;WPN.ld=0;WPN.rl=-1;}if(it.k==='rifle'){it.ammo=pl.ammo|0;pl.ammo=0;pl.reloadT=-1;}
+  if(it.k==='at4'){it.ld=WPN.ld?1:0;WPN.ld=0;WPN.rl=-1;}if((it.k==='rifle'||it.k==='ar15')&&WPN.cur===it.k){it.ammo=pl.ammo|0;pl.ammo=0;pl.reloadT=-1;}
   const id=Math.random().toString(36).slice(2,9),ry=camYaw+HP;dropMake(id,it.k,x,y,z,it.ld,it.ammo,ry);
   try{if(MPM.on&&NT.room)NT.room.emit('drop',{id,k:it.k,x:nr2(x),y:nr2(y),z:nr2(z),ld:it.ld?1:0,am:it.ammo|0,ry:+ry.toFixed(3)}).catch(()=>{});}catch(e){}}
 function dropNearest(){const p=player.pos;let best=null,bd=2.4*2.4;for(const d of DROPS){const dd=(d.x-p.x)**2+(d.z-p.z)**2;if(dd<bd&&Math.abs(d.y-p.y)<2){bd=dd;best=d;}}return best;}
 function dropTake(d){
   if(d.k==='at4'&&WPN.has){INV.at4r=(INV.at4r|0)+(d.ld?1:0);toast(d.ld?'+1 AT4 round from the dropped launcher':'Empty AT4 · you already carry one');}
-  else if(d.k==='rifle'&&slotHas('rifle')){player.reserve=(player.reserve|0)+(d.ammo|0);toast('+'+(d.ammo|0)+' 7.62 rounds from the dropped rifle');}
+  else if((d.k==='rifle'||d.k==='ar15')&&slotHas(d.k)){player.reserve=(player.reserve|0)+(d.ammo|0);toast('+'+(d.ammo|0)+' 7.62 rounds from the dropped '+ITEM[d.k].name);}
   else{if(!slotCanTake(d.k)){toast('Gadget slots full');return;}const it={k:d.k,ld:d.ld,ammo:d.ammo};const out=slotGive(it);if(out===null){toast('Gadget slots full');return;}
     toast((out?'Swapped your '+out+' for the '+ITEM[d.k].name:'Picked up the '+ITEM[d.k].name+(d.k==='at4'?(d.ld?' · loaded':' · empty'):''))+' · '+slotKeyOf(d.k));}
   DROPS.splice(DROPS.indexOf(d),1);dropKill(d);try{pickSnd();}catch(e){}try{invUI();}catch(e){}
@@ -4768,10 +4831,10 @@ function zipStand(i,h){const S=TW_SITES[i],o=zipEdge(h)-1.05;return {x:S.x+Math.
     const sx=Math.sin(Z.h),sz=Math.cos(Z.h);
     // deck bracket at the start: a post on the deck edge and an arm out to the cable
     const dy=zipDeckY(Z.from),o=zipEdge(Z.h)-0.5,S=TW_SITES[Z.from],px=S.x+sx*o,pz=S.z+sz*o;
-    bar(V(px,dy,pz),V(px,Z.a.y+0.45,pz),0.06,GALV,6);bar(V(px,Z.a.y+0.4,pz),V(Z.a.x+sx*0.25,Z.a.y+0.12,Z.a.z+sz*0.25),0.045,GALV,6);
+    bar(V(px,dy,pz),V(px,Z.a.y+0.45,pz),0.06,GALV,6);bar(V(px,Z.a.y+0.4,pz),V(Z.a.x,Z.a.y+0.02,Z.a.z),0.045,GALV,6);parts.push(xf(tint(new THREE.BoxGeometry(0.14,0.14,0.14),STEEL,0.02),[Z.a.x,Z.a.y,Z.a.z],[0,Z.h,0]));
     bar(V(px-sz*0.25,dy+1.1,pz+sx*0.25),V(px+sz*0.25,dy+1.1,pz-sx*0.25),0.03,'#d8322a',5);   // red grab bar
     if(Z.kind==='long'){const T=TW_SITES[Z.to],dy2=zipDeckY(Z.to),o2=zipEdge(Z.h+PI)-0.5,qx=T.x-sx*o2,qz=T.z-sz*o2;
-      bar(V(qx,dy2,qz),V(qx,Z.b.y+0.45,qz),0.06,GALV,6);bar(V(qx,Z.b.y+0.4,qz),V(Z.b.x-sx*0.25,Z.b.y+0.12,Z.b.z-sz*0.25),0.045,GALV,6);}
+      bar(V(qx,dy2,qz),V(qx,Z.b.y+0.45,qz),0.06,GALV,6);bar(V(qx,Z.b.y+0.4,qz),V(Z.b.x,Z.b.y+0.02,Z.b.z),0.045,GALV,6);parts.push(xf(tint(new THREE.BoxGeometry(0.14,0.14,0.14),STEEL,0.02),[Z.b.x,Z.b.y,Z.b.z],[0,Z.h,0]));}
     else{const g=groundH(Z.b.x+sx*1.6,Z.b.z+sz*1.6),ax=Z.b.x+sx*1.6,az=Z.b.z+sz*1.6;   // ground anchor: a timber post on a concrete block, the cable tied off at the top
       bar(V(ax,g-0.6,az),V(ax,Z.b.y+0.7,az),0.13,WOOD,7);bar(V(Z.b.x,Z.b.y,Z.b.z),V(ax,Z.b.y+0.5,az),0.022,STEEL,4);
       parts.push(xf(tint(new THREE.BoxGeometry(1.1,0.5,1.1),'#8f8c86',0.06),[ax,g+0.05,az],[0,Z.h,0]));
@@ -5228,10 +5291,11 @@ window.SNIPER_UGV={list:()=>UGVS,step:ugvStep,hit:hitUgv,ray:rayUgv,reset:ugvRes
 // ---- climbing pose: rifle slung across the back, hands grab rungs and feet stand on rungs, alternating (left hand with right foot)
 function twStepper(u){const f=Math.floor(u),q=u-f;const k=Math.min(1,Math.max(0,(q-0.5)*2));return f+k*k*(3-2*k);}
 function zipPose(p0,pl){const p=Object.assign({},p0);if(!A.zipL){anchor('zipL',marine,0,0,0);anchor('zipR',marine,0,0,0);}
-  const hy=ZIP_HANG-0.2;A.zipL.position.set(0.2,hy,0.04);A.zipR.position.set(-0.2,hy,0.04);
-  p.ikL=1;p.ikR=1;p.L={zipL:1};p.R={zipR:1};p.poleL=[1,-0.3,-0.4];p.poleR=[-1,-0.3,-0.4];
-  p.legIK=1;p.lF=[0.13,0.04,0.2];p.rF=[-0.13,0.0,0.08];p.lKP=[0.25,0,1];p.rKP=[-0.25,0,1];
-  p.hipsP=[0,0,0];p.hipsR=[0,0,0];p.spine=[-0.05,0,0];p.chest=[-0.05,0,0];p.neck=[0.05,0,0];p.head=[0.1,0,0];p.lFoot=[0.3,0,0];p.rFoot=[0.3,0,0];
+  // hanging from the T-bar: both arms straight up, hands together on the handle, body hanging, knees bent and feet swinging forward
+  const hy=ZIP_HANG-0.25,sw=Math.sin(performance.now()/700)*0.04;A.zipL.position.set(0.09,hy,0.2);A.zipR.position.set(-0.09,hy,0.2);
+  p.ikL=1;p.ikR=1;p.L={zipL:1};p.R={zipR:1};p.poleL=[1,0,-0.2];p.poleR=[-1,0,-0.2];
+  p.legIK=1;p.lF=[0.1,0.3,0.12+sw];p.rF=[-0.1,0.24,0.02+sw];p.lKP=[0.2,0.1,1];p.rKP=[-0.2,0.1,1];
+  p.hipsP=[0,0.12,-0.06];p.hipsR=[0,0,0];p.spine=[-0.08,0,0];p.chest=[-0.06,0,0];p.neck=[0.1,0,0];p.head=[0.15,0,0];p.lFoot=[0.5,0,0];p.rFoot=[0.5,0,0];
   p.gunP=[0.05,0.05,-0.42];p.gunR=[-1.5,0,0.55];p.flash=0;p.mag=0;p.magHide=0;return p;}
 function climbPose(p0,pl){const p=Object.assign({},p0);if(!A.rungL){anchor('rungL',marine,0,0,0);anchor('rungR',marine,0,0,0);}
   const u=(TW.cy-TW.y0)/0.6,top=TW.y0+TW.Yd;
@@ -5455,11 +5519,11 @@ function farFlash(o){if(!_fgS){_fgS=new THREE.Sprite(new THREE.SpriteMaterial({m
   const d=o.distanceTo(camera.position);if(d>900){return;}_fgS.position.copy(o);const s=clamp(d*0.016,1.4,16);_fgS.scale.set(s,s,1);_fgS.material.opacity=1;_fgS.visible=true;_fgT=0.14;}
 function farFlashStep(dt){if(_fgT>0){_fgT-=dt;if(_fgS){_fgS.material.opacity=Math.max(0,_fgT/0.14);if(_fgT<=0)_fgS.visible=false;}}}
 function netShot(b){if(!NT.room)return;const v=b.v.clone().normalize();NT.room.emit('shot',{o:[nr2(b.o.x),nr2(b.o.y),nr2(b.o.z)],v:[nr3(v.x),nr3(v.y),nr3(v.z)]}).catch(()=>{});}
-function netHitRemote(h,dist){flashHit();try{const op=RPS.pos;if(op)dmgNum(op.x,op.y+2.1,op.z,MP_DMG[h.zone]||0,'#ff6a4a');}catch(e){}const z=h.zone;if(z==='head')headDing();else hitThud();toast('Opponent hit · '+(z==='head'?'head':z==='torso'?'body':'limb')+' · '+Math.round(dist)+' m');
-  if(NT.M.ph!=='live'||!NT.room)return;const n=++NT.hitN;NT.pend.set(n,{msg:{n,z,dist:Math.round(dist),r:NT.M.r},next:0,tries:0});}
+function netHitRemote(h,dist){flashHit();try{const op=RPS.pos;if(op)dmgNum(op.x,op.y+2.1,op.z,(HITW==='ar15'&&DMG.w.ar15?DMG.w.ar15.p[h.zone]:MP_DMG[h.zone])||0,'#ff6a4a');}catch(e){}const z=h.zone;if(z==='head')headDing();else hitThud();toast('Opponent hit · '+(z==='head'?'head':z==='torso'?'body':'limb')+' · '+Math.round(dist)+' m');
+  if(NT.M.ph!=='live'||!NT.room)return;const n=++NT.hitN;NT.pend.set(n,{msg:{n,z,dist:Math.round(dist),r:NT.M.r,w:HITW==='ar15'?1:0},next:0,tries:0});}
 function takeHit(d,peer){const key=peer+':'+d.n;if(NT.seen.has(key))return;NT.seen.add(key);
   if(NT.M.ph!=='live'||!player.alive||d.r!==NT.M.r)return;const z=d.z==='head'||d.z==='torso'||d.z==='limb'?d.z:'torso';
-  MPM.hp-=MP_DMG[z];try{dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,MP_DMG[z],'#ff3a3a');}catch(e){}flashHit();edgeFlash();shake=Math.max(shake,0.35);
+  const dz=(d.w&&DMG.w.ar15)?DMG.w.ar15.p[z]:MP_DMG[z];MPM.hp-=dz;try{dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,dz,'#ff3a3a');}catch(e){}flashHit();edgeFlash();shake=Math.max(shake,0.35);
   if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed · '+(z==='head'?'headshot':z==='torso'?'body shot':'limb shot')+' from '+(d.dist|0)+' m');}
   else toast('You are hit · '+(z==='torso'?'body':z)+' · '+(d.dist|0)+' m · '+Math.round(MPM.hp)+' hp left');}
 function netDeerHit(d,sub,leg,dist){flashHit();try{dmgNum(d.x,d.y+2.0*d.s,d.z,animalDmg(d.kind,sub),null,(DMG.hp&&DMG.hp[d.kind])||100);animalCry('deer',d.x,d.y+1.2*d.s,d.z,sub==='head'||sub==='neck',d.kind);}catch(e){}if(sub==='head')headDing();else hitThud();toast(deerName(d)+' hit · '+sub+' · '+Math.round(dist)+' m');const i=DEER.indexOf(d);if(i<0||!NT.room)return;
