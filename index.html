@@ -1062,12 +1062,13 @@ function waterLevelAt(x,z){if(lakeE(x,z)<1.02)return LW;return streamWater(x,z);
 
 /* ---------------- rocks (data first: the summit tor decides the spawn) ---------------- */
 const ROCKS=[];   // {x,z,y,w,h,d,ry,moss,col}
-const TWPOS={x:204,z:-167};const TWPOS2={x:-119,z:-242};const SILO_POS={x:-48,z:368};const SILO_SITES=[SILO_POS];   // every silo on the map: more sites get added here   // missile silo: open meadow near the southern edge
+const TWPOS={x:204,z:-167};const TWPOS2={x:-119,z:-242};const TWPOS3={x:-219,z:-41};const TWPOS4={x:147,z:74};   // towers 3 and 4: -219 E 41 N, 147 E -74 N
+const SILO_POS={x:-48,z:368};const SILO_SITES=[SILO_POS];   // every silo on the map: more sites get added here   // missile silo: open meadow near the southern edge
    // comms tower site: grid 204 E / 167 N
 // ---- zip lines (data): a long line between towers, running from the higher deck down, and a short line from every deck to a ground anchor.
 // Worked out from the tower sites before the forest is placed, so the cable corridors are kept clear of trees.
-const TW_SITES=[TWPOS,TWPOS2];               // more towers: add the site here (and to TWS in the tower block), then link it below
-const ZIP_LINKS=[[0,1]];                     // tower pairs joined by a long line
+const TW_SITES=[TWPOS,TWPOS2,TWPOS3,TWPOS4];               // more towers: add the site here (and to TWS in the tower block), then link it below
+const ZIP_LINKS=[[0,1],[1,2],[2,3],[3,0]];   // a ring of long lines round the four towers                     // tower pairs joined by a long line
 const ZIP_DECK=24,ZIP_D=2.4,ZIP_HANG=2.2;
 function zipBaseY(p){let lo=Infinity;for(const [dx,dz] of [[-2.6,-2.6],[2.6,-2.6],[-2.6,2.6],[2.6,2.6],[0,2.7]])lo=Math.min(lo,groundH(p.x+dx,p.z+dz));return lo-0.05;}
 function zipEdge(h){const sx=Math.sin(h),sz=Math.cos(h);return (ZIP_D+0.45)/Math.max(Math.abs(sx),Math.abs(sz));}   // distance from the mast to just outside the deck rail in direction h
@@ -1077,7 +1078,11 @@ const ZIPS=(()=>{const L=[];const top=s=>zipBaseY(s)+ZIP_DECK+ZIP_HANG+0.25;
     if(yb>ya){[A,B]=[B,A];[ya,yb]=[yb,ya];[i,j]=[j,i];}
     const h=Math.atan2(B.x-A.x,B.z-A.z),oa=zipEdge(h),ob=zipEdge(h+PI);
     const a={x:A.x+Math.sin(h)*oa,y:ya,z:A.z+Math.cos(h)*oa},b={x:B.x-Math.sin(h)*ob,y:yb,z:B.z-Math.cos(h)*ob};
-    mk(a,b,Math.max(1,Math.hypot(b.x-a.x,b.z-a.z)*0.018),'long',i,j,h);}
+    const len=Math.hypot(b.x-a.x,b.z-a.z);let ok=null;
+    for(const sk of [0.018,0.01,0.005]){const sag=Math.max(1,len*sk);let fine=true;   // the rider's feet must clear the ground all the way across (less sag if a ridge is in the way)
+      for(let t=0.03;t<0.97;t+=0.01){const y=a.y+(b.y-a.y)*t-sag*4*t*(1-t)-ZIP_HANG;if(y<groundH(a.x+(b.x-a.x)*t,a.z+(b.z-a.z)*t)+1.2){fine=false;break;}}
+      if(fine){ok=sag;break;}}
+    if(ok!=null)mk(a,b,ok,'long',i,j,h);else console.warn('zip line',i,j,'skipped: the ground is in the way');}
   // short line: the direction with a comfortable slope that keeps your feet clear of the ground, away from the ladder (+z) and the long lines
   TW_SITES.forEach((S,i)=>{const ya=top(S);const avoid=[0];
     for(const z of L)if(z.kind==='long'){if(z.from===i)avoid.push(z.h);if(z.to===i)avoid.push(z.h+PI);}
@@ -1864,7 +1869,7 @@ function groundColor(x,z,h,sl,dS,cw,dR,le,out){
   else if(dR<4.4)c=PAL.verge;
   else if(sl>1.05)c=(fbm(x/60,z/40,2)>0.05||sl>1.9)?(n2>0.2?PAL.rock:PAL.rock2):(n2>0?PAL.cliffWood:PAL.cliffWood2);
   else if(sl>0.72)c=PAL.mossRock;
-  else if(Math.hypot(x-TWPOS.x,z-TWPOS.z)<34||Math.hypot(x-TWPOS2.x,z-TWPOS2.z)<34)c=n1>0?PAL.heath:PAL.dry;
+  else if(Math.hypot(x-TWPOS.x,z-TWPOS.z)<34||Math.hypot(x-TWPOS2.x,z-TWPOS2.z)<34||Math.hypot(x-TWPOS3.x,z-TWPOS3.z)<34||Math.hypot(x-TWPOS4.x,z-TWPOS4.z)<34)c=n1>0?PAL.heath:PAL.dry;
   else if(Math.hypot(x-SILO_POS.x-1.6,z-SILO_POS.z)<20)c=n1>0.15?PAL.heath:PAL.dry;   // worn ground round the missile silo   // trampled bare ground round the comms tower, like the tor
   else{const mk=meadowK(x,z),dd=deadK(x,z);
     if(dd>0&&mk<0.3)c=n1>0?PAL.dry:PAL.heath;
@@ -2079,7 +2084,7 @@ function placeTree(x,z,inner){
     else{type=wr()<0.5?'spruceA':'spruceB';sc=wrr(0.68,1.18);col=SPR[Math.floor(wr()*4)];r=0.32;}}
   {const ds=Math.hypot(x-SUMMIT.x,z-SUMMIT.z);if(ds<230&&type!=='young')sc*=0.4+0.6*sst(50,230,ds);}
   const sy=sc*wrr(0.92,1.08);
-  if(Math.hypot(x-TWPOS2.x,z-TWPOS2.z)<9||zipClear(x,z))return;   // clear ground round the second comms tower (checked after the random draws so the rest of the forest is unchanged)
+  if(Math.hypot(x-TWPOS2.x,z-TWPOS2.z)<9||Math.hypot(x-TWPOS3.x,z-TWPOS3.z)<9||Math.hypot(x-TWPOS4.x,z-TWPOS4.z)<9||zipClear(x,z))return;   // clear ground round the second comms tower (checked after the random draws so the rest of the forest is unchanged)
   const tilt=(type==='snag'?wrr(-0.06,0.06):wrr(-0.02,0.02));if(skipT)return;
   {const cn=vn(x/80+31.7,z/80-12.4)*0.8+vn(x/37+5.1,z/37+8.8)*0.2;if(cn>0.5)return;if(cn>0.38&&hsh(Math.floor(x*3)+41,Math.floor(z*3)+7)<(cn-0.38)/0.12)return;}
   {const rr=Math.hypot(x,z),pk=Math.max(0,Math.min(1,(320-rr)/320))*0.6;if(hsh(Math.floor(x*4)+83,Math.floor(z*4)+29)<pk)return;}
@@ -2133,7 +2138,7 @@ function rockShape(w,h,d,seedk,bl,jit){const g0=new THREE.BoxGeometry(1,1,1,2,2,
   return g0.toNonIndexed();}
 // boulders through the woods, mossy blocks along the stream, blocks in the windthrow
 function scatterRocks(n,pick,size,moss,collide){for(let k=0,tries=0;k<n&&tries<n*30;tries++){const p=pick();if(!p)continue;const [x,z]=p;
-  if(lakeE(x,z)<1.05||fieldF(x,z,FdR,CdR)<5)continue;const s=wrr(size[0],size[1]);const r=addRock(x,z,s*wrr(0.8,1.4),s*wrr(0.45,0.85),s*wrr(0.8,1.3),wr()*PI,moss);
+  if(lakeE(x,z)<1.05||fieldF(x,z,FdR,CdR)<5)continue;const s=wrr(size[0],size[1]);const rw=s*wrr(0.8,1.4),rh=s*wrr(0.45,0.85),rd=s*wrr(0.8,1.3),rr=wr()*PI;if(Math.hypot(x-TWPOS3.x,z-TWPOS3.z)<8||Math.hypot(x-TWPOS4.x,z-TWPOS4.z)<8){k++;continue;}const r=addRock(x,z,rw,rh,rd,rr,moss);
   if(collide&&Math.abs(x)<FE&&Math.abs(z)<FE){rockTris(r);addPillar({x:r.x,z:r.z,r:r.R,y0:r.y-2,y1:r.top,rock:true,kind:'rock',rk:r});}k++;}}
 const preRocks=ROCKS.length;
 scatterRocks(420,()=>{const x=wrr(-505,505),z=wrr(-505,505);const dS=fieldF(x,z,FdS,CdS);return dS<fieldF(x,z,FCw,CCw)+1.5?null:[x,z];},[0.8,3.4],0.35,true);
@@ -2769,7 +2774,7 @@ function shootAR(time){const pl=player;pl.ammo--;pl.lastShot=time;pl.kick=0.55;s
   try{if(!playSample('rifle',0.62*VOLS.gun,1.18+Math.random()*0.08)){noise(0.12,3200,0.8,0.32,'bandpass');noise(0.25,800,0.7,0.35);}}catch(e){}
   try{ejectBrass();}catch(e){}disturb(origin.x,origin.z,180,600);
   const rk=GAME.arRecoil;camPitch+=0.0065*rk*(ads?0.8:1);camYaw+=(Math.random()-0.5)*0.004*rk;
-  if(pl.ammo<=0){input.lmb=false;setTimeout(()=>{if(WPN.cur==='ar15'&&player.ammo<=0&&player.reloadT<0)startReload();},350);}}
+  if(pl.ammo<=0){input.lmb=false;pl.arAuto=15;}}
 function arIcon(){return '<svg viewBox="0 0 48 48"><g stroke="#ffcf9a" stroke-width="1.2" stroke-linejoin="round"><path d="M3 21h9v-2h20v3h8v2h5v2h-5v1h-8v2H22l-2 1-1 7h-5l1-8h-3l-1 3H4z" fill="#2e3033"/><path d="M22 28h5l-1 9h-5z" fill="#26272a"/><rect x="19" y="16" width="4" height="3" fill="#55595d"/><rect x="34" y="18" width="2" height="4" fill="#55595d"/></g></svg>';}
 window.SNIPER_AR={ARG,shoot:shootAR,parts:arParts,inp:()=>input};
 
@@ -3311,7 +3316,7 @@ function stepBullets1(dt){
     b.v.y-=GBUL*dt;b.v.multiplyScalar(Math.exp(-DRAG*dt));
     const len=b.v.length()*dt;_bd.copy(b.v).normalize();
     const h=castRay(b.p,_bd,len,b.rem);
-    if(b.ugv&&player.alive){const ph=rayPlayerZones(b.p,_bd,h?Math.min(len,h.dist):len);if(ph){ugvHurtMe(ph.zone);impact(ph.point,_bd.clone().negate(),'flesh');b.end=ph.point.clone();if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}}
+    if(b.ugv&&player.alive){const ph=rayPlayerZones(b.p,_bd,h?Math.min(len,h.dist):len);if(ph){ugvHurtMe(ph.zone,b.ud);impact(ph.point,_bd.clone().negate(),'flesh');b.end=ph.point.clone();if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}}
     if(b.hostile&&player.alive){const ph=rayPlayerZones(b.p,_bd,h?Math.min(len,h.dist):len);if(ph){damagePlayer(ph.zone,b.dmg);impact(ph.point,_bd.clone().negate(),'dirt');if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}}
     if(h||b.t>4||b.p.y<-200){
       if(h){b.end=h.point.clone();impact(h.point,h.normal,h.kind);impactSnd(h.point,h.kind);if(h.kind!=='water'&&h.kind!=='flesh'&&h.kind!=='metal')addMark(h.point,h.normal,h.kind,h.point.distanceTo(b.o),null);const dist=h.point.distanceTo(b.o);stats.last=[h.point.x,h.point.y,h.point.z,h.kind,dist];
@@ -3688,7 +3693,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=303;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=308;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4065,8 +4070,9 @@ ${sp([['Damage / hit',GAME.uDmg+' hp'],['Rate of fire',GAME.uRpm+' rpm'],['Burst
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:2,slotG:2,uavDur:60,uavR:300,uavAlt:70,uavSpd:40,uavHp:140,uavVol:1,siloAcc:0.45,siloShake:1,siloVol:1,at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:4,bWalk:1.5,bRear:14,bAtk:1,bTrig:2,bFight:60,bChance:60,bSense:80,bChSpd:8,bReach:2.8,bDmg:30,bRate:1.6,bChase:25,bCool:60,fallOn:1,fallSafe:4,fallDmg:10};
+const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:2,slotG:2,uavDur:60,uavR:300,uavAlt:70,uavSpd:40,uavHp:140,uavVol:1,siloAcc:0.45,siloShake:1,siloVol:2,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:4,bWalk:1.5,bRear:14,bAtk:1,bTrig:2,bFight:60,bChance:60,bSense:80,bChSpd:8,bReach:2.8,bDmg:30,bRate:1.6,bChase:25,bCool:60,fallOn:1,fallSafe:4,fallDmg:10};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
+try{if(!localStorage.getItem('fsSiloV2')){GAME.siloVol=2;localStorage.setItem('fsSiloV2','1');}}catch(e){}
 function balApply(){V0=GAME.bV0;DRAG=GAME.bDrag;GBUL=9.81*GAME.bDrop;try{setZero(zeroM);}catch(e){}}balApply();
 function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw,CCw)+0.6;}
 
@@ -4076,7 +4082,7 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
   const css=document.createElement('style');css.textContent=`#paneGame .gr{display:grid;grid-template-columns:230px 1fr 64px;gap:10px;align-items:center;margin:5px 0;font-size:13px}#paneGame .gr input[type=range]{width:100%}#paneGame .gr output{font-variant-numeric:tabular-nums;opacity:.85;text-align:right}#paneGame button{margin:10px 8px 0 0}`;document.head.appendChild(css);
   const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabGame';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','paneGame');tb.textContent='Gameplay';tabs.appendChild(tb);
   const pn=document.createElement('div');pn.id='paneGame';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabGame');pn.hidden=true;paneMp.after(pn);
-  const ROWS=[['sec','ICBM launch'],['siloAcc','Missile acceleration (1 = original, lower = slower climb)',0.1,2,0.05,2],['siloShake','Screen shake near a launch',0,3,0.1,1],['siloVol','Launch loudness',0,4,0.1,1],
+  const ROWS=[['sec','ICBM launch'],['siloAcc','Missile acceleration (1 = original, lower = slower climb)',0.1,2,0.05,2],['siloShake','Screen shake near a launch',0,3,0.1,1],['siloVol','Master volume (default 2 = twice the original)',0,6,0.1,1],['siloVK','Klaxon volume',0,3,0.1,1],['siloVG','Hatch grind volume',0,3,0.1,1],['siloVR','Missile roar volume',0,3,0.1,1],
     ['sec','Stamina boost (double-tap W)'],['stStart','Starting stamina (%)',0,100,1,0],['stGain','Stamina per Magic Mushroom cluster (%)',0,25,1,0],['stDrain','Seconds of boost from a full bar',2,60,1,0],['stMult','Boost speed multiplier',1,3,0.1,1],
     ['sec','Butchering animals'],['bMeat','Health per meat from a butchered animal (%)',0,10,0.5,1],['bInst','Health instantly (1) or over time (0)',0,1,1,0],
     ['sec','Falling'],['fallOn','Fall damage (1 = on, 0 = off)',0,1,1,0],['fallSafe','Safe drop height (m)',1,30,0.5,1],['fallDmg','Damage per metre above that (hp)',1,50,1,0],
@@ -4602,7 +4608,8 @@ function dropTake(d){
   try{if(MPM.on&&NT.room)NT.room.emit('dtake',{id:d.id}).catch(()=>{});}catch(e){}}
 function dropNet(t,d){if(t==='drop'){dropMake(String(d.id),d.k,+d.x,+d.y,+d.z,d.ld,d.am,+d.ry||0);}
   else if(t==='dtake'){const q=DROPS.find(x=>x.id===String(d.id));if(q){DROPS.splice(DROPS.indexOf(q),1);dropKill(q);}}}
-function slotStep(){if(SLOT.g.some(q=>q&&q.used)&&!UAVS.some(u=>u.mine&&u.st!=='gone')){for(let j=0;j<SLOT.g.length;j++)if(SLOT.g[j]&&SLOT.g[j].used)SLOT.g[j]=null;slotSync();}
+function slotStep(){if(player.arAuto>0&&--player.arAuto===0&&WPN.cur==='ar15'&&player.ammo<=0&&player.reloadT<0)startReload();   // the AR reloads itself a few frames after the last round
+  if(SLOT.g.some(q=>q&&q.used)&&!UAVS.some(u=>u.mine&&u.st!=='gone')){for(let j=0;j<SLOT.g.length;j++)if(SLOT.g[j]&&SLOT.g[j].used)SLOT.g[j]=null;slotSync();}
   if(DROPS.length){const o=0.15+0.6*(0.5-0.5*Math.cos(performance.now()/1000*Math.PI*2/3));for(const d of DROPS)d.gm.material.opacity=o;}}
 window.SNIPER_SLOT={G:GAME,rr:()=>resReset(),SLOT,DROPS,give:slotGive,drop:slotDrop,key:slotKey,reset:slotReset,fit:slotFit,take:dropTake,net:dropNet,get:()=>SLOT};
 
@@ -4746,7 +4753,7 @@ window.SNIPER_BEAR={hurt:bearHurtMe,charge:bearCharge,human:bearHuman,list:()=>B
 // ================= comms tower: galvanised lattice mast with an open observation deck near the top, reached by a ladder =================
 // The deck is a sniper's perch: railings all round (gap at the ladder), room to go prone, and a weapons crate for later.
 const TW_NEW=site=>({built:false,x:0,z:0,y0:0,H:30,B0:2.6,Bt:1.05,Yd:24,D:2.4,Lz:2.68,climb:false,cd:0,mesh:null,grp:null,site});
-const TWS=[TW_NEW({x:TWPOS.x,z:TWPOS.z}),TW_NEW({x:TWPOS2.x,z:TWPOS2.z})];let TW=TWS[0];   // every tower on the map; TW is the one being built / stepped / climbed
+const TWS=[TW_NEW({x:TWPOS.x,z:TWPOS.z}),TW_NEW({x:TWPOS2.x,z:TWPOS2.z}),TW_NEW({x:TWPOS3.x,z:TWPOS3.z}),TW_NEW({x:TWPOS4.x,z:TWPOS4.z})];let TW=TWS[0];   // every tower on the map; TW is the one being built / stepped / climbed
 const TW_MAT=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.92,metalness:0});
 function twHW(y){return TW.B0+(TW.Bt-TW.B0)*y/TW.H;}
 // a straight member from a to b (local coords), as a low-poly cylinder baked into the merged geometry
@@ -4838,18 +4845,18 @@ function zipStand(i,h){const S=TW_SITES[i],o=zipEdge(h)-1.05;return {x:S.x+Math.
     parts.push(xf(tint(CY(r,r,L,seg||5),col,0.02),[m.x,m.y,m.z],[e.x,e.y,e.z]));};
   for(const Z of ZIPS){const N=Math.max(8,Math.ceil(Z.len/10));let P0=zipP(Z,0,V(0,0,0));
     for(let k=1;k<=N;k++){const P1=zipP(Z,k/N,V(0,0,0));bar(P0,P1,0.022,STEEL,4);P0=P1;}
-    const sx=Math.sin(Z.h),sz=Math.cos(Z.h);
+    const sx=Math.sin(Z.h),sz=Math.cos(Z.h);const sA=((Z.b.y-Z.a.y)-4*Z.sag)/Z.len,sB=((Z.b.y-Z.a.y)+4*Z.sag)/Z.len;   // cable slope per metre at each end, so the fittings carry on along the cable instead of kinking it
     // deck bracket at the start: a post on the deck edge and an arm out to the cable
     const dy=zipDeckY(Z.from),o=zipEdge(Z.h)-0.5,S=TW_SITES[Z.from],px=S.x+sx*o,pz=S.z+sz*o;
-    bar(V(px,dy,pz),V(px,Z.a.y+0.45,pz),0.06,GALV,6);bar(V(px,Z.a.y+0.4,pz),V(Z.a.x,Z.a.y+0.02,Z.a.z),0.045,GALV,6);parts.push(xf(tint(new THREE.BoxGeometry(0.14,0.14,0.14),STEEL,0.02),[Z.a.x,Z.a.y,Z.a.z],[0,Z.h,0]));
+    bar(V(px,dy,pz),V(px,Z.a.y-sA*0.5+0.05,pz),0.06,GALV,6);bar(V(px,Z.a.y-sA*0.5,pz),V(Z.a.x,Z.a.y+0.02,Z.a.z),0.045,GALV,6);parts.push(xf(tint(new THREE.BoxGeometry(0.14,0.14,0.14),STEEL,0.02),[Z.a.x,Z.a.y,Z.a.z],[0,Z.h,0]));
     bar(V(px-sz*0.25,dy+1.1,pz+sx*0.25),V(px+sz*0.25,dy+1.1,pz-sx*0.25),0.03,'#d8322a',5);   // red grab bar
     if(Z.kind==='long'){const T=TW_SITES[Z.to],dy2=zipDeckY(Z.to),o2=zipEdge(Z.h+PI)-0.5,qx=T.x-sx*o2,qz=T.z-sz*o2;
-      bar(V(qx,dy2,qz),V(qx,Z.b.y+0.45,qz),0.06,GALV,6);bar(V(qx,Z.b.y+0.4,qz),V(Z.b.x,Z.b.y+0.02,Z.b.z),0.045,GALV,6);parts.push(xf(tint(new THREE.BoxGeometry(0.14,0.14,0.14),STEEL,0.02),[Z.b.x,Z.b.y,Z.b.z],[0,Z.h,0]));}
+      bar(V(qx,dy2,qz),V(qx,Z.b.y+sB*0.5+0.05,qz),0.06,GALV,6);bar(V(qx,Z.b.y+sB*0.5,qz),V(Z.b.x,Z.b.y+0.02,Z.b.z),0.045,GALV,6);parts.push(xf(tint(new THREE.BoxGeometry(0.14,0.14,0.14),STEEL,0.02),[Z.b.x,Z.b.y,Z.b.z],[0,Z.h,0]));}
     else{const g=groundH(Z.b.x+sx*1.6,Z.b.z+sz*1.6),ax=Z.b.x+sx*1.6,az=Z.b.z+sz*1.6;   // ground anchor: a timber post on a concrete block, the cable tied off at the top
-      bar(V(ax,g-0.6,az),V(ax,Z.b.y+0.7,az),0.13,WOOD,7);bar(V(Z.b.x,Z.b.y,Z.b.z),V(ax,Z.b.y+0.5,az),0.022,STEEL,4);
+      const yt=Z.b.y+sB*1.6;bar(V(ax,g-0.6,az),V(ax,yt+0.15,az),0.13,WOOD,7);bar(V(Z.b.x,Z.b.y,Z.b.z),V(ax,yt,az),0.022,STEEL,4);
       parts.push(xf(tint(new THREE.BoxGeometry(1.1,0.5,1.1),'#8f8c86',0.06),[ax,g+0.05,az],[0,Z.h,0]));
-      bar(V(ax,Z.b.y+0.6,az),V(ax+sx*3.2,g-0.2,az+sz*3.2),0.018,STEEL,4);                 // back stay
-      parts.push(xf(tint(new THREE.BoxGeometry(0.5,0.35,0.05),'#e3a33b',0.02),[ax-sx*0.15,Z.b.y-0.6,az-sz*0.15],[0,Z.h,0]));}}   // orange end sign
+      bar(V(ax,yt+0.05,az),V(ax+sx*3.2,g-0.2,az+sz*3.2),0.018,STEEL,4);                 // back stay
+      parts.push(xf(tint(new THREE.BoxGeometry(0.5,0.35,0.05),'#e3a33b',0.02),[ax-sx*0.15,yt-0.9,az-sz*0.15],[0,Z.h,0]));}}   // orange end sign
   if(parts.length){const m=new THREE.Mesh(merge(parts),envMat);m.castShadow=true;m.receiveShadow=true;scene.add(m);}
   // trolley: twin pulleys between side plates, a T-bar handle hanging below
   const tp=[];const w=(r,th,z)=>tp.push(xf(tint(CY(r,r,th,10),'#3a3d40',0.02),[0,0,z],[0,0,HP]));w(0.06,0.035,0.09);w(0.06,0.035,-0.09);
@@ -4876,7 +4883,7 @@ function zipStep(pl,dt){if(!ZIP.on)return false;const Z=ZIP.Z;
   if(keys.Space){zipEnd(null);toast('Let go of the zip line');return false;}
   const dyt=(Z.b.y-Z.a.y)-Z.sag*4*(1-2*ZIP.t),dst=Math.hypot(Z.len,dyt),sl=dyt/dst;
   const vmax=Z.kind==='long'?22:14,rem=(1-ZIP.t)*dst;
-  ZIP.v+=(-9.81*sl-0.004*ZIP.v*ZIP.v-0.25)*dt;ZIP.v=Math.min(ZIP.v,vmax,2+rem*0.55);ZIP.v=Math.max(ZIP.v,1.3);
+  ZIP.v+=(-9.81*sl-0.004*ZIP.v*ZIP.v-0.25)*dt;ZIP.v=Math.min(ZIP.v,vmax,2+rem*0.55);ZIP.v=Math.max(ZIP.v,Z.kind==='long'?5:1.3);   // on a long, shallow line the trolley still runs at a steady pace (hand over hand would take minutes)
   ZIP.t+=ZIP.v*dt/dst;
   if(ZIP.t>=1){ZIP.t=1;zipEnd(Z.kind==='long'?'deck':'ground');toast(Z.kind==='long'?'Across':'Down safely');return true;}
   const P=zipP(Z,ZIP.t,_zp);pl.pos.set(P.x,P.y-ZIP_HANG,P.z);pl.vel.set(0,0,0);pl.grounded=false;pl.fallV=0;pl.fy=pl.pos.y;pl.stance='stand';pl.yaw=Z.h;
@@ -4976,9 +4983,9 @@ function siloPose(){const S=SILO;
   S.hatch.position.x=S.x+S.hx*S.K;S.hatch.updateMatrixWorld(true);S.hcol.min.x=S.x+(S.hx-2.7)*S.K;S.hcol.max.x=S.x+(S.hx+2.7)*S.K;S.blk.on=S.hx>0.4;
   if(S.st==='idle'||S.st==='count'){S.mis.position.set(S.x,S.y0-19.4*S.K,S.z);S.mis.quaternion.identity();}}
 // ---- sounds: klaxon at the pad, the hatch grinding back, and the launch roar
-function siloKlaxon(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,700);if(!c)return;for(let i=0;i<14;i++)tn(c,c.t0+i*0.5,i%2?520:700,0,0.42,0.32*GAME.siloVol,'square');}
-function siloGrind(){const c=sp3(SILO.x,SILO.y0+1,SILO.z,500);if(!c)return;nz(c,c.t0,5,160,0.8,1.2*GAME.siloVol,'lowpass');nz(c,c.t0,5,900,5,0.18*GAME.siloVol);}
-function siloRoar(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,6000);if(!c)return;const V=GAME.siloVol,L=Math.min(2.4,1/Math.max(0.42,GAME.siloAcc));nz(c,c.t0,14*L,110,0.7,3.2*V,'lowpass');nz(c,c.t0,10*L,420,0.6,1.3*V);nz(c,c.t0+0.05,2.5*L,2200,0.5,0.6*V);}
+function siloKlaxon(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,700);if(!c)return;for(let i=0;i<14;i++)tn(c,c.t0+i*0.5,i%2?520:700,0,0.42,0.32*GAME.siloVol*GAME.siloVK,'square');}
+function siloGrind(){const c=sp3(SILO.x,SILO.y0+1,SILO.z,500);if(!c)return;nz(c,c.t0,5,160,0.8,1.2*GAME.siloVol*GAME.siloVG,'lowpass');nz(c,c.t0,5,900,5,0.18*GAME.siloVol*GAME.siloVG);}
+function siloRoar(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,6000);if(!c)return;const V=GAME.siloVol*GAME.siloVR,L=Math.min(2.4,1/Math.max(0.42,GAME.siloAcc));nz(c,c.t0,14*L,110,0.7,3.2*V,'lowpass');nz(c,c.t0,10*L,420,0.6,1.3*V);nz(c,c.t0+0.05,2.5*L,2200,0.5,0.6*V);}
 function siloTryLaunch(){const S=SILO;if(!S.built||!playing||!player.alive)return false;
   if(Math.hypot(player.pos.x-S.con.x,player.pos.z-S.con.z)>3)return false;
   if(S.st!=='idle'){toast(S.st==='gone'?'The silo is empty':'Launch sequence already running');return true;}
@@ -5031,6 +5038,19 @@ window.SNIPER_SILO={S:SILO,build:siloBuild,step:siloStep,launch:siloLaunch,reset
 const UGV_DEF={uOn:1,uPatrol:80,uSpd:2.2,uChase:5,uLeash:420,uSee:300,uReact:3,uMem:20,uRange:200,uTurn:70,uRpm:500,uBurst:3,uPause:1.6,uSpread:6,uDmg:25,uHp:1100,uRespawn:10};
 for(const k in UGV_DEF){GAME_DEF[k]=UGV_DEF[k];if(GAME[k]==null)GAME[k]=UGV_DEF[k];}
 try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in UGV_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
+// ---- several UGVs: each has its own settings (UGC[i]) and its own patrol point given as a grid reference (E, N metres, the same grid as the map)
+const UGKEYS=Object.keys(UGV_DEF).filter(k=>k!=='uOn');
+UGV_DEF.uCnt=1;GAME_DEF.uCnt=1;if(GAME.uCnt==null)GAME.uCnt=1;
+try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v&&isFinite(+v.uCnt))GAME.uCnt=Math.max(1,Math.min(6,Math.round(+v.uCnt)));}catch(e){}
+const UGC=[];
+try{const a=JSON.parse(localStorage.getItem('fsUgc')||'null');if(Array.isArray(a))a.forEach((c,i)=>{if(c&&typeof c==='object')UGC[i]=c;});}catch(e){}
+function ugcSave(){try{localStorage.setItem('fsUgc',JSON.stringify(UGC));}catch(e){}}
+function ugcGet(i){let c=UGC[i];if(!c){c={};const src=i?ugcGet(0):GAME;for(const k of UGKEYS)c[k]=src[k];UGC[i]=c;}
+  if(c.uGE==null||c.uGN==null||!isFinite(+c.uGE)||!isFinite(+c.uGN)){const s=ugvSilo(),a=i*2.1,r=i?110:0;c.uGE=Math.round(s.x+Math.sin(a)*r);c.uGN=Math.round(-(s.z+Math.cos(a)*r));}
+  for(const k of UGKEYS)if(c[k]==null||!isFinite(+c[k]))c[k]=GAME[k];return c;}
+// run a UGV's code with that UGV's own settings in GAME
+function ugvW(u,fn){const prev=UGV.cur;UGV.cur=u;const c=ugcGet(u.i||0),sv={};for(const k of UGKEYS){sv[k]=GAME[k];GAME[k]=c[k];}
+  try{return fn();}finally{for(const k of UGKEYS)GAME[k]=sv[k];UGV.cur=prev;}}
 const UGVS=[],UGV={lt:0};
 const UGV_MAT=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:0.78,metalness:0.12});
 const UGV_BURNT=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:0.95,metalness:0.05,color:0x2c2a27});
@@ -5109,15 +5129,17 @@ function makeUgv(hx,hz){
   u.yawG=yawG;u.pitG=pitG;
   for(const m of [UGV_MAT,UGV_BURNT,UGV_LENS]){m.defines=m.defines||{};try{if(lookI)m.defines.GSTYLE=lookI;}catch(e){}}
   scene.add(root);return u;}
-function ugvHome(){const s=(typeof SILO_SITES!=='undefined'&&SILO_SITES[0])||SILO_POS;return s;}
+function ugvSilo(){return (typeof SILO_SITES!=='undefined'&&SILO_SITES[0])||SILO_POS;}
+function ugvHome(u){u=u||UGV.cur;if(u&&u.i!=null){const c=ugcGet(u.i);return {x:clamp(+c.uGE||0,-465,465),z:-clamp(+c.uGN||0,-465,465)};}return ugvSilo();}   // a UGV patrols round its own grid reference
 function ugvBlocked(x,z){if(Math.abs(x)>470||Math.abs(z)>470)return true;try{if(inWater(x,z))return true;}catch(e){}try{if(slopeAt(x,z)>0.8)return true;}catch(e){}
-  const h=ugvHome();if(Math.hypot(x-h.x,z-h.z)<8)return true;
+  const h=ugvSilo();if(Math.hypot(x-h.x,z-h.z)<8)return true;
   for(const p of pillarsNear(x,z)){if(Math.hypot(p.x-x,p.z-z)<p.r+1.25)return true;}return false;}
 function ugvWaypoint(u){const h=ugvHome();for(let k=0;k<40;k++){const a=Math.random()*Math.PI*2,r=14+Math.random()*Math.max(4,GAME.uPatrol-14);const x=h.x+Math.sin(a)*r,z=h.z+Math.cos(a)*r;if(!ugvBlocked(x,z)){u.tx=x;u.tz=z;return;}}u.tx=u.hx;u.tz=u.hz;}
-function ugvSpawnSpot(){const h=ugvHome();for(let r=16;r<60;r+=3)for(let k=0;k<16;k++){const a=k/16*Math.PI*2+r,x=h.x+Math.sin(a)*r,z=h.z+Math.cos(a)*r;if(!ugvBlocked(x,z)&&!ugvBlocked(x+2,z)&&!ugvBlocked(x-2,z))return {x,z,a};}return {x:h.x+18,z:h.z,a:0};}
-function ugvBuildAll(){const s=ugvSpawnSpot();const u=makeUgv(s.x,s.z);u.yaw=s.a;UGVS.push(u);ugvWaypoint(u);ugvPlace(u,1);}
+function ugvSpawnSpot(u){const h=ugvHome(u);for(let r=16;r<60;r+=3)for(let k=0;k<16;k++){const a=k/16*Math.PI*2+r,x=h.x+Math.sin(a)*r,z=h.z+Math.cos(a)*r;if(!ugvBlocked(x,z)&&!ugvBlocked(x+2,z)&&!ugvBlocked(x-2,z))return {x,z,a};}return {x:h.x+18,z:h.z,a:0};}
+function ugvBuildOne(i){const s=ugvSpawnSpot({i});const u=makeUgv(s.x,s.z);u.i=i;u.hp=ugcGet(i).uHp;u.yaw=s.a;UGVS.push(u);ugvW(u,()=>ugvWaypoint(u));ugvPlace(u,1);return u;}
+function ugvBuildAll(){const n=Math.max(1,Math.min(6,Math.round(GAME.uCnt||1)));for(let i=0;i<n;i++)ugvBuildOne(i);}
 function ugvClear(){while(UGVS.length){const u=UGVS.pop();scene.remove(u.root);u.root.traverse(o=>{if(o.geometry&&o.geometry!==undefined)try{o.geometry.dispose();}catch(e){}});}}
-function ugvRespawn(u){const s=ugvSpawnSpot();Object.assign(u,{x:s.x,z:s.z,yaw:s.a,spd:0,ty:0,tp:0,st:'patrol',stT:2,hp:GAME.uHp,dead:0,deadT:0,tgt:null,mem:0,blind:0,boost:0,burstN:0,pauseT:0,fireT:0,smT:0});
+function ugvRespawn(u){const s=ugvSpawnSpot(u);Object.assign(u,{x:s.x,z:s.z,yaw:s.a,spd:0,ty:0,tp:0,st:'patrol',stT:2,hp:GAME.uHp,dead:0,deadT:0,tgt:null,mem:0,blind:0,boost:0,burstN:0,pauseT:0,fireT:0,smT:0});
   u.meshes.forEach(m=>{m.material=UGV_MAT;});u.root.traverse(o=>{if(o.material===UGV_LENS)o.visible=true;});ugvWaypoint(u);ugvPlace(u,1);}
 function ugvReset(){UGVS.forEach(ugvRespawn);}
 // sit the hull on the ground: pitch from the track ends, roll from the two sides, smoothed so it rocks rather than snaps
@@ -5170,12 +5192,12 @@ function ugvShoot(u,T){const o=ugvMuzzle(u),d=Math.hypot(T.x-o.x,T.z-o.z);const 
   dir.addScaledVector(s1,g()*sd).addScaledVector(s2,g()*sd).normalize();
   u.shots++;const tr=u.shots%3===1;ugvRound(o,dir,tr);u.fl=0.05;
   try{if(MPM.on&&NT.room)NT.room.emit('ugvf',{o:[nr2(o.x),nr2(o.y),nr2(o.z)],v:[+dir.x.toFixed(4),+dir.y.toFixed(4),+dir.z.toFixed(4)],t:tr?1:0}).catch(()=>{});}catch(e){}}
-function ugvRound(o,dir,tr){const b={p:o.clone(),o:o.clone(),v:dir.clone().multiplyScalar(V0),t:0,tr:getP(gTracer,matTracer),rem:true,ugv:true};bullets.push(b);if(tr)try{mkStreak(b);}catch(e){}
+function ugvRound(o,dir,tr){const b={p:o.clone(),o:o.clone(),v:dir.clone().multiplyScalar(V0),t:0,tr:getP(gTracer,matTracer),rem:true,ugv:true,ud:GAME.uDmg};bullets.push(b);if(tr)try{mkStreak(b);}catch(e){}
   ugvGunSnd(o);try{farFlash(o);}catch(e){}try{disturb(o.x,o.z,200,650);}catch(e){}}
 function ugvNetFire(d){if(!Array.isArray(d.o)||!Array.isArray(d.v))return;const o=V(+d.o[0],+d.o[1],+d.o[2]),v=V(+d.v[0],+d.v[1],+d.v[2]);if(!isFinite(o.x+o.y+o.z+v.x)||v.lengthSq()<0.5)return;
   v.normalize();ugvRound(o,v,!!d.t);const u=UGVS[0];if(u)u.fl=0.05;}
-function ugvHurtMe(zone){if(!player.alive||MPM.hp<=0)return;try{if(MPM.on&&NT.M.ph!=='live')return;}catch(e){}
-  const dmg=GAME.uDmg*(zone==='head'?2:zone==='limb'?0.6:1);MPM.hp-=dmg;try{flashHit();edgeFlash();shake=Math.max(shake,0.3);dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,dmg,'#ff3a3a');impactSnd(player.pos,'flesh');}catch(e){}
+function ugvHurtMe(zone,ud){if(!player.alive||MPM.hp<=0)return;try{if(MPM.on&&NT.M.ph!=='live')return;}catch(e){}
+  const dmg=(ud!=null?ud:GAME.uDmg)*(zone==='head'?2:zone==='limb'?0.6:1);MPM.hp-=dmg;try{flashHit();edgeFlash();shake=Math.max(shake,0.3);dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,dmg,'#ff3a3a');impactSnd(player.pos,'flesh');}catch(e){}
   toast('Hit by the UGV · '+(zone==='head'?'head':zone==='limb'?'limb':'body')+' · -'+Math.round(dmg));
   if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed by the UGV');}}
 // ---- the brain (host)
@@ -5257,10 +5279,18 @@ function ugvWheels(u){for(const w of u.wheels)w.m.rotation.x=u.wd/w.r;u.wd=u.wd%
 function ugvPush(u){const p=player.pos,dx=p.x-u.x,dz=p.z-u.z,d=Math.hypot(dx,dz);if(d<1.55&&d>1e-3&&p.y<u.y+1.6&&p.y>u.y-1.2){const k=1.55/d;p.x=u.x+dx*k;p.z=u.z+dz*k;}}
 function ugvStep(dtO){const now=performance.now();const dt=dtO!=null?dtO:Math.min(0.1,(now-(UGV.lt||now))/1000);UGV.lt=now;
   if(!GAME.uOn){if(UGVS.length)ugvClear();return;}
-  if(!UGVS.length){if(!(typeof SILO!=='undefined'&&SILO.built))return;ugvBuildAll();}
   const gst=!!(MPM&&MPM.on&&MPM.guest);
+  if(!gst&&UGVS.length&&UGVS.length!==Math.max(1,Math.min(6,Math.round(GAME.uCnt||1))))ugvClear();   // the number of UGVs was changed on the options tab
+  if(!UGVS.length){if(!(typeof SILO!=='undefined'&&SILO.built))return;ugvBuildAll();}
   for(const u of UGVS){if(gst)ugvGuest(u,dt);else if(playing||dtO!=null)ugvHost(u,dt);
     ugvPlace(u,dt);ugvWheels(u);ugvFx(u,dt);try{ugvAudio(u,dt);}catch(e){}try{ugvPush(u);}catch(e){}}}
+ugvHost=(f=>function(u,dt){return ugvW(u,()=>f(u,dt));})(ugvHost);
+ugvGuest=(f=>function(u,dt){return ugvW(u,()=>f(u,dt));})(ugvGuest);
+hitUgv=(f=>function(u){const a=arguments;return ugvW(u,()=>f.apply(this,a));})(hitUgv);
+netUgvHit=(f=>function(u){const a=arguments;return ugvW(u,()=>f.apply(this,a));})(netUgvHit);
+ugvRespawn=(f=>function(u){return ugvW(u,()=>f(u));})(ugvRespawn);
+// a guest builds as many UGVs as the host sends
+ugvNetApply=(f=>function(arr){if(Array.isArray(arr)&&!UGVS.length===false){try{while(UGVS.length<arr.length&&typeof SILO!=='undefined'&&SILO.built&&UGVS.length<6)ugvBuildOne(UGVS.length);while(UGVS.length>arr.length&&UGVS.length>1){const u=UGVS.pop();scene.remove(u.root);}}catch(e){}}return f(arr);})(ugvNetApply);
 function ugvShowHB(on){UGVS.forEach(u=>u.hb.forEach(m=>m.userData.edge.visible=on));}
 try{showBearHB=(f=>function(on){f(on);ugvShowHB(on);})(showBearHB);}catch(e){}
 resReset=(f=>function(){f.apply(this,arguments);try{ugvReset();}catch(e){}})(resReset);
@@ -5272,30 +5302,41 @@ function drawUgvMark(c,x,y,u,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWid
 // ---- UGV options tab
 (function(){
   const tabs=document.querySelector('.tabs'),after=document.getElementById('panePred')||document.getElementById('paneGame');if(!tabs||!after)return;
-  const css=document.createElement('style');css.textContent=`#paneUgv .gr{display:grid;grid-template-columns:270px 1fr 64px;gap:10px;align-items:center;margin:5px 0;font-size:13px}#paneUgv .gr input[type=range],#paneUgv .gr input[type=checkbox]{accent-color:var(--moss)}#paneUgv .gr input[type=range]{width:100%}#paneUgv .gr input[type=checkbox]{width:16px;height:16px}#paneUgv .gr output{font-variant-numeric:tabular-nums;opacity:.85;text-align:right}#paneUgv button{margin:10px 8px 0 0}#paneUgv .off{opacity:.38;pointer-events:none}`;document.head.appendChild(css);
+  const css=document.createElement('style');css.textContent=`#paneUgv .gr{display:grid;grid-template-columns:270px 1fr 64px;gap:10px;align-items:center;margin:5px 0;font-size:13px}#paneUgv .gr input[type=range],#paneUgv .gr input[type=checkbox]{accent-color:var(--moss)}#paneUgv .gr input[type=range]{width:100%}#paneUgv .gr input[type=checkbox]{width:16px;height:16px}#paneUgv .gr output{font-variant-numeric:tabular-nums;opacity:.85;text-align:right}#paneUgv button{margin:10px 8px 0 0}#paneUgv .off{opacity:.38;pointer-events:none}#paneUgv .ge{display:flex;gap:6px;align-items:center}#paneUgv input[type=number]{width:84px;padding:3px 6px;background:rgba(255,255,255,.08);color:inherit;border:1px solid rgba(255,255,255,.25);border-radius:4px;font:inherit}#paneUgv select{padding:3px 6px;background:rgba(0,0,0,.35);color:inherit;border:1px solid rgba(255,255,255,.25);border-radius:4px;font:inherit}`;document.head.appendChild(css);
   const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabUgv';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','paneUgv');tb.textContent='UGV';tabs.appendChild(tb);
   const pn=document.createElement('div');pn.id='paneUgv';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabUgv');pn.hidden=true;after.after(pn);
-  const ROWS=[['sec','Termit UGV'],['chk','uOn','A UGV patrols the missile silo'],['uPatrol','Patrol radius round the silo (m)',20,150,5,0],['uSpd','Patrol speed (m/s)',0.5,5,0.1,1],['uChase','Closing speed when it drives at you (m/s)',1,8,0.5,1],['uLeash','Leaves the silo to chase you up to (m)',50,900,10,0],
+  const ROWS=[['sec','Termit UGV'],['uPatrol','Patrol radius round its grid reference (m)',20,150,5,0],['uSpd','Patrol speed (m/s)',0.5,5,0.1,1],['uChase','Closing speed when it drives at you (m/s)',1,8,0.5,1],['uLeash','Leaves its patrol point to chase you up to (m)',50,900,10,0],
     ['sec','Sensors'],['uSee','Spots you within (m · less when you crouch or lie prone · needs a clear line of sight)',40,600,10,0],['uReact','Reaction time once it spots you (s)',0,5,0.1,1],['uMem','Searches your last position for (s)',0,90,1,0],
     ['sec','.50 cal'],['uRange','Opens fire within (m · drives closer when you are further)',30,450,10,0],['uTurn','Turret traverse (°/s)',10,180,5,0],['uRpm','Rate of fire (rounds per minute)',200,900,25,0],['uBurst','Rounds per burst',1,20,1,0],['uPause','Pause between bursts (s)',0.2,5,0.1,1],
     ['uSpread','Spread (mrad · higher misses more; worse against a running target)',0.5,15,0.5,1],['uDmg','Damage per round (hp · ×2 head, ×0.6 limbs)',5,100,1,0],
     ['sec','Armour'],['uHp','Armour (hp · a rifle hit does 70 to hull or turret, 175 to the optic, 42 to a track)',70,1500,10,0],['uRespawn','Back on patrol after it is destroyed (s · 0 = never · in a match, next round)',0,600,10,0]];
-  const KEYS=ROWS.filter(r=>r[0]!=='sec').map(r=>r[0]==='chk'?r[1]:r[0]);
-  const save=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}};
+  const KEYS=ROWS.filter(r=>r[0]!=='sec').map(r=>r[0]);
+  let sel=0;
+  const save=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}ugcSave();};
   const dim=()=>{pn.querySelectorAll('[data-u]').forEach(e=>e.classList.toggle('off',!GAME.uOn));};
-  const build=()=>{pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. Shoot the optic (the box on the right of the gun) to blind it for 25 s. In a match the host runs the UGV and it can target either player.</p>'+ROWS.map(r=>{
+  const build=()=>{const n=Math.max(1,Math.min(6,Math.round(GAME.uCnt||1)));if(sel>=n)sel=0;const c=ugcGet(sel);
+    pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. Each UGV patrols round its own grid reference (the same E / N metres as the map). Shoot the optic (the box on the right of the gun) to blind it for 25 s. In a match the host runs the UGVs and they can target either player.</p>'
+      +`<div class="gr"><label>UGVs patrol the area</label><input type="checkbox" data-g="uOn" ${GAME.uOn?'checked':''}></div>`
+      +`<div class="gr" data-u="1"><label>Number of UGVs</label><input type="range" min="1" max="6" step="1" value="${n}" data-g="uCnt"><output>${n}</output></div>`
+      +(n>1?`<div class="gr" data-u="1"><label>Settings for</label><select id="ugSel">${Array.from({length:n},(_,k)=>`<option value="${k}" ${k===sel?'selected':''}>UGV ${k+1}</option>`).join('')}</select><span></span></div>`:'')
+      +`<div class="gr" data-u="1"><label>Patrol point · grid reference${n>1?' (UGV '+(sel+1)+')':''}</label><span class="ge"><input type="number" min="-465" max="465" step="1" value="${Math.round(c.uGE)}" data-c="uGE"> E &nbsp;<input type="number" min="-465" max="465" step="1" value="${Math.round(c.uGN)}" data-c="uGN"> N</span><span></span></div>`
+      +ROWS.map(r=>{
       if(r[0]==='sec')return `<p class="sec" style="margin-top:14px">${r[1]}</p>`;
-      if(r[0]==='chk')return `<div class="gr"><label>${r[2]}</label><input type="checkbox" data-k="${r[1]}" ${GAME[r[1]]?'checked':''}></div>`;
-      return `<div class="gr" data-u="1"><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${GAME[r[0]]}" data-k="${r[0]}"><output>${(+GAME[r[0]]).toFixed(r[5])}</output></div>`;}).join('')
-      +'<button type="button" class="btn" id="ugReset">Reset UGV to defaults</button>';
-    pn.querySelectorAll('input[type=range]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.step<1?1:0);save();if(k==='uHp')UGVS.forEach(u=>{if(!u.dead)u.hp=Math.min(u.hp,v);});});
-    pn.querySelectorAll('input[type=checkbox]').forEach(i=>i.onchange=()=>{GAME[i.dataset.k]=i.checked?1:0;save();dim();});
-    pn.querySelector('#ugReset').onclick=()=>{KEYS.forEach(k=>{GAME[k]=GAME_DEF[k];});save();build();};dim();};
+      return `<div class="gr" data-u="1"><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${c[r[0]]}" data-k="${r[0]}"><output>${(+c[r[0]]).toFixed(r[5])}</output></div>`;}).join('')
+      +'<button type="button" class="btn" id="ugReset">Reset '+(n>1?'UGV '+(sel+1):'UGV')+' to defaults</button>';
+    pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);ugcGet(sel)[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.step<1?1:0);save();if(k==='uHp')UGVS.forEach(u=>{if(u.i===sel&&!u.dead)u.hp=Math.min(u.hp,v);});});
+    pn.querySelectorAll('input[data-c]').forEach(i=>i.onchange=()=>{const v=clamp(Math.round(parseFloat(i.value)||0),-465,465);i.value=v;ugcGet(sel)[i.dataset.c]=v;save();
+      try{if(!(MPM&&MPM.on))UGVS.forEach(u=>{if(u.i===sel)ugvRespawn(u);});}catch(e){}});
+    pn.querySelectorAll('input[data-g]').forEach(i=>{if(i.type==='checkbox')i.onchange=()=>{GAME[i.dataset.g]=i.checked?1:0;save();dim();};
+      else{i.oninput=()=>{const v=parseFloat(i.value);GAME[i.dataset.g]=v;i.nextElementSibling.textContent=v;save();};i.onchange=()=>{build();};}});
+    const sl=pn.querySelector('#ugSel');if(sl)sl.onchange=()=>{sel=+sl.value;build();};
+    pn.querySelector('#ugReset').onclick=()=>{const c2=ugcGet(sel);KEYS.forEach(k=>{c2[k]=GAME_DEF[k];});delete c2.uGE;delete c2.uGN;ugcGet(sel);save();
+      try{if(!(MPM&&MPM.on))UGVS.forEach(u=>{if(u.i===sel)ugvRespawn(u);});}catch(e){}build();};dim();};
   build();
   tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};
   tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
 })();
-window.SNIPER_UGV={list:()=>UGVS,step:ugvStep,hit:hitUgv,ray:rayUgv,reset:ugvReset,look:ugvLook,place:ugvPlace,build:ugvBuildAll,gh:groundH};
+window.SNIPER_UGV={ugc:UGC,get:ugcGet,G:GAME,list:()=>UGVS,step:ugvStep,hit:hitUgv,ray:rayUgv,reset:ugvReset,look:ugvLook,place:ugvPlace,build:ugvBuildAll,gh:groundH};
 
 
 // ---- climbing pose: rifle slung across the back, hands grab rungs and feet stand on rungs, alternating (left hand with right foot)
