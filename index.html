@@ -2408,10 +2408,10 @@ function carryOnTank(){const pl=player;
 const _sq=new THREE.Quaternion(),_sq2=new THREE.Quaternion(),_sq3=new THREE.Quaternion(),_sm=new THREE.Matrix4(),_sx=new THREE.Vector3(),_sy=new THREE.Vector3(),_sz=new THREE.Vector3(),_sE=new THREE.Vector3(),_sW=new THREE.Vector3(),_se=new THREE.Euler(0,0,0,'ZYX');
 function _isAR(){return WPN.cur==='ar15';}
 function raiseScoped(p,k,ar){   // shouldered: body turns side-on so the butt sits in the shoulder pocket, scope axis through the eye and along the line of sight
-  const TW=ar?(window.AR_TW!==undefined?window.AR_TW:-0.3):(window.SC_TW!==undefined?window.SC_TW:-0.9);
+  const TW=ar?(window.AR_TW!==undefined?window.AR_TW:-0.5):(window.SC_TW!==undefined?window.SC_TW:-0.9);
   p.spine=[p.spine[0],p.spine[1]+TW*0.45*k,p.spine[2]];p.chest=[p.chest[0],p.chest[1]+TW*0.55*k,p.chest[2]];p.head=[p.head[0],p.head[1]-TW*k,p.head[2]];
   {const NK=window.SC_NK!==undefined?window.SC_NK:0.15;p.neck=[p.neck[0]+NK*k,p.neck[1],p.neck[2]];p.head=[p.head[0]+NK*0.3*k,p.head[1],p.head[2]];}
-  if(ar){const HR=window.AR_HR!==undefined?window.AR_HR:0.4,SP=window.AR_SP!==undefined?window.AR_SP:0.2;p.head=[p.head[0],p.head[1],p.head[2]+HR*k];p.chest=[p.chest[0]+SP*k,p.chest[1],p.chest[2]];p.spine=[p.spine[0]+SP*0.6*k,p.spine[1],p.spine[2]];}   // cheek down onto the stock
+  if(ar){const HR=window.AR_HR!==undefined?window.AR_HR:0.05,SP=window.AR_SP!==undefined?window.AR_SP:0.08;p.head=[p.head[0],p.head[1],p.head[2]+HR*k];p.chest=[p.chest[0]+SP*k,p.chest[1],p.chest[2]];p.spine=[p.spine[0]+SP*0.6*k,p.spine[1],p.spine[2]];}   // cheek down onto the stock
   if(k>0.5){p.L={fore:1};p.R={grip:1};if(window.SC_PL)p.poleL=window.SC_PL;if(window.SC_PR)p.poleR=window.SC_PR;if(window.SC_LH)p.lHand=window.SC_LH;}
   applyPose(p);J.head.updateMatrixWorld(true);_sE.set(-0.05,0.2,0.18);J.head.localToWorld(_sE);
   if(ar&&aimYawV!=null&&aimPitchV!=null)_sz.set(Math.sin(aimYawV)*Math.cos(aimPitchV),Math.sin(aimPitchV),Math.cos(aimYawV)*Math.cos(aimPitchV));else _sz.copy(_dir).normalize();_sx.set(0,1,0).cross(_sz);if(_sx.lengthSq()<1e-6)_sx.set(1,0,0);_sx.normalize();_sy.crossVectors(_sz,_sx);
@@ -3680,7 +3680,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=298;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=300;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3953,7 +3953,8 @@ window.SNIPER_RES.logs=()=>LOGS;window.SNIPER_RES.boost=BOOST;
 
 // ---- foraged food heals slowly, up to 200% of normal health. Raw meat gives nothing until cooking exists.
 const HEAL={pool:0,t:performance.now()},FOOD={berries:0,mushroom:0,meat:0},HP_MAX=200,HEAL_RATE=1.5;
-function eatFood(k,q){if(k==='mushroom'){const g=GAME.stGain/100;STAM.v=Math.min(1,STAM.v+g);const hh=GAME.mHeal*q;if(hh>0)HEAL.pool=Math.min(120,HEAL.pool+hh);return ' · +'+GAME.stGain+'% stamina'+(hh>0?' · +'+hh+' health over time':'');}const v=(FOOD[k]||0);if(v<=0)return '';HEAL.pool=Math.min(120,HEAL.pool+v);return ' · +'+v+' health over time';}
+function eatFood(k,q){if(k==='mushroom'){const g=GAME.stGain/100;STAM.v=Math.min(1,STAM.v+g);const hh=0;   // mushrooms give stamina only, no health
+  if(hh>0)HEAL.pool=Math.min(120,HEAL.pool+hh);return ' · +'+GAME.stGain+'% stamina'+(hh>0?' · +'+hh+' health over time':'');}const v=(FOOD[k]||0);if(v<=0)return '';HEAL.pool=Math.min(120,HEAL.pool+v);return ' · +'+v+' health over time';}
 function healStep(){const now=performance.now(),dt=Math.min(0.25,(now-HEAL.t)/1000);HEAL.t=now;
   if(HEAL.pool>0&&player.alive&&MPM.hp>0){if(MPM.hp>=HP_MAX){HEAL.pool=0;return;}const h=Math.min(HEAL.pool,HEAL_RATE*dt,HP_MAX-MPM.hp);MPM.hp+=h;HEAL.pool-=h;}}
 
@@ -4056,7 +4057,7 @@ ${sp([['Damage / hit',GAME.uDmg+' hp'],['Rate of fire',GAME.uRpm+' rpm'],['Burst
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:2,slotG:2,uavDur:60,uavR:300,uavAlt:70,uavSpd:40,uavHp:140,uavVol:1,siloAcc:0.45,siloShake:1,siloVol:1,at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:15,pk762:10,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:4,bWalk:1.5,bRear:14,bAtk:1,bTrig:2,bFight:60,bChance:60,bSense:80,bChSpd:8,bReach:2.8,bDmg:30,bRate:1.6,bChase:25,bCool:60,fallOn:1,fallSafe:4,fallDmg:10};
+const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:2,slotG:2,uavDur:60,uavR:300,uavAlt:70,uavSpd:40,uavHp:140,uavVol:1,siloAcc:0.45,siloShake:1,siloVol:1,at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:4,bWalk:1.5,bRear:14,bAtk:1,bTrig:2,bFight:60,bChance:60,bSense:80,bChSpd:8,bReach:2.8,bDmg:30,bRate:1.6,bChase:25,bCool:60,fallOn:1,fallSafe:4,fallDmg:10};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 function balApply(){V0=GAME.bV0;DRAG=GAME.bDrag;GBUL=9.81*GAME.bDrop;try{setZero(zeroM);}catch(e){}}balApply();
 function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw,CCw)+0.6;}
@@ -4068,7 +4069,7 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
   const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabGame';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','paneGame');tb.textContent='Gameplay';tabs.appendChild(tb);
   const pn=document.createElement('div');pn.id='paneGame';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabGame');pn.hidden=true;paneMp.after(pn);
   const ROWS=[['sec','ICBM launch'],['siloAcc','Missile acceleration (1 = original, lower = slower climb)',0.1,2,0.05,2],['siloShake','Screen shake near a launch',0,3,0.1,1],['siloVol','Launch loudness',0,4,0.1,1],
-    ['sec','Stamina boost (double-tap W)'],['stStart','Starting stamina (%)',0,100,1,0],['stGain','Stamina per Magic Mushroom cluster (%)',0,25,1,0],['mHeal','Health per Magic Mushroom (heals over time)',0,60,1,0],['stDrain','Seconds of boost from a full bar',2,60,1,0],['stMult','Boost speed multiplier',1,3,0.1,1],
+    ['sec','Stamina boost (double-tap W)'],['stStart','Starting stamina (%)',0,100,1,0],['stGain','Stamina per Magic Mushroom cluster (%)',0,25,1,0],['stDrain','Seconds of boost from a full bar',2,60,1,0],['stMult','Boost speed multiplier',1,3,0.1,1],
     ['sec','Butchering animals'],['bMeat','Health per meat from a butchered animal (%)',0,10,0.5,1],['bInst','Health instantly (1) or over time (0)',0,1,1,0],
     ['sec','Falling'],['fallOn','Fall damage (1 = on, 0 = off)',0,1,1,0],['fallSafe','Safe drop height (m)',1,30,0.5,1],['fallDmg','Damage per metre above that (hp)',1,50,1,0],
     ];
