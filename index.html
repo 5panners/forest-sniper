@@ -1133,8 +1133,8 @@ const XS=(()=>{
   window._XSD={rng,free,wet,nearZip,dR,meadowK};
   return out;})();
 // true where the extra structures stand (no trees, rocks, logs or ferns)
-const XS_SHRINE=false;
-function xsClear(x,z){const s=XS.shrine,l=XS.look,f=XS.farm;return (XS_SHRINE&&Math.hypot(x-s.x,z-s.z)<4.5)||Math.hypot(x-l.x,z-l.z)<18||(Math.abs(x-f.x)<27&&Math.abs(z-f.z)<16)||(Math.abs(z-XS.chapel.z)<13&&x-XS.chapel.x>-18&&x-XS.chapel.x<21);}
+const XS_SHRINE=false, XS_CHAPEL=false;   // the ruined chapel is built but switched off
+function xsClear(x,z){const s=XS.shrine,l=XS.look,f=XS.farm;return (XS_SHRINE&&Math.hypot(x-s.x,z-s.z)<4.5)||Math.hypot(x-l.x,z-l.z)<18||(Math.abs(x-f.x)<27&&Math.abs(z-f.z)<16)||(XS_CHAPEL&&Math.abs(z-XS.chapel.z)<13&&x-XS.chapel.x>-18&&x-XS.chapel.x<21);}
 function addRock(x,z,w,h,d,ry,moss,col,yOff){const g=Math.min(groundH(x-w*0.35,z-d*0.35),groundH(x+w*0.35,z+d*0.35),groundH(x-w*0.35,z+d*0.35),groundH(x+w*0.35,z-d*0.35));
   const r={x,z,y:(yOff!=null?yOff:g-h*0.28),w,h,d,ry,moss,col:col!==false,i:ROCKS.length};ROCKS.push(r);return r;}
 const _nTor0=ROCKS.length;
@@ -1906,7 +1906,7 @@ function groundColor(x,z,h,sl,dS,cw,dR,le,out){
   else if(sl>0.72)c=PAL.mossRock;
   else if(Math.hypot(x-TWPOS.x,z-TWPOS.z)<34||Math.hypot(x-TWPOS2.x,z-TWPOS2.z)<34||Math.hypot(x-TWPOS3.x,z-TWPOS3.z)<34||Math.hypot(x-TWPOS4.x,z-TWPOS4.z)<34)c=n1>0?PAL.heath:PAL.dry;
   else if((Math.abs(x-XS.farm.x)<23+4*n1&&Math.abs(z-XS.farm.z)<12+3*n1)||Math.hypot(x-XS.look.x,z-XS.look.z)<9+3*n1)c=n1>0.1?PAL.dry:PAL.heath;   // trodden farmyard and the ground under the lookout
-  else if(Math.abs(z-XS.chapel.z)<11+2*n1&&x-XS.chapel.x>-15&&x-XS.chapel.x<19+2*n1)c=n1>0.1?PAL.verge:PAL.dry;   // churchyard
+  else if(XS_CHAPEL&&Math.abs(z-XS.chapel.z)<11+2*n1&&x-XS.chapel.x>-15&&x-XS.chapel.x<19+2*n1)c=n1>0.1?PAL.verge:PAL.dry;   // churchyard
   else if(Math.hypot(x-SILO_POS.x-1.6,z-SILO_POS.z)<20)c=n1>0.15?PAL.heath:PAL.dry;   // worn ground round the missile silo   // trampled bare ground round the comms tower, like the tor
   else{const mk=meadowK(x,z),dd=deadK(x,z);
     if(dd>0&&mk<0.3)c=n1>0?PAL.dry:PAL.heath;
@@ -2436,7 +2436,7 @@ if(GLOW.length){const mat=new THREE.MeshStandardMaterial({color:0xff5a2a,emissiv
 // ================= ruined gothic chapel: west bell tower you can climb, nave with a broken timber roof, five-sided apse, walled graveyard =================
 // Everything is laid stone by stone (running bond, courses of varying height, jittered corners) with pointed arches, dressed voussoirs, tracery and stained-glass remains.
 // Built in the chapel's own frame (local +z points east, +x north), then rotated and placed.  Colliders are exact: nothing is climbable that looks like a wall.
-{
+if(XS_CHAPEL){
 const CH=XS.chapel,YAW=PI/2,TOWER_Z=-8.8;
 const gwl=(lx,lz)=>[CH.x+lx*Math.cos(YAW)+lz*Math.sin(YAW),CH.z-lx*Math.sin(YAW)+lz*Math.cos(YAW)];
 let y0=-1e9;for(let a=-4;a<=4;a+=1)for(let b=-12;b<=11;b+=1){const w=gwl(a,b);y0=Math.max(y0,groundH(w[0],w[1]));}
@@ -3987,7 +3987,7 @@ function buildMap(){const N=mapCv.width;const img=mctx.createImageData(N,N);cons
   mctx.fillStyle='#d8d2c2';mctx.fillRect(S(HUT.x)-5,S(HUT.z)-4,10,8);
   {const f=XS.farm;mctx.fillStyle='#c9a46a';mctx.fillRect(S(f.x-16.5)-1,S(f.z-10.6),S(f.x-5.5)-S(f.x-16.5)+2,S(f.z-3.4)-S(f.z-10.6)+1);mctx.fillRect(S(f.x-15.6)-1,S(f.z+4.8),S(f.x-6.4)-S(f.x-15.6)+2,S(f.z+11.2)-S(f.z+4.8)+1);mctx.fillStyle='#b5523e';mctx.fillRect(S(f.x+6.5)-1,S(f.z-9),S(f.x+13.5)-S(f.x+6.5)+2,S(f.z+9)-S(f.z-9));
    const l=XS.look;mctx.fillStyle='#d8d2c2';mctx.fillRect(S(l.x)-3,S(l.z)-3,6,6);mctx.strokeStyle='#a8392b';mctx.lineWidth=1.5;mctx.strokeRect(S(l.x)-4,S(l.z)-4,8,8);
-   {const ch=XS.chapel;mctx.fillStyle='#cfc8b6';mctx.fillRect(S(ch.x)-5,S(ch.z)-2.5,10,5);mctx.fillRect(S(ch.x)-8,S(ch.z)-1.5,4,3);mctx.strokeStyle='#4a4f55';mctx.lineWidth=1.5;mctx.strokeRect(S(ch.x)-9,S(ch.z)-3.5,15,7);}
+   if(XS_CHAPEL){const ch=XS.chapel;mctx.fillStyle='#cfc8b6';mctx.fillRect(S(ch.x)-5,S(ch.z)-2.5,10,5);mctx.fillRect(S(ch.x)-8,S(ch.z)-1.5,4,3);mctx.strokeStyle='#4a4f55';mctx.lineWidth=1.5;mctx.strokeRect(S(ch.x)-9,S(ch.z)-3.5,15,7);}
    const sh=XS.shrine;if(XS_SHRINE){mctx.fillStyle='#ffd34d';mctx.fillRect(S(sh.x)-1,S(sh.z)-5,2,10);mctx.fillRect(S(sh.x)-3.5,S(sh.z)-2.5,7,2);}}
   mctx.fillStyle='#bdbab0';mctx.beginPath();mctx.moveTo(S(SUMMIT.x),S(SUMMIT.z)-7);mctx.lineTo(S(SUMMIT.x)+6,S(SUMMIT.z)+5);mctx.lineTo(S(SUMMIT.x)-6,S(SUMMIT.z)+5);mctx.fill();
   mapBase=mctx.getImageData(0,0,N,N);}
@@ -4272,7 +4272,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=326;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=327;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
