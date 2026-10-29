@@ -2331,29 +2331,8 @@ if(XS_SHRINE){const S=XS.shrine,LL=[],GL=[];const [lo,hi]=gRange(S.x,S.z,1.6,1.6
  const rail=(ax,az,bx,bz)=>{const L=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.round(L/1.1));for(let k=0;k<=n;k++){const t=k/n,x=ax+(bx-ax)*t,z=az+(bz-az)*t;pb(XL,B(0.1,1.05,0.1),WD,[x,Y+0.52,z]);}
    for(const yy of [1.02,0.55])beam(XL,[ax,Y+yy,az],[bx,Y+yy,bz],0.045,WD2,5);col(Math.min(ax,bx)-0.06,Math.max(ax,bx)+0.06,Y,Y+1.08,Math.min(az,bz)-0.06,Math.max(az,bz)+0.06);};
  rail(X-H,Z-H,X+H,Z-H);rail(X-H,Z+H,X+H,Z+H);rail(X-H,Z-H,X-H,Z+H);rail(X+H,Z-2.6,X+H,Z+H);
- // cabin: forestry-green boards, a band of windows all round, white trim, a door facing the stair
- {const C=2.3,WT=0.12;
-  const wall=(axis,sgn,door)=>{for(const [y0,y1] of [[0,1.0],[2.05,2.55]]){if(door&&y0===0)continue;
-      if(axis==='x')pb(XL,B(WT,y1-y0,2*C),GRNW,[X+sgn*C,Y+(y0+y1)/2,Z]);else pb(XL,B(2*C,y1-y0,WT),GRNW,[X,Y+(y0+y1)/2,Z+sgn*C]);}
-    for(let k=0;k<=4;k++){const o=-C+k*C/2;if(axis==='x')pb(XL,B(WT+0.04,1.05,0.08),TRIM,[X+sgn*C,Y+1.52,Z+o]);else pb(XL,B(0.08,1.05,WT+0.04),TRIM,[X+o,Y+1.52,Z+sgn*C]);}
-    for(const yy of [1.0,2.05]){if(axis==='x')pb(XL,B(WT+0.06,0.07,2*C+0.1),TRIM,[X+sgn*C,Y+yy,Z]);else pb(XL,B(2*C+0.1,0.07,WT+0.06),TRIM,[X,Y+yy,Z+sgn*C]);}
-    if(door){for(const dz of [-1,1]){pb(XL,B(WT,1.0,C-0.5),GRNW,[X+sgn*C,Y+0.5,Z+dz*(C+0.5)/2]);col(X+sgn*C-0.08,X+sgn*C+0.08,Y,Y+2.55,Z+dz*0.5,Z+dz*C);}
-      pb(XL,B(WT+0.05,2.05,0.08),TRIM,[X+sgn*C,Y+1.02,Z-0.5]);pb(XL,B(WT+0.05,2.05,0.08),TRIM,[X+sgn*C,Y+1.02,Z+0.5]);
-      pb(XL,B(0.06,1.95,0.9),'#7a3528',[X+sgn*(C+0.5),Y+0.98,Z+0.95],[0,0.9*sgn,0]);}   // door swung open on the balcony
-    else{if(axis==='x')col(X+sgn*C-0.08,X+sgn*C+0.08,Y,Y+2.55,Z-C,Z+C);else col(X-C,X+C,Y,Y+2.55,Z+sgn*C-0.08,Z+sgn*C+0.08);}};
-  wall('x',-1,false);wall('x',1,true);wall('z',-1,false);wall('z',1,false);
-  for(const [sx,sz] of [[-1,-1],[1,-1],[1,1],[-1,1]])pb(XL,B(0.16,2.6,0.16),TRIM,[X+sx*C,Y+1.3,Z+sz*C]);
-  // pyramid roof of red sheet with a ridge cap, finial, radio mast and a little anemometer
-  {const g=new THREE.ConeGeometry(C*1.42+0.55,1.7,4,1);g.rotateY(PI/4);pb(XL,g,RF,[X,Y+2.55+0.85,Z],null,0.04);
-   const g2=new THREE.ConeGeometry(C*1.42+0.6,0.12,4,1,true);g2.rotateY(PI/4);pb(XL,g2,'#7d2a1f',[X,Y+2.53,Z]);
-   pb(XL,CY(0.07,0.07,0.3,8),'#d8d4cc',[X,Y+4.35,Z]);beam(XL,[X+0.5,Y+3.0,Z-0.5],[X+0.5,Y+6.4,Z-0.5],0.035,'#bfbfbf');
-   for(let k=0;k<3;k++){const a=k/3*PI*2;beam(XL,[X+0.5,Y+6.3,Z-0.5],[X+0.5+Math.cos(a)*0.32,Y+6.3,Z-0.5+Math.sin(a)*0.32],0.012,'#bfbfbf',4);pb(XL,new THREE.SphereGeometry(0.06,8,6,0,PI),'#d8d8d8',[X+0.5+Math.cos(a)*0.32,Y+6.3,Z-0.5+Math.sin(a)*0.32],[0,a,0]);}
-   pb(XL,new THREE.SphereGeometry(0.07,8,6),'#e8742a',[X+0.5,Y+6.48,Z-0.5],null,0.02);}
-  // inside: the fire-finder table with its map disc, a stool and a shelf
-  pb(XL,CY(0.08,0.12,1.0,8),WD,[X,Y+0.5,Z]);pb(XL,CY(0.55,0.55,0.06,18),WD2,[X,Y+1.03,Z]);pb(XL,CY(0.48,0.48,0.02,18),'#d9cfa8',[X,Y+1.07,Z]);
-  pb(XL,B(0.9,0.02,0.03),'#b08a3a',[X,Y+1.09,Z],[0,0.6,0]);pb(XL,B(0.05,0.12,0.05),'#333',[X+0.4,Y+1.13,Z+0.25]);pb(XL,B(0.05,0.12,0.05),'#333',[X-0.4,Y+1.13,Z-0.25]);
-  pb(XL,CY(0.2,0.2,0.05,10),'#7a3528',[X-1.2,Y+0.62,Z+1.1]);for(const [a,b] of [[-0.13,-0.13],[0.13,-0.13],[0.13,0.13],[-0.13,0.13]])pb(XL,B(0.04,0.6,0.04),WD,[X-1.2+a,Y+0.3,Z+1.1+b]);
-  pb(XL,B(0.3,0.04,1.6),WD2,[X-C+0.25,Y+1.4,Z]);pb(XL,B(0.22,0.3,0.3),'#b03030',[X-C+0.25,Y+1.57,Z-0.5]);pb(XL,B(0.2,0.24,0.35),'#3a5a8a',[X-C+0.25,Y+1.54,Z+0.3]);}
+ // open viewing platform: the cabin was removed, so the deck is open all round (rails only); a small anemometer post stays at one corner
+ pb(XL,CY(0.035,0.035,3.2,6),'#bfbfbf',[X-H+0.4,Y+1.6,Z-H+0.4]);for(let k=0;k<3;k++){const a=k/3*PI*2;beam(XL,[X-H+0.4,Y+3.15,Z-H+0.4],[X-H+0.4+Math.cos(a)*0.32,Y+3.15,Z-H+0.4+Math.sin(a)*0.32],0.012,'#bfbfbf',4);pb(XL,new THREE.SphereGeometry(0.06,8,6,0,PI),'#d8d8d8',[X-H+0.4+Math.cos(a)*0.32,Y+3.15,Z-H+0.4+Math.sin(a)*0.32],[0,a,0]);}
  // switchback stair on the east side: flight one north to a landing, flight two back south to a top landing at the deck
  {const xa0=H+0.1,xa1=H+1.1,xb0=H+1.2,xb1=H+2.2,zS=-2.6,zN=2.6;const gF=Math.max(groundH(X+(xa0+xa1)/2,Z+zS-0.3),groundH(X+(xa0+xa1)/2,Z+zS+0.3));
   const R=Y-gF,N=Math.max(4,Math.ceil(R/0.23)),n1=Math.floor(N/2),n2=N-n1,yM=gF+n1*R/N;
@@ -3937,7 +3916,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=314;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=317;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5087,7 +5066,7 @@ function zipStand(i,h){const S=TW_SITES[i],o=zipEdge(h)-1.05;return {x:S.x+Math.
 (function(){const parts=[],STEEL='#2c2f31',GALV='#7d8387',WOOD='#6b5236';
   const bar=(A,B,r,col,seg)=>{const d=B.clone().sub(A),L=d.length();if(L<1e-3)return;const q=new THREE.Quaternion().setFromUnitVectors(V(0,1,0),d.normalize());const e=new THREE.Euler().setFromQuaternion(q);const m=A.clone().add(B).multiplyScalar(0.5);
     parts.push(xf(tint(CY(r,r,L,seg||5),col,0.02),[m.x,m.y,m.z],[e.x,e.y,e.z]));};
-  for(const Z of ZIPS){const N=Math.max(8,Math.ceil(Z.len/10));let P0=zipP(Z,0,V(0,0,0));
+  for(const Z of ZIPS){if(Z.kind==='long')continue;const N=Math.max(8,Math.ceil(Z.len/10));let P0=zipP(Z,0,V(0,0,0));
     for(let k=1;k<=N;k++){const P1=zipP(Z,k/N,V(0,0,0));bar(P0,P1,0.022,STEEL,4);P0=P1;}
     const sx=Math.sin(Z.h),sz=Math.cos(Z.h);const sA=((Z.b.y-Z.a.y)-4*Z.sag)/Z.len,sB=((Z.b.y-Z.a.y)+4*Z.sag)/Z.len;   // cable slope per metre at each end, so the fittings carry on along the cable instead of kinking it
     // deck bracket at the start: a post on the deck edge and an arm out to the cable
@@ -5109,10 +5088,10 @@ function zipStand(i,h){const S=TW_SITES[i],o=zipEdge(h)-1.05;return {x:S.x+Math.
   ZIP.tr=new THREE.Mesh(merge(tp),envMat);ZIP.tr.visible=false;scene.add(ZIP.tr);})();
 // ---- prompt and mounting
 function zipNear(){const pl=player;if(!pl.alive||ZIP.on||pl.action)return null;
-  for(const Z of ZIPS){const s=zipStand(Z.from,Z.h);if(Math.hypot(pl.pos.x-s.x,pl.pos.z-s.z)<1.35&&Math.abs(pl.pos.y-s.y)<0.6)return Z;}return null;}
-function zipPromptTxt(){if(ZIP.on)return '<b>Space</b> · let go of the zip line';const Z=zipNear();if(!Z)return '';
+  for(const Z of ZIPS){if(Z.kind==='long')continue;const s=zipStand(Z.from,Z.h);if(Math.hypot(pl.pos.x-s.x,pl.pos.z-s.z)<1.35&&Math.abs(pl.pos.y-s.y)<0.6)return Z;}return null;}
+function zipPromptTxt(){if(ZIP.on)return ZIP.lift?'<b>Space</b> · jump off the chair':'<b>Space</b> · let go of the zip line';{const L=liftNear();if(L)return '<b>F</b> · chairlift to tower '+(L.to+1)+' ('+Math.round(L.Z.len)+' m)';}const Z=zipNear();if(!Z)return '';
   return '<b>F</b> · '+(Z.kind==='long'?'zip line to the other tower ('+Math.round(Z.len)+' m)':'zip line down to the ground ('+Math.round(Z.len)+' m)');}
-function zipTryMount(){const Z=zipNear();if(!Z)return false;const pl=player;ZIP.on=true;ZIP.Z=Z;ZIP.t=0;ZIP.v=1.5;
+function zipTryMount(){{const L=liftNear();if(L)return liftMount(L);}const Z=zipNear();if(!Z)return false;const pl=player;ZIP.on=true;ZIP.Z=Z;ZIP.t=0;ZIP.v=1.5;
   input.lmb=input.rmb=false;pl.reloadT=-1;pl.stance='stand';pl.slide=null;ZIP.tr.visible=true;try{sfx.click();}catch(e){}zipSndOn();
   toast(Z.kind==='long'?'On the zip line · Space lets go':'Sliding down · Space lets go');return true;}
 function zipEnd(land){const Z=ZIP.Z,pl=player;ZIP.on=false;ZIP.tr.visible=false;zipSndOff();
@@ -5123,7 +5102,7 @@ function zipEnd(land){const Z=ZIP.Z,pl=player;ZIP.on=false;ZIP.tr.visible=false;
   try{sfx.click();}catch(e){}}
 // ---- the ride: gravity along the cable, air and pulley drag, top speed and an end brake; hand over hand if the sag stalls you
 const ZIP_LONG_V=25;   // 25% above the old 20 m/s cruise
-function zipStep(pl,dt){if(!ZIP.on)return false;const Z=ZIP.Z;
+function zipStep(pl,dt){if(!ZIP.on)return false;if(ZIP.lift)return liftStep(pl,dt);const Z=ZIP.Z;
   if(!pl.alive){zipEnd(null);return false;}
   if(keys.Space){zipEnd(null);toast('Let go of the zip line');return false;}
   const dyt=(Z.b.y-Z.a.y)-Z.sag*4*(1-2*ZIP.t),dst=Math.hypot(Z.len,dyt),sl=dyt/dst;
@@ -5146,7 +5125,103 @@ function zipSndOff(){const a=ZIP.au;if(!a)return;ZIP.au=null;try{const t=AC.curr
 // ---- map lines
 function zipDrawMap(c,S){c.save();c.lineWidth=1.5;c.setLineDash([5,4]);c.strokeStyle='rgba(255,236,170,0.85)';for(const Z of ZIPS){c.beginPath();c.moveTo(S(Z.a.x),S(Z.a.z));c.lineTo(S(Z.b.x),S(Z.b.z));c.stroke();}c.restore();}
 function zipDrawMini(c,p,ppm){c.save();c.lineWidth=1.5;c.setLineDash([4,3]);c.strokeStyle='rgba(255,236,170,0.8)';for(const Z of ZIPS){c.beginPath();c.moveTo((Z.a.x-p.x)*ppm,(Z.a.z-p.z)*ppm);c.lineTo((Z.b.x-p.x)*ppm,(Z.b.z-p.z)*ppm);c.stroke();}c.restore();}
-window.SNIPER_ZIP={ZIP,ZIPS,mount:zipTryMount,step:zipStep,stand:zipStand,near:zipNear};
+// ================= chairlift: every tower-to-tower line is now a two-way chairlift (replaces the long zip lines; the short lines down to the ground stay zips) =================
+// Each link has a haul rope loop round a bull wheel at each tower: one side carries chairs from A to B, the other from B to A.
+// Sit on with F at a boarding gate on the deck; you can look round, aim and fire while riding; Space jumps off; the chair sets you down on the far deck.
+const LIFT_OFF=1.6,LIFT_HANG=1.95,LIFT_V=15,LIFT_SEAT=0.86,LIFT_GAP=38;   // half gauge (m), cable to seat top, cruise speed (m/s), seat height above the rider's feet origin, chair spacing (m)
+const LIFTS=[];   // one per direction: {Z,d,from,to,h,len}
+for(const Z of ZIPS)if(Z.kind==='long'){LIFTS.push({Z,d:0,from:Z.from,to:Z.to,h:Z.h});LIFTS.push({Z,d:1,from:Z.to,to:Z.from,h:Z.h+PI});}
+const _lp=V(0,0,0);
+// point on a lift's cable at progress u (0 = its own start, 1 = its own end)
+function liftP(L,u,o){const Z=L.Z,t=L.d?1-u:u;o=zipP(Z,t,o||V(0,0,0));const s=L.d?-1:1;o.x+=Math.cos(Z.h)*LIFT_OFF*s;o.z-=Math.sin(Z.h)*LIFT_OFF*s;return o;}
+function liftSlope(L,u){const Z=L.Z,t=L.d?1-u:u;const dy=(Z.b.y-Z.a.y)-Z.sag*4*(1-2*t);return (L.d?-dy:dy)/Z.len;}
+// boarding gate on the deck: next to where this side's cable leaves, kept inside the deck rail
+function liftStand(L){const S=TW_SITES[L.from],o=zipEdge(L.h)-1.05,s=(L.d?-1:1);const Z=L.Z;
+  let x=S.x+Math.sin(L.h)*o+Math.cos(Z.h)*LIFT_OFF*s*0.8,z=S.z+Math.cos(L.h)*o-Math.sin(Z.h)*LIFT_OFF*s*0.8;
+  x=S.x+clamp(x-S.x,-ZIP_D+0.35,ZIP_D-0.35);z=S.z+clamp(z-S.z,-ZIP_D+0.35,ZIP_D-0.35);return {x,z,y:zipDeckY(L.from)};}
+function liftLand(L){const back=LIFTS.find(q=>q.Z===L.Z&&q.d!==L.d);return liftStand(back);}   // step off onto the far deck by that tower's gate
+// ---- meshes: bull-wheel stations, the two ropes, and the moving chairs
+const LIFT={chairs:null,n:0,mine:null,ride:null,au:null};
+function liftChairGeo(){const P=[],ST='#2c2f31',GV='#8d9396',SEAT='#d23a2a',SEAT2='#f2c230';
+  const bar=(A,B,r,c,seg)=>{const d=B.clone().sub(A),L=d.length();const q=new THREE.Quaternion().setFromUnitVectors(V(0,1,0),d.normalize());const e=new THREE.Euler().setFromQuaternion(q);const m=A.clone().add(B).multiplyScalar(0.5);P.push(xf(tint(CY(r,r,L,seg||6),c,0.02),[m.x,m.y,m.z],[e.x,e.y,e.z]));};
+  const H=LIFT_HANG,yS=-H;   // origin on the rope, +z the way the chair travels
+  P.push(xf(tint(B(0.22,0.2,0.42),ST,0.02),[0,0.02,0]));P.push(xf(tint(CY(0.07,0.07,0.06,10),'#555',0.02),[0,0.02,0.15],[0,0,HP]),xf(tint(CY(0.07,0.07,0.06,10),'#555',0.02),[0,0.02,-0.15],[0,0,HP]));   // grip with its rollers
+  bar(V(0,-0.08,0),V(0,-0.9,-0.05),0.04,GV);bar(V(0,-0.9,-0.05),V(0,yS+0.62,-0.38),0.04,GV);                     // hanger: down from the grip, then back over the seat
+  bar(V(-0.66,yS+0.62,-0.38),V(0.66,yS+0.62,-0.38),0.035,GV);                                                      // top tube across the back
+  for(const sx of [-0.62,0.62]){bar(V(sx,yS+0.62,-0.38),V(sx,yS+0.02,-0.36),0.03,GV);bar(V(sx,yS+0.02,-0.36),V(sx,yS+0.02,0.22),0.03,GV);bar(V(sx,yS+0.32,-0.3),V(sx,yS+0.32,0.12),0.025,GV);}   // side frames and armrests
+  P.push(xf(tint(B(1.26,0.08,0.52),SEAT,0.03),[0,yS-0.03,-0.08]));P.push(xf(tint(B(1.26,0.5,0.07),SEAT,0.03),[0,yS+0.3,-0.38],[-0.12,0,0]));   // padded seat and backrest
+  P.push(xf(tint(B(1.27,0.06,0.53),SEAT2,0.02),[0,yS-0.08,-0.08]));P.push(xf(tint(B(0.5,0.12,0.02),SEAT2,0.02),[0,yS+0.48,-0.34],[-0.12,0,0]));   // yellow trim
+  // safety bar, lowered: hinged at the top tube, across in front of the riders, with a footrest under it
+  for(const sx of [-0.64,0.64])bar(V(sx,yS+0.62,-0.38),V(sx,yS+0.42,0.42),0.025,GV);bar(V(-0.64,yS+0.42,0.42),V(0.64,yS+0.42,0.42),0.025,GV);
+  for(const sx of [-0.3,0.3])bar(V(sx,yS+0.42,0.42),V(sx,yS-0.5,0.5),0.022,GV);bar(V(-0.42,yS-0.5,0.5),V(0.42,yS-0.5,0.5),0.03,GV);
+  P.push(xf(tint(B(0.9,0.03,0.2),'#3a3d40',0.02),[0,yS-0.52,0.56]));
+  return merge(P);}
+(function(){const parts=[],ST='#2c2f31',GV='#7d8387',YEL='#e3b23c';
+  const bar=(A,B,r,col,seg)=>{const d=B.clone().sub(A),L=d.length();if(L<1e-3)return;const q=new THREE.Quaternion().setFromUnitVectors(V(0,1,0),d.normalize());const e=new THREE.Euler().setFromQuaternion(q);const m=A.clone().add(B).multiplyScalar(0.5);
+    parts.push(xf(tint(CY(r,r,L,seg||5),col,0.02),[m.x,m.y,m.z],[e.x,e.y,e.z]));};
+  for(const L of LIFTS){const N=Math.max(10,Math.ceil(L.Z.len/8));let P0=liftP(L,0);for(let k=1;k<=N;k++){const P1=liftP(L,k/N);bar(P0,P1,0.025,ST,4);P0=P1;}}
+  // bull wheel at each end of every link: the rope runs round it from one side to the other; a gantry carries it out past the deck rail
+  for(const Z of ZIPS){if(Z.kind!=='long')continue;
+    for(const [end,ti,hh] of [[Z.a,Z.from,Z.h],[Z.b,Z.to,Z.h+PI]]){const S=TW_SITES[ti],dy=zipDeckY(ti),sx=Math.sin(hh),sz=Math.cos(hh);
+      const w=new THREE.TorusGeometry(LIFT_OFF,0.03,5,32);w.rotateX(-HP);parts.push(xf(tint(w,ST,0.02),[end.x,end.y,end.z]));   // the rope round the wheel
+      const w2=new THREE.TorusGeometry(LIFT_OFF-0.05,0.06,6,28);w2.rotateX(-HP);parts.push(xf(tint(w2,YEL,0.02),[end.x,end.y+0.12,end.z]));
+      for(let k=0;k<6;k++){const a=k/6*PI*2;bar(V(end.x,end.y+0.12,end.z),V(end.x+Math.cos(a)*(LIFT_OFF-0.05),end.y+0.12,end.z+Math.sin(a)*(LIFT_OFF-0.05)),0.03,YEL,4);}
+      bar(V(end.x,end.y-0.1,end.z),V(end.x,end.y+0.75,end.z),0.09,GV,8);                                  // hub shaft
+      const o=zipEdge(hh)-0.35,px=S.x+sx*o,pz=S.z+sz*o;                                                  // gantry: two posts on the deck edge, a beam out to the hub
+      for(const s of [-1,1]){const qx=px+sz*0.9*s,qz=pz-sx*0.9*s;bar(V(qx,dy,qz),V(qx,end.y+0.75,qz),0.07,GV,6);bar(V(qx,end.y+0.75,qz),V(end.x,end.y+0.75,end.z),0.06,GV,6);bar(V(qx,dy+0.3,qz),V(end.x,end.y+0.7,end.z),0.04,GV,5);}
+      parts.push(xf(tint(B(0.5,0.5,0.5),'#3a3d40',0.02),[end.x,end.y+0.8,end.z]));
+      // boarding gates: a yellow arch and a sign at each side's gate
+      for(const L of LIFTS){if(L.Z!==Z||L.from!==ti)continue;const g=liftStand(L);bar(V(g.x-sz*0.5,dy,g.z+sx*0.5),V(g.x-sz*0.5,dy+2.2,g.z+sx*0.5),0.04,YEL,5);bar(V(g.x+sz*0.5,dy,g.z-sx*0.5),V(g.x+sz*0.5,dy+2.2,g.z-sx*0.5),0.04,YEL,5);
+        bar(V(g.x-sz*0.5,dy+2.2,g.z+sx*0.5),V(g.x+sz*0.5,dy+2.2,g.z-sx*0.5),0.04,YEL,5);parts.push(xf(tint(B(0.7,0.28,0.04),'#2a6a3a',0.02),[g.x,dy+2.0,g.z],[0,hh,0]));
+        parts.push(xf(tint(B(0.5,0.08,0.05),'#f4f4f0',0.01),[g.x,dy+2.0,g.z+0.0],[0,hh,0]));}}}
+  if(parts.length){const m=new THREE.Mesh(merge(parts),envMat);m.castShadow=true;m.receiveShadow=true;scene.add(m);}
+  // moving chairs: instanced, spaced along each side
+  const geo=liftChairGeo();let n=0;for(const L of LIFTS)n+=Math.max(2,Math.floor(L.Z.len/LIFT_GAP));
+  LIFT.chairs=new THREE.InstancedMesh(geo,envMat,n);LIFT.chairs.castShadow=true;LIFT.chairs.instanceMatrix.setUsage(THREE.DynamicDrawUsage);LIFT.chairs.frustumCulled=false;scene.add(LIFT.chairs);LIFT.n=n;
+  LIFT.mine=new THREE.Mesh(geo,envMat);LIFT.mine.castShadow=true;LIFT.mine.visible=false;scene.add(LIFT.mine);})();
+const _lq=new THREE.Quaternion(),_lm=new THREE.Matrix4(),_le=new THREE.Euler(),_ls=V(1,1,1),_lpos=V(0,0,0);
+function liftPlace(obj,L,u,swing){const P=liftP(L,u,_lpos);_le.set(-Math.atan(liftSlope(L,u))*0.25+(swing||0),L.h,0,'YXZ');_lq.setFromEuler(_le);
+  if(obj.isInstancedMesh)return _lm.compose(P,_lq,_ls);obj.position.copy(P);obj.quaternion.copy(_lq);}
+// the empty chairs keep circulating (fed past the stations at the ends, as on a real lift)
+function liftAnim(){if(!LIFT.chairs)return;const T=performance.now()/1000;let i=0;
+  for(const L of LIFTS){const len=L.Z.len,k=Math.max(2,Math.floor(len/LIFT_GAP));for(let j=0;j<k;j++){const u=((T*LIFT_V/len)+j/k+(L.d?0.5/k:0))%1;
+    if((LIFT.ride&&LIFT.ride.L===L&&Math.abs(u-LIFT.ride.u)*len<LIFT_GAP*0.45)||(LIFT.p2ride&&LIFT.p2&&LIFT.p2.visible&&LIFT.p2ride.L===L&&Math.abs(u-LIFT.p2ride.u)*len<LIFT_GAP*0.45)){_lm.makeScale(0,0,0);LIFT.chairs.setMatrixAt(i++,_lm);continue;}   // no empty chair where the rider's chair is
+    LIFT.chairs.setMatrixAt(i++,liftPlace(LIFT.chairs,L,u,Math.sin(T*1.3+j)*0.03));}}
+  LIFT.chairs.instanceMatrix.needsUpdate=true;}
+try{lookStep=(f=>function(){f();try{liftAnim();}catch(e){}})(lookStep);}catch(e){}
+// ---- riding
+function liftNear(){const pl=player;if(!pl.alive||ZIP.on||pl.action)return null;
+  for(const L of LIFTS){const s=liftStand(L);if(Math.hypot(pl.pos.x-s.x,pl.pos.z-s.z)<1.5&&Math.abs(pl.pos.y-s.y)<0.6)return L;}return null;}
+function liftMount(L){const pl=player;ZIP.on=true;ZIP.Z=L.Z;ZIP.lift=L;ZIP.t=0;ZIP.v=0;LIFT.ride={L,u:0,v:0};LIFT.mine.visible=true;
+  pl.slide=null;pl.stance='stand';try{sfx.click();}catch(e){}zipSndOn();toast('On the chairlift to tower '+(L.to+1)+' · you can aim and fire · Space jumps off');return true;}
+function liftEnd(land){const R=LIFT.ride,pl=player;ZIP.on=false;ZIP.lift=null;LIFT.mine.visible=false;LIFT.ride=null;zipSndOff();
+  if(land){const s=liftLand(R.L);pl.pos.set(s.x,s.y+0.02,s.z);pl.vel.set(0,0,0);pl.grounded=true;pl.fallV=0;pl.fy=null;}
+  else{pl.grounded=false;pl.fy=pl.pos.y;pl.vel.set(Math.sin(R.L.h)*R.v*0.7,1.5,Math.cos(R.L.h)*R.v*0.7);}try{sfx.click();}catch(e){}}
+function liftStep(pl,dt){const R=LIFT.ride,L=R.L;
+  if(!pl.alive){liftEnd(null);return false;}
+  if(keys.Space&&R.u>0.02){liftEnd(null);toast('Jumped off the chair');return false;}
+  const len=Math.hypot(L.Z.len,L.Z.b.y-L.Z.a.y),rem=(1-R.u)*len;
+  R.v=Math.min(R.v+5*dt,LIFT_V,1.2+rem*0.6);R.u+=R.v*dt/len;   // pull away from the station, cruise, slow into the far one
+  if(R.u>=1){liftEnd(true);toast('Off at tower '+(L.to+1));return true;}
+  liftPlace(LIFT.mine,L,R.u,0);LIFT.mine.updateMatrixWorld();
+  // the rider sits on the left half of the bench; the body may turn to aim but not right round
+  const P=liftP(L,R.u,_lpos),c=Math.cos(L.h),s=Math.sin(L.h);
+  pl.pos.set(P.x+c*0.3,P.y-LIFT_HANG-LIFT_SEAT,P.z-s*0.3);pl.vel.set(0,0,0);pl.grounded=false;pl.fallV=0;pl.fy=pl.pos.y;pl.stance='stand';pl.slide=null;
+  pl.yaw=L.h+clamp(wrapA(pl.yaw-L.h),-1.7,1.7);
+  zipSndSet(R.v*0.6);return true;}
+// seated pose: thighs along the seat, shins hanging to the footrest; arms are left to the normal carry / aim so you can shoot
+function liftPose(p0,pl){const p=Object.assign({},p0);const R=LIFT.ride;const rel=R?wrapA(R.L.h-pl.yaw):0,c=Math.cos(rel),s=Math.sin(rel);
+  const fx=(x,z)=>[x*c+z*s,-x*s+z*c];   // footrest position in the body's frame (the chair faces the way it travels)
+  const l=fx(0.13,0.52),r=fx(-0.13,0.52);
+  p.legIK=1;p.lF=[l[0],LIFT_SEAT-0.43,l[1]];p.rF=[r[0],LIFT_SEAT-0.43,r[1]];p.lKP=[0.15,0.4,1];p.rKP=[-0.15,0.4,1];p.lFoot=[0.2,0,0];p.rFoot=[0.2,0,0];
+  p.hipsP=[0,-0.02,-0.1];return p;}
+// the opponent's chair: their snapshots carry which lift side they ride and how far along; their seated pose travels in the pose itself
+function liftRemote(a,b,u){const la=a&&a.lf,lb=b&&b.lf;const q=lb||la;
+  if(!q||!Array.isArray(q)||!LIFTS[q[0]]){if(LIFT.p2)LIFT.p2.visible=false;LIFT.p2ride=null;return;}
+  if(!LIFT.p2){LIFT.p2=new THREE.Mesh(LIFT.mine.geometry,envMat);LIFT.p2.castShadow=true;scene.add(LIFT.p2);}
+  const L=LIFTS[q[0]];let uu=+q[1];if(Array.isArray(la)&&Array.isArray(lb)&&la[0]===lb[0])uu=(+la[1])+((+lb[1])-(+la[1]))*u;
+  liftPlace(LIFT.p2,L,clamp(uu,0,1),0);LIFT.p2.visible=true;LIFT.p2.updateMatrixWorld();LIFT.p2ride={L,u:uu};}
+window.SNIPER_ZIP={ZIP,ZIPS,LIFTS,LIFT,liftStand,liftNear,mount:zipTryMount,step:zipStep,stand:zipStand,near:zipNear};
 // ================= ICBM silo (compact: everything is modelled at full size and built at scale K): reinforced concrete pad and collar sunk into an open meadow, a deep shaft, a sliding blast hatch and a launchable missile =================
 // The shaft is seen through the ground with a stencil: the opening writes a mask, then the shaft walls draw only inside it (ignoring the terrain's depth).
 // Walk to the launch console beside the pad and press L: klaxon, hatch rolls back, ignition, the missile climbs out on a column of smoke and pitches over.
@@ -5587,7 +5662,7 @@ window.SNIPER_UGV={ugc:UGC,get:ugcGet,G:GAME,list:()=>UGVS,step:ugvStep,hit:hitU
 
 // ---- climbing pose: rifle slung across the back, hands grab rungs and feet stand on rungs, alternating (left hand with right foot)
 function twStepper(u){const f=Math.floor(u),q=u-f;const k=Math.min(1,Math.max(0,(q-0.5)*2));return f+k*k*(3-2*k);}
-function zipPose(p0,pl){const p=Object.assign({},p0);if(!A.zipL){anchor('zipL',marine,0,0,0);anchor('zipR',marine,0,0,0);}
+function zipPose(p0,pl){if(ZIP.lift)return liftPose(p0,pl);const p=Object.assign({},p0);if(!A.zipL){anchor('zipL',marine,0,0,0);anchor('zipR',marine,0,0,0);}
   // hanging from the T-bar: both arms straight up, hands together on the handle, body hanging, knees bent and feet swinging forward
   const hy=ZIP_HANG-0.25,sw=Math.sin(performance.now()/700)*0.04;A.zipL.position.set(0.09,hy,0.2);A.zipR.position.set(-0.09,hy,0.2);
   p.ikL=1;p.ikR=1;p.L={zipL:1};p.R={zipR:1};p.poleL=[1,0,-0.2];p.poleR=[-1,0,-0.2];
@@ -5746,7 +5821,7 @@ function setLooks(g){if(!P2M||!P2LOOK.cap)return;
     P2M.getObjectByName('head').add(P2LOOK.felt);P2LOOK.felt.visible=false;}
   for(const [a,b,ga,gb] of P2LOOK.geo){a.geometry=g?gb:ga;b.geometry=g?ga:gb;}
   P2LOOK.mcap.visible=false;if(P2LOOK.mhat)P2LOOK.mhat.visible=!g;P2LOOK.felt.visible=g;P2LOOK.cap.visible=false;}   // player 2 goes bare-headed: no cap
-function p2Idle(){if(!P2M)return;applyPose(cpose('Idle',0));for(const [s,t] of P2PAIRS){t.position.copy(s.position);t.quaternion.copy(s.quaternion);t.scale.copy(s.scale);if(P2VIS.has(s))t.visible=s.visible;}
+function p2Idle(){if(!P2M)return;try{if(LIFT.p2)LIFT.p2.visible=false;LIFT.p2ride=null;}catch(e){}applyPose(cpose('Idle',0));for(const [s,t] of P2PAIRS){t.position.copy(s.position);t.quaternion.copy(s.quaternion);t.scale.copy(s.scale);if(P2VIS.has(s))t.visible=s.visible;}
   P2M.position.set(P2_SPAWN.x,P2_SPAWN.y,P2_SPAWN.z);P2M.rotation.y=Math.atan2(-P2_SPAWN.x,-P2_SPAWN.z);P2M.visible=true;P2M.updateMatrixWorld(true);}
 
 // both players drop straight into the game when the connection is made (a first click then captures the mouse and turns the sound on)
@@ -5892,12 +5967,14 @@ function applyRemote(dt){const B=RPS.buf;if(!B.length||!P2M)return;const rt=perf
     for(const [s,t] of P2PAIRS){t.position.copy(s.position);t.quaternion.copy(s.quaternion);t.scale.copy(s.scale);if(P2VIS.has(s))t.visible=s.visible;if(s.isLight)t.intensity=s.intensity;}try{at4P2Vis((u<0.5?a:b).w===1);}catch(e){}}
   if(RFL>0){RFL-=dt;if(!P2FL.g)for(const [s,t] of P2PAIRS){if(s===flashGrp)P2FL.g=t;else if(s===flashLight)P2FL.l=t;}   // the opponent's muzzle flash and the light it throws, driven by the shot event so none are missed between state packets
     if(P2FL.g){P2FL.g.visible=true;P2FL.g.scale.setScalar(1.6+Math.random()*0.7);}if(P2FL.l)P2FL.l.intensity=3;}
+  try{liftRemote(a,b,u);}catch(e){}
   P2M.position.copy(RPS.pos);P2M.rotation.y=yaw;P2M.visible=true;P2M.updateMatrixWorld(true);RPS.vis=true;
   // footsteps you can hear
   if(RPS.al&&RPS.sp>0.35){RPS.stepD+=RPS.sp*dt;const st=RPS.stn,spr=RPS.sp>5;const stride=st==='prone'?0.55:st==='crouch'?1.0:spr?2.1:1.7;
     if(RPS.stepD>=stride){RPS.stepD-=stride;RPS.side=!RPS.side;const k=st==='prone'?0.2:st==='crouch'?0.4:spr?1:0.75;
       const surf=MAP.surfaceAt(RPS.pos.x,RPS.pos.z,RPS.pos.y,0);sfx.step(RPS.pos.clone(),surf,k,RPS.side);}}else RPS.stepD=0;}
 const _hbR2=new THREE.Raycaster();
+window.SNIPER_NET={packPose,feedSnap,applyRemote,RPS,p2:()=>P2M};
 function rayRemote(o,d,len){if(!P2RHB.length)return null;_hbR2.set(o,d);_hbR2.near=0;_hbR2.far=len;const hs=_hbR2.intersectObjects(P2RHB,false);if(!hs.length)return null;
   let best=hs[0];for(const h of hs){if(h.distance<best.distance-0.02||(h.object.userData.zone==='head'&&h.distance<best.distance+0.02))best=h;}
   return {point:best.point.clone(),normal:d.clone().negate(),dist:best.distance,object:null,kind:'flesh',remote:true,zone:best.object.userData.zone};}
@@ -5931,7 +6008,7 @@ function netStep(dt){farFlashStep(dt);
   for(const [n,p] of NT.pend){p.next-=dt;if(p.next<=0){p.next=0.25;p.tries++;NT.room.emit('hit',p.msg).catch(()=>{});if(p.tries>16)NT.pend.delete(n);}}
   // send my state
   NT.sendAcc+=dt;if(NT.sendAcc>=1/SEND_HZ){NT.sendAcc=0;const pl=player;
-    const s={q:++NT.seq,t:Math.round(now),x:nr2(pl.pos.x),y:nr2(pl.pos.y),z:nr2(pl.pos.z),yw:nr3(wrapA(pl.yaw)),p:pl.pose?packPose(pl.pose):null,b:nr2(boltT),hp:Math.round(MPM.hp),al:pl.alive?1:0,r:NT.myR,sp:nr1(Math.hypot(pl.vel.x,pl.vel.z)),st:pl.stance[0],w:WPN.cur==='at4'?1:0};
+    const s={q:++NT.seq,t:Math.round(now),x:nr2(pl.pos.x),y:nr2(pl.pos.y),z:nr2(pl.pos.z),yw:nr3(wrapA(pl.yaw)),p:pl.pose?packPose(pl.pose):null,b:nr2(boltT),hp:Math.round(MPM.hp),al:pl.alive?1:0,r:NT.myR,sp:nr1(Math.hypot(pl.vel.x,pl.vel.z)),st:pl.stance[0],w:WPN.cur==='at4'?1:0,lf:(ZIP.lift&&LIFT.ride)?[LIFTS.indexOf(ZIP.lift),nr3(LIFT.ride.u)]:0};
     const patch={s};if(host)patch.m={ph:M.ph,r:M.r,sd:M.sd|0,sc:M.sc.slice(),left:nr2(M.left),lw:M.lw,tod:nr3(DAY.tod),ri:DAY.rateI,gm:[GAME.pk762]};
     NT.lastSize=JSON.stringify(patch).length;NT.room.presence(patch).catch(()=>{});}
   if(host&&NT.opp){NT.wildAcc+=dt;if(NT.wildAcc>=1/WILD_HZ){NT.wildAcc=0;sendWild();}}
