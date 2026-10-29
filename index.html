@@ -4272,7 +4272,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=324;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=326;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4889,7 +4889,8 @@ function bearPose(b,dt){
   b.head.rotation.y=b.st==='idle'?Math.sin(performance.now()/2300)*0.4:0;
 }
 // somewhere a bear cannot stand: water, a trunk or rock, or a steep bank
-function bearBlocked(x,z){try{if(inWater(x,z))return true;}catch(e){}try{if(slopeAt(x,z)>1.0)return true;}catch(e){}
+function bearBlocked(x,z,wade){try{if(inWater(x,z)&&!(wade&&lakeE(x,z)>1.05))return true;}catch(e){}   // a charging bear wades straight across the stream (the lake itself is still off limits)
+  try{if(slopeAt(x,z)>1.0)return true;}catch(e){}
   for(const p of pillarsNear(x,z)){if(Math.hypot(p.x-x,p.z-z)<p.r+1.0)return true;}return false;}
 const BST2=['walk','idle','rear','flee','charge','swipe'];
 // nearest person to a bear: me, or the opponent in a match
@@ -4906,7 +4907,7 @@ function bearAtk(b,H,mode){if(!GAME.bAtk||(b.cool||0)>0||b.dead>0||!H||!bearHuma
   if(mode===1)return GAME.bTrig>=1&&Math.random()*100<GAME.bChance&&H.d<Math.max(GAME.bRear,10)*1.7;
   return true;}
 function bearCharge(b,H){b.st='charge';b.stT=GAME.bChase;b.swT=0;b.swHit=false;b.spd=Math.max(b.spd,GAME.bWalk);
-  try{bearRoar(b,'charge');if(H&&!H.opp)toast('The bear is charging!');}catch(e){}}
+  try{bearRoar(b,'charge');}catch(e){}}
 function bearGiveUp(b){b.st='walk';b.cool=GAME.bCool;bearTarget(b);b.stT=60;b.swT=0;}
 function bearHurtMe(dmg,b){if(!player.alive||MPM.hp<=0)return;try{if(MPM.on&&NT.M.ph!=='live')return;}catch(e){}
   MPM.hp-=dmg;try{flashHit();edgeFlash();clawFx();}catch(e){}
@@ -4967,9 +4968,9 @@ function bearStep(dt){
     b.spd+=(want-b.spd)*Math.min(1,dt*(want>b.spd?1.6:3));
     if(b.spd>0.02){const des=Math.atan2(b.tx-b.x,b.tz-b.z);let turn=wrapA(des-b.yaw);
       // steer round trunks and rocks a few metres ahead
-      {const pr=(a)=>bearBlocked(b.x+Math.sin(b.yaw+a)*3.2,b.z+Math.cos(b.yaw+a)*3.2);if(pr(0)||bearBlocked(b.x+Math.sin(b.yaw)*1.6,b.z+Math.cos(b.yaw)*1.6)){const l=pr(0.7),r=pr(-0.7);turn+=!l?1.4:!r?-1.4:(b.skSide||(b.skSide=Math.random()<0.5?1:-1))*1.8;}else b.skSide=0;}
+      {const wd=b.st==='charge'||b.st==='swipe';const pr=(a)=>bearBlocked(b.x+Math.sin(b.yaw+a)*3.2,b.z+Math.cos(b.yaw+a)*3.2,wd);if(pr(0)||bearBlocked(b.x+Math.sin(b.yaw)*1.6,b.z+Math.cos(b.yaw)*1.6,wd)){const l=pr(0.7),r=pr(-0.7);turn+=!l?1.4:!r?-1.4:(b.skSide||(b.skSide=Math.random()<0.5?1:-1))*1.8;}else b.skSide=0;}
       b.yaw+=clamp(turn,-1.4*dt,1.4*dt);
-      let nx=b.x+Math.sin(b.yaw)*b.spd*dt,nz=b.z+Math.cos(b.yaw)*b.spd*dt;let ok=true;try{if(inWater(nx,nz))ok=false;}catch(e){}
+      let nx=b.x+Math.sin(b.yaw)*b.spd*dt,nz=b.z+Math.cos(b.yaw)*b.spd*dt;let ok=true;try{if(inWater(nx,nz)&&!((b.st==='charge'||b.st==='swipe')&&lakeE(nx,nz)>1.05))ok=false;}catch(e){}
       for(const p of pillarsNear(nx,nz)){const dx=nx-p.x,dz=nz-p.z,dd=Math.hypot(dx,dz),r=p.r+0.7;if(dd<r&&dd>1e-4){nx=p.x+dx/dd*r;nz=p.z+dz/dd*r;}}
       if(Math.abs(nx)>480||Math.abs(nz)>480)ok=false;
       if(ok){b.x=nx;b.z=nz;}else{bearTarget(b);b.yaw+=Math.PI*0.5;}}
@@ -5885,7 +5886,7 @@ function ugvHost(u,dt){
   if(u.dead){u.deadT+=dt;if(GAME.uRespawn>0&&u.deadT>GAME.uRespawn&&!MPM.on)ugvRespawn(u);return;}
   u.blind=Math.max(0,u.blind-dt);u.boost=Math.max(0,u.boost-dt);u.losT-=dt;u.stT-=dt;
   if(u.losT<=0){u.losT=0.2;const T=ugvLook(u);
-    if(T){if(u.st==='patrol'||u.st==='search'||u.st==='return'){u.st='alert';u.reactT=GAME.uReact;u.shots=0;ugvBeep(u);if(!T.opp)toast('A UGV has spotted you');}
+    if(T){if(u.st==='patrol'||u.st==='search'||u.st==='return'){u.st='alert';u.reactT=GAME.uReact;u.shots=0;ugvBeep(u);}
       u.tgt=T;u.mem=GAME.uMem;}
     else if(u.tgt){u.tgt=null;if(u.st!=='patrol'&&u.st!=='return'){u.st='search';u.stT=GAME.uMem;}}}
   let T=u.tgt?ugvFresh(u.tgt):null;if(u.tgt&&!T){u.tgt=null;u.st='search';u.stT=GAME.uMem;}
