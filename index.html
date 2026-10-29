@@ -3916,7 +3916,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=317;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=319;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5128,7 +5128,7 @@ function zipDrawMini(c,p,ppm){c.save();c.lineWidth=1.5;c.setLineDash([4,3]);c.st
 // ================= chairlift: every tower-to-tower line is now a two-way chairlift (replaces the long zip lines; the short lines down to the ground stay zips) =================
 // Each link has a haul rope loop round a bull wheel at each tower: one side carries chairs from A to B, the other from B to A.
 // Sit on with F at a boarding gate on the deck; you can look round, aim and fire while riding; Space jumps off; the chair sets you down on the far deck.
-const LIFT_OFF=1.6,LIFT_HANG=1.95,LIFT_V=15,LIFT_SEAT=0.86,LIFT_GAP=38;   // half gauge (m), cable to seat top, cruise speed (m/s), seat height above the rider's feet origin, chair spacing (m)
+const LIFT_OFF=1.6,LIFT_HANG=1.95,LIFT_V=10,LIFT_SEAT=0.61,LIFT_GAP=38;   // half gauge (m), cable to seat top, cruise speed (m/s), seat height above the rider's feet origin, chair spacing (m)
 const LIFTS=[];   // one per direction: {Z,d,from,to,h,len}
 for(const Z of ZIPS)if(Z.kind==='long'){LIFTS.push({Z,d:0,from:Z.from,to:Z.to,h:Z.h});LIFTS.push({Z,d:1,from:Z.to,to:Z.from,h:Z.h+PI});}
 const _lp=V(0,0,0);
@@ -5212,8 +5212,8 @@ function liftStep(pl,dt){const R=LIFT.ride,L=R.L;
 // seated pose: thighs along the seat, shins hanging to the footrest; arms are left to the normal carry / aim so you can shoot
 function liftPose(p0,pl){const p=Object.assign({},p0);const R=LIFT.ride;const rel=R?wrapA(R.L.h-pl.yaw):0,c=Math.cos(rel),s=Math.sin(rel);
   const fx=(x,z)=>[x*c+z*s,-x*s+z*c];   // footrest position in the body's frame (the chair faces the way it travels)
-  const l=fx(0.13,0.52),r=fx(-0.13,0.52);
-  p.legIK=1;p.lF=[l[0],LIFT_SEAT-0.43,l[1]];p.rF=[r[0],LIFT_SEAT-0.43,r[1]];p.lKP=[0.15,0.4,1];p.rKP=[-0.15,0.4,1];p.lFoot=[0.2,0,0];p.rFoot=[0.2,0,0];
+  const l=fx(0.13,0.5),r=fx(-0.13,0.5);
+  p.legIK=1;p.lF=[l[0],0.04,l[1]];p.rF=[r[0],0.04,r[1]];p.lKP=[0.15,0.5,1];p.rKP=[-0.15,0.5,1];p.lFoot=[0.2,0,0];p.rFoot=[0.2,0,0];
   p.hipsP=[0,-0.02,-0.1];return p;}
 // the opponent's chair: their snapshots carry which lift side they ride and how far along; their seated pose travels in the pose itself
 function liftRemote(a,b,u){const la=a&&a.lf,lb=b&&b.lf;const q=lb||la;
