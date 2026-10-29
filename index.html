@@ -1006,7 +1006,7 @@ let LW=1e9;for(let i=0;i<72;i++){const a=i/72*PI*2;LW=Math.min(LW,H1(LCX+Math.co
 // mountain stream: monotone bed from the spring down to the lake
 const STREAM=polyline([[60,-1000],[30,-760],[-30,-560],[10,-380],[-50,-200],[-10,-30],[-80,140],[-140,290],[-120,420],[-110,480]],4,false);
 const BED=new Float32Array(STREAM.n), CW=new Float32Array(STREAM.n);let STREAM_END=STREAM.n-1;
-{let prev=1e9;for(let i=0;i<STREAM.n;i++){const h=H1(STREAM.x[i],STREAM.z[i]);prev=Math.max(LW+0.12,Math.min(prev-0.012,h-0.9));BED[i]=prev;CW[i]=1.1+2.0*STREAM.s[i]/STREAM.s[STREAM.n-1];}
+{let prev=1e9;for(let i=0;i<STREAM.n;i++){const h=H1(STREAM.x[i],STREAM.z[i]);prev=Math.max(LW+0.12,Math.min(prev-0.012,h-1.25));BED[i]=prev;CW[i]=1.1+2.0*STREAM.s[i]/STREAM.s[STREAM.n-1];}
  for(let pass=0;pass<3;pass++){for(let i=1;i<STREAM.n-1;i++)BED[i]=(BED[i-1]+BED[i]+BED[i+1])/3;}
  for(let i=0;i<STREAM.n;i++)if(lakeE(STREAM.x[i],STREAM.z[i])<0.97){STREAM_END=i;break;}}
 // the full height function with every carve applied
@@ -1017,7 +1017,8 @@ function fieldsAt(x,z){
   if(r.i>=0){const j=(r.i+1)%ROAD.n;const hc=roadH[r.i]+(roadH[j]-roadH[r.i])*r.t;h+=(hc-h)*(1-sst(3.5,11,r.d));}
   const s=polyNear(STREAM,x,z,95);FO.dS=s.d;FO.cw=0;FO.bed=-1e9;
   if(s.i>=0){const j=Math.min(s.i+1,STREAM.n-1);const bed=BED[s.i]+(BED[j]-BED[s.i])*s.t,cw=CW[s.i]+(CW[j]-CW[s.i])*s.t,d=s.d;FO.cw=cw;FO.bed=bed;
-    const tgt=d<cw?bed-0.55*(1-(d/cw)*(d/cw)):bed+0.09*Math.pow(d-cw,1.25);
+    const e=d-cw,er=0.5+0.5*vn(x/9+40,z/9-30);   // erosion: the bank height and steepness wander along the stream
+    const tgt=d<cw?bed-0.55*(1-(d/cw)*(d/cw)):bed+(0.85+0.5*er)*sst(0,0.5+1.0*(1-er),e)+0.05*Math.pow(e,1.3);
     if(tgt<h)h=tgt;else if(d<cw+4)h+=(tgt-h)*(1-sst(cw,cw+4,d));}
   const le=lakeE(x,z);FO.le=le;
   if(le<1.3){if(le<1)h=Math.min(h,LW-0.8-20*sst(1,0.35,le));else h=Math.min(h,LW-0.8+(h-(LW-0.8))*sst(1,1.3,le));}
@@ -1038,7 +1039,7 @@ const decK=(x,z)=>fbm(x/260+50,z/260+80,2);
 const deadK=(x,z)=>1-Math.hypot(x-DEADC.x,z-DEADC.z)/(185*(1+0.3*fbm(x/90,z/90,2)));
 
 /* ---------------- height grids: fine 5 m over the playable square (+20 m), coarse 20 m over 2 km ---------------- */
-const FE=520, FS=5, FN=FE*2/FS, FV=FN+1;
+const FE=520, FS=2.5, FN=FE*2/FS, FV=FN+1;
 const CS=20, CN=HALF*2/CS, CV=CN+1;
 const FH=new Float32Array(FV*FV), FdS=new Float32Array(FV*FV), FdR=new Float32Array(FV*FV), FLe=new Float32Array(FV*FV), FCw=new Float32Array(FV*FV);
 const CH=new Float32Array(CV*CV), CdS=new Float32Array(CV*CV), CdR=new Float32Array(CV*CV), CLe=new Float32Array(CV*CV), CCw=new Float32Array(CV*CV);
@@ -1857,6 +1858,7 @@ function groundColor(x,z,h,sl,dS,cw,dR,le,out){
   let c;
   if(le<1.0)c=PAL.lakebed;
   else if(dS<cw+0.9)c=n2>0?PAL.bed:PAL.bedMoss;
+  else if(dS<cw+2.6&&sl>0.25)c=n2>0.0?PAL.rock:n2>-0.35?PAL.rock2:PAL.cliffWood;   // the cut bank: exposed rock and earth where the water has eaten into it
   else if(le<1.035)c=PAL.shore;
   else if(dR<2.7)c=PAL.gravel;
   else if(dR<4.4)c=PAL.verge;
@@ -2059,12 +2061,13 @@ const SNAGC=['#ffffff','#e2ded6','#cfcbc3'].map(C_);
 const SHRUBC=['#4f7a35','#5d8a3a','#6b8f3a','#4a6d33','#7a8a3c','#8a6a3a'].map(C_);
 const FERNC=['#5f8f3a','#6f9a40','#7c9f45','#8a7a3a'].map(C_);
 let nTrees=0,nPlants=0;var TREEPOS=[];const TREE_CUT=0.4262;var scFlameEl=null;
+var BELT_ON=false;
 function placeTree(x,z,inner){
   const skipT=hsh(Math.floor(x*9)+17,Math.floor(z*9)+5)<TREE_CUT;   // 25% of the trees are left out (same on both machines: it depends only on position)
   const h=groundH(x,z);const slp=slopeAt(x,z);if(slp>(inner?0.95:1.5))return;
   const le=lakeE(x,z);if(le<1.12)return;
-  const dS=fieldF(x,z,FdS,CdS),cw=fieldF(x,z,FCw,CCw);if(dS<cw+1.8)return;
-  if(fieldF(x,z,FdR,CdR)<5.5)return;
+  const dS=fieldF(x,z,FdS,CdS),cw=fieldF(x,z,FCw,CCw);if(dS<(BELT_ON?cw*0.5+0.5:cw+1.8))return;   // the outer belt grows right up to the stream banks so the stream leaves through forest, not a corridor
+  if(fieldF(x,z,FdR,CdR)<(BELT_ON?1.5:5.5))return;
   if(!inner&&slp>1.05&&(fbm(x/60,z/40,2)>0.05||slp>1.9))return;   // bare rock bands stay bare
   const mk=meadowK(x,z);const edge=mk>0.24&&mk<=0.3;if(mk>0.3&&!(wr()<0.04))return;
   const c=chunkFor(x,z);const dd=deadK(x,z);const ry=wr()*PI*2;
@@ -2088,9 +2091,9 @@ for(let z=-FE;z<FE;z+=6.2)for(let x=-FE;x<FE;x+=6.2){placeTree(x+wrr(0.2,6.0),z+
 for(let z=-HALF;z<HALF;z+=10.5)for(let x=-HALF;x<HALF;x+=10.5){const px=x+wrr(0,10.5),pz=z+wrr(0,10.5);if(px>-FE&&px<FE&&pz>-FE&&pz<FE)continue;placeTree(px,pz,false);}
 // dense belt just outside the operating area so the edge reads as solid forest (no light gaps through the thinner outer ring).
 // Uses its own random stream and puts the main one back afterwards, so everything placed later is unchanged.
-{const ws0=_ws;_ws=246813579;const BW=170,SP=5.4;
+{const ws0=_ws;_ws=246813579;const BW=170,SP=5.4;BELT_ON=true;
   for(let z=-FE-BW;z<FE+BW;z+=SP)for(let x=-FE-BW;x<FE+BW;x+=SP){if(x>-FE-SP&&x<FE&&z>-FE-SP&&z<FE)continue;const px=x+wrr(0,SP),pz=z+wrr(0,SP);if(px>-FE&&px<FE&&pz>-FE&&pz<FE)continue;placeTree(px,pz,false);}
-  _ws=ws0;}
+  BELT_ON=false;_ws=ws0;}
 // undergrowth: blueberry / juniper clumps and ferns near the player only
 for(let z=-PLAY-15;z<PLAY+15;z+=3.6)for(let x=-PLAY-15;x<PLAY+15;x+=3.6){const px=x+wrr(0,3.6),pz=z+wrr(0,3.6);
   if(lakeE(px,pz)<1.08||fieldF(px,pz,FdR,CdR)<3.5)continue;const dS=fieldF(px,pz,FdS,CdS),cw=fieldF(px,pz,FCw,CCw);if(dS<cw+0.6)continue;if(slopeAt(px,pz)>1)continue;
@@ -2135,6 +2138,11 @@ function scatterRocks(n,pick,size,moss,collide){for(let k=0,tries=0;k<n&&tries<n
 const preRocks=ROCKS.length;
 scatterRocks(420,()=>{const x=wrr(-505,505),z=wrr(-505,505);const dS=fieldF(x,z,FdS,CdS);return dS<fieldF(x,z,FCw,CCw)+1.5?null:[x,z];},[0.8,3.4],0.35,true);
 scatterRocks(160,()=>{const i=Math.floor(wr()*STREAM_END);const off=wrr(-9,9);const x=STREAM.x[i]+off,z=STREAM.z[i]+wrr(-3,3);return Math.abs(x)<505&&Math.abs(z)<505&&Math.abs(off)>CW[i]*0.4?[x,z]:null;},[0.6,2.2],0.65,true);
+{const ws0=_ws;_ws=97531357;   // stones lining the banks at the waterline (own random stream, so the rest of the map is unchanged)
+  for(let i=1;i<STREAM_END-1;i++){const x0=STREAM.x[i],z0=STREAM.z[i];if(Math.abs(x0)>FE-8||Math.abs(z0)>FE-8)continue;const dx=STREAM.x[i+1]-x0,dz=STREAM.z[i+1]-z0,L=Math.hypot(dx,dz)||1;
+    for(const sd of [-1,1]){if(wr()>0.55)continue;const t=wr(),o=sd*(CW[i]+wrr(-0.1,1.3)),x=x0+dx*t-dz/L*o,z=z0+dz*t+dx/L*o;if(lakeE(x,z)<1.05)continue;
+      const s=wrr(0.35,1.0);const r=addRock(x,z,s*wrr(0.9,1.5),s*wrr(0.4,0.75),s*wrr(0.8,1.3),wr()*PI,0.3);rockTris(r);addPillar({x:r.x,z:r.z,r:r.R,y0:r.y-2,y1:r.top,rock:true,kind:'rock',rk:r});}}
+  _ws=ws0;}
 scatterRocks(60,()=>{const a=wr()*PI*2,r=wr()*170;return [DEADC.x+Math.cos(a)*r,DEADC.z+Math.sin(a)*r];},[0.8,2.6],0.2,true);
 scatterRocks(380,()=>{const x=wrr(-990,990),z=wrr(-990,990);return (Math.abs(x)<FE&&Math.abs(z)<FE)?null:[x,z];},[1.5,6],0.3,false);
 // cascades: stones in the channel where the bed drops
@@ -3680,7 +3688,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=300;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=303;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4244,15 +4252,16 @@ function bearPlace(b,dt){
 function bearRag(b,gy){const kk=Math.min(1,b.dead),sm=(a,c,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(c-a)));return t*t*(3-2*t);};
   const eo=1-Math.pow(1-kk,3),t2=Math.max(0,Math.min(1,(kk-0.15)/0.7)),c1=1.5,e2=1+(c1+1)*Math.pow(t2-1,3)+c1*Math.pow(t2-1,2);
   const bn=kk>0.6?Math.sin((kk-0.6)/0.4*Math.PI*2.4)*0.07*(1-kk):0;
-  b.root.rotation.z=b.roll*1.5*e2;
+  const th=(1.25+0.15*Math.sin(b.roll*3.7+b.x))*e2;b.root.rotation.z=b.roll*th;   // slumped over onto its flank
   b.root.rotation.x+=0.5*Math.sin(Math.min(1,kk/0.4)*Math.PI/2)*(1-sm(0.35,1,kk)*0.75);
   b.root.rotation.y=b.yaw+b.roll*0.3*eo;
   {const fx=Math.sin(b.yaw),fz=Math.cos(b.yaw),rx=Math.cos(b.yaw),rz=-Math.sin(b.yaw);let base=gy;   // rest on the highest ground under the body so it never sinks on a slope
     for(const [u,v] of [[0.7,0],[-0.7,0],[0,1.0],[0,-1.0],[0.7,0.8],[-0.7,-0.8],[0.7,-0.8],[-0.7,0.8]]){const gh=groundH(b.x+rx*u+fx*v,b.z+rz*u+fz*v);if(gh>base)base=gh;}
-    b.root.position.y=gy+(base-gy)*sm(0,0.5,kk)+0.55*Math.min(1.04,e2)+0.03+bn;}
-  b.legs.forEach((l,i)=>{const f=l.front,sd=(l.hip&&l.hip.x)?Math.sign(l.hip.x):(i%2?1:-1),w=Math.sin(kk*9+i*1.7)*(1-kk)*0.25;
-    l.up.rotation.x=(f?0.4:-0.3)*eo+w;l.lo.rotation.x=(f?-1.2:-0.95)*eo-w*0.5;l.up.rotation.z=sd*(f?0.55:0.75)*eo;if(l.paw)l.paw.rotation.x=0.45*eo;});
-  if(b.head){b.head.rotation.x=0.8*eo;b.head.rotation.z=b.roll*0.55*eo;}
+    b.root.position.y=gy+(base-gy)*sm(0,0.5,kk)+eo*(0.58*Math.abs(Math.sin(th))+0.4*Math.abs(Math.cos(th))-Math.cos(th))+0.03+bn;}   // body resting on the ground, not propped on its legs
+  {const sv=(i,m)=>Math.sin(i*2.3+b.roll*4+(b.x+b.z)*0.37)*m;   // every limb flops differently, and differently for each bear
+   b.legs.forEach((l,i)=>{const f=l.front,sd=(l.hip&&l.hip.x)?Math.sign(l.hip.x):(i%2?1:-1),w=Math.sin(kk*9+i*1.7)*(1-kk)*0.25;
+    l.up.rotation.x=((f?0.5:-0.45)+sv(i,0.55))*eo+w;l.lo.rotation.x=((f?-1.0:-0.8)+sv(i+5,0.5))*eo-w*0.5;const top=sd===b.roll;l.up.rotation.z=(sd*0.25-b.roll*(top?0.55:0.1)+sv(i+9,0.25))*eo;if(l.paw)l.paw.rotation.x=(0.3+sv(i+3,0.5))*eo;});
+   if(b.head){b.head.rotation.x=(1.0+sv(1,0.15))*eo;b.head.rotation.z=b.roll*(0.7+sv(2,0.2))*eo;b.head.rotation.y=sv(4,0.45)*eo;}}
   if(b.body){b.body.rotation.x*=(1-eo);b.body.rotation.z=b.roll*0.12*eo;}}
 function bearKick(b,dt,dec){if(b.kvx||b.kvz){const nx=b.x+b.kvx*dt,nz=b.z+b.kvz*dt;if(!bearBlocked(nx,nz)&&Math.abs(nx)<470&&Math.abs(nz)<470){b.x=nx;b.z=nz;}
     const k=Math.exp(-dt*(dec||4.5));b.kvx*=k;b.kvz*=k;if(Math.hypot(b.kvx,b.kvz)<0.05)b.kvx=b.kvz=0;}}
