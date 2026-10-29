@@ -1063,6 +1063,35 @@ function waterLevelAt(x,z){if(lakeE(x,z)<1.02)return LW;return streamWater(x,z);
 const ROCKS=[];   // {x,z,y,w,h,d,ry,moss,col}
 const TWPOS={x:204,z:-167};const TWPOS2={x:-119,z:-242};const SILO_POS={x:-48,z:368};const SILO_SITES=[SILO_POS];   // every silo on the map: more sites get added here   // missile silo: open meadow near the southern edge
    // comms tower site: grid 204 E / 167 N
+// ---- zip lines (data): a long line between towers, running from the higher deck down, and a short line from every deck to a ground anchor.
+// Worked out from the tower sites before the forest is placed, so the cable corridors are kept clear of trees.
+const TW_SITES=[TWPOS,TWPOS2];               // more towers: add the site here (and to TWS in the tower block), then link it below
+const ZIP_LINKS=[[0,1]];                     // tower pairs joined by a long line
+const ZIP_DECK=24,ZIP_D=2.4,ZIP_HANG=2.05;
+function zipBaseY(p){let lo=Infinity;for(const [dx,dz] of [[-2.6,-2.6],[2.6,-2.6],[-2.6,2.6],[2.6,2.6],[0,2.7]])lo=Math.min(lo,groundH(p.x+dx,p.z+dz));return lo-0.05;}
+function zipEdge(h){const sx=Math.sin(h),sz=Math.cos(h);return (ZIP_D+0.45)/Math.max(Math.abs(sx),Math.abs(sz));}   // distance from the mast to just outside the deck rail in direction h
+const ZIPS=(()=>{const L=[];const top=s=>zipBaseY(s)+ZIP_DECK+ZIP_HANG+0.25;
+  const mk=(a,b,sag,kind,from,to,h)=>{L.push({a,b,sag,kind,from,to,h,len:Math.hypot(b.x-a.x,b.z-a.z)});};
+  for(const lk of ZIP_LINKS){let i=lk[0],j=lk[1],A=TW_SITES[i],B=TW_SITES[j],ya=top(A),yb=top(B);
+    if(yb>ya){[A,B]=[B,A];[ya,yb]=[yb,ya];[i,j]=[j,i];}
+    const h=Math.atan2(B.x-A.x,B.z-A.z),oa=zipEdge(h),ob=zipEdge(h+PI);
+    const a={x:A.x+Math.sin(h)*oa,y:ya,z:A.z+Math.cos(h)*oa},b={x:B.x-Math.sin(h)*ob,y:yb,z:B.z-Math.cos(h)*ob};
+    mk(a,b,Math.max(1,Math.hypot(b.x-a.x,b.z-a.z)*0.018),'long',i,j,h);}
+  // short line: the direction with a comfortable slope that keeps your feet clear of the ground, away from the ladder (+z) and the long lines
+  TW_SITES.forEach((S,i)=>{const ya=top(S);const avoid=[0];
+    for(const z of L)if(z.kind==='long'){if(z.from===i)avoid.push(z.h);if(z.to===i)avoid.push(z.h+PI);}
+    let best=null;
+    for(let k=0;k<32;k++){const h=k/32*PI*2;if(avoid.some(q=>Math.abs(Math.atan2(Math.sin(h-q),Math.cos(h-q)))<0.75))continue;
+      const sx=Math.sin(h),sz=Math.cos(h),o=zipEdge(h),a={x:S.x+sx*o,y:ya,z:S.z+sz*o};
+      for(const len of [120,105,90,75]){const bx=a.x+sx*len,bz=a.z+sz*len;if(Math.abs(bx)>PLAY-12||Math.abs(bz)>PLAY-12)continue;
+        if(lakeE(bx,bz)<1.15)continue;const b={x:bx,y:groundH(bx,bz)+ZIP_HANG+0.3,z:bz},sl=(a.y-b.y)/len;if(sl<0.1||sl>0.32)continue;
+        let ok=true;for(let t=0.04;t<0.95;t+=0.02){const y=a.y+(b.y-a.y)*t-len*0.012*4*t*(1-t)-ZIP_HANG;if(y<groundH(a.x+(bx-a.x)*t,a.z+(bz-a.z)*t)+0.9){ok=false;break;}}
+        if(!ok)continue;const sc=len/120-Math.abs(sl-0.2)*6;if(!best||sc>best.sc)best={a,b,sc,len,h};break;}}
+    if(best)mk(best.a,best.b,best.len*0.012,'short',i,-1,best.h);});
+  return L;})();
+// true inside a cable corridor (trees are not grown there)
+function zipClear(x,z){for(const Z of ZIPS){const dx=Z.b.x-Z.a.x,dz=Z.b.z-Z.a.z,L2=dx*dx+dz*dz;let t=((x-Z.a.x)*dx+(z-Z.a.z)*dz)/L2;if(t<-0.03||t>1.05)continue;t=Math.max(0,Math.min(1,t));
+  if(Math.hypot(Z.a.x+dx*t-x,Z.a.z+dz*t-z)<5)return true;}return false;}
 let SUMMIT={x:SUM0.x,z:SUM0.z,h:-1e9};
 for(let dz=-70;dz<=70;dz+=5)for(let dx=-70;dx<=70;dx+=5){const h=groundH(SUM0.x+dx,SUM0.z+dz);if(h>SUMMIT.h)SUMMIT={x:SUM0.x+dx,z:SUM0.z+dz,h};}
 function addRock(x,z,w,h,d,ry,moss,col,yOff){const g=Math.min(groundH(x-w*0.35,z-d*0.35),groundH(x+w*0.35,z+d*0.35),groundH(x-w*0.35,z+d*0.35),groundH(x+w*0.35,z-d*0.35));
@@ -2047,7 +2076,7 @@ function placeTree(x,z,inner){
     else{type=wr()<0.5?'spruceA':'spruceB';sc=wrr(0.68,1.18);col=SPR[Math.floor(wr()*4)];r=0.32;}}
   {const ds=Math.hypot(x-SUMMIT.x,z-SUMMIT.z);if(ds<230&&type!=='young')sc*=0.4+0.6*sst(50,230,ds);}
   const sy=sc*wrr(0.92,1.08);
-  if(Math.hypot(x-TWPOS2.x,z-TWPOS2.z)<9)return;   // clear ground round the second comms tower (checked after the random draws so the rest of the forest is unchanged)
+  if(Math.hypot(x-TWPOS2.x,z-TWPOS2.z)<9||zipClear(x,z))return;   // clear ground round the second comms tower (checked after the random draws so the rest of the forest is unchanged)
   const tilt=(type==='snag'?wrr(-0.06,0.06):wrr(-0.02,0.02));if(skipT)return;
   {const cn=vn(x/80+31.7,z/80-12.4)*0.8+vn(x/37+5.1,z/37+8.8)*0.2;if(cn>0.5)return;if(cn>0.38&&hsh(Math.floor(x*3)+41,Math.floor(z*3)+7)<(cn-0.38)/0.12)return;}
   {const rr=Math.hypot(x,z),pk=Math.max(0,Math.min(1,(320-rr)/320))*0.6;if(hsh(Math.floor(x*4)+83,Math.floor(z*4)+29)<pk)return;}
@@ -2057,6 +2086,11 @@ function placeTree(x,z,inner){
 // inner forest: 6.2 m jittered grid; outer ring 9.5 m (far LOD only)
 for(let z=-FE;z<FE;z+=6.2)for(let x=-FE;x<FE;x+=6.2){placeTree(x+wrr(0.2,6.0),z+wrr(0.2,6.0),true);}
 for(let z=-HALF;z<HALF;z+=10.5)for(let x=-HALF;x<HALF;x+=10.5){const px=x+wrr(0,10.5),pz=z+wrr(0,10.5);if(px>-FE&&px<FE&&pz>-FE&&pz<FE)continue;placeTree(px,pz,false);}
+// dense belt just outside the operating area so the edge reads as solid forest (no light gaps through the thinner outer ring).
+// Uses its own random stream and puts the main one back afterwards, so everything placed later is unchanged.
+{const ws0=_ws;_ws=246813579;const BW=170,SP=5.4;
+  for(let z=-FE-BW;z<FE+BW;z+=SP)for(let x=-FE-BW;x<FE+BW;x+=SP){if(x>-FE-SP&&x<FE&&z>-FE-SP&&z<FE)continue;const px=x+wrr(0,SP),pz=z+wrr(0,SP);if(px>-FE&&px<FE&&pz>-FE&&pz<FE)continue;placeTree(px,pz,false);}
+  _ws=ws0;}
 // undergrowth: blueberry / juniper clumps and ferns near the player only
 for(let z=-PLAY-15;z<PLAY+15;z+=3.6)for(let x=-PLAY-15;x<PLAY+15;x+=3.6){const px=x+wrr(0,3.6),pz=z+wrr(0,3.6);
   if(lakeE(px,pz)<1.08||fieldF(px,pz,FdR,CdR)<3.5)continue;const dS=fieldF(px,pz,FdS,CdS),cw=fieldF(px,pz,FCw,CCw);if(dS<cw+0.6)continue;if(slopeAt(px,pz)>1)continue;
@@ -2501,7 +2535,7 @@ function updatePlayer(dt,time){
   marine.position.copy(pl.pos); marine.rotation.y=pl.yaw;
   {let want=0;try{want=(scoped&&pl.alive&&!pl.slide)?1:0;}catch(e){}pl.scK=(pl.scK||0)+(want-(pl.scK||0))*Math.min(1,dt*14);if(Math.abs(want-pl.scK)<0.004)pl.scK=want;
    if(pl.scK>0.004){p=Object.assign({},p);raiseScoped(p,pl.scK);}}
-  try{if(TW.climb)p=climbPose(p,pl);}catch(e){}
+  try{if(TW.climb)p=climbPose(p,pl);else if(ZIP.on)p=zipPose(p,pl);}catch(e){}
   applyPose(p);player.pose=p;
   // HUD label
   let lab=act?ACTIONS[act.name].clip:(pl.slide?'Slide':(!pl.grounded?'Jump':null));
@@ -3345,6 +3379,7 @@ mapCv.addEventListener('click',e=>{if(!mapOpen)return;const r=mapCv.getBoundingC
 function drawMap(){if(!mapBase)buildMap();const N=mapCv.width;mctx.putImageData(mapBase,0,0);const S=v=>(v+FE)/(FE*2)*N;
   if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));if($('optDeerMap').checked)BEARS.forEach(b=>drawBearMark(mctx,S(b.x),S(b.z),b,0.9,0));if($('optDeerMap').checked&&typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mctx,S(u.x),S(u.z),u,0.9));
   SILO_SITES.forEach(q=>drawSiloMark(mctx,S(q.x),S(q.z),1,0,true));
+  try{zipDrawMap(mctx,S);}catch(e){}
   try{uavDrawMap(mctx,S);}catch(e){}
   const p=player.pos;mctx.save();mctx.translate(S(p.x),S(p.z));mctx.rotate(-camYaw+PI);mctx.fillStyle='#ffcc4a';mctx.strokeStyle='#000';mctx.lineWidth=1.5;mctx.beginPath();mctx.moveTo(0,-9);mctx.lineTo(6,7);mctx.lineTo(0,3);mctx.lineTo(-6,7);mctx.closePath();mctx.fill();mctx.stroke();mctx.restore();
   {const x=S(P1_SPAWN.x),y=S(P1_SPAWN.z);mctx.strokeStyle='#4ab0ff';mctx.lineWidth=2;mctx.beginPath();mctx.arc(x,y,7,0,PI*2);mctx.stroke();mctx.fillStyle='#4ab0ff';mctx.font='600 11px "IBM Plex Mono", monospace';mctx.fillText('P1',x+9,y+4);}
@@ -3409,7 +3444,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;});
 
-const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (bolt action)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['God mode (dev)','` backquote'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Launch the missile (at the silo console)','L'],['Shadows','O'],['Mute','M']];
+const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (bolt action)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['God mode (dev)','` backquote'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Launch the missile (at the silo console)','L'],['Shadows','O'],['Mute','M']];
 $('keyList').innerHTML=KEYS.map(k=>`<div><kbd>${k[1]}</kbd><span>${k[0]}</span></div>`).join('');
 
 /* ---------------- menu tabs + graphics options ---------------- */
@@ -3471,6 +3506,7 @@ function drawMini(){mini.parentNode.style.display=miniOn?'':'none';if(!miniOn)re
   mx.translate(W/2,W/2);mx.rotate(th);mx.scale(sc,sc);mx.drawImage(baseCv,-(p.x+FE)*ppm,-(p.z+FE)*ppm);
   if($('optDeerMap').checked){const k=1/sc;DEER.forEach(d=>drawDeerMark(mx,(d.x-p.x)*ppm,(d.z-p.z)*ppm,d,k*1.2,th));BEARS.forEach(b=>drawBearMark(mx,(b.x-p.x)*ppm,(b.z-p.z)*ppm,b,k*1.5,th));if(typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mx,(u.x-p.x)*ppm,(u.z-p.z)*ppm,u,k*1.5));}
   SILO_SITES.forEach(q=>drawSiloMark(mx,(q.x-p.x)*ppm,(q.z-p.z)*ppm,1/sc*1.5,th,false));
+  try{zipDrawMini(mx,p,ppm);}catch(e){}
   try{uavDrawMini(mx,p,ppm,1/sc,th);}catch(e){}
   mx.restore();
   // view cone and the player
@@ -3596,7 +3632,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=293;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=295;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3723,7 +3759,7 @@ function carve(c){goneCarcass(c.o,c.k);let m,h=0;
   if(c.k==='d'){const y=CARVE[c.o.kind]||CARVE.roe;m=y.meat;h=y.hide;}else{m=1;}
   INV.meat+=m;INV.hide+=h;invUI();const bh=m*GAME.bMeat;if(bh>0){if(GAME.bInst)MPM.hp=Math.min(HP_MAX,MPM.hp+bh);else HEAL.pool=Math.min(120,HEAL.pool+bh);}toast('Butchered '+carcassName(c)+' · +'+m+' meat'+(h?' · +'+h+' hide':'')+(bh>0?' · +'+bh+'% health':''));try{sfx.click();}catch(e){}
   if(NT.room&&MPM.on)NT.room.emit('carve',{k:c.k,i:c.i,v:MPM.guest?NT.rosterV:deerVer}).catch(()=>{});}
-function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();if(c){carve(c);return;}{const d=dropNearest();if(d){dropTake(d);return;}}const i=resNearest();if(i==null)return;const n=RES_NODES[i],R=RES_T[n.ti];
+function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();if(c){carve(c);return;}if(zipTryMount())return;{const d=dropNearest();if(d){dropTake(d);return;}}const i=resNearest();if(i==null)return;const n=RES_NODES[i],R=RES_T[n.ti];
   if((R.k==='radio'||(R.k==='at4'&&!WPN.has))&&!slotCanTake(R.k)){toast('Gadget slots full · drop or use one first');return;}
   resSetGot(n,true);const q=R.k==='r762'?Math.max(1,GAME.pk762|0):R.k==='at4r'?Math.max(1,GAME.pkAt4|0):R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));
   if(R.k==='radio'){const out=slotGive({k:'radio'});toast((out?'Swapped your '+out+' for a radio':'Radio picked up')+' · press '+slotKeyOf('radio')+' to call in a recon drone');pickSnd();if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});return;}
@@ -3734,7 +3770,7 @@ function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();i
   if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});}
 addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyF')resGather();});
 function resStep(dt){
-  let s='';if(playing&&player.alive&&!scoped&&!mapOpen){const c=carcassNearest();if(c)s='<b>F</b> · butcher '+carcassName(c);else{const d=dropNearest();if(d)s='<b>F</b> · '+(d.k==='at4'&&WPN.has?'take the round from the AT4':d.k==='rifle'&&slotHas('rifle')?'take the rounds from the rifle':slotTip(d.k));else{const i=resNearest();if(i!=null){const k=RES_T[RES_NODES[i].ti].k;s='<b>F</b> · '+(k==='at4'||k==='radio'?slotTip(k):'gather '+RES_T[RES_NODES[i].ti].label);}}}}
+  let s='';if(playing&&player.alive&&!scoped&&!mapOpen){const c=carcassNearest(),zt=zipPromptTxt();if(zt)s=zt;else if(c)s='<b>F</b> · butcher '+carcassName(c);else{const d=dropNearest();if(d)s='<b>F</b> · '+(d.k==='at4'&&WPN.has?'take the round from the AT4':d.k==='rifle'&&slotHas('rifle')?'take the rounds from the rifle':slotTip(d.k));else{const i=resNearest();if(i!=null){const k=RES_T[RES_NODES[i].ti].k;s='<b>F</b> · '+(k==='at4'||k==='radio'?slotTip(k):'gather '+RES_T[RES_NODES[i].ti].label);}}}}
   if(s!==_prS){_prS=s;resPrompt.innerHTML=s;resPrompt.hidden=!s;}}
 window.SNIPER_RES={INV,RES_NODES};
 
@@ -4696,7 +4732,7 @@ function towerBuild(){
   box(-2.12,-0.98,Yd,Yd+0.6,-1.9,-1.3);
   TW.built=true;}
 // ---- climbing: walk up to the ladder facing it and hold W; look away from the tower and W climbs down. At the top you step onto the deck.
-function towerStep(pl,dt){const cl=TWS.find(t=>t.climb);if(cl){TW=cl;return towerStep1(pl,dt);}for(const t of TWS){TW=t;towerStep1(pl,dt);if(t.climb)return;}}
+function towerStep(pl,dt){if(zipStep(pl,dt))return;const cl=TWS.find(t=>t.climb);if(cl){TW=cl;return towerStep1(pl,dt);}for(const t of TWS){TW=t;towerStep1(pl,dt);if(t.climb)return;}}
 function towerStep1(pl,dt){
   if(!TW.built){if(playing)try{towerBuild();}catch(e){console.warn('tower',e);TW.built=true;}return;}
   TW.cd-=dt;const lx=pl.pos.x-TW.x,lz=pl.pos.z-TW.z,deck=TW.y0+TW.Yd,mi=moveInput();
@@ -4716,6 +4752,75 @@ function towerStep1(pl,dt){
   else if(pl.pos.y<=g&&dir<0){pl.pos.y=g;pl.grounded=true;pl.pos.z=TW.z+TW.Lz+1.0;TW.climb=false;TW.cd=0.8;}
   if(!pl.alive)TW.climb=false;}
 window.SNIPER_TOWER={TW,TWS,build:towerBuild,step:towerStep};
+// ================= zip lines (runtime): steel cable, deck brackets, ground anchor posts, a trolley, the ride =================
+// On a deck, stand by the bracket and press F. You hang from the trolley and run down the cable; a brake slows you before the end,
+// so you step off onto the far deck or the ground unhurt. Space lets go (a fall from height hurts).
+var ZIP={on:false,Z:null,t:0,v:0,au:null,tr:null};
+function zipP(Z,t,o){o=o||V(0,0,0);return o.set(Z.a.x+(Z.b.x-Z.a.x)*t,Z.a.y+(Z.b.y-Z.a.y)*t-Z.sag*4*t*(1-t),Z.a.z+(Z.b.z-Z.a.z)*t);}
+function zipDeckY(i){return zipBaseY(TW_SITES[i])+ZIP_DECK;}
+function zipStand(i,h){const S=TW_SITES[i],o=zipEdge(h)-1.05;return {x:S.x+Math.sin(h)*o,z:S.z+Math.cos(h)*o,y:zipDeckY(i)};}
+// ---- meshes
+(function(){const parts=[],STEEL='#2c2f31',GALV='#7d8387',WOOD='#6b5236';
+  const bar=(A,B,r,col,seg)=>{const d=B.clone().sub(A),L=d.length();if(L<1e-3)return;const q=new THREE.Quaternion().setFromUnitVectors(V(0,1,0),d.normalize());const e=new THREE.Euler().setFromQuaternion(q);const m=A.clone().add(B).multiplyScalar(0.5);
+    parts.push(xf(tint(CY(r,r,L,seg||5),col,0.02),[m.x,m.y,m.z],[e.x,e.y,e.z]));};
+  for(const Z of ZIPS){const N=Math.max(8,Math.ceil(Z.len/10));let P0=zipP(Z,0,V(0,0,0));
+    for(let k=1;k<=N;k++){const P1=zipP(Z,k/N,V(0,0,0));bar(P0,P1,0.022,STEEL,4);P0=P1;}
+    const sx=Math.sin(Z.h),sz=Math.cos(Z.h);
+    // deck bracket at the start: a post on the deck edge and an arm out to the cable
+    const dy=zipDeckY(Z.from),o=zipEdge(Z.h)-0.5,S=TW_SITES[Z.from],px=S.x+sx*o,pz=S.z+sz*o;
+    bar(V(px,dy,pz),V(px,Z.a.y+0.45,pz),0.06,GALV,6);bar(V(px,Z.a.y+0.4,pz),V(Z.a.x+sx*0.25,Z.a.y+0.12,Z.a.z+sz*0.25),0.045,GALV,6);
+    bar(V(px-sz*0.25,dy+1.1,pz+sx*0.25),V(px+sz*0.25,dy+1.1,pz-sx*0.25),0.03,'#d8322a',5);   // red grab bar
+    if(Z.kind==='long'){const T=TW_SITES[Z.to],dy2=zipDeckY(Z.to),o2=zipEdge(Z.h+PI)-0.5,qx=T.x-sx*o2,qz=T.z-sz*o2;
+      bar(V(qx,dy2,qz),V(qx,Z.b.y+0.45,qz),0.06,GALV,6);bar(V(qx,Z.b.y+0.4,qz),V(Z.b.x-sx*0.25,Z.b.y+0.12,Z.b.z-sz*0.25),0.045,GALV,6);}
+    else{const g=groundH(Z.b.x+sx*1.6,Z.b.z+sz*1.6),ax=Z.b.x+sx*1.6,az=Z.b.z+sz*1.6;   // ground anchor: a timber post on a concrete block, the cable tied off at the top
+      bar(V(ax,g-0.6,az),V(ax,Z.b.y+0.7,az),0.13,WOOD,7);bar(V(Z.b.x,Z.b.y,Z.b.z),V(ax,Z.b.y+0.5,az),0.022,STEEL,4);
+      parts.push(xf(tint(new THREE.BoxGeometry(1.1,0.5,1.1),'#8f8c86',0.06),[ax,g+0.05,az],[0,Z.h,0]));
+      bar(V(ax,Z.b.y+0.6,az),V(ax+sx*3.2,g-0.2,az+sz*3.2),0.018,STEEL,4);                 // back stay
+      parts.push(xf(tint(new THREE.BoxGeometry(0.5,0.35,0.05),'#e3a33b',0.02),[ax-sx*0.15,Z.b.y-0.6,az-sz*0.15],[0,Z.h,0]));}}   // orange end sign
+  if(parts.length){const m=new THREE.Mesh(merge(parts),envMat);m.castShadow=true;m.receiveShadow=true;scene.add(m);}
+  // trolley: twin pulleys between side plates, a T-bar handle hanging below
+  const tp=[];const w=(r,th,z)=>tp.push(xf(tint(CY(r,r,th,10),'#3a3d40',0.02),[0,0,z],[0,0,HP]));w(0.06,0.035,0.09);w(0.06,0.035,-0.09);
+  tp.push(xf(tint(new THREE.BoxGeometry(0.012,0.2,0.36),'#c9b23c',0.02),[0.03,-0.04,0]),xf(tint(new THREE.BoxGeometry(0.012,0.2,0.36),'#c9b23c',0.02),[-0.03,-0.04,0]));
+  tp.push(xf(tint(CY(0.012,0.012,0.08,5),'#2a2a2a',0),[0,-0.18,0]),xf(tint(CY(0.016,0.016,0.5,6),'#1d1d1d',0),[0,-0.23,0],[0,0,HP]));
+  ZIP.tr=new THREE.Mesh(merge(tp),envMat);ZIP.tr.visible=false;scene.add(ZIP.tr);})();
+// ---- prompt and mounting
+function zipNear(){const pl=player;if(!pl.alive||ZIP.on||pl.action)return null;
+  for(const Z of ZIPS){const s=zipStand(Z.from,Z.h);if(Math.hypot(pl.pos.x-s.x,pl.pos.z-s.z)<1.35&&Math.abs(pl.pos.y-s.y)<0.6)return Z;}return null;}
+function zipPromptTxt(){if(ZIP.on)return '<b>Space</b> · let go of the zip line';const Z=zipNear();if(!Z)return '';
+  return '<b>F</b> · '+(Z.kind==='long'?'zip line to the other tower ('+Math.round(Z.len)+' m)':'zip line down to the ground ('+Math.round(Z.len)+' m)');}
+function zipTryMount(){const Z=zipNear();if(!Z)return false;const pl=player;ZIP.on=true;ZIP.Z=Z;ZIP.t=0;ZIP.v=1.5;
+  input.lmb=input.rmb=false;pl.reloadT=-1;pl.stance='stand';pl.slide=null;ZIP.tr.visible=true;try{sfx.click();}catch(e){}zipSndOn();
+  toast(Z.kind==='long'?'On the zip line · Space lets go':'Sliding down · Space lets go');return true;}
+function zipEnd(land){const Z=ZIP.Z,pl=player;ZIP.on=false;ZIP.tr.visible=false;zipSndOff();
+  if(land==='deck'){const s=zipStand(Z.to,Z.h+PI);pl.pos.set(s.x,s.y+0.02,s.z);}
+  else if(land==='ground'){const x=Z.b.x-Math.sin(Z.h)*0.6,z=Z.b.z-Math.cos(Z.h)*0.6;pl.pos.set(x,groundH(x,z)+0.02,z);}
+  if(land){pl.vel.set(0,0,0);pl.grounded=true;pl.fallV=0;pl.fy=null;}
+  else{pl.grounded=false;pl.fy=pl.pos.y;pl.vel.set(Math.sin(Z.h)*ZIP.v*0.8,0,Math.cos(Z.h)*ZIP.v*0.8);}
+  try{sfx.click();}catch(e){}}
+// ---- the ride: gravity along the cable, air and pulley drag, top speed and an end brake; hand over hand if the sag stalls you
+function zipStep(pl,dt){if(!ZIP.on)return false;const Z=ZIP.Z;
+  if(!pl.alive){zipEnd(null);return false;}
+  if(keys.Space){zipEnd(null);toast('Let go of the zip line');return false;}
+  const dyt=(Z.b.y-Z.a.y)-Z.sag*4*(1-2*ZIP.t),dst=Math.hypot(Z.len,dyt),sl=dyt/dst;
+  const vmax=Z.kind==='long'?22:14,rem=(1-ZIP.t)*dst;
+  ZIP.v+=(-9.81*sl-0.004*ZIP.v*ZIP.v-0.25)*dt;ZIP.v=Math.min(ZIP.v,vmax,2+rem*0.55);ZIP.v=Math.max(ZIP.v,1.3);
+  ZIP.t+=ZIP.v*dt/dst;
+  if(ZIP.t>=1){ZIP.t=1;zipEnd(Z.kind==='long'?'deck':'ground');toast(Z.kind==='long'?'Across':'Down safely');return true;}
+  const P=zipP(Z,ZIP.t,_zp);pl.pos.set(P.x,P.y-ZIP_HANG,P.z);pl.vel.set(0,0,0);pl.grounded=false;pl.fallV=0;pl.fy=pl.pos.y;pl.stance='stand';pl.yaw=Z.h;
+  input.lmb=input.rmb=false;
+  ZIP.tr.position.copy(P);ZIP.tr.rotation.set(0,Z.h,0);ZIP.tr.rotateX(-Math.atan(sl));
+  zipSndSet(ZIP.v);return true;}
+const _zp=V(0,0,0);
+// ---- trolley whirr: band-passed noise and a pulley whine that rise with speed
+function zipSndOn(){if(!AC||!soundOn||ZIP.au||!noiseBuf)return;try{const g=AC.createGain();g.gain.value=0;g.connect(AC.destination);
+  const n=AC.createBufferSource();n.buffer=noiseBuf;n.loop=true;const f=AC.createBiquadFilter();f.type='bandpass';f.Q.value=1.4;f.frequency.value=600;n.connect(f);f.connect(g);
+  const o=AC.createOscillator();o.type='triangle';o.frequency.value=300;const og=AC.createGain();og.gain.value=0.15;o.connect(og);og.connect(g);n.start();o.start();ZIP.au={g,f,o,n};}catch(e){ZIP.au=null;}}
+function zipSndSet(v){const a=ZIP.au;if(!a)return;const t=AC.currentTime,k=Math.min(1,v/20);a.g.gain.setTargetAtTime(0.05+0.22*k,t,0.1);a.f.frequency.setTargetAtTime(400+1800*k,t,0.1);a.o.frequency.setTargetAtTime(180+700*k,t,0.1);}
+function zipSndOff(){const a=ZIP.au;if(!a)return;ZIP.au=null;try{const t=AC.currentTime;a.g.gain.setTargetAtTime(0,t,0.08);a.n.stop(t+0.6);a.o.stop(t+0.6);}catch(e){}}
+// ---- map lines
+function zipDrawMap(c,S){c.save();c.lineWidth=1.5;c.setLineDash([5,4]);c.strokeStyle='rgba(255,236,170,0.85)';for(const Z of ZIPS){c.beginPath();c.moveTo(S(Z.a.x),S(Z.a.z));c.lineTo(S(Z.b.x),S(Z.b.z));c.stroke();}c.restore();}
+function zipDrawMini(c,p,ppm){c.save();c.lineWidth=1.5;c.setLineDash([4,3]);c.strokeStyle='rgba(255,236,170,0.8)';for(const Z of ZIPS){c.beginPath();c.moveTo((Z.a.x-p.x)*ppm,(Z.a.z-p.z)*ppm);c.lineTo((Z.b.x-p.x)*ppm,(Z.b.z-p.z)*ppm);c.stroke();}c.restore();}
+window.SNIPER_ZIP={ZIP,ZIPS,mount:zipTryMount,step:zipStep,stand:zipStand,near:zipNear};
 // ================= ICBM silo (compact: everything is modelled at full size and built at scale K): reinforced concrete pad and collar sunk into an open meadow, a deep shaft, a sliding blast hatch and a launchable missile =================
 // The shaft is seen through the ground with a stencil: the opening writes a mask, then the shaft walls draw only inside it (ignoring the terrain's depth).
 // Walk to the launch console beside the pad and press L: klaxon, hatch rolls back, ignition, the missile climbs out on a column of smoke and pitches over.
@@ -5122,6 +5227,12 @@ window.SNIPER_UGV={list:()=>UGVS,step:ugvStep,hit:hitUgv,ray:rayUgv,reset:ugvRes
 
 // ---- climbing pose: rifle slung across the back, hands grab rungs and feet stand on rungs, alternating (left hand with right foot)
 function twStepper(u){const f=Math.floor(u),q=u-f;const k=Math.min(1,Math.max(0,(q-0.5)*2));return f+k*k*(3-2*k);}
+function zipPose(p0,pl){const p=Object.assign({},p0);if(!A.zipL){anchor('zipL',marine,0,0,0);anchor('zipR',marine,0,0,0);}
+  const hy=ZIP_HANG-0.2;A.zipL.position.set(0.2,hy,0.04);A.zipR.position.set(-0.2,hy,0.04);
+  p.ikL=1;p.ikR=1;p.L={zipL:1};p.R={zipR:1};p.poleL=[1,-0.3,-0.4];p.poleR=[-1,-0.3,-0.4];
+  p.legIK=1;p.lF=[0.13,0.04,0.2];p.rF=[-0.13,0.0,0.08];p.lKP=[0.25,0,1];p.rKP=[-0.25,0,1];
+  p.hipsP=[0,0,0];p.hipsR=[0,0,0];p.spine=[-0.05,0,0];p.chest=[-0.05,0,0];p.neck=[0.05,0,0];p.head=[0.1,0,0];p.lFoot=[0.3,0,0];p.rFoot=[0.3,0,0];
+  p.gunP=[0.05,0.05,-0.42];p.gunR=[-1.5,0,0.55];p.flash=0;p.mag=0;p.magHide=0;return p;}
 function climbPose(p0,pl){const p=Object.assign({},p0);if(!A.rungL){anchor('rungL',marine,0,0,0);anchor('rungR',marine,0,0,0);}
   const u=(TW.cy-TW.y0)/0.6,top=TW.y0+TW.Yd;
   const hy=o=>Math.min(top+0.05,TW.y0+0.6*twStepper(u+o)+1.5)-pl.pos.y, fy=o=>Math.max(0,TW.y0+0.6*twStepper(u+o))-pl.pos.y;
