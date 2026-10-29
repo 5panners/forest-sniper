@@ -3916,7 +3916,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=319;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=321;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4997,8 +4997,8 @@ function towerBuild(){
   C.forEach(([sx,sz])=>twBar(L,[sx*TW.B0,0,sz*TW.B0],[sx*TW.Bt,H,sz*TW.Bt],0.085,twSteel,6));
   // horizontal girts every 3 m and X bracing on every face (left open in the bay above the deck so the platform is clear)
   for(let k=0;k<=10;k++){const y=k*3,w=twHW(y);
-    for(let f=0;f<4;f++){const [ax,az]=C[f],[bx,bz]=C[(f+1)%4];twBar(L,[ax*w,y,az*w],[bx*w,y,bz*w],0.045,twSteel);
-      if(k<10&&!(y>=Yd&&y<Yd+3)){const y2=y+3,w2=twHW(y2);twBar(L,[ax*w,y,az*w],[bx*w2,y2,bz*w2],0.035,twSteel);twBar(L,[bx*w,y,bz*w],[ax*w2,y2,az*w2],0.035,twSteel);}}}
+    for(let f=0;f<4;f++){const [ax,az]=C[f],[bx,bz]=C[(f+1)%4];if(!(y>Yd&&y<H))twBar(L,[ax*w,y,az*w],[bx*w,y,bz*w],0.045,twSteel);   // no girt across the open bay above the deck (it blocked the view)
+      if(k<10&&!(y>=Yd&&y<H)){const y2=y+3,w2=twHW(y2);twBar(L,[ax*w,y,az*w],[bx*w2,y2,bz*w2],0.035,twSteel);twBar(L,[bx*w,y,bz*w],[ax*w2,y2,az*w2],0.035,twSteel);}}}
   // ---- observation deck: steel grating with painted grid, kick plates, railings, brackets down to the legs
   const grate=(x,y,z)=>((Math.floor((x+10)*2.5)+Math.floor((z+10)*2.5))%2?'#55595c':'#4a4e51');
   twBox(L,[0,Yd-0.06,0],[2*D,0.12,2*D],grate,10);
@@ -5013,7 +5013,7 @@ function towerBuild(){
   const drum=(cx,cy,cz,ry)=>{const g=new THREE.CylinderGeometry(0.58,0.58,0.62,16,1);g.rotateX(Math.PI/2);g.rotateY(ry);
     L.push(bPart(g,[cx,cy,cz],null,null,(x,y,z)=>{const dz=(x-cx)*Math.sin(ry)+(z-cz)*Math.cos(ry);return dz>0.29?(Math.abs(y-cy-0.38)<0.08?'#b8322b':'#d9dcdc'):'#8e9497';}));
     twBar(L,[cx-Math.sin(ry)*0.35,cy,cz-Math.cos(ry)*0.35],[Math.sign(cx)*twHW(cy)*0.9,cy,Math.sign(cz||1)*twHW(cy)*0.9],0.05,twSteel);};
-  drum(1.55,27.4,0.6,Math.PI/2);drum(-0.6,28.7,-1.5,Math.PI);
+  drum(1.55,29.0,0.6,Math.PI/2);drum(-0.6,29.35,-1.5,Math.PI);
   {const g=new THREE.SphereGeometry(0.9,14,6,0,Math.PI*2,0,0.75);g.rotateZ(Math.PI/2);L.push(bPart(g,[-twHW(18)-0.55,18,0],null,null,(x,y,z)=>x<-twHW(18)-0.8?'#e3e5e4':'#b9bdbf'));
    twBar(L,[-twHW(18)-0.5,18,0],[-twHW(18),18,0],0.06,twSteel);twBar(L,[-twHW(18)-0.55,18,0],[-twHW(18)-1.25,18,0],0.025,'#7a7f82');}
   twBar(L,[0,H,0],[0,H+6,0],0.07,twSteel,6);
@@ -5163,13 +5163,15 @@ function liftChairGeo(){const P=[],ST='#2c2f31',GV='#8d9396',SEAT='#d23a2a',SEAT
   // bull wheel at each end of every link: the rope runs round it from one side to the other; a gantry carries it out past the deck rail
   for(const Z of ZIPS){if(Z.kind!=='long')continue;
     for(const [end,ti,hh] of [[Z.a,Z.from,Z.h],[Z.b,Z.to,Z.h+PI]]){const S=TW_SITES[ti],dy=zipDeckY(ti),sx=Math.sin(hh),sz=Math.cos(hh);
-      const w=new THREE.TorusGeometry(LIFT_OFF,0.03,5,32);w.rotateX(-HP);parts.push(xf(tint(w,ST,0.02),[end.x,end.y,end.z]));   // the rope round the wheel
-      const w2=new THREE.TorusGeometry(LIFT_OFF-0.05,0.06,6,28);w2.rotateX(-HP);parts.push(xf(tint(w2,YEL,0.02),[end.x,end.y+0.12,end.z]));
-      for(let k=0;k<6;k++){const a=k/6*PI*2;bar(V(end.x,end.y+0.12,end.z),V(end.x+Math.cos(a)*(LIFT_OFF-0.05),end.y+0.12,end.z+Math.sin(a)*(LIFT_OFF-0.05)),0.03,YEL,4);}
+      {const wl=[],wb=(A,B2,rr,cc,sg)=>{const d=B2.clone().sub(A),LL=d.length();const q=new THREE.Quaternion().setFromUnitVectors(V(0,1,0),d.normalize());const e=new THREE.Euler().setFromQuaternion(q);const m=A.clone().add(B2).multiplyScalar(0.5);wl.push(xf(tint(CY(rr,rr,LL,sg||4),cc,0.02),[m.x,m.y,m.z],[e.x,e.y,e.z]));};
+       const w=new THREE.TorusGeometry(LIFT_OFF,0.03,5,32);w.rotateX(-HP);wl.push(tint(w,ST,0.02));   // the rope round the wheel
+       const w2=new THREE.TorusGeometry(LIFT_OFF-0.05,0.06,6,28);w2.rotateX(-HP);wl.push(xf(tint(w2,YEL,0.02),[0,0.12,0]));
+       for(let k=0;k<8;k++){const a=k/8*PI*2;wb(V(0,0.12,0),V(Math.cos(a)*(LIFT_OFF-0.05),0.12,Math.sin(a)*(LIFT_OFF-0.05)),k%2?0.03:0.045,YEL,4);}
+       wl.push(xf(tint(CY(0.22,0.22,0.16,12),ST,0.02),[0,0.12,0]));wl.push(xf(tint(B(0.14,0.1,0.3),'#d8322a',0),[LIFT_OFF-0.2,0.2,0]));   // hub plate and a red marker so the turning shows
+       const wm=new THREE.Mesh(merge(wl),envMat);wm.position.set(end.x,end.y,end.z);wm.castShadow=true;scene.add(wm);(LIFT.wheels||(LIFT.wheels=[])).push(wm);}
       bar(V(end.x,end.y-0.1,end.z),V(end.x,end.y+0.75,end.z),0.09,GV,8);                                  // hub shaft
       const o=zipEdge(hh)-0.35,px=S.x+sx*o,pz=S.z+sz*o;                                                  // gantry: two posts on the deck edge, a beam out to the hub
-      for(const s of [-1,1]){const qx=px+sz*0.9*s,qz=pz-sx*0.9*s;bar(V(qx,dy,qz),V(qx,end.y+0.75,qz),0.07,GV,6);bar(V(qx,end.y+0.75,qz),V(end.x,end.y+0.75,end.z),0.06,GV,6);bar(V(qx,dy+0.3,qz),V(end.x,end.y+0.7,end.z),0.04,GV,5);}
-      parts.push(xf(tint(B(0.5,0.5,0.5),'#3a3d40',0.02),[end.x,end.y+0.8,end.z]));
+      for(const s of [-1,1]){const qx=px+sz*0.9*s,qz=pz-sx*0.9*s;bar(V(qx,dy,qz),V(qx,end.y+0.75,qz),0.07,GV,6);bar(V(qx,end.y+0.75,qz),V(end.x,end.y+0.75,end.z),0.06,GV,6);}
       // boarding gates: a yellow arch and a sign at each side's gate
       for(const L of LIFTS){if(L.Z!==Z||L.from!==ti)continue;const g=liftStand(L);bar(V(g.x-sz*0.5,dy,g.z+sx*0.5),V(g.x-sz*0.5,dy+2.2,g.z+sx*0.5),0.04,YEL,5);bar(V(g.x+sz*0.5,dy,g.z-sx*0.5),V(g.x+sz*0.5,dy+2.2,g.z-sx*0.5),0.04,YEL,5);
         bar(V(g.x-sz*0.5,dy+2.2,g.z+sx*0.5),V(g.x+sz*0.5,dy+2.2,g.z-sx*0.5),0.04,YEL,5);parts.push(xf(tint(B(0.7,0.28,0.04),'#2a6a3a',0.02),[g.x,dy+2.0,g.z],[0,hh,0]));
@@ -5184,6 +5186,7 @@ function liftPlace(obj,L,u,swing){const P=liftP(L,u,_lpos);_le.set(-Math.atan(li
   if(obj.isInstancedMesh)return _lm.compose(P,_lq,_ls);obj.position.copy(P);obj.quaternion.copy(_lq);}
 // the empty chairs keep circulating (fed past the stations at the ends, as on a real lift)
 function liftAnim(){if(!LIFT.chairs)return;const T=performance.now()/1000;let i=0;
+  if(LIFT.wheels){const ang=-(LIFT_V/LIFT_OFF)*T;for(const w of LIFT.wheels)w.rotation.y=ang;}   // rim speed equals rope speed
   for(const L of LIFTS){const len=L.Z.len,k=Math.max(2,Math.floor(len/LIFT_GAP));for(let j=0;j<k;j++){const u=((T*LIFT_V/len)+j/k+(L.d?0.5/k:0))%1;
     if((LIFT.ride&&LIFT.ride.L===L&&Math.abs(u-LIFT.ride.u)*len<LIFT_GAP*0.45)||(LIFT.p2ride&&LIFT.p2&&LIFT.p2.visible&&LIFT.p2ride.L===L&&Math.abs(u-LIFT.p2ride.u)*len<LIFT_GAP*0.45)){_lm.makeScale(0,0,0);LIFT.chairs.setMatrixAt(i++,_lm);continue;}   // no empty chair where the rider's chair is
     LIFT.chairs.setMatrixAt(i++,liftPlace(LIFT.chairs,L,u,Math.sin(T*1.3+j)*0.03));}}
