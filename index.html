@@ -1018,8 +1018,8 @@ function fieldsAt(x,z){
   const s=polyNear(STREAM,x,z,95);FO.dS=s.d;FO.cw=0;FO.bed=-1e9;
   if(s.i>=0){const j=Math.min(s.i+1,STREAM.n-1);const bed=BED[s.i]+(BED[j]-BED[s.i])*s.t,cw=CW[s.i]+(CW[j]-CW[s.i])*s.t,d=s.d;FO.cw=cw;FO.bed=bed;
     const e=d-cw,er=0.5+0.5*vn(x/9+40,z/9-30);   // erosion: the bank height and steepness wander along the stream
-    const tgt=d<cw?bed-0.55*(1-(d/cw)*(d/cw)):bed+(0.85+0.5*er)*sst(0,0.5+1.0*(1-er),e)+0.05*Math.pow(e,1.3);
-    if(tgt<h)h=tgt;else if(d<cw+4)h+=(tgt-h)*(1-sst(cw,cw+4,d));}
+    const tgt=d<cw?bed-0.55*(1-(d/cw)*(d/cw)):bed+(0.85+0.5*er)*sst(0,0.5+1.0*(1-er),e)+0.05*Math.pow(e,1.3)+0.22*Math.max(0,e-8);   // the valley side rises steadily so the cut never leaves a cliff where the hill is high above the bed
+    if(tgt<h)h+=(tgt-h)*(1-sst(62,94,d));else if(d<cw+4)h+=(tgt-h)*(1-sst(cw,cw+4,d));}   // the cut fades out before the edge of the stream's reach
   const le=lakeE(x,z);FO.le=le;
   if(le<1.3){if(le<1)h=Math.min(h,LW-0.8-20*sst(1,0.35,le));else h=Math.min(h,LW-0.8+(h-(LW-0.8))*sst(1,1.3,le));}
   FO.h=h;return FO;}
@@ -1129,7 +1129,8 @@ const XS=(()=>{
   window._XSD={rng,free,wet,nearZip,dR,meadowK};
   return out;})();
 // true where the extra structures stand (no trees, rocks, logs or ferns)
-function xsClear(x,z){const s=XS.shrine,l=XS.look,f=XS.farm;return Math.hypot(x-s.x,z-s.z)<4.5||Math.hypot(x-l.x,z-l.z)<18||(Math.abs(x-f.x)<27&&Math.abs(z-f.z)<16);}
+const XS_SHRINE=false;
+function xsClear(x,z){const s=XS.shrine,l=XS.look,f=XS.farm;return (XS_SHRINE&&Math.hypot(x-s.x,z-s.z)<4.5)||Math.hypot(x-l.x,z-l.z)<18||(Math.abs(x-f.x)<27&&Math.abs(z-f.z)<16);}
 function addRock(x,z,w,h,d,ry,moss,col,yOff){const g=Math.min(groundH(x-w*0.35,z-d*0.35),groundH(x+w*0.35,z+d*0.35),groundH(x-w*0.35,z+d*0.35),groundH(x+w*0.35,z-d*0.35));
   const r={x,z,y:(yOff!=null?yOff:g-h*0.28),w,h,d,ry,moss,col:col!==false,i:ROCKS.length};ROCKS.push(r);return r;}
 const _nTor0=ROCKS.length;
@@ -2258,8 +2259,8 @@ function beam(L,a,b,r,c,seg){const d=V(b[0]-a[0],b[1]-a[1],b[2]-a[2]),len=d.leng
 function gRange(x,z,hx,hz){let lo=1e9,hi=-1e9;for(let a=-1;a<=1.001;a+=0.25)for(let b=-1;b<=1.001;b+=0.25){const h=groundH(x+a*hx,z+b*hz);lo=Math.min(lo,h);hi=Math.max(hi,h);}return [lo,hi];}
 function postG(L,x,z,top,w,c){const g=groundH(x,z)-0.45;pb(L,B(w,top-g,w),c,[x,(top+g)/2,z]);col(x-w/2,x+w/2,g,top,z-w/2,z+w/2);}
 
-/* ---------------- 1. wayside shrine (Marterl) ---------------- */
-{const S=XS.shrine,LL=[],GL=[];const [lo,hi]=gRange(S.x,S.z,1.6,1.6);const y0=hi+0.05;   // the plinth sits on the highest point; its stone base runs down into the ground
+/* ---------------- 1. wayside shrine (Marterl) — removed (XS_SHRINE false); its site is still chosen so the other structures keep their places ---------------- */
+if(XS_SHRINE){const S=XS.shrine,LL=[],GL=[];const [lo,hi]=gRange(S.x,S.z,1.6,1.6);const y0=hi+0.05;   // the plinth sits on the highest point; its stone base runs down into the ground
  const WH='#efe8d6',OCH='#d9a033',BLUE='#2456b0',GOLD='#e8bd3a',RED='#b3262d',TILE='#a33b26',GRN='#3f7a3a';
  const p=(geo,c,pos,r,j)=>pb(LL,geo,c,pos,r,j==null?0.04:j);
  // stone base and two steps
@@ -2445,8 +2446,8 @@ function postG(L,x,z,top,w,c){const g=groundH(x,z)-0.45;pb(L,B(w,top-g,w),c,[x,(
 
 // meshes: the painted shrine is smooth-shaded so its statuette and flowers read well; the lantern glass glows
 {const m=new THREE.Mesh(merge(XL),envMat);m.castShadow=true;m.receiveShadow=true;scene.add(m);MAP.rayMeshes.push(m);MAP.camBlockers.push(m);}
-{const mat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.75,metalness:0.05});const m=new THREE.Mesh(merge(SHL),mat);m.castShadow=true;m.receiveShadow=true;scene.add(m);MAP.rayMeshes.push(m);}
-{const mat=new THREE.MeshStandardMaterial({color:0xff5a2a,emissive:0xff4a1a,emissiveIntensity:1.6,roughness:0.4,transparent:true,opacity:0.9});const m=new THREE.Mesh(merge(GLOW),mat);scene.add(m);XS.glow=mat;}
+if(SHL.length){const mat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.75,metalness:0.05});const m=new THREE.Mesh(merge(SHL),mat);m.castShadow=true;m.receiveShadow=true;scene.add(m);MAP.rayMeshes.push(m);}
+if(GLOW.length){const mat=new THREE.MeshStandardMaterial({color:0xff5a2a,emissive:0xff4a1a,emissiveIntensity:1.6,roughness:0.4,transparent:true,opacity:0.9});const m=new THREE.Mesh(merge(GLOW),mat);scene.add(m);XS.glow=mat;}
 }
 window.SNIPER_XS=XS;
 // boundary posts (orange-topped forestry markers)
@@ -3669,7 +3670,7 @@ function buildMap(){const N=mapCv.width;const img=mctx.createImageData(N,N);cons
   mctx.fillStyle='#d8d2c2';mctx.fillRect(S(HUT.x)-5,S(HUT.z)-4,10,8);
   {const f=XS.farm;mctx.fillStyle='#c9a46a';mctx.fillRect(S(f.x-16.5)-1,S(f.z-10.6),S(f.x-5.5)-S(f.x-16.5)+2,S(f.z-3.4)-S(f.z-10.6)+1);mctx.fillRect(S(f.x-15.6)-1,S(f.z+4.8),S(f.x-6.4)-S(f.x-15.6)+2,S(f.z+11.2)-S(f.z+4.8)+1);mctx.fillStyle='#b5523e';mctx.fillRect(S(f.x+6.5)-1,S(f.z-9),S(f.x+13.5)-S(f.x+6.5)+2,S(f.z+9)-S(f.z-9));
    const l=XS.look;mctx.fillStyle='#d8d2c2';mctx.fillRect(S(l.x)-3,S(l.z)-3,6,6);mctx.strokeStyle='#a8392b';mctx.lineWidth=1.5;mctx.strokeRect(S(l.x)-4,S(l.z)-4,8,8);
-   const sh=XS.shrine;mctx.fillStyle='#ffd34d';mctx.fillRect(S(sh.x)-1,S(sh.z)-5,2,10);mctx.fillRect(S(sh.x)-3.5,S(sh.z)-2.5,7,2);}
+   const sh=XS.shrine;if(XS_SHRINE){mctx.fillStyle='#ffd34d';mctx.fillRect(S(sh.x)-1,S(sh.z)-5,2,10);mctx.fillRect(S(sh.x)-3.5,S(sh.z)-2.5,7,2);}}
   mctx.fillStyle='#bdbab0';mctx.beginPath();mctx.moveTo(S(SUMMIT.x),S(SUMMIT.z)-7);mctx.lineTo(S(SUMMIT.x)+6,S(SUMMIT.z)+5);mctx.lineTo(S(SUMMIT.x)-6,S(SUMMIT.z)+5);mctx.fill();
   mapBase=mctx.getImageData(0,0,N,N);}
 // full map: free the mouse while it is open so you can click a spot (development teleport)
@@ -3936,7 +3937,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=312;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=314;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
