@@ -3943,7 +3943,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=333;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=335;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5414,10 +5414,11 @@ function secTeam(){if(!MPM.on||!NT.room||(NT.M.r|0)<1)return 1;const odd=NT.M.r%
 function secHostTeam(){return (NT.M.r%2===1)?1:2;}
 function secRel(own){return own===0?0:(own===secTeam()?1:2);}
 function secDepth(i,team){return team===1?SEC_DEF[i].dp:4-SEC_DEF[i].dp;}
-function secReset(){SECT.s.forEach((s,i)=>{s.own=i<=2?1:i>=4?2:0;s.cap=0;s.by=0;});SECT.launch=0;SECT.deadT=-1;SECT.rsp=-1;SECT.prevOwn=SECT.s.map(s=>s.own);
+function secReset(){SECT.s.forEach((s,i)=>{s.own=i===0?1:i===6?2:0;s.cap=0;s.by=0;});SECT.launch=0;SECT.deadT=-1;SECT.rsp=-1;SECT.prevOwn=SECT.s.map(s=>s.own);
   try{if(SILO.built&&SILO.st!=='idle')siloReset();}catch(e){}}
 function secArmed(team){const n=SECT.s.reduce((a,s)=>a+(s.own===team?1:0),0);return SECT.s[3].own===team&&n>=SEC_ARM;}
-function secAttackable(i,team){const s=SECT.s[i];return s.own!==team&&SEC_DEF[i].adj.some(j=>SECT.s[j].own===team);}
+function secAttackable(i,team){const s=SECT.s[i];if(s.own===team)return false;if(i===3){const mine=team===1?[1,2]:[4,5];return mine.every(j=>SECT.s[j].own===team);}   // the centre comes last: you need both towers on your own side first
+  return SEC_DEF[i].adj.some(j=>SECT.s[j].own===team);}
 function secPlayers(){const out=[],t=secTeam();out.push({team:t,x:player.pos.x,z:player.pos.z,al:player.alive&&MPM.hp>0});
   if(MPM.on&&NT.opp&&RPS.pos&&RPS.r===NT.M.r)out.push({team:3-t,x:RPS.pos.x,z:RPS.pos.z,al:!!RPS.al});return out;}
 // the host (or single player) runs the capture
@@ -5509,7 +5510,7 @@ function secHudDraw(){const show=playing&&!mapOpen;secCv.style.display=show?'blo
   if(S.built&&S.st==='count'&&MPM.on){t='MISSILE LAUNCH · '+Math.max(0,Math.ceil(SEC_CT-S.t))+' s';col='#ff7a4a';}
   else if(secArmed(mine)){t='MISSILE ARMED · L at the silo';col='#ffd24a';}
   else if(secArmed(3-mine)){t='ENEMY MISSILE ARMED · retake a sector';col='#ff7a4a';}
-  else{const n=SEC_DEF.findIndex((d,i)=>Math.hypot(px-d.x,pz-d.z)<d.r);if(n>=0){const s=SECT.s[n];if(s.own===mine)t=SEC_DEF[n].n+' · held';else if(!secAttackable(n,mine))t=SEC_DEF[n].n+' · take the sector next to it first';else if(s.cap>0)t=(s.by===mine?'Capturing ':'Losing ')+SEC_DEF[n].n+' · '+Math.round(s.cap*100)+'%'+((s.in===3)?' · contested':'');else t=SEC_DEF[n].n+' · stand here to capture';}}
+  else{const n=SEC_DEF.findIndex((d,i)=>Math.hypot(px-d.x,pz-d.z)<d.r);if(n>=0){const s=SECT.s[n];if(s.own===mine)t=SEC_DEF[n].n+' · held';else if(!secAttackable(n,mine))t=SEC_DEF[n].n+(n===3?' · hold both your towers first':' · take the sector next to it first');else if(s.cap>0)t=(s.by===mine?'Capturing ':'Losing ')+SEC_DEF[n].n+' · '+Math.round(s.cap*100)+'%'+((s.in===3)?' · contested':'');else t=SEC_DEF[n].n+' · stand here to capture';}}
   if(t){c.font='600 12px "IBM Plex Mono", monospace';c.textAlign='center';c.textBaseline='alphabetic';c.lineWidth=4;c.strokeStyle='rgba(0,0,0,0.85)';c.strokeText(t,W/2,82);c.fillStyle=col;c.fillText(t,W/2,82);}}
 secReset();
 window.SNIPER_SEC={DEF:SEC_DEF,S:SECT,sim:secSim,team:secTeam,armed:secArmed,respawn:secRespawn,reset:secReset,frame:secFrame,hud:secHudDraw};
@@ -5518,12 +5519,12 @@ window.SNIPER_SILO={S:SILO,build:siloBuild,step:siloStep,launch:siloLaunch,reset
 // ================= UGV: a tracked robot (Termit style) that patrols round the silo with a .50 cal on a remote weapon station =================
 // Host runs it. It spots people by range and line of sight (less range when you crouch or lie prone), drives in when you are beyond its firing range,
 // stops and fires bursts of real ballistic rounds (every third is a tracer). Shoot its optic to blind it; enough hits and it burns out.
-const UGV_DEF={uOn:1,uPatrol:80,uSpd:2.2,uChase:5,uLeash:420,uSee:300,uReact:3,uMem:20,uRange:200,uTurn:70,uRpm:500,uBurst:3,uPause:1.6,uSpread:6,uDmg:25,uHp:1100,uRespawn:10};
+const UGV_DEF={uOn:1,uPatrol:150,uSpd:2.5,uChase:5,uLeash:420,uSee:300,uReact:3,uMem:20,uRange:200,uTurn:70,uRpm:500,uBurst:3,uPause:1.6,uSpread:6,uDmg:25,uHp:1200,uRespawn:240};
 for(const k in UGV_DEF){GAME_DEF[k]=UGV_DEF[k];if(GAME[k]==null)GAME[k]=UGV_DEF[k];}
 try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in UGV_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 // ---- several UGVs: each has its own settings (UGC[i]) and its own patrol point given as a grid reference (E, N metres, the same grid as the map)
 const UGKEYS=Object.keys(UGV_DEF).filter(k=>k!=='uOn');
-UGV_DEF.uCnt=1;GAME_DEF.uCnt=1;if(GAME.uCnt==null)GAME.uCnt=1;
+UGV_DEF.uCnt=2;GAME_DEF.uCnt=2;if(GAME.uCnt==null)GAME.uCnt=2;
 try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v&&isFinite(+v.uCnt))GAME.uCnt=Math.max(1,Math.min(6,Math.round(+v.uCnt)));}catch(e){}
 const UGC=[];
 try{const a=JSON.parse(localStorage.getItem('fsUgc')||'null');if(Array.isArray(a))a.forEach((c,i)=>{if(c&&typeof c==='object')UGC[i]=c;});}catch(e){}
