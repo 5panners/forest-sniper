@@ -3943,7 +3943,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=335;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=336;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5434,9 +5434,10 @@ function secSim(dt){const P=secPlayers();
     s.by=T;s.cap+=dt/SEC_CAP;if(s.cap>=1){s.own=T;s.cap=0;s.by=0;}});}
 function secWin(team,why){const M=NT.M;if(M.ph!=='live')return;const hostWins=team===secHostTeam();if(hostWins){M.sc[0]++;M.lw='h';}else{M.sc[1]++;M.lw='g';}M.ph='end';M.left=6;M.why=why;try{mpUI();}catch(e){}}
 function siloAbort(){const S=SILO;if(!S.built||S.st!=='count')return;S.st='idle';S.t=0;S.hx=0;S.sfx=0;siloPose();SECT.launch=0;toast('Launch aborted · the silo is no longer armed');}
-// who spawns where: the front-most sector you hold, away from the other player
+// who spawns where: the held sector (or home) nearest to where you died
 function secSpawnFor(team){const opp=(MPM.on&&NT.opp&&RPS.pos)?RPS.pos:null;let best=-1,bs=-1e9;
-  SEC_DEF.forEach((d,i)=>{if(SECT.s[i].own!==team)return;let sc=secDepth(i,team)*1000+Math.random();if(opp){const od=Math.hypot(opp.x-d.x,opp.z-d.z);sc+=Math.min(od,300);if(od<90)sc-=2500;}if(sc>bs){bs=sc;best=i;}});
+  SEC_DEF.forEach((d,i)=>{if(SECT.s[i].own!==team)return;let sc=-Math.hypot(player.pos.x-d.x,player.pos.z-d.z);if(opp&&Math.hypot(opp.x-d.x,opp.z-d.z)<60)sc-=5000;
+  if(sc>bs){bs=sc;best=i;}});
   if(best<0)best=team===1?0:6;const d=SEC_DEF[best],home=SEC_DEF[team===1?0:6];let x=d.x,z=d.z;
   if(best!==0&&best!==6){const dx=home.x-d.x,dz=home.z-d.z,L=Math.hypot(dx,dz)||1;x+=dx/L*(d.k==='C'?24:14);z+=dz/L*(d.k==='C'?24:14);}
   return {x,z,i:best};}
