@@ -80,7 +80,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 #mpDx{flex-basis:100%;background:#252c1d;color:inherit;border:1px solid #435034;border-radius:4px;padding:6px 8px;font:12px var(--f-mono);resize:vertical;word-break:break-all}
 .mpsep{flex-basis:100%;height:0}
 .mpsub{font:600 12px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-#mpBan{position:fixed;left:50%;top:calc(100px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:4;pointer-events:none;font:600 14px var(--f-mono);text-align:center;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+#mpBan{position:fixed;left:50%;top:calc(118px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:4;pointer-events:none;font:600 14px var(--f-mono);text-align:center;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
 #pingEl{position:fixed;left:max(16px,env(safe-area-inset-left,0px));top:calc(50px + env(safe-area-inset-top,0px));z-index:3;pointer-events:none;font:12px/1.5 var(--f-mono);white-space:pre}
 #netDbg{position:fixed;left:max(16px,env(safe-area-inset-left,0px));top:calc(190px + env(safe-area-inset-top,0px));z-index:3;pointer-events:none;font:11px/1.45 var(--f-mono);white-space:pre}
 #resetBtn:disabled{opacity:.4;cursor:default}
@@ -1029,9 +1029,10 @@ function hFull(x,z){return fieldsAt(x,z).h;}
 const SEATS=[[-250,-40,HP],[150,100,PI],[-120,-280,0],[410,-410,-HP],[-380,350,0],[250,300,PI],[-430,-430,HP],[60,250,-HP],[420,40,-HP]];
 const CLEARS=SEATS.map(s=>[s[0]+Math.sin(s[2])*34,s[1]+Math.cos(s[2])*34,30]);
 const SUM0={x:230,z:-180};
-const P1_SPAWN={x:CLEARS[3][0],z:CLEARS[3][1]};   // player 1 spawn: centre of the NE clearing
+const SEC_HOME={e:{x:375,z:-50},w:{x:-375,z:-150}};   // the two home sectors (east and west edge of the map): the round starts here
+const P1_SPAWN={x:SEC_HOME.e.x,z:SEC_HOME.e.z};   // east team's spawn
 const DEADC={x:-320,z:-250};
-const SILO_XZ={x:6,z:80};   // missile silo: the middle of the map, on the east bank of the stream, clear of the chairlift
+const SILO_XZ={x:-30,z:100};   // missile silo: the middle of the map, a little south of centre, east of the stream and clear of the chairlift
 function meadowK(x,z){let c=fbm(x/170+300,z/170-200,2)-0.07;
   {const d=Math.hypot(x-SILO_XZ.x,z-SILO_XZ.z);if(d<48)c=Math.max(c,0.3+0.3*(1-d/(30*(1+0.25*vn(x/14,z/14)))));}   // clearing round the silo
   for(const q of CLEARS){const d=Math.hypot(x-q[0],z-q[1]);if(d<q[2]*1.6)c=Math.max(c,0.3+0.3*(1-d/(q[2]*(1+0.25*vn(x/15,z/15)))));}
@@ -1132,7 +1133,7 @@ const XS=(()=>{
   return out;})();
 // true where the extra structures stand (no trees, rocks, logs or ferns)
 const XS_SHRINE=false;
-function xsClear(x,z){const s=XS.shrine,l=XS.look,f=XS.farm;return (XS_SHRINE&&Math.hypot(x-s.x,z-s.z)<4.5)||Math.hypot(x-l.x,z-l.z)<18||(Math.abs(x-f.x)<27&&Math.abs(z-f.z)<16);}
+function xsClear(x,z){const s=XS.shrine,l=XS.look,f=XS.farm;return (XS_SHRINE&&Math.hypot(x-s.x,z-s.z)<4.5)||Math.hypot(x-l.x,z-l.z)<18||(Math.abs(x-f.x)<27&&Math.abs(z-f.z)<16)||Math.hypot(x-SEC_HOME.e.x,z-SEC_HOME.e.z)<16||Math.hypot(x-SEC_HOME.w.x,z-SEC_HOME.w.z)<16;}
 function addRock(x,z,w,h,d,ry,moss,col,yOff){const g=Math.min(groundH(x-w*0.35,z-d*0.35),groundH(x+w*0.35,z+d*0.35),groundH(x-w*0.35,z+d*0.35),groundH(x+w*0.35,z-d*0.35));
   const r={x,z,y:(yOff!=null?yOff:g-h*0.28),w,h,d,ry,moss,col:col!==false,i:ROCKS.length};ROCKS.push(r);return r;}
 const _nTor0=ROCKS.length;
@@ -1904,6 +1905,7 @@ function groundColor(x,z,h,sl,dS,cw,dR,le,out){
   else if(sl>0.72)c=PAL.mossRock;
   else if(Math.hypot(x-TWPOS.x,z-TWPOS.z)<34||Math.hypot(x-TWPOS2.x,z-TWPOS2.z)<34||Math.hypot(x-TWPOS3.x,z-TWPOS3.z)<34||Math.hypot(x-TWPOS4.x,z-TWPOS4.z)<34)c=n1>0?PAL.heath:PAL.dry;
   else if((Math.abs(x-XS.farm.x)<23+4*n1&&Math.abs(z-XS.farm.z)<12+3*n1)||Math.hypot(x-XS.look.x,z-XS.look.z)<9+3*n1)c=n1>0.1?PAL.dry:PAL.heath;   // trodden farmyard and the ground under the lookout
+  else if(Math.hypot(x-SEC_HOME.e.x,z-SEC_HOME.e.z)<13+3*n1||Math.hypot(x-SEC_HOME.w.x,z-SEC_HOME.w.z)<13+3*n1)c=n1>0.1?PAL.dry:PAL.heath;   // trodden ground at the two home sectors
   else if(Math.hypot(x-SILO_POS.x-1.6,z-SILO_POS.z)<20)c=n1>0.15?PAL.heath:PAL.dry;   // worn ground round the missile silo   // trampled bare ground round the comms tower, like the tor
   else{const mk=meadowK(x,z),dd=deadK(x,z);
     if(dd>0&&mk<0.3)c=n1>0?PAL.dry:PAL.heath;
@@ -3345,7 +3347,7 @@ function setDeerCounts(m,f){if(MPM.guest){placeP2Stag();return;}   // the host's
   placeP2Stag();
 }
 // player 2 spawn (future 1v1 survival): a second hunter stands here for now (clone of the player model with its own clothes)
-const P2_SPAWN=V(-382,0,388);
+const P2_SPAWN=V(SEC_HOME.w.x,0,SEC_HOME.w.z);
 let P2M=null;const P2HB=[],P2PAIRS=[],P2RHB=[],P2LOOK={};
 function placeP2Stag(){if(P2M)return;P2_SPAWN.y=groundH(P2_SPAWN.x,P2_SPAWN.z);
   const keep={p:marine.position.clone(),r:marine.rotation.y};
@@ -3673,6 +3675,7 @@ mapCv.addEventListener('contextmenu',e=>{e.preventDefault();if(!mapOpen)return;c
   WPT.on=true;WPT.x=x;WPT.z=z;toast('Waypoint set · '+Math.round(x)+' E  '+Math.round(-z)+' N · '+Math.round(wptDist())+' m');});
 function drawMap(){if(!mapBase)buildMap();const N=mapCv.width;mctx.putImageData(mapBase,0,0);const S=v=>(v+FE)/(FE*2)*N;
   if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));if($('optDeerMap').checked)BEARS.forEach(b=>drawBearMark(mctx,S(b.x),S(b.z),b,0.9,0));if($('optDeerMap').checked&&typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mctx,S(u.x),S(u.z),u,0.9));
+  try{secDrawMap(mctx,S,N);}catch(e){}
   SILO_SITES.forEach(q=>drawSiloMark(mctx,S(q.x),S(q.z),1,0,true));
   try{zipDrawMap(mctx,S);}catch(e){}
   try{uavDrawMap(mctx,S);}catch(e){}
@@ -3792,6 +3795,7 @@ function drawCompass(){const W=cmp.width,H=cmp.height,c=cctx;c.clearRect(0,0,W,H
     c.strokeStyle=major?'#f1e6c0':'rgba(240,230,200,0.55)';c.lineWidth=2;c.beginPath();c.moveTo(x,H);c.lineTo(x,H-(major?16:mid?11:7));c.stroke();
     if(major){c.font=(n%90===0?'700 23px':'600 17px')+' "IBM Plex Mono", monospace';c.fillStyle=n===0?'#ff6a4a':'#f1e6c0';c.fillText(CARD[n],x,H-21);}
     else if(n%15===0){c.font='13px "IBM Plex Mono", monospace';c.fillStyle='rgba(240,230,200,0.7)';c.fillText(String(n).padStart(3,'0'),x,H-15);}}
+  try{secDrawCompass(c,W,H,brg,SPAN,ppd);}catch(e){}
   if(WPT.on){let d=wptBrg()-brg;d=((d+540)%360)-180;const lim=SPAN/2,out=Math.abs(d)>lim-3,x=W/2+clamp(d,-(lim-3),lim-3)*ppd;
     c.save();c.translate(x,H*0.42);c.fillStyle='#35d6ff';c.strokeStyle='#04202a';c.lineWidth=2.5;c.beginPath();
     if(out){const sg=d>0?1:-1;c.moveTo(sg*9,0);c.lineTo(-sg*5,-9);c.lineTo(-sg*5,9);}else{c.moveTo(0,-13);c.lineTo(11,0);c.lineTo(0,13);c.lineTo(-11,0);}c.closePath();c.fill();c.stroke();
@@ -3806,6 +3810,7 @@ function drawMini(){mini.parentNode.style.display=miniOn?'':'none';if(!miniOn)re
   mx.clearRect(0,0,W,W);mx.save();mx.beginPath();mx.arc(W/2,W/2,W/2-3,0,PI*2);mx.clip();mx.fillStyle='#0c120a';mx.fillRect(0,0,W,W);
   mx.translate(W/2,W/2);mx.rotate(th);mx.scale(sc,sc);mx.drawImage(baseCv,-(p.x+FE)*ppm,-(p.z+FE)*ppm);
   if($('optDeerMap').checked){const k=1/sc;DEER.forEach(d=>drawDeerMark(mx,(d.x-p.x)*ppm,(d.z-p.z)*ppm,d,k*1.2,th));BEARS.forEach(b=>drawBearMark(mx,(b.x-p.x)*ppm,(b.z-p.z)*ppm,b,k*1.5,th));if(typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mx,(u.x-p.x)*ppm,(u.z-p.z)*ppm,u,k*1.5));}
+  try{secDrawMini(mx,p,ppm,1/sc,th);}catch(e){}
   SILO_SITES.forEach(q=>drawSiloMark(mx,(q.x-p.x)*ppm,(q.z-p.z)*ppm,1/sc*1.5,th,false));
   try{zipDrawMini(mx,p,ppm);}catch(e){}
   try{uavDrawMini(mx,p,ppm,1/sc,th);}catch(e){}
@@ -3935,10 +3940,10 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=329;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=332;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
-  netStep(dt);resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
+  netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
   stepBolt(dt);stepBullets(dt);stepParts(dt);stepBrass(dt);
   stepDeer(dt);stepHerds(dt);stepBirds(dt,clockT);stepMarks(dt);if(fallFX)fallFX.step(dt);_rdt=dt;
   updateCamera(dt);updateLOD();updListener();
@@ -3957,7 +3962,7 @@ function update(dt){
   const edge=PLAY-Math.max(Math.abs(player.pos.x),Math.abs(player.pos.z));warnEl.textContent=edge<20&&!scoped?'Edge of the operating area':'';
   if(mapOpen){drawMap();const g=$('mapGrid');if(g)g.textContent='You are at grid '+Math.round(player.pos.x)+' E  '+Math.round(-player.pos.z)+' N  ·  '+Math.round(player.pos.y)+' m';}
   cmp.style.display=playing?'block':'none';if(playing)drawCompass();
-  drawMini();
+  drawMini();try{secHudDraw();}catch(e){}
 }
 let paused=false;
 let lastF=performance.now();
@@ -5333,10 +5338,11 @@ function siloRoar(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,6000);if(!c)return;const
 function siloTryLaunch(){const S=SILO;if(!S.built||!playing||!player.alive)return false;
   if(Math.hypot(player.pos.x-S.con.x,player.pos.z-S.con.z)>3)return false;
   if(S.st!=='idle'){toast(S.st==='gone'?'The silo is empty':'Launch sequence already running');return true;}
+  if(MPM.on&&NT.M.ph==='live'){if(!secArmed(secTeam())){toast('Not armed · hold the centre and at least '+SEC_ARM+' of 7 sectors');return true;}if(!MPM.guest)SECT.launch=secTeam();}
   siloLaunch(true);return true;}
 function siloLaunch(mine){const S=SILO;if(!S.built||S.st!=='idle')return;S.st='count';S.t=0;S.sfx=0;
   toast(mine?'Launch sequence started · stand clear of the silo':'The other player has started a missile launch!');try{siloKlaxon();}catch(e){}
-  if(mine){try{if(MPM.on&&NT.room)NT.room.emit('silo',{}).catch(()=>{});}catch(e){}}}
+  if(mine){try{if(MPM.on&&NT.room)NT.room.emit('silo',{t:secTeam()}).catch(()=>{});}catch(e){}}}
 function siloReset(){const S=SILO;if(!S.built)return;S.st='idle';S.t=0;S.hx=0;S.v=0;S.flame.visible=false;if(S.glow)S.glow.visible=false;S.mis.visible=true;siloPose();
   try{for(const n of RES_NODES)if(n.silo&&!n.got)resSetGot(n,true);}catch(e){}}
 function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(now-(S.lt||now))/1000);S.lt=now;
@@ -5353,7 +5359,8 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
     if(S.t>1.5&&S.sfx<1){S.sfx=1;try{siloGrind();}catch(e){}toast('Silo hatch opening');}
     const u=Math.max(0,Math.min(1,(S.t-1.5)/5));S.hx=6.2*u*u*(3-2*u);siloPose();
     {const dp=Math.hypot(player.pos.x-S.x,player.pos.z-S.z);if(S.t>1.5&&S.t<6.5&&dp<60)shake=Math.max(shake,GAME.siloShake*0.18*(1-dp/60));}
-    if(S.t>=8){S.st='fly';S.ft=0;S.v=0;S.bacc=0;S.tacc=0;S.pos=new THREE.Vector3(S.x,S.y0-19.4*S.K,S.z);S.dir=new THREE.Vector3(0,1,0);S.flame.visible=true;if(S.glow)S.glow.visible=true;try{siloRoar();}catch(e){}toast('Ignition!');}
+    if(MPM.on&&NT.M.ph==='live'&&S.t>8&&Math.floor(S.t/7)!==S.kx){S.kx=Math.floor(S.t/7);try{siloKlaxon();}catch(e){}}
+    if(S.t>=((MPM.on&&NT.M.ph==='live')?SEC_CT:8)){S.st='fly';S.ft=0;S.v=0;S.bacc=0;S.tacc=0;S.pos=new THREE.Vector3(S.x,S.y0-19.4*S.K,S.z);S.dir=new THREE.Vector3(0,1,0);S.flame.visible=true;if(S.glow)S.glow.visible=true;try{siloRoar();}catch(e){}toast('Ignition!');}
     return;}
   // flight: slow climb out of the tube, then hard acceleration and a pitch-over to the north-east
   S.ft+=dt;const f=S.ft;
@@ -5375,6 +5382,123 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
   if(f>110||S.pos.y>S.y0+9000){S.st='gone';S.mis.visible=false;S.flame.visible=false;if(S.glow)S.glow.visible=false;}}
 addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyL')siloTryLaunch();});
 resReset=(f=>function(){f.apply(this,arguments);try{siloReset();}catch(e){}})(resReset);
+// ================= sector capture: seven sectors in two lanes (east home · Tower 1 / Tower 4 · centre silo · Tower 3 / Tower 2 · west home) =================
+// The host decides who owns what (it knows both positions); the guest just draws the state it is sent. Sides swap every round, so sectors are coloured by "mine / theirs", not by east / west.
+const SEC_CAP=35, SEC_RESPAWN=8, SEC_ARM=5, SEC_CT=30;
+const SEC_DEF=[
+  {k:'E', n:'East home',            x:SEC_HOME.e.x,x2:0,z:SEC_HOME.e.z,r:40,adj:[1,2],dp:0,fo:8, nm:'EAST HOME'},
+  {k:'T1',n:'Tower 1',              x:TWPOS.x, z:TWPOS.z, r:42,adj:[0,3],dp:1,fo:8, nm:'TOWER 1'},
+  {k:'T4',n:'Tower 4',              x:TWPOS4.x,z:TWPOS4.z,r:42,adj:[0,3],dp:1,fo:8, nm:'TOWER 4'},
+  {k:'C', n:'Centre · missile silo',x:SILO_POS.x,z:SILO_POS.z,r:48,adj:[1,2,4,5],dp:2,fo:16,nm:'CENTRE'},
+  {k:'T3',n:'Tower 3',              x:TWPOS3.x,z:TWPOS3.z,r:42,adj:[3,6],dp:3,fo:8, nm:'TOWER 3'},
+  {k:'T2',n:'Tower 2',              x:TWPOS2.x,z:TWPOS2.z,r:42,adj:[3,6],dp:3,fo:8, nm:'TOWER 2'},
+  {k:'W', n:'West home',            x:SEC_HOME.w.x,z:SEC_HOME.w.z,r:40,adj:[4,5],dp:4,fo:8, nm:'WEST HOME'}];
+const SECT={s:SEC_DEF.map(()=>({own:0,cap:0,by:0})),launch:0,deadT:-1,prevOwn:null,rsp:-1,warn:0};
+const SEC_COL={0:'#d8d8d0',1:'#3d9bff',2:'#ff5a4a'};   // relative: 0 neutral · 1 mine · 2 theirs
+function secTeam(){if(!MPM.on||!NT.room||(NT.M.r|0)<1)return 1;const odd=NT.M.r%2===1;return MPM.guest?(odd?2:1):(odd?1:2);}   // 1 = east, 2 = west; the host starts east on odd rounds
+function secHostTeam(){return (NT.M.r%2===1)?1:2;}
+function secRel(own){return own===0?0:(own===secTeam()?1:2);}
+function secDepth(i,team){return team===1?SEC_DEF[i].dp:4-SEC_DEF[i].dp;}
+function secReset(){SECT.s.forEach((s,i)=>{s.own=i<=2?1:i>=4?2:0;s.cap=0;s.by=0;});SECT.launch=0;SECT.deadT=-1;SECT.rsp=-1;SECT.prevOwn=SECT.s.map(s=>s.own);
+  try{if(SILO.built&&SILO.st!=='idle')siloReset();}catch(e){}}
+function secArmed(team){const n=SECT.s.reduce((a,s)=>a+(s.own===team?1:0),0);return SECT.s[3].own===team&&n>=SEC_ARM;}
+function secAttackable(i,team){const s=SECT.s[i];return s.own!==team&&SEC_DEF[i].adj.some(j=>SECT.s[j].own===team);}
+function secPlayers(){const out=[],t=secTeam();out.push({team:t,x:player.pos.x,z:player.pos.z,al:player.alive&&MPM.hp>0});
+  if(MPM.on&&NT.opp&&RPS.pos&&RPS.r===NT.M.r)out.push({team:3-t,x:RPS.pos.x,z:RPS.pos.z,al:!!RPS.al});return out;}
+// the host (or single player) runs the capture
+function secSim(dt){const P=secPlayers();
+  SEC_DEF.forEach((d,i)=>{const s=SECT.s[i],inn=[false,false,false];for(const p of P)if(p.al&&Math.hypot(p.x-d.x,p.z-d.z)<d.r)inn[p.team]=true;
+    s.in=(inn[1]?1:0)+(inn[2]?2:0);
+    if(inn[1]&&inn[2])return;   // contested: the bar freezes
+    const T=inn[1]?1:inn[2]?2:0;
+    if(!T){s.cap=Math.max(0,s.cap-dt/(SEC_CAP*3));if(s.cap===0)s.by=0;return;}
+    if(s.own===T){s.cap=Math.max(0,s.cap-dt/SEC_CAP*2);if(s.cap===0)s.by=0;return;}
+    if(!secAttackable(i,T))return;
+    if(s.by!==T&&s.cap>0){s.cap=Math.max(0,s.cap-dt/SEC_CAP);if(s.cap===0)s.by=T;return;}
+    s.by=T;s.cap+=dt/SEC_CAP;if(s.cap>=1){s.own=T;s.cap=0;s.by=0;}});}
+function secWin(team,why){const M=NT.M;if(M.ph!=='live')return;const hostWins=team===secHostTeam();if(hostWins){M.sc[0]++;M.lw='h';}else{M.sc[1]++;M.lw='g';}M.ph='end';M.left=6;M.why=why;try{mpUI();}catch(e){}}
+function siloAbort(){const S=SILO;if(!S.built||S.st!=='count')return;S.st='idle';S.t=0;S.hx=0;S.sfx=0;siloPose();SECT.launch=0;toast('Launch aborted · the silo is no longer armed');}
+// who spawns where: the front-most sector you hold, away from the other player
+function secSpawnFor(team){const opp=(MPM.on&&NT.opp&&RPS.pos)?RPS.pos:null;let best=-1,bs=-1e9;
+  SEC_DEF.forEach((d,i)=>{if(SECT.s[i].own!==team)return;let sc=secDepth(i,team)*1000+Math.random();if(opp){const od=Math.hypot(opp.x-d.x,opp.z-d.z);sc+=Math.min(od,300);if(od<90)sc-=2500;}if(sc>bs){bs=sc;best=i;}});
+  if(best<0)best=team===1?0:6;const d=SEC_DEF[best],home=SEC_DEF[team===1?0:6];let x=d.x,z=d.z;
+  if(best!==0&&best!==6){const dx=home.x-d.x,dz=home.z-d.z,L=Math.hypot(dx,dz)||1;x+=dx/L*(d.k==='C'?24:14);z+=dz/L*(d.k==='C'?24:14);}
+  return {x,z,i:best};}
+function secPlace(x,z){const c=SEC_DEF[3];const yaw=Math.atan2(-(c.x-x),-(c.z-z));
+  player.action=null;player.slide=null;player.mantle=null;player.pos.set(x,groundH(x,z)+0.05,z);player.vel.set(0,0,0);player.stance='stand';snapLayer('idle');player.alive=true;player.ammo=MAG;player.reloadT=-1;boltT=-1;MPM.hp=100;
+  player.yaw=yaw;camYaw=yaw;camPitch=-0.05;camPivot.copy(player.pos).add(V(0,1.68,0));for(const b of bullets){if(b.tr)relP(b.tr);}bullets.length=0;try{NT.pend.clear();}catch(e){}}
+function secRespawn(){const sp=secSpawnFor(secTeam());secPlace(sp.x,sp.z);toast('Respawned at '+SEC_DEF[sp.i].n);}
+function secNotify(){const prev=SECT.prevOwn;if(!prev){SECT.prevOwn=SECT.s.map(s=>s.own);return;}
+  SECT.s.forEach((s,i)=>{if(prev[i]!==s.own){const rel=secRel(s.own);if(rel===1){toast(SEC_DEF[i].n+' captured');try{tone(660,0.1,0.05,'sine');setTimeout(()=>tone(990,0.16,0.05,'sine'),110);}catch(e){}}
+      else if(rel===2){toast(SEC_DEF[i].n+' lost');try{tone(420,0.14,0.06,'sawtooth');setTimeout(()=>tone(280,0.22,0.06,'sawtooth'),130);}catch(e){}}
+      prev[i]=s.own;}});}
+// every client, every frame
+function secFrame(dt){
+  const live=MPM.on&&NT.room&&NT.M.ph==='live';
+  if(!MPM.on||(MPM.on&&!MPM.guest&&live)){if(!MPM.on||live)secSim(dt);}
+  if(MPM.on&&!MPM.guest&&live){const M=NT.M;
+    if(SECT.s[0].own===2)secWin(2,'east home captured');else if(SECT.s[6].own===1)secWin(1,'west home captured');
+    else if(SILO.built&&SILO.st==='fly'&&SECT.launch){secWin(SECT.launch,'missile launched');}
+    if(SILO.built&&SILO.st==='count'&&SECT.launch&&!secArmed(SECT.launch)){siloAbort();try{NT.room.emit('silo',{ab:1}).catch(()=>{});}catch(e){}}}
+  secNotify();
+  // respawn: dead players come back at their front sector after a short wait while the round is running
+  if(live){if(!player.alive||MPM.hp<=0){if(SECT.deadT<0)SECT.deadT=0;SECT.deadT+=dt;SECT.rsp=Math.max(0,SEC_RESPAWN-SECT.deadT);if(SECT.deadT>=SEC_RESPAWN){SECT.deadT=-1;SECT.rsp=-1;secRespawn();}}else{SECT.deadT=-1;SECT.rsp=-1;}}
+  else{SECT.deadT=-1;SECT.rsp=-1;}
+  secWorldStep(dt);}
+// ---- the world: a ring on the ground, a flag and a light pillar at every sector
+const SECW=[];
+(function secBuild(){const rg=(d)=>{const N=96,pos=[],idx=[];for(let i=0;i<=N;i++){const a=i/N*PI*2,c=Math.cos(a),s=Math.sin(a);for(const k of [-0.5,0.5]){const x=d.x+c*(d.r+k),z=d.z+s*(d.r+k);pos.push(x,groundH(x,z)+0.3,z);}}
+    for(let i=0;i<N;i++){const a=i*2;idx.push(a,a+1,a+2,a+1,a+3,a+2);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);return g;};
+  SEC_DEF.forEach((d,i)=>{const ring=new THREE.Mesh(rg(d),new THREE.MeshBasicMaterial({color:0xd8d8d0,transparent:true,opacity:0.7,side:THREE.DoubleSide,depthWrite:false}));ring.renderOrder=3;ring.frustumCulled=false;scene.add(ring);
+    const fx=d.x+d.fo,fz=d.z,gy=groundH(fx,fz);const grp=new THREE.Group();grp.position.set(fx,gy,fz);
+    const pole=new THREE.Mesh(new THREE.BoxGeometry(0.14,7,0.14),new THREE.MeshStandardMaterial({color:0x3a3a36,roughness:0.8}));pole.position.y=3.5;grp.add(pole);
+    const fl=new THREE.Mesh(new THREE.BoxGeometry(2.2,1.3,0.05),new THREE.MeshBasicMaterial({color:0xd8d8d0}));fl.position.set(1.15,6.2,0);grp.add(fl);
+    const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.6,0.6,90,10,1,true),new THREE.MeshBasicMaterial({color:0xd8d8d0,transparent:true,opacity:0.16,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide}));beam.position.y=45;beam.renderOrder=4;grp.add(beam);
+    scene.add(grp);SECW.push({ring,fl,beam,grp,key:-1});});})();
+const _sc=new THREE.Color();
+function secWorldStep(dt){const t=performance.now()/1000;SEC_DEF.forEach((d,i)=>{const s=SECT.s[i],w=SECW[i];const rel=secRel(s.own),relBy=s.by?secRel(s.by):0;
+    const key=rel*10+(s.cap>0?relBy+4:0);if(w.key!==key){w.key=key;_sc.set(SEC_COL[rel]);w.ring.material.color.copy(_sc);w.fl.material.color.copy(_sc);w.beam.material.color.set(SEC_COL[s.cap>0?relBy:rel]);}
+    w.beam.material.opacity=0.12+(s.cap>0?0.2*s.cap+0.06*Math.sin(t*6):0);});}
+// ---- drawing: map, minimap, compass and the top strip
+function secDrawMap(c,S,N){SEC_DEF.forEach(d=>{});const sc=N/(FE*2);
+  c.save();c.lineWidth=2;c.strokeStyle='rgba(255,214,90,0.5)';c.setLineDash([5,5]);SEC_DEF.forEach((d,i)=>d.adj.forEach(j=>{if(j>i){c.beginPath();c.moveTo(S(d.x),S(d.z));c.lineTo(S(SEC_DEF[j].x),S(SEC_DEF[j].z));c.stroke();}}));c.setLineDash([]);
+  SEC_DEF.forEach((d,i)=>{const s=SECT.s[i],rel=secRel(s.own),col=SEC_COL[rel],x=S(d.x),y=S(d.z),r=d.r*sc;
+    c.fillStyle=col+'33';c.strokeStyle=col;c.lineWidth=2.5;c.beginPath();c.arc(x,y,r,0,PI*2);c.fill();c.stroke();
+    if(s.cap>0){c.strokeStyle=SEC_COL[secRel(s.by)];c.lineWidth=4;c.beginPath();c.arc(x,y,r+3,-HP,-HP+PI*2*s.cap);c.stroke();}
+    c.fillStyle='#101410';c.beginPath();c.arc(x,y,9,0,PI*2);c.fill();c.strokeStyle=col;c.lineWidth=2;c.stroke();
+    c.fillStyle=col;c.font='700 10px "IBM Plex Mono", monospace';c.textAlign='center';c.textBaseline='middle';c.fillText(d.k,x,y+0.5);
+    c.textBaseline='alphabetic';c.lineWidth=3;c.strokeStyle='rgba(0,0,0,0.8)';c.font='600 10px "IBM Plex Mono", monospace';c.strokeText(d.nm,x,y+r+12);c.fillStyle='#fff';c.fillText(d.nm,x,y+r+12);});
+  c.restore();}
+function secDrawMini(c,p,ppm,k,th){SEC_DEF.forEach((d,i)=>{const s=SECT.s[i],col=SEC_COL[secRel(s.own)],x=(d.x-p.x)*ppm,y=(d.z-p.z)*ppm,r=d.r*ppm;
+    c.fillStyle=col+'2a';c.strokeStyle=col;c.lineWidth=2.2*k;c.beginPath();c.arc(x,y,r,0,PI*2);c.fill();c.stroke();
+    if(s.cap>0){c.strokeStyle=SEC_COL[secRel(s.by)];c.lineWidth=4*k;c.beginPath();c.arc(x,y,r,-HP,-HP+PI*2*s.cap);c.stroke();}
+    c.save();c.translate(x,y);c.rotate(-th);c.scale(k,k);c.fillStyle='#101410';c.beginPath();c.arc(0,0,8,0,PI*2);c.fill();c.strokeStyle=col;c.lineWidth=2;c.stroke();c.fillStyle=col;c.font='700 9px "IBM Plex Mono", monospace';c.textAlign='center';c.textBaseline='middle';c.fillText(d.k,0,0.5);c.restore();});}
+function secDrawCompass(c,W,H,brg,SPAN,ppd){SEC_DEF.forEach((d,i)=>{const dx=d.x-player.pos.x,dz=d.z-player.pos.z;let b=Math.atan2(dx,-dz)*180/PI;let a=((b-brg+540)%360)-180;if(Math.abs(a)>SPAN/2-6)return;
+    const x=W/2+a*ppd,col=SEC_COL[secRel(SECT.s[i].own)];c.save();c.translate(x,H*0.5);c.fillStyle='#101410';c.strokeStyle=col;c.lineWidth=2.5;c.beginPath();c.moveTo(0,-11);c.lineTo(11,0);c.lineTo(0,11);c.lineTo(-11,0);c.closePath();c.fill();c.stroke();
+    c.fillStyle=col;c.font='700 10px "IBM Plex Mono", monospace';c.textAlign='center';c.textBaseline='middle';c.fillText(d.k,0,0.5);c.restore();});}
+// top strip: seven pips in the layout of the map, my home on the left
+const secCv=document.createElement('canvas');secCv.width=300;secCv.height=88;secCv.id='secHud';document.body.appendChild(secCv);const secx=secCv.getContext('2d');
+{const st=document.createElement('style');st.textContent='#secHud{position:fixed;left:50%;top:calc(42px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:240px;height:70px;z-index:3;pointer-events:none;display:none}';document.head.appendChild(st);}
+const SEC_POS=[[0,0.5],[1,0.2],[1,0.8],[2,0.5],[3,0.8],[3,0.2],[4,0.5]];   // column, row (east team's view)
+function secHudDraw(){const show=playing&&!mapOpen;secCv.style.display=show?'block':'none';if(!show)return;const c=secx,W=300,H=88;c.clearRect(0,0,W,H);
+  const team=secTeam(),X=i=>{const col=SEC_POS[i][0];return 30+(team===1?col:4-col)*60;},Y=i=>14+SEC_POS[i][1]*38;
+  c.strokeStyle='rgba(255,255,255,0.35)';c.lineWidth=2;SEC_DEF.forEach((d,i)=>d.adj.forEach(j=>{if(j>i){c.beginPath();c.moveTo(X(i),Y(i));c.lineTo(X(j),Y(j));c.stroke();}}));
+  const px=player.pos.x,pz=player.pos.z;
+  SEC_DEF.forEach((d,i)=>{const s=SECT.s[i],rel=secRel(s.own),col=SEC_COL[rel],x=X(i),y=Y(i),here=Math.hypot(px-d.x,pz-d.z)<d.r;
+    c.fillStyle='rgba(12,18,10,0.85)';c.beginPath();c.arc(x,y,13,0,PI*2);c.fill();c.fillStyle=col+(rel?'cc':'88');c.beginPath();c.arc(x,y,10,0,PI*2);c.fill();
+    if(s.cap>0){c.strokeStyle=SEC_COL[secRel(s.by)];c.lineWidth=3.5;c.beginPath();c.arc(x,y,15,-HP,-HP+PI*2*s.cap);c.stroke();}
+    c.strokeStyle=here?'#fff':'rgba(0,0,0,0.6)';c.lineWidth=here?2.5:1.5;c.beginPath();c.arc(x,y,12,0,PI*2);c.stroke();
+    c.fillStyle='#10140f';c.font='700 9px "IBM Plex Mono", monospace';c.textAlign='center';c.textBaseline='middle';c.fillText(d.k,x,y+0.5);});
+  // status line
+  let t='',col='#f1e6c0';const mine=secTeam(),S=SILO;
+  if(S.built&&S.st==='count'&&MPM.on){t='MISSILE LAUNCH · '+Math.max(0,Math.ceil(SEC_CT-S.t))+' s';col='#ff7a4a';}
+  else if(secArmed(mine)){t='MISSILE ARMED · L at the silo';col='#ffd24a';}
+  else if(secArmed(3-mine)){t='ENEMY MISSILE ARMED · retake a sector';col='#ff7a4a';}
+  else{const n=SEC_DEF.findIndex((d,i)=>Math.hypot(px-d.x,pz-d.z)<d.r);if(n>=0){const s=SECT.s[n];if(s.own===mine)t=SEC_DEF[n].n+' · held';else if(!secAttackable(n,mine))t=SEC_DEF[n].n+' · take the sector next to it first';else if(s.cap>0)t=(s.by===mine?'Capturing ':'Losing ')+SEC_DEF[n].n+' · '+Math.round(s.cap*100)+'%'+((s.in===3)?' · contested':'');else t=SEC_DEF[n].n+' · stand here to capture';}}
+  if(t){c.font='600 12px "IBM Plex Mono", monospace';c.textAlign='center';c.textBaseline='alphabetic';c.lineWidth=4;c.strokeStyle='rgba(0,0,0,0.85)';c.strokeText(t,W/2,82);c.fillStyle=col;c.fillText(t,W/2,82);}}
+secReset();
+window.SNIPER_SEC={DEF:SEC_DEF,S:SECT,sim:secSim,team:secTeam,armed:secArmed,respawn:secRespawn,reset:secReset,frame:secFrame,hud:secHudDraw};
+
 window.SNIPER_SILO={S:SILO,build:siloBuild,step:siloStep,launch:siloLaunch,reset:siloReset};
 // ================= UGV: a tracked robot (Termit style) that patrols round the silo with a .50 cal on a remote weapon station =================
 // Host runs it. It spots people by range and line of sight (less range when you crouch or lie prone), drives in when you are beyond its firing range,
@@ -5821,11 +5945,11 @@ function mpAttach(room,kind,role,code,why){
 function mpLeave(quiet){const r=NT.room,wasG=MPM.guest;if(!quiet&&r&&NT.wasOpp)playGoodbye();NT.room=null;try{r&&r.leave();}catch(e){}
   MPM.on=false;MPM.guest=false;MPM.freeze=false;MPM.hp=100;NT.opp=null;RPS.vis=false;RPS.al=false;NT.M={ph:'wait',r:0,sc:[0,0],left:0,lw:''};NT.myR=0;NT.pend.clear();
   if(wasG){for(const d of DEER.slice())removeDeer(d);clearBirds();setDeerCounts(+$('envM').value,+$('envF').value);setBuzzards(+$('envB').value);}
-  setLooks(false);p2Idle();player.action=null;respawn();boltT=-1;
+  setLooks(false);p2Idle();player.action=null;respawn();boltT=-1;try{secReset();}catch(e){}
   const b=$('mpBan');b.hidden=true;NT.banTxt='';if(!quiet)mpStat('Left the match');mpUI();}
 function mpStart(){if(NT.role!=='h'||!NT.opp)return;const M=NT.M;if(M.ph!=='wait'&&M.ph!=='over')return;M.sc=[0,0];M.r=0;M.lw='';hostNextRound();mpUI();}
-function hostNextRound(){const M=NT.M;M.r++;M.ph='count';M.left=5;M.sd=(Math.random()*1e9|0)+1;roundReset();}
-function roundReset(){const r=NT.M.r;NT.myR=r;resReset();
+function hostNextRound(){const M=NT.M;M.r++;M.ph='count';M.left=5;M.why='';M.sd=(Math.random()*1e9|0)+1;roundReset();}
+function roundReset(){const r=NT.M.r;NT.myR=r;resReset();try{secReset();}catch(e){}
   const mine=(MPM.guest?(r%2===0):(r%2===1))?P1_SPAWN:P2_SPAWN;   // host starts NE, sides swap every round
   player.action=null;player.slide=null;player.mantle=null;player.pos.set(mine.x,groundH(mine.x,mine.z)+0.05,mine.z);player.vel.set(0,0,0);
   player.stance='stand';snapLayer('idle');player.alive=true;player.ammo=MAG;player.reserve=SPARE;player.reloadT=-1;boltT=-1;MPM.hp=100;
@@ -5899,7 +6023,7 @@ function onMsg(t,d,m){
     try{hitDeer(dr,String(d.sub),+d.dist||0);if(d.sub==='leg')legHit(dr,d.leg|0);}finally{MPM.mute=false;hitFrom=null;}}
   else if(t==='take'){resRemoteTake(d.i|0);}
   else if(t==='carve'){resRemoteCarve(d);}
-  else if(t==='silo'){try{siloLaunch(false);}catch(e){}}
+  else if(t==='silo'){try{if(d.ab){siloAbort();}else if(!MPM.guest&&MPM.on&&NT.M.ph==='live'){const tm=3-secHostTeam();if(secArmed(tm)){SECT.launch=tm;siloLaunch(false);}else NT.room.emit('silo',{ab:1}).catch(()=>{});}else siloLaunch(false);}catch(e){}}
   else if(t==='uav'){try{uavNet(d);}catch(e){}}
   else if(t==='drop'||t==='dtake'){try{dropNet(t,d);}catch(e){}}
   else if(t==='at4'){if(!Array.isArray(d.o)||!Array.isArray(d.v))return;const o=V(+d.o[0],+d.o[1],+d.o[2]),v=V(+d.v[0],+d.v[1],+d.v[2]);if(!isFinite(o.x+o.y+o.z+v.x)||v.lengthSq()<0.5)return;try{at4Spawn(o,v,false);}catch(e){}}
@@ -6010,7 +6134,8 @@ function netStep(dt){farFlashStep(dt);
   let opp=null;try{for(const p of NT.room.peers()){if(p.sameTab)continue;const pr=p.presence||{};if(pr.v!==NET_V||pr.role===NT.role||!pr.role)continue;opp=p;break;}}catch(e){}
   if(opp){NT.oppSeen=now;if(!NT.opp||NT.opp.peer!==opp.peer){NT.opp=opp;if(!NT.wasOpp){toast('Opponent connected · click the game to capture the mouse');if(AC&&soundOn)playFanfare();else NT.fan=true;mpAutoDeploy();if(host)setTimeout(()=>{if(NT.room&&NT.role==='h'&&NT.opp&&NT.M.ph==='wait')mpStart();},3000);}NT.wasOpp=true;mpStat('Direct match'+' · '+NT.where+' · opponent connected'+(host?' · press Start match':' · waiting for the host to start'));if(host)sendRoster();mpUI();}
     NT.opp=opp;const pr=opp.presence;feedSnap(pr.s);
-    if(!host&&pr.m){const m=pr.m;const prevPh=M.ph;NT.M={ph:String(m.ph),r:m.r|0,sc:[m.sc&&m.sc[0]|0,m.sc&&m.sc[1]|0],left:+m.left||0,lw:m.lw||'',sd:m.sd|0};
+    if(!host&&pr.m){const m=pr.m;const prevPh=M.ph;NT.M={ph:String(m.ph),r:m.r|0,sc:[m.sc&&m.sc[0]|0,m.sc&&m.sc[1]|0],left:+m.left||0,lw:m.lw||'',sd:m.sd|0,why:String(m.wy||'')};
+      if(Array.isArray(m.sec)&&m.sec.length===SECT.s.length){m.sec.forEach((a,i)=>{const s=SECT.s[i];s.own=a[0]|0;s.cap=+a[1]||0;s.by=a[2]|0;s.in=a[3]|0;});SECT.launch=m.ln|0;}
       if(Array.isArray(m.gm)){const K=['pk762'];K.forEach((k,i)=>{if(typeof m.gm[i]==='number'&&GAME[k]!==m.gm[i])GAME[k]=m.gm[i];});}   // pickup amounts come from the host
       if(typeof m.tod==='number'){DAY.rateI=clamp(m.ri|0,0,RATES.length-1);if(opp.updatedAt!==NT.todQ){NT.todQ=opp.updatedAt;const age=opp.updatedAt?Math.max(0,Math.min(1,(Date.now()-opp.updatedAt)/1000)):0,tg=(m.tod+(age+0.04)*RATES[DAY.rateI]/60+24)%24;if(Math.abs(wrapA((tg-DAY.tod)*PI/12))>0.004){DAY.tod=tg;try{stepDay(0);}catch(e){}}}}   // sun and moon follow the host's clock (one correction per update, aged for transit)
       if(NT.M.r>0&&NT.M.r!==NT.myR&&(NT.M.ph==='count'||NT.M.ph==='live'))roundReset();
@@ -6023,7 +6148,7 @@ function netStep(dt){farFlashStep(dt);
   if(host&&(NT.opp||M.ph==='wait'||M.ph==='over')){const ph0=M.ph;
     if(M.ph==='count'){M.left-=dt;if(M.left<=0){M.ph='live';M.left=0;}}
     else if(M.ph==='live'){const meDead=!player.alive||MPM.hp<=0,himDead=!!NT.opp&&RPS.r===M.r&&!RPS.al&&RPS.buf.length>0;
-      if(meDead||himDead){if(himDead&&!meDead){M.sc[0]++;M.lw='h';}else if(meDead&&!himDead){M.sc[1]++;M.lw='g';}else M.lw='';M.ph='end';M.left=6;}}
+      /* sector mode: a death is no longer the end of the round (players respawn); sectors and the missile decide it, see secFrame */}
     else if(M.ph==='end'){M.left-=dt;if(M.left<=0){if(Math.max(M.sc[0],M.sc[1])>=ROUNDS_WIN)M.ph='over';else hostNextRound();}}
     if(ph0!==M.ph)mpUI();}
   MPM.freeze=M.ph==='count';
@@ -6032,7 +6157,7 @@ function netStep(dt){farFlashStep(dt);
   // send my state
   NT.sendAcc+=dt;if(NT.sendAcc>=1/SEND_HZ){NT.sendAcc=0;const pl=player;
     const s={q:++NT.seq,t:Math.round(now),x:nr2(pl.pos.x),y:nr2(pl.pos.y),z:nr2(pl.pos.z),yw:nr3(wrapA(pl.yaw)),p:pl.pose?packPose(pl.pose):null,b:nr2(boltT),hp:Math.round(MPM.hp),al:pl.alive?1:0,r:NT.myR,sp:nr1(Math.hypot(pl.vel.x,pl.vel.z)),st:pl.stance[0],w:WPN.cur==='at4'?1:0,lf:(ZIP.lift&&LIFT.ride)?[LIFTS.indexOf(ZIP.lift),nr3(LIFT.ride.u)]:0};
-    const patch={s};if(host)patch.m={ph:M.ph,r:M.r,sd:M.sd|0,sc:M.sc.slice(),left:nr2(M.left),lw:M.lw,tod:nr3(DAY.tod),ri:DAY.rateI,gm:[GAME.pk762]};
+    const patch={s};if(host)patch.m={ph:M.ph,r:M.r,sd:M.sd|0,sc:M.sc.slice(),left:nr2(M.left),lw:M.lw,wy:M.why||'',tod:nr3(DAY.tod),ri:DAY.rateI,gm:[GAME.pk762],sec:SECT.s.map(s=>[s.own,Math.round(s.cap*100)/100,s.by,s.in|0]),ln:SECT.launch|0};
     NT.lastSize=JSON.stringify(patch).length;NT.room.presence(patch).catch(()=>{});}
   if(host&&NT.opp){NT.wildAcc+=dt;if(NT.wildAcc>=1/WILD_HZ){NT.wildAcc=0;sendWild();}}
   netStats(dt);
@@ -6041,8 +6166,8 @@ function netStep(dt){farFlashStep(dt);
   if(!NT.opp&&NT.wasOpp&&M.ph!=='wait'&&M.ph!=='over')txt='Opponent connection lost · waiting for them · '+sc;
   else if(M.ph==='wait')txt=NT.opp?(host?'Opponent here · Esc → Start match':'Opponent here · waiting for the host to start'):'Direct match'+' · waiting for the opponent';
   else if(M.ph==='count')txt='Round '+M.r+' · '+sc+' · starts in '+Math.max(1,Math.ceil(M.left));
-  else if(M.ph==='live')txt='Round '+M.r+' · '+sc+' · '+Math.round(MPM.hp)+' hp';
-  else if(M.ph==='end'){const won=M.lw===(host?'h':'g');txt=(M.lw?(won?'Round won':'Round lost'):'Round drawn')+' · '+sc+' · next round in '+Math.max(1,Math.ceil(M.left));}
+  else if(M.ph==='live')txt='Round '+M.r+' · '+sc+' · '+Math.round(MPM.hp)+' hp'+(SECT.rsp>=0?' · respawn in '+Math.ceil(SECT.rsp):'');
+  else if(M.ph==='end'){const won=M.lw===(host?'h':'g');txt=(M.lw?(won?'Round won':'Round lost'):'Round drawn')+(M.why?' · '+M.why:'')+' · '+sc+' · next round in '+Math.max(1,Math.ceil(M.left));}
   else if(M.ph==='over'){const won=mine>theirs;txt=(won?'You win the match ':'You lose the match ')+mine+'–'+theirs+(host?' · Esc → Rematch':' · waiting for a rematch');}
   if(txt!==NT.banTxt){NT.banTxt=txt;const e=$('mpBan');e.textContent=txt;e.hidden=!txt;}
 }
