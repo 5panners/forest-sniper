@@ -3175,8 +3175,9 @@ function boomAt(p){const c=sp3(p.x,p.y,p.z,4000);if(!c)return;nz(c,c.t0,1.3,420,
 // --- hearing and fear ---
 // disturb(): a noise at x,z. Deer inside fleeR bolt, inside alertR they stop and stare. Each fright raises fear, and fear widens both radii.
 function disturb(x,z,fleeR,alertR){for(const d of DEER){if(d.st==='dead')continue;const dist=Math.hypot(d.x-x,d.z-z);if(dist>alertR*3)continue;d.ev.push({t:dist/343,x,z,f:fleeR,a:alertR});}}
+const DEER_SCARE=0.5;   // all deer fright distances (people and noise) are scaled by this
 function hear(d,e){if(d.st==='dead')return;if(e.force){scare(d,e.x,e.z);return;}
-  const dist=Math.hypot(d.x-e.x,d.z-e.z),k=1+d.fear*0.6;
+  const dist=Math.hypot(d.x-e.x,d.z-e.z),k=(1+d.fear*0.6)*DEER_SCARE;
   if(dist<e.f*k)scare(d,e.x,e.z);else if(dist<e.a*k)alertD(d,e.x,e.z,0.2);}
 function release(d){const m=d.mate;if(!m)return;d.mate=null;m.mate=null;if(m.st==='hold'||m.st==='court'||m.st==='mount'){m.st='graze';m.stT=10+Math.random()*10;m.mountK=m.mountK;}}
 function scare(d,x,z){if(d.st==='dead')return;d.fear=Math.min(1.5,d.fear+0.45);d.thx=x;d.thz=z;release(d);
@@ -3312,7 +3313,7 @@ function stepDeer(dt){
   if(deerTick<=0){deerTick=0.25;const SRC=[];if(player.alive&&!MPM.guest)SRC.push([player.pos,Math.hypot(player.vel.x,player.vel.z),player.stance]);if(MPM.on&&!MPM.guest&&RPS.vis&&RPS.al)SRC.push([RPS.pos,RPS.sp,RPS.stn]);
    for(const [pp,ps,st] of SRC){let fr,ar;
     if(ps>4.5){fr=22;ar=55;}else if(ps>0.5){fr=st==='stand'?10:st==='crouch'?5:2.5;ar=fr*2.2;}else{fr=st==='stand'?4:st==='crouch'?2.5:1.5;ar=st==='stand'?14:st==='crouch'?7:3;}
-    for(const d of DEER){if(d.st==='dead')continue;const dist=Math.hypot(d.x-pp.x,d.z-pp.z);const k=(d.st==='alert'||d.sub==='look')?1.5:1;
+    for(const d of DEER){if(d.st==='dead')continue;const dist=Math.hypot(d.x-pp.x,d.z-pp.z);const k=((d.st==='alert'||d.sub==='look')?1.5:1)*DEER_SCARE;
       if(dist<fr*k*(1+d.fear*0.5))scare(d,pp.x,pp.z);else if(dist<ar*k)alertD(d,pp.x,pp.z,0.12);}}}
   const cp=camera.position;deerFrame++;
   for(const d of DEER){
@@ -3842,8 +3843,8 @@ miniTxt();
 function envUI(){const m=+$('envM').value,f=+$('envF').value;$('envMv').textContent=m;$('envBv').textContent=$('envB').value;$('envFv').textContent=f;
   $('envNote').textContent=(m+f)+' live deer in the forest. Stags are red deer, does are fallow or roe. They graze, drink at the stream and avoid you; stags roar and sometimes mate. Gunshots nearby send them running; far-off shots just make them look up. Dead deer stay where they fell. Buzzards drift in now and then to circle a thermal high overhead.';}
 function envApply(){setDeerCounts(+$('envM').value,+$('envF').value);envUI();}
-$('envM').value=15;$('envF').value=15;   // defaults: 20 stags, 30 does, 5 buzzards
-$('envB').value=5;$('envB').oninput=()=>{setBuzzards(+$('envB').value);envUI();};
+$('envM').value=20;$('envF').value=20;   // defaults: 20 stags, 30 does, 5 buzzards
+$('envB').value=4;$('envB').oninput=()=>{setBuzzards(+$('envB').value);envUI();};
 $('envM').oninput=envApply;$('envF').oninput=envApply;
 envApply();setBuzzards(+$('envB').value);
 
@@ -3943,7 +3944,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=336;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=338;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
