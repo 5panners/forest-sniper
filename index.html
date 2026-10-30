@@ -997,6 +997,9 @@ function H0(x,z){
   return h;}
 // forest track (closed loop) and its smoothed grade
 const ROAD=polyline([[-420,-380],[-180,-430],[120,-330],[360,-120],[330,200],[120,360],[-200,330],[-400,120],[-460,-150]],4,true);
+function inRing(x,z){let c=false;const n=ROAD.n;for(let i=0,j=n-1;i<n;j=i++){const xi=ROAD.x[i],zi=ROAD.z[i],xj=ROAD.x[j],zj=ROAD.z[j];if((zi>z)!==(zj>z)&&x<(xj-xi)*(z-zi)/(zj-zi)+xi)c=!c;}return c;}
+// a random spot, mostly (frac) inside the ring road
+function ringPt(frac,lim){lim=lim||430;if(Math.random()<frac){for(let k=0;k<80;k++){const x=(Math.random()*2-1)*lim,z=(Math.random()*2-1)*lim;if(inRing(x,z))return [x,z];}}return [(Math.random()*2-1)*lim,(Math.random()*2-1)*lim];}
 const roadH=new Float32Array(ROAD.n);{const raw=[];for(let i=0;i<ROAD.n;i++)raw.push(H0(ROAD.x[i],ROAD.z[i]));for(let i=0;i<ROAD.n;i++){let s=0;for(let k=-9;k<=9;k++)s+=raw[(i+k+ROAD.n)%ROAD.n];roadH[i]=s/19;}}
 function H1(x,z){let h=H0(x,z);const r=polyNear(ROAD,x,z,12);if(r.i>=0){const j=(r.i+1)%ROAD.n;const hc=roadH[r.i]+(roadH[j]-roadH[r.i])*r.t;h+=(hc-h)*(1-sst(3.5,11,r.d));}return h;}
 // lake
@@ -3103,7 +3106,7 @@ function makeDeer(kind,x,z,herd,o){
 function deerOK(x,z){return Math.abs(x)<488&&Math.abs(z)<488&&lakeE(x,z)>1.06&&slopeAt(x,z)<0.8&&Math.hypot(x-HUT.x,z-HUT.z)>9&&!xsClear(x,z);}
 const _dn=[];
 function treeAt(x,z,r){pillarsNear(x,z,_dn);for(const p of _dn)if(Math.hypot(x-p.x,z-p.z)<p.r+r)return true;return false;}
-function pickHome(minP){let best=null,bs=-9;for(let k=0;k<70;k++){const x=(Math.random()-0.5)*930,z=(Math.random()-0.5)*930;if(!deerOK(x,z))continue;
+function pickHome(minP){let best=null,bs=-9;for(let k=0;k<70;k++){const [x,z]=ringPt(0.85,465);if(!deerOK(x,z))continue;
     if(minP&&Math.hypot(x-player.pos.x,z-player.pos.z)<minP)continue;
     const cl=CLEARS.reduce((m,c)=>Math.min(m,Math.hypot(x-c[0],z-c[1])),1e9),sd=polyNear(STREAM,x,z,120).d;
     const sc=meadowK(x,z)*2.4+(cl<40?0.7:0)+(sd<100?0.2:0)+Math.random()*0.3;if(sc>bs){bs=sc;best={x,z};}}
@@ -3415,7 +3418,7 @@ function makeBird(g){const root=new THREE.Group();root.rotation.order='YXZ';root
     st:'fly',flapT:0,nextFlap:5+Math.random()*25,cryT:6+Math.random()*30,vy:0,fvx:0,fvz:0,roll:0,deadT:0,e:0};BZ.push(b);return b;}
 function setBuzzards(n){if(MPM.guest)return;for(const b of BZ)scene.remove(b.root);BZ.length=0;BGRP.length=0;let first=true;
   while(n>0){const m=Math.min(n,1+(Math.random()*2|0));n-=m;
-    const gp={cx:(Math.random()-0.5)*760,cz:(Math.random()-0.5)*760,alt:Math.random()<0.35?35+Math.random()*35:130+Math.random()*150,dir:Math.random()<0.5?-1:1,ap:Math.random()*PI*2,birds:[],phase:'away',t:10+Math.random()*80,p:0};
+    const rp=ringPt(0.85,380),gp={cx:rp[0],cz:rp[1],alt:Math.random()<0.35?35+Math.random()*35:130+Math.random()*150,dir:Math.random()<0.5?-1:1,ap:Math.random()*PI*2,birds:[],phase:'away',t:10+Math.random()*80,p:0};
     if(first&&Math.random()<0.6){gp.phase='orbit';gp.t=60+Math.random()*120;gp.p=1;}first=false;
     for(let i=0;i<m;i++)gp.birds.push(makeBird(gp));BGRP.push(gp);}}
 const sm01=x=>{x=clamp(x,0,1);return x*x*(3-2*x);};
@@ -3427,7 +3430,7 @@ function buzzCry(b){const c=sp3(b.x,b.y,b.z,2200);if(!c)return;const t=c.t0;
 function foldWings(b,f,tw){const k=f*f*(3-2*f);b.wR.rotation.set(0,1.15*k,-0.95*k+(tw||0));b.wL.rotation.set(0,-1.15*k,0.95*k-(tw||0));}
 function stepBirds(dt,T){if(MPM.guest){netBirds(dt,T);return;}
   for(const g of BGRP){g.t-=dt;
-    if(g.phase==='away'){g.p=0;if(g.t<=0){g.phase='in';g.t=26;g.cx=(Math.random()-0.5)*760;g.cz=(Math.random()-0.5)*760;g.ap=Math.random()*PI*2;g.alt=Math.random()<0.35?35+Math.random()*35:130+Math.random()*150;}}
+    if(g.phase==='away'){g.p=0;if(g.t<=0){g.phase='in';g.t=26;{const rp=ringPt(0.85,380);g.cx=rp[0];g.cz=rp[1];}g.ap=Math.random()*PI*2;g.alt=Math.random()<0.35?35+Math.random()*35:130+Math.random()*150;}}
     else if(g.phase==='in'){g.p=1-g.t/26;if(g.t<=0){g.phase='orbit';g.t=70+Math.random()*130;}}
     else if(g.phase==='orbit'){g.p=1;if(g.t<=0){g.phase='out';g.t=26;}}
     else{g.p=g.t/26;if(g.t<=0){g.phase='away';g.t=45+Math.random()*150;g.p=0;}}
@@ -3940,7 +3943,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=332;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=333;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3982,11 +3985,12 @@ const RES_T=[
   {k:'berries', label:'berries',   cell:11, p:0.050, amt:[2,4], n:0},
   {k:'mushroom',label:'Magic Mushrooms', cell:11, p:0.25, amt:[1,3], n:300},
   {k:'at4r',    label:'AT4 rounds',   cell:13, p:0.25, amt:[1,1], n:150},
-  {k:'at4',     label:'AT4 launcher', cell:31, p:0.3, amt:[1,1], n:8},
+  {k:'at4',     label:'AT4 launcher', cell:31, p:0.3, amt:[1,1], n:0},
   {k:'radio',   label:'Radio',        cell:41, p:0.3, amt:[1,1], n:6},
-  {k:'ar15',    label:'AR-15 rifle',  cell:31, p:0.3, amt:[1,1], n:6},
+  {k:'ar15',    label:'AR-15 rifle',  cell:31, p:0.3, amt:[1,1], n:0},
   {k:'scrap',   label:'Tech Chips',     cell:17, p:0.05, amt:[1,2], n:20},
-  {k:'r762',    label:'7.62 rounds',  cell:13, p:0.25, amt:[1,1], n:300}];
+  {k:'r762',    label:'7.62 rounds',  cell:13, p:0.25, amt:[1,1], n:300},
+  {k:'rifle',   label:'Rifle',        cell:31, p:0.3, amt:[1,1], n:0}];   // weapons (AR-15, AT4, rifle) are placed by hand: two of each within 100 m of every capture point
 const INV={radio:0,berries:0,mushroom:0,at4r:0,scrap:0,meat:0,hide:0};
 const INV_LABEL={radio:'radios',berries:'berries',mushroom:'Magic Mushrooms',at4r:'AT4 rounds',scrap:'Tech Chips',meat:'meat',hide:'hide'};
 const RES_GEO={
@@ -4001,6 +4005,8 @@ const RES_GEO={
   wood:build([[B(0.05,0.05,0.8),'#9a6a3c',[0,0.05,0],[0.05,0.3,0]],[B(0.045,0.045,0.7),'#a97a46',[0.07,0.1,0.05],[0.1,-0.4,0.05]],[B(0.05,0.05,0.65),'#865a30',[-0.06,0.1,-0.04],[0.0,0.9,-0.05]],[B(0.04,0.04,0.5),'#a97a46',[0.0,0.15,0.0],[0.1,0.1,0.1]]]),
   ar15:(()=>{const g=build(arParts());g.rotateZ(PI/2);g.translate(0.03,0.05,0);g.scale(0.9,0.9,0.9);g.rotateY(0.6);return g;})(),
   at4:(()=>{const g=build(at4Parts());g.rotateZ(PI/2);g.translate(AT4_TY,0.072,0);g.scale(0.68,0.68,0.68);g.rotateY(0.4);return g;})(),
+  rifle:build([[B(0.62,0.07,0.05),'#4a3a2a',[-0.05,0.035,0]],[B(0.2,0.1,0.05),'#4a3a2a',[-0.38,0.05,0]],[CY(0.012,0.012,0.5,6),'#2a2c2e',[0.5,0.045,0],[0,0,HP]],
+  [CY(0.026,0.026,0.32,8),'#20262a',[0.04,0.1,0],[0,0,HP]],[B(0.05,0.05,0.02),'#2a2c2e',[0.02,0.06,0]],[B(0.06,0.03,0.04),'#3a3020',[-0.08,0.0,0]]]),
   radio:build([[B(0.075,0.04,0.17),'#f2d21b',[0,0.022,0]],[B(0.05,0.006,0.045),'#9fb98a',[0,0.045,0.035]],[B(0.05,0.006,0.03),'#1d1e20',[0,0.045,-0.02]],[CY(0.009,0.009,0.12,6),'#1d1e20',[0.02,0.03,0.14],[HP,0,0]],[B(0.03,0.012,0.02),'#ff6a2a',[-0.02,0.046,0.08]]]),
   at4r:build([[CY(0.04,0.04,0.34,12),'#1f1f1e',[-0.1,0.045,0],[0,0,PI/2]],[CY(0.046,0.046,0.014,12),'#161615',[-0.267,0.045,0],[0,0,PI/2]],[CY(0.022,0.022,0.012,10),'#3b3b39',[-0.276,0.045,0],[0,0,PI/2]],
     [CY(0.041,0.041,0.05,12),'#adb0ae',[0.095,0.045,0],[0,0,PI/2]],[CY(0.012,0.04,0.17,12),'#4a5233',[0.205,0.045,0],[0,0,-PI/2]],[CY(0.013,0.013,0.012,8),'#8d8d86',[0.293,0.045,0],[0,0,-PI/2]]]),
@@ -4024,8 +4030,12 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
   // a few at each starting point so the first minute has something to do, and Tech Chips around the hut
   const near=(c,list)=>list.forEach(([t,a,d],i)=>{for(let k=0;k<12;k++){const ang=a+k*0.7+hsh(i,k+Math.round(c.x))*0.6,r=d+k*2.2,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
       if(resOK(x,z,t)){resAdd(t,x,z,i*53+k*7+Math.round(c.x+c.z));break;}}});
-  const starts=[['r762',1.2,18],['r762',2.4,12],['mushroom',3.6,22],['mushroom',4.4,16],['at4',5.0,8],['ar15',1.7,10],['at4r',0.6,9],['at4r',3.0,11],['radio',2.0,7]];
+  const starts=[['r762',1.2,18],['r762',2.4,12],['mushroom',3.6,22],['mushroom',4.4,16],['at4r',0.6,9],['at4r',3.0,11],['radio',2.0,7]];
   near({x:P1_SPAWN.x,z:P1_SPAWN.z},starts);near({x:P2_SPAWN.x,z:P2_SPAWN.z},starts);
+  // weapons: two AR-15s, two AT4s and two rifles within 100 m of each of the seven capture points (14 of each)
+  {const pts=[SEC_HOME.e,TWPOS,TWPOS4,SILO_POS,TWPOS3,TWPOS2,SEC_HOME.w],placed=[];
+   pts.forEach((c,si)=>['ar15','at4','rifle'].forEach((t,ti)=>{for(let k=0;k<2;k++){for(let a=0;a<120;a++){const ang=hsh(si*17+ti*5+k*3,a+3)*PI*2,r=16+hsh(si*7+ti*11+k,a*3+1)*80,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
+        if(!resOK(x,z,t)||placed.some(q=>Math.hypot(q[0]-x,q[1]-z)<7))continue;placed.push([x,z]);resAdd(t,x,z,si*131+ti*37+k*11+a);break;}}}));window._wpnPlaced=placed.length;}
   near({x:HUT.x,z:HUT.z},[['scrap',0.4,9],['scrap',2.2,11],['scrap',3.9,8],['scrap',5.4,12]]);
   // RPG rounds lie around the foot of rocks; Magic Mushrooms grow along forest edges (a tree close by, open ground in some directions)
   const rockD=(x,z)=>{let d=1e9;for(const rk of ROCKS){const q=Math.hypot(x-rk.x,z-rk.z)-Math.max(rk.w,rk.d)*0.5;if(q<d)d=q;}return d;};
@@ -4037,7 +4047,10 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
       const h0=hsh(ix*31+ti*977,iz*17+ti*613);if(h0>R.p)continue;
       const x=(ix+hsh(ix+ti*5,iz*3+1))*R.cell,z=(iz+hsh(ix*7+2,iz+ti*11))*R.cell;
       if(resOK(x,z,R.k))cand.push([h0,x,z,ix*13+iz*7+ti*101]);}
-    if(R.k==='mushroom'||R.k==='r762'){const E=[],O=[];cand.sort((p,q)=>p[0]-q[0]);for(const c of cand)(edgeOK(c[1],c[2])?E:O).push(c);cand.length=0;for(const c of E.concat(O)){if(cand.length>=R.n-have)break;cand.push(c);}window._mushEdge=E.length;}
+    if(R.k==='r762'||R.k==='at4r'){cand.sort((p,q)=>p[0]-q[0]);const IN=[],OUT=[];for(const c of cand)(inRing(c[1],c[2])?IN:OUT).push(c);const want=R.n-have,nin=Math.min(IN.length,Math.round(want*0.85)),pre=R.k==='r762'?(L=>{const E=[],O=[];for(const c of L)(edgeOK(c[1],c[2])?E:O).push(c);return E.concat(O);}):(L=>L);
+      const pick=pre(IN).slice(0,nin).concat(OUT.slice(0,want-nin));cand.length=0;for(const c of pick)cand.push(c);   // mostly inside the ring road
+      if(cand.length<want){for(const c of IN.slice(nin)){if(cand.length>=want)break;if(!cand.includes(c))cand.push(c);}}}
+    else if(R.k==='mushroom'){const E=[],O=[];cand.sort((p,q)=>p[0]-q[0]);for(const c of cand)(edgeOK(c[1],c[2])?E:O).push(c);cand.length=0;for(const c of E.concat(O)){if(cand.length>=R.n-have)break;cand.push(c);}window._mushEdge=E.length;}
     else if(R.n!=null){cand.sort((p,q)=>p[0]-q[0]);cand.length=Math.max(0,Math.min(cand.length,R.n-have));}
     for(const c of cand)resAdd(R.k,c[1],c[2],c[3]);});
   RES_T.forEach(R=>{const L=RES_NODES.filter(n=>n.t===R.k);R.idx=L.map(n=>RES_NODES.indexOf(n));
@@ -4073,6 +4086,8 @@ function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();i
   if((R.k==='radio'||(R.k==='at4'&&!WPN.has))&&!slotCanTake(R.k)){toast('Gadget slots full · drop or use one first');return;}
   resSetGot(n,true);const q=R.k==='r762'?Math.max(1,GAME.pk762|0):R.k==='at4r'?Math.max(1,GAME.pkAt4|0):R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));
   if(R.k==='radio'){const out=slotGive({k:'radio'});toast((out?'Swapped your '+out+' for a radio':'Radio picked up')+' · press '+slotKeyOf('radio')+' to call in a recon drone');pickSnd();if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});return;}
+  if(R.k==='rifle'){if(slotHas('rifle')){player.reserve=(player.reserve|0)+12;invUI();toast('+12 7.62 rounds from the spare rifle');}else{const out=slotGive({k:'rifle',ammo:12});invUI();toast(out?'Swapped your '+out+' for the rifle · it dropped at your feet':'Rifle picked up · 12 rounds · press '+slotKeyOf('rifle')+' to use it');}
+    pickSnd();if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});return;}
   if(R.k==='ar15'){if(slotHas('ar15')){player.reserve=(player.reserve|0)+Math.max(1,GAME.arMag|0);invUI();toast('+'+Math.max(1,GAME.arMag|0)+' 7.62 rounds from the spare AR-15');}
     else{const out=slotGive({k:'ar15',ammo:Math.max(5,GAME.arMag|0)});invUI();toast(out?'Swapped your '+out+' for the AR-15 · it dropped at your feet':'AR-15 picked up · '+Math.max(5,GAME.arMag|0)+' rounds · press '+slotKeyOf('ar15')+' to use it');}
     pickSnd();if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});return;}
@@ -4083,7 +4098,7 @@ function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();i
   if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});}
 addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyF')resGather();});
 function resStep(dt){
-  let s='';if(playing&&player.alive&&!scoped&&!mapOpen){const c=carcassNearest(),zt=zipPromptTxt();if(zt)s=zt;else if(c)s='<b>F</b> · butcher '+carcassName(c);else{const d=dropNearest();if(d)s='<b>F</b> · '+(d.k==='at4'&&WPN.has?'take the round from the AT4':(d.k==='rifle'||d.k==='ar15')&&slotHas(d.k)?'take the rounds from the '+ITEM[d.k].name:slotTip(d.k));else{const i=resNearest();if(i!=null){const k=RES_T[RES_NODES[i].ti].k;s='<b>F</b> · '+(k==='at4'||k==='radio'||k==='ar15'?slotTip(k):'gather '+RES_T[RES_NODES[i].ti].label);}}}}
+  let s='';if(playing&&player.alive&&!scoped&&!mapOpen){const c=carcassNearest(),zt=zipPromptTxt();if(zt)s=zt;else if(c)s='<b>F</b> · butcher '+carcassName(c);else{const d=dropNearest();if(d)s='<b>F</b> · '+(d.k==='at4'&&WPN.has?'take the round from the AT4':(d.k==='rifle'||d.k==='ar15')&&slotHas(d.k)?'take the rounds from the '+ITEM[d.k].name:slotTip(d.k));else{const i=resNearest();if(i!=null){const k=RES_T[RES_NODES[i].ti].k;s='<b>F</b> · '+(k==='at4'||k==='radio'||k==='ar15'||k==='rifle'?slotTip(k):'gather '+RES_T[RES_NODES[i].ti].label);}}}}
   if(s!==_prS){_prS=s;resPrompt.innerHTML=s;resPrompt.hidden=!s;}}
 window.SNIPER_RES={INV,RES_NODES};
 
@@ -4132,7 +4147,7 @@ function lookStep(){const T=(f)=>{try{f();}catch(e){if(!window._lsErr){window._l
 window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial){c++;if(m.defines&&m.defines.GSTYLE)d++;}});return {sh:true,std:c,withDef:d,keys:renderer.info.programs.map(p=>p.cacheKey.includes('GSTYLE')).join(','),lookI};};
 
 // ---- edge glow on every collectible: a slightly enlarged back-face shell per node, additive, pulsing on a 3 s cycle, one colour per resource type
-const GLOWC={ar15:0xff8a2a,berries:0xff4f8b,mushroom:0xffa03a,scrap:0x45e6c8,r762:0xfff04a,at4:0xff2fbf,at4r:0xffa0dc,radio:0x3ad8ff};
+const GLOWC={rifle:0xffe08a,ar15:0xff8a2a,berries:0xff4f8b,mushroom:0xffa03a,scrap:0x45e6c8,r762:0xfff04a,at4:0xff2fbf,at4r:0xffa0dc,radio:0x3ad8ff};
 const LEADGLOW=(()=>{const sc=new THREE.Matrix4().makeScale(1.13,1.13,1.13),ms=[];let k=0;
   for(const t in GLOWC){const L=RES_NODES.filter(n=>n.t===t);if(!L.length||!RES_GEO[t])continue;
     const m=new THREE.MeshBasicMaterial({color:GLOWC[t],side:THREE.BackSide,transparent:true,opacity:0.5,depthWrite:false,blending:THREE.AdditiveBlending,fog:false});
@@ -4487,7 +4502,7 @@ function makeBear(x,z){
 
 function bearOpen(x,z){if(Math.abs(x)>470||Math.abs(z)>470)return false;try{if(inWater(x,z))return false;}catch(e){}
   for(const p of pillarsNear(x,z)){if(Math.hypot(p.x-x,p.z-z)<p.r+1.2)return false;}return true;}
-function bearSpot(){for(let k=0;k<200;k++){const x=(Math.random()*2-1)*430,z=(Math.random()*2-1)*430;
+function bearSpot(){for(let k=0;k<200;k++){const [x,z]=ringPt(0.85,430);
   if(Math.hypot(x-player.pos.x,z-player.pos.z)<160)continue;if(bearOpen(x,z))return [x,z];}return [0,0];}
 function bearTarget(b){for(let k=0;k<40;k++){const a=Math.random()*Math.PI*2,r=30+Math.random()*120;let x=b.x+Math.sin(a)*r,z=b.z+Math.cos(a)*r;
   if(bearOpen(x,z)){b.tx=x;b.tz=z;return;}}b.tx=b.x;b.tz=b.z;}
@@ -4817,7 +4832,7 @@ function slotGive(it){const t=ITEM[it.k].kind,L=SLOT[t];let j=L.indexOf(null),ou
     out=ITEM[L[j].k].name;dropItem(L[j]);L[j]=null;}
   L[j]=it;if(it.k==='at4'){WPN.ld=it.ld?1:0;WPN.rl=-1;}
   slotSync();if(out&&t==='w')setWeapon(it.k);try{EQB.pop(t==='w'?'eqW'+j:'eqG'+j);}catch(e){}return out;}
-function slotTip(k){if(k==='at4'&&WPN.has)return 'AT4 launcher (+1 round)';if(k==='ar15'&&slotHas('ar15'))return 'AR-15 (+'+(GAME.arMag|0)+' rounds)';const t=ITEM[k].kind,L=SLOT[t];
+function slotTip(k){if(k==='at4'&&WPN.has)return 'AT4 launcher (+1 round)';if(k==='rifle'&&slotHas('rifle'))return 'Rifle (+12 rounds)';if(k==='ar15'&&slotHas('ar15'))return 'AR-15 (+'+(GAME.arMag|0)+' rounds)';const t=ITEM[k].kind,L=SLOT[t];
   if(L.some(q=>!q))return 'pick up '+(k==='at4'?'AT4 launcher':k==='ar15'?'AR-15 rifle':ITEM[k].name);
   if(t==='w'){const h=L.find(q=>q&&q.k===WPN.cur)||L[0];return 'swap your '+ITEM[h.k].name+' for the '+ITEM[k].name;}
   const h=L.find(q=>q&&q.k!==k&&!q.used);return h?'swap your '+ITEM[h.k].name+' for the '+ITEM[k].name:ITEM[k].name+' · gadget slots full';}
