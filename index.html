@@ -2661,8 +2661,8 @@ function raiseScoped(p,k,ar){   // shouldered: body turns side-on so the butt si
     const L=(n,v)=>{const a=p[n]||[0,0,0];p[n]=[a[0]+(v[0]-a[0])*k,a[1]+(v[1]-a[1])*k,a[2]+(v[2]-a[2])*k];};
     L('lThigh',[-0.36,0.2,0.14]);L('lShin',[0.26,0,0]);L('lFoot',[0.1,-0.15,0]);L('rThigh',[0.26,-0.4,-0.16]);L('rShin',[0.2,0,0]);L('rFoot',[-0.46,0.3,0]);
     p.hipsP=[(p.hipsP||[0,0,0])[0],(p.hipsP||[0,0,0])[1]-0.04*k,(p.hipsP||[0,0,0])[2]];
-    p.hipsR=[(p.hipsR||[0,0,0])[0],(p.hipsR||[0,0,0])[1]+TW*0.3*k,(p.hipsR||[0,0,0])[2]];p.spine=[p.spine[0]+0.1*k,p.spine[1],p.spine[2]];p.chest=[p.chest[0]+0.04*k,p.chest[1],p.chest[2]];p.head=[p.head[0]-0.1*k,p.head[1],p.head[2]];}   // lean into the gun
-  {const NK=window.SC_NK!==undefined?window.SC_NK:0.15;p.neck=[p.neck[0]+NK*k,p.neck[1],p.neck[2]];p.head=[p.head[0]+NK*0.3*k,p.head[1],p.head[2]];}
+    p.hipsR=[(p.hipsR||[0,0,0])[0],(p.hipsR||[0,0,0])[1]+TW*0.3*k,(p.hipsR||[0,0,0])[2]];p.spine=[p.spine[0]+0.22*k,p.spine[1],p.spine[2]];p.chest=[p.chest[0]+0.12*k,p.chest[1],p.chest[2]];p.head=[p.head[0]-0.1*k,p.head[1],p.head[2]];}   // lean into the gun
+  {const NK=window.SC_NK!==undefined?window.SC_NK:0.45;p.neck=[p.neck[0]+NK*k,p.neck[1],p.neck[2]];p.head=[p.head[0]+NK*0.3*k,p.head[1],p.head[2]];}
   if(ar){const HR=window.AR_HR!==undefined?window.AR_HR:0.05,SP=window.AR_SP!==undefined?window.AR_SP:0.08;p.head=[p.head[0],p.head[1],p.head[2]+HR*k];p.chest=[p.chest[0]+SP*k,p.chest[1],p.chest[2]];p.spine=[p.spine[0]+SP*0.6*k,p.spine[1],p.spine[2]];}   // cheek down onto the stock
   try{const bt=gunButt(ar);if(isFinite(bt.zmax)){A.fore.position.z=bt.zmax-0.4*(bt.zmax-bt.z);A.fore.position.y=ar?-0.035:-0.075;}}catch(e){}   // support hand 40% back from the muzzle, under the gun
   if(k>0.5){p.L={fore:1};p.lHand=window.SC_LH||[0,window.SC_LY!==undefined?window.SC_LY:-1.4,0];p.R={grip:1};if(window.SC_PL)p.poleL=window.SC_PL;p.poleR=window.SC_PR||[-0.25,-1,-0.1];if(!window.SC_PL)p.poleL=[0.35,-1,0.15];}
@@ -3433,8 +3433,8 @@ const USS={on:false,s:0.85,sh:0.24,meshes:[],hidden:[],
   map:{Hips:['hips'],Spine:['spine'],Chest:['chest'],Neck:['neck',[0,-0.035,0],0.6],Head:['head',[0,-0.06,0]],
     ThighL:['lThigh'],ShinL:['lShin'],FootL:['lFoot'],ToeL:['lFoot',[0,-0.062,0.112]],
     ThighR:['rThigh'],ShinR:['rShin'],FootR:['rFoot'],ToeR:['rFoot',[0,-0.062,0.112]],
-    ClavicleL:['chest',[0.1,0.22,0]],UpperArmL:['lUpper'],ForearmL:['lFore'],HandL:['lHand'],Fingers1L:['lHand',[0,-0.085,0]],Fingers2L:['lHand',[0,-0.125,0]],Thumb1L:['lHand',[0,-0.02,0.04]],
-    ClavicleR:['chest',[-0.1,0.22,0]],UpperArmR:['rUpper'],ForearmR:['rFore'],HandR:['rHand'],Fingers1R:['rHand',[0,-0.085,0]],Fingers2R:['rHand',[0,-0.125,0]],Thumb1R:['rHand',[0,-0.02,0.04]]}};
+    ClavicleL:['chest',[0.06,0.24,-0.01]],UpperArmL:['lUpper'],ForearmL:['lFore'],HandL:['lHand'],Fingers1L:['lHand',[0,-0.085,0]],Fingers2L:['lHand',[0,-0.125,0]],Thumb1L:['lHand',[0,-0.02,0.04]],
+    ClavicleR:['chest',[-0.06,0.24,-0.01]],UpperArmR:['rUpper'],ForearmR:['rFore'],HandR:['rHand'],Fingers1R:['rHand',[0,-0.085,0]],Fingers2R:['rHand',[0,-0.125,0]],Thumb1R:['rHand',[0,-0.02,0.04]]}};
 function ussDecode(b64,T){const s=atob(b64),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return new T(u.buffer);}
 function ussApply(){if(USS.on)return;USS.on=true;
   // hide the hunter outfit on player 1 (not the rifle, not hit boxes, not anything carried later)
@@ -3451,7 +3451,7 @@ function ussApply(){if(USS.on)return;USS.on=true;
     const k=USS.s/(jt===J.head?jt.scale.x:1),o=m[1]||[0,0,0];me.scale.set(k,k*(m[2]||1),k);me.position.set(o[0]*k,o[1]*k,o[2]*k);
     jt.add(me);USS.meshes.push(me);}
   {const k=USS.s/J.head.scale.x,hy=USS.map.Head[1][1];EYE_L=[0,(0.085+hy)*k,0.075*k];}   // behind the sunglasses
-  J.lUpper.position.x=USS.sh;J.rUpper.position.x=-USS.sh;J.lUpper.position.y-=0.07;J.rUpper.position.y-=0.07;   // shoulders in to where the soldier's arms meet the torso
+  {const s=USS.s;J.lUpper.position.set(0.195*s,0.23*s,-0.01*s);J.rUpper.position.set(-0.195*s,0.23*s,-0.01*s);}   // shoulders in to where the soldier's arms meet the torso
   marine.scale.setScalar(USS.big);gun.scale.multiplyScalar(GSC/USS.big);}
 window._RIG={marine,J,mat,USS,apply:ussApply};
 // rear end of the stock in gun space (the butt plate), measured once from the model; used to seat the butt in the shoulder when aiming
@@ -4067,7 +4067,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=373;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=375;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
