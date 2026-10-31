@@ -2664,7 +2664,8 @@ function raiseScoped(p,k,ar){   // shouldered: body turns side-on so the butt si
     p.hipsR=[(p.hipsR||[0,0,0])[0],(p.hipsR||[0,0,0])[1]+TW*0.3*k,(p.hipsR||[0,0,0])[2]];p.spine=[p.spine[0]+0.1*k,p.spine[1],p.spine[2]];p.chest=[p.chest[0]+0.04*k,p.chest[1],p.chest[2]];p.head=[p.head[0]-0.1*k,p.head[1],p.head[2]];}   // lean into the gun
   {const NK=window.SC_NK!==undefined?window.SC_NK:0.15;p.neck=[p.neck[0]+NK*k,p.neck[1],p.neck[2]];p.head=[p.head[0]+NK*0.3*k,p.head[1],p.head[2]];}
   if(ar){const HR=window.AR_HR!==undefined?window.AR_HR:0.05,SP=window.AR_SP!==undefined?window.AR_SP:0.08;p.head=[p.head[0],p.head[1],p.head[2]+HR*k];p.chest=[p.chest[0]+SP*k,p.chest[1],p.chest[2]];p.spine=[p.spine[0]+SP*0.6*k,p.spine[1],p.spine[2]];}   // cheek down onto the stock
-  if(k>0.5){p.L={fore:1};p.R={grip:1};if(window.SC_PL)p.poleL=window.SC_PL;p.poleR=window.SC_PR||[-0.25,-1,-0.1];if(!window.SC_PL)p.poleL=[0.35,-1,0.15];if(window.SC_LH)p.lHand=window.SC_LH;}
+  try{const bt=gunButt(ar);if(isFinite(bt.zmax)){A.fore.position.z=bt.zmax-0.4*(bt.zmax-bt.z);A.fore.position.y=ar?-0.035:-0.075;}}catch(e){}   // support hand 40% back from the muzzle, under the gun
+  if(k>0.5){p.L={fore:1};p.lHand=window.SC_LH||[0,window.SC_LY!==undefined?window.SC_LY:-1.4,0];p.R={grip:1};if(window.SC_PL)p.poleL=window.SC_PL;p.poleR=window.SC_PR||[-0.25,-1,-0.1];if(!window.SC_PL)p.poleL=[0.35,-1,0.15];}
   applyPose(p);J.head.updateMatrixWorld(true);_sE.set(EYE_L[0]-0.05,EYE_L[1],EYE_L[2]);J.head.localToWorld(_sE);
   if(ar&&aimYawV!=null&&aimPitchV!=null)_sz.set(Math.sin(aimYawV)*Math.cos(aimPitchV),Math.sin(aimPitchV),Math.cos(aimYawV)*Math.cos(aimPitchV));else _sz.copy(_dir).normalize();_sx.set(0,1,0).cross(_sz);if(_sx.lengthSq()<1e-6)_sx.set(1,0,0);_sx.normalize();_sy.crossVectors(_sz,_sx);
   _sm.makeBasis(_sx,_sy,_sz);_sq.setFromRotationMatrix(_sm);                                   // gun world rotation: barrel along the sight line, no roll
@@ -2675,6 +2676,14 @@ function raiseScoped(p,k,ar){   // shouldered: body turns side-on so the butt si
   J.chest.getWorldQuaternion(_sq2);_sq2.invert();_sq3.copy(_sq2).multiply(_sq);                 // target rotation in chest space
   _se.set(p.gunR[0],p.gunR[1],p.gunR[2],'ZYX');_sq2.setFromEuler(_se);_sq2.slerp(_sq3,k);_se.setFromQuaternion(_sq2,'ZYX');
   p.gunP=[p.gunP[0]+(_sW.x-p.gunP[0])*k,p.gunP[1]+(_sW.y-p.gunP[1])*k,p.gunP[2]+(_sW.z-p.gunP[2])*k];p.gunR=[_se.x,_se.y,_se.z];}
+const _pu=new THREE.Quaternion(),_pf=new THREE.Vector3(),_pX=new THREE.Vector3(),_pY=new THREE.Vector3(),_pZ=new THREE.Vector3(),_pM=new THREE.Matrix4(),_pq=new THREE.Quaternion(),_pp=new THREE.Quaternion();
+function palmUp(k){   // support hand under the fore-end: fingers along the barrel, palm up
+  gun.updateMatrixWorld(true);gun.getWorldQuaternion(_pu);_pf.set(0,0,1).applyQuaternion(_pu).normalize();
+  _pZ.set(0,1,0);_pZ.addScaledVector(_pf,-_pZ.dot(_pf)).normalize();                      // palm normal (up, made square to the barrel)
+  _pX.copy(_pZ).negate();_pY.copy(_pf).negate();_pZ.crossVectors(_pX,_pY);               // hand axes: x = -palm, y = -fingers, z = thumb
+  _pM.makeBasis(_pX,_pY,_pZ);_pq.setFromRotationMatrix(_pM);
+  J.lHand.parent.getWorldQuaternion(_pp);_pp.invert();_pq.premultiply(_pp);
+  J.lHand.quaternion.slerp(_pq,Math.min(1,k));J.lHand.updateMatrixWorld(true);}
 function updatePlayer(dt,time){
   carryOnTank();
   const pl=player, act=player.action, A_=act?ACTIONS[act.name]:null;
@@ -2794,7 +2803,7 @@ function updatePlayer(dt,time){
    if(pl.scK>0.004){p=Object.assign({},p);raiseScoped(p,pl.scK,_isAR());}}
   {const wa=(input.rmb&&WPN.cur==='at4'&&pl.aimW>0.5&&pl.alive&&!pl.slide&&pl.stance!=='prone'&&pl.reloadT<0)?1:0;pl.atK=(pl.atK||0)+(wa-(pl.atK||0))*Math.min(1,dt*12);if(Math.abs(wa-pl.atK)<0.004)pl.atK=wa;if(pl.atK>0.004){p=Object.assign({},p);try{raiseAT4(p,pl.atK);}catch(e){}}}   // AT4: tube up on the shoulder
   try{if(TW.climb)p=climbPose(p,pl);else if(ZIP.on)p=zipPose(p,pl);}catch(e){}
-  applyPose(p);player.pose=p;
+  applyPose(p);player.pose=p;try{if(pl.scK>0.004&&!(pl.atK>0.004)){palmUp(pl.scK);}}catch(e){}
   // HUD label
   let lab=act?ACTIONS[act.name].clip:(pl.slide?'Slide':(!pl.grounded?'Jump':null));
   if(!lab){let best='idle',bw=0;for(const k in lw)if(lw[k]>bw){bw=lw[k];best=k;}lab=LABEL[best];if(pl.reloadT>=0)lab+=' + Reload';else if(pl.aimW>0.5&&pl.stance!=='prone'&&best!=='kneel')lab+=' + Aim';if(pl.dir<0&&moveK)lab+=' (back)';}
@@ -3424,8 +3433,8 @@ const USS={on:false,s:0.85,sh:0.24,meshes:[],hidden:[],
   map:{Hips:['hips'],Spine:['spine'],Chest:['chest'],Neck:['neck',[0,-0.035,0],0.6],Head:['head',[0,-0.06,0]],
     ThighL:['lThigh'],ShinL:['lShin'],FootL:['lFoot'],ToeL:['lFoot',[0,-0.062,0.112]],
     ThighR:['rThigh'],ShinR:['rShin'],FootR:['rFoot'],ToeR:['rFoot',[0,-0.062,0.112]],
-    ClavicleL:['chest',[0.1,0.29,0]],UpperArmL:['lUpper'],ForearmL:['lFore'],HandL:['lHand'],Fingers1L:['lHand',[0,-0.085,0]],Fingers2L:['lHand',[0,-0.125,0]],Thumb1L:['lHand',[0,-0.02,0.04]],
-    ClavicleR:['chest',[-0.1,0.29,0]],UpperArmR:['rUpper'],ForearmR:['rFore'],HandR:['rHand'],Fingers1R:['rHand',[0,-0.085,0]],Fingers2R:['rHand',[0,-0.125,0]],Thumb1R:['rHand',[0,-0.02,0.04]]}};
+    ClavicleL:['chest',[0.1,0.22,0]],UpperArmL:['lUpper'],ForearmL:['lFore'],HandL:['lHand'],Fingers1L:['lHand',[0,-0.085,0]],Fingers2L:['lHand',[0,-0.125,0]],Thumb1L:['lHand',[0,-0.02,0.04]],
+    ClavicleR:['chest',[-0.1,0.22,0]],UpperArmR:['rUpper'],ForearmR:['rFore'],HandR:['rHand'],Fingers1R:['rHand',[0,-0.085,0]],Fingers2R:['rHand',[0,-0.125,0]],Thumb1R:['rHand',[0,-0.02,0.04]]}};
 function ussDecode(b64,T){const s=atob(b64),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return new T(u.buffer);}
 function ussApply(){if(USS.on)return;USS.on=true;
   // hide the hunter outfit on player 1 (not the rifle, not hit boxes, not anything carried later)
@@ -3442,7 +3451,7 @@ function ussApply(){if(USS.on)return;USS.on=true;
     const k=USS.s/(jt===J.head?jt.scale.x:1),o=m[1]||[0,0,0];me.scale.set(k,k*(m[2]||1),k);me.position.set(o[0]*k,o[1]*k,o[2]*k);
     jt.add(me);USS.meshes.push(me);}
   {const k=USS.s/J.head.scale.x,hy=USS.map.Head[1][1];EYE_L=[0,(0.085+hy)*k,0.075*k];}   // behind the sunglasses
-  J.lUpper.position.x=USS.sh;J.rUpper.position.x=-USS.sh;   // shoulders in to where the soldier's arms meet the torso
+  J.lUpper.position.x=USS.sh;J.rUpper.position.x=-USS.sh;J.lUpper.position.y-=0.07;J.rUpper.position.y-=0.07;   // shoulders in to where the soldier's arms meet the torso
   marine.scale.setScalar(USS.big);gun.scale.multiplyScalar(GSC/USS.big);}
 window._RIG={marine,J,mat,USS,apply:ussApply};
 // rear end of the stock in gun space (the butt plate), measured once from the model; used to seat the butt in the shoulder when aiming
@@ -3451,7 +3460,7 @@ function gunButt(ar){const key=ar?'ar':'rifle';if(_BUTT[key])return _BUTT[key];c
   if(ar)ARG.traverse(o=>{if(o.isMesh)list.push(o);});else for(const m of RIFLE_MESH)list.push(m);
   gun.updateMatrixWorld(true);const inv=new THREE.Matrix4().copy(gun.matrixWorld).invert(),b=new THREE.Box3(),t=new THREE.Box3();
   for(const m of list){if(!m.geometry.boundingBox)m.geometry.computeBoundingBox();t.copy(m.geometry.boundingBox).applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv,m.matrixWorld));b.union(t);}
-  const r={z:b.min.z,y:(b.min.y+b.max.y)/2};if(isFinite(r.z))_BUTT[key]=r;return r;}
+  const r={z:b.min.z,zmax:b.max.z,y:(b.min.y+b.max.y)/2};if(isFinite(r.z))_BUTT[key]=r;return r;}
 const _bW=new THREE.Vector3(),_bS=new THREE.Vector3(),_bC=new THREE.Vector3();
 // slide the gun along its sight line until the butt plate sits in the strong-side shoulder pocket
 function seatButt(W,sz,ar){const bt=gunButt(ar);if(!isFinite(bt.z))return;const S=marine.scale.x*gun.scale.x;
@@ -4058,7 +4067,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=372;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=373;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
