@@ -2144,7 +2144,7 @@ for(let z=-PLAY-15;z<PLAY+15;z+=3.6)for(let x=-PLAY-15;x<PLAY+15;x+=3.6){const p
   const mk=meadowK(px,pz);const p=mk>0.3?0.12:(deadK(px,pz)>0?0.55:0.4);if(wr()>p)continue;
   const c=chunkFor(px,pz);const fern=dS<40||wr()<0.35;const s=wrr(0.6,1.5);
   const sy=s*(fern?wrr(0.8,1.3):wrr(0.6,1.1)),ry=wr()*PI*2,col=fern?FERNC[Math.floor(wr()*FERNC.length)]:SHRUBC[Math.floor(wr()*SHRUBC.length)];
-  if(fern&&hsh(px*3.7+11,pz*5.3+7)<0.2)continue;
+  if(fern)continue;   // ferns removed (random stream untouched)
   if(xsClear(px,pz))continue;   // 20% fewer ferns (the random stream is untouched, so the rest of the map is unchanged)
   addInst(c,fern?'fern':'shrub',px,groundH(px,pz)-0.05,pz,s,sy,ry,col);nPlants++;}
 // build instanced meshes per chunk
@@ -3944,7 +3944,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=338;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=341;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5400,6 +5400,7 @@ addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)retur
 resReset=(f=>function(){f.apply(this,arguments);try{siloReset();}catch(e){}})(resReset);
 // ================= sector capture: seven sectors in two lanes (east home · Tower 1 / Tower 4 · centre silo · Tower 3 / Tower 2 · west home) =================
 // The host decides who owns what (it knows both positions); the guest just draws the state it is sent. Sides swap every round, so sectors are coloured by "mine / theirs", not by east / west.
+const TK_START=30, TK_DEATH=1, TK_BLEED=0.1;   // tickets: each death costs TK_DEATH; a side bleeds TK_BLEED/s for every sector the enemy holds beyond 3 of 7
 const SEC_CAP=35, SEC_RESPAWN=8, SEC_ARM=5, SEC_CT=30;
 const SEC_DEF=[
   {k:'E', n:'East home',            x:SEC_HOME.e.x,x2:0,z:SEC_HOME.e.z,r:40,adj:[1,2],dp:0,fo:8, nm:'EAST HOME'},
@@ -5409,17 +5410,16 @@ const SEC_DEF=[
   {k:'T3',n:'Tower 3',              x:TWPOS3.x,z:TWPOS3.z,r:42,adj:[3,6],dp:3,fo:8, nm:'TOWER 3'},
   {k:'T2',n:'Tower 2',              x:TWPOS2.x,z:TWPOS2.z,r:42,adj:[3,6],dp:3,fo:8, nm:'TOWER 2'},
   {k:'W', n:'West home',            x:SEC_HOME.w.x,z:SEC_HOME.w.z,r:40,adj:[4,5],dp:4,fo:8, nm:'WEST HOME'}];
-const SECT={s:SEC_DEF.map(()=>({own:0,cap:0,by:0})),launch:0,deadT:-1,prevOwn:null,rsp:-1,warn:0};
+const SECT={s:SEC_DEF.map(()=>({own:0,cap:0,by:0})),launch:0,tk:[30,30],dh:1,dg:1,deadT:-1,prevOwn:null,rsp:-1,warn:0};
 const SEC_COL={0:'#d8d8d0',1:'#3d9bff',2:'#ff5a4a'};   // relative: 0 neutral · 1 mine · 2 theirs
 function secTeam(){if(!MPM.on||!NT.room||(NT.M.r|0)<1)return 1;const odd=NT.M.r%2===1;return MPM.guest?(odd?2:1):(odd?1:2);}   // 1 = east, 2 = west; the host starts east on odd rounds
 function secHostTeam(){return (NT.M.r%2===1)?1:2;}
 function secRel(own){return own===0?0:(own===secTeam()?1:2);}
 function secDepth(i,team){return team===1?SEC_DEF[i].dp:4-SEC_DEF[i].dp;}
-function secReset(){SECT.s.forEach((s,i)=>{s.own=i===0?1:i===6?2:0;s.cap=0;s.by=0;});SECT.launch=0;SECT.deadT=-1;SECT.rsp=-1;SECT.prevOwn=SECT.s.map(s=>s.own);
+function secReset(){SECT.s.forEach((s,i)=>{s.own=i===0?1:i===6?2:0;s.cap=0;s.by=0;});SECT.launch=0;SECT.tk=[TK_START,TK_START];SECT.dh=SECT.dg=1;SECT.deadT=-1;SECT.rsp=-1;SECT.prevOwn=SECT.s.map(s=>s.own);
   try{if(SILO.built&&SILO.st!=='idle')siloReset();}catch(e){}}
 function secArmed(team){const n=SECT.s.reduce((a,s)=>a+(s.own===team?1:0),0);return SECT.s[3].own===team&&n>=SEC_ARM;}
-function secAttackable(i,team){const s=SECT.s[i];if(s.own===team)return false;if(i===3){const mine=team===1?[1,2]:[4,5];return mine.every(j=>SECT.s[j].own===team);}   // the centre comes last: you need both towers on your own side first
-  return SEC_DEF[i].adj.some(j=>SECT.s[j].own===team);}
+function secAttackable(i,team){return SECT.s[i].own!==team;}   // any sector can be attacked at any time (no capture order)
 function secPlayers(){const out=[],t=secTeam();out.push({team:t,x:player.pos.x,z:player.pos.z,al:player.alive&&MPM.hp>0});
   if(MPM.on&&NT.opp&&RPS.pos&&RPS.r===NT.M.r)out.push({team:3-t,x:RPS.pos.x,z:RPS.pos.z,al:!!RPS.al});return out;}
 // the host (or single player) runs the capture
@@ -5455,13 +5455,22 @@ function secFrame(dt){
   const live=MPM.on&&NT.room&&NT.M.ph==='live';
   if(!MPM.on||(MPM.on&&!MPM.guest&&live)){if(!MPM.on||live)secSim(dt);}
   if(MPM.on&&!MPM.guest&&live){const M=NT.M;
-    if(SECT.s[0].own===2)secWin(2,'east home captured');else if(SECT.s[6].own===1)secWin(1,'west home captured');
+    // tickets: bleed for the sectors the enemy holds beyond half, and one per death
+    {const n1=SECT.s.reduce((a,s)=>a+(s.own===1?1:0),0),n2=SECT.s.reduce((a,s)=>a+(s.own===2?1:0),0);
+     SECT.tk[0]-=Math.max(0,n2-3)*TK_BLEED*dt;SECT.tk[1]-=Math.max(0,n1-3)*TK_BLEED*dt;
+     const myT=secTeam(),oT=3-myT,hd=!player.alive||MPM.hp<=0,od=RPS.hp!=null&&RPS.hp<=0&&RPS.r===M.r;
+     if(hd&&!SECT.dh){SECT.dh=1;SECT.tk[myT-1]-=TK_DEATH;}else if(!hd)SECT.dh=0;
+     if(od&&!SECT.dg){SECT.dg=1;SECT.tk[oT-1]-=TK_DEATH;}else if(!od)SECT.dg=0;
+     SECT.tk[0]=Math.max(0,SECT.tk[0]);SECT.tk[1]=Math.max(0,SECT.tk[1]);}
+    if(SECT.tk[0]<=0&&SECT.tk[1]<=0)secWin(SECT.tk[0]>=SECT.tk[1]?1:2,'out of tickets');
+    else if(SECT.tk[0]<=0)secWin(2,'east out of tickets');else if(SECT.tk[1]<=0)secWin(1,'west out of tickets');
+    else if(SECT.s[0].own===2)secWin(2,'east home captured');else if(SECT.s[6].own===1)secWin(1,'west home captured');
     else if(SILO.built&&SILO.st==='fly'&&SECT.launch){secWin(SECT.launch,'missile launched');}
     if(SILO.built&&SILO.st==='count'&&SECT.launch&&!secArmed(SECT.launch)){siloAbort();try{NT.room.emit('silo',{ab:1}).catch(()=>{});}catch(e){}}}
   secNotify();
   // respawn: dead players come back at their front sector after a short wait while the round is running
   if(live){if(!player.alive||MPM.hp<=0){if(SECT.deadT<0)SECT.deadT=0;SECT.deadT+=dt;SECT.rsp=Math.max(0,SEC_RESPAWN-SECT.deadT);if(SECT.deadT>=SEC_RESPAWN){SECT.deadT=-1;SECT.rsp=-1;secRespawn();}}else{SECT.deadT=-1;SECT.rsp=-1;}}
-  else{SECT.deadT=-1;SECT.rsp=-1;}
+  else{SECT.deadT=-1;SECT.rsp=-1;SECT.dh=SECT.dg=1;}
   secWorldStep(dt);}
 // ---- the world: a ring on the ground, a flag and a light pillar at every sector
 const SECW=[];
@@ -6153,7 +6162,7 @@ function netStep(dt){farFlashStep(dt);
   if(opp){NT.oppSeen=now;if(!NT.opp||NT.opp.peer!==opp.peer){NT.opp=opp;if(!NT.wasOpp){toast('Opponent connected · click the game to capture the mouse');if(AC&&soundOn)playFanfare();else NT.fan=true;mpAutoDeploy();if(host)setTimeout(()=>{if(NT.room&&NT.role==='h'&&NT.opp&&NT.M.ph==='wait')mpStart();},3000);}NT.wasOpp=true;mpStat('Direct match'+' · '+NT.where+' · opponent connected'+(host?' · press Start match':' · waiting for the host to start'));if(host)sendRoster();mpUI();}
     NT.opp=opp;const pr=opp.presence;feedSnap(pr.s);
     if(!host&&pr.m){const m=pr.m;const prevPh=M.ph;NT.M={ph:String(m.ph),r:m.r|0,sc:[m.sc&&m.sc[0]|0,m.sc&&m.sc[1]|0],left:+m.left||0,lw:m.lw||'',sd:m.sd|0,why:String(m.wy||'')};
-      if(Array.isArray(m.sec)&&m.sec.length===SECT.s.length){m.sec.forEach((a,i)=>{const s=SECT.s[i];s.own=a[0]|0;s.cap=+a[1]||0;s.by=a[2]|0;s.in=a[3]|0;});SECT.launch=m.ln|0;}
+      if(Array.isArray(m.sec)&&m.sec.length===SECT.s.length){m.sec.forEach((a,i)=>{const s=SECT.s[i];s.own=a[0]|0;s.cap=+a[1]||0;s.by=a[2]|0;s.in=a[3]|0;});SECT.launch=m.ln|0;if(Array.isArray(m.tk)){SECT.tk[0]=+m.tk[0];SECT.tk[1]=+m.tk[1];}}
       if(Array.isArray(m.gm)){const K=['pk762'];K.forEach((k,i)=>{if(typeof m.gm[i]==='number'&&GAME[k]!==m.gm[i])GAME[k]=m.gm[i];});}   // pickup amounts come from the host
       if(typeof m.tod==='number'){DAY.rateI=clamp(m.ri|0,0,RATES.length-1);if(opp.updatedAt!==NT.todQ){NT.todQ=opp.updatedAt;const age=opp.updatedAt?Math.max(0,Math.min(1,(Date.now()-opp.updatedAt)/1000)):0,tg=(m.tod+(age+0.04)*RATES[DAY.rateI]/60+24)%24;if(Math.abs(wrapA((tg-DAY.tod)*PI/12))>0.004){DAY.tod=tg;try{stepDay(0);}catch(e){}}}}   // sun and moon follow the host's clock (one correction per update, aged for transit)
       if(NT.M.r>0&&NT.M.r!==NT.myR&&(NT.M.ph==='count'||NT.M.ph==='live'))roundReset();
@@ -6175,7 +6184,7 @@ function netStep(dt){farFlashStep(dt);
   // send my state
   NT.sendAcc+=dt;if(NT.sendAcc>=1/SEND_HZ){NT.sendAcc=0;const pl=player;
     const s={q:++NT.seq,t:Math.round(now),x:nr2(pl.pos.x),y:nr2(pl.pos.y),z:nr2(pl.pos.z),yw:nr3(wrapA(pl.yaw)),p:pl.pose?packPose(pl.pose):null,b:nr2(boltT),hp:Math.round(MPM.hp),al:pl.alive?1:0,r:NT.myR,sp:nr1(Math.hypot(pl.vel.x,pl.vel.z)),st:pl.stance[0],w:WPN.cur==='at4'?1:0,lf:(ZIP.lift&&LIFT.ride)?[LIFTS.indexOf(ZIP.lift),nr3(LIFT.ride.u)]:0};
-    const patch={s};if(host)patch.m={ph:M.ph,r:M.r,sd:M.sd|0,sc:M.sc.slice(),left:nr2(M.left),lw:M.lw,wy:M.why||'',tod:nr3(DAY.tod),ri:DAY.rateI,gm:[GAME.pk762],sec:SECT.s.map(s=>[s.own,Math.round(s.cap*100)/100,s.by,s.in|0]),ln:SECT.launch|0};
+    const patch={s};if(host)patch.m={ph:M.ph,r:M.r,sd:M.sd|0,sc:M.sc.slice(),left:nr2(M.left),lw:M.lw,wy:M.why||'',tod:nr3(DAY.tod),ri:DAY.rateI,gm:[GAME.pk762],sec:SECT.s.map(s=>[s.own,Math.round(s.cap*100)/100,s.by,s.in|0]),ln:SECT.launch|0,tk:SECT.tk.map(v=>Math.round(v*10)/10)};
     NT.lastSize=JSON.stringify(patch).length;NT.room.presence(patch).catch(()=>{});}
   if(host&&NT.opp){NT.wildAcc+=dt;if(NT.wildAcc>=1/WILD_HZ){NT.wildAcc=0;sendWild();}}
   netStats(dt);
@@ -6184,7 +6193,7 @@ function netStep(dt){farFlashStep(dt);
   if(!NT.opp&&NT.wasOpp&&M.ph!=='wait'&&M.ph!=='over')txt='Opponent connection lost · waiting for them · '+sc;
   else if(M.ph==='wait')txt=NT.opp?(host?'Opponent here · Esc → Start match':'Opponent here · waiting for the host to start'):'Direct match'+' · waiting for the opponent';
   else if(M.ph==='count')txt='Round '+M.r+' · '+sc+' · starts in '+Math.max(1,Math.ceil(M.left));
-  else if(M.ph==='live')txt='Round '+M.r+' · '+sc+' · '+Math.round(MPM.hp)+' hp'+(SECT.rsp>=0?' · respawn in '+Math.ceil(SECT.rsp):'');
+  else if(M.ph==='live')txt='Round '+M.r+' · '+sc+' · tickets '+Math.ceil(SECT.tk[secTeam()-1])+'–'+Math.ceil(SECT.tk[2-secTeam()])+' · '+Math.round(MPM.hp)+' hp'+(SECT.rsp>=0?' · respawn in '+Math.ceil(SECT.rsp):'');
   else if(M.ph==='end'){const won=M.lw===(host?'h':'g');txt=(M.lw?(won?'Round won':'Round lost'):'Round drawn')+(M.why?' · '+M.why:'')+' · '+sc+' · next round in '+Math.max(1,Math.ceil(M.left));}
   else if(M.ph==='over'){const won=mine>theirs;txt=(won?'You win the match ':'You lose the match ')+mine+'–'+theirs+(host?' · Esc → Rematch':' · waiting for a rematch');}
   if(txt!==NT.banTxt){NT.banTxt=txt;const e=$('mpBan');e.textContent=txt;e.hidden=!txt;}
