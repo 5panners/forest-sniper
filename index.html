@@ -2659,7 +2659,7 @@ function raiseScoped(p,k,ar){   // shouldered: body turns side-on so the butt si
   p.spine=[p.spine[0],p.spine[1]+TW*0.45*k,p.spine[2]];p.chest=[p.chest[0],p.chest[1]+TW*0.55*k,p.chest[2]];p.head=[p.head[0],p.head[1]-TW*k,p.head[2]];
   if(player.stance==='stand'&&Math.hypot(player.vel.x,player.vel.z)<0.6&&!(p.legIK>0.5)){   // standing shot: weak-side foot forward, strong-side foot back and turned out, knees soft
     const L=(n,v)=>{const a=p[n]||[0,0,0];p[n]=[a[0]+(v[0]-a[0])*k,a[1]+(v[1]-a[1])*k,a[2]+(v[2]-a[2])*k];};
-    L('lThigh',[-0.36,0.2,0.14]);L('lShin',[0.26,0,0]);L('lFoot',[0.1,-0.15,0]);L('rThigh',[0.26,-0.4,-0.16]);L('rShin',[0.2,0,0]);L('rFoot',[-0.46,0.3,0]);
+    L('lThigh',[-0.34,0.14,0.04]);L('lShin',[0.26,0,0]);L('lFoot',[0.1,-0.1,0]);L('rThigh',[0.24,-0.3,-0.04]);L('rShin',[0.2,0,0]);L('rFoot',[-0.4,0.25,0]);
     p.hipsP=[(p.hipsP||[0,0,0])[0],(p.hipsP||[0,0,0])[1]-0.04*k,(p.hipsP||[0,0,0])[2]];
     p.hipsR=[(p.hipsR||[0,0,0])[0],(p.hipsR||[0,0,0])[1]+TW*0.3*k,(p.hipsR||[0,0,0])[2]];p.spine=[p.spine[0]+0.2*k,p.spine[1],p.spine[2]];p.chest=[p.chest[0]+0.08*k,p.chest[1],p.chest[2]];p.head=[p.head[0]-0.3*k,p.head[1],p.head[2]];}   // bend a little at the waist, head stays upright   // lean into the gun
   {const NK=window.SC_NK!==undefined?window.SC_NK:0.0;p.neck=[p.neck[0]+NK*k,p.neck[1],p.neck[2]];p.head=[p.head[0]+NK*0.3*k,p.head[1],p.head[2]];}
@@ -2684,16 +2684,21 @@ function palmUp(k){   // support hand under the fore-end: fingers along the barr
   _pX.copy(_pZ).negate();_pY.copy(_pf).negate();_pZ.crossVectors(_pX,_pY);               // hand axes: x = -palm, y = -fingers, z = thumb
   _pM.makeBasis(_pX,_pY,_pZ);_pq.setFromRotationMatrix(_pM);
   J.lHand.parent.getWorldQuaternion(_pp);_pp.invert();_pq.premultiply(_pp);
-  J.lHand.quaternion.slerp(_pq,Math.min(1,k));J.lHand.updateMatrixWorld(true);}
-const _ag=new THREE.Vector3();
+  J.lHand.quaternion.slerp(_pq,Math.min(1,k));
+  if(!J.lHand._fg)J.lHand._fg=J.lHand.children.filter(o=>/^uss_(Fingers|Thumb)/.test(o.name));   // curl the fingers round the fore-end
+  {const C=window.SC_CURL!==undefined?window.SC_CURL:1.0;for(const o of J.lHand._fg)o.rotation.z=(/Thumb/.test(o.name)?-0.7:(/Fingers2/.test(o.name)?1.3:0.9))*C*k;}
+  J.lHand.updateMatrixWorld(true);}
+const _ag=new THREE.Vector3(),_ag2=new THREE.Vector3();
 function aimGun(p,k){   // hip fire / ready: the barrel points at what the crosshair is on (the eye position is not moved)
   applyPose(p);gun.updateMatrixWorld(true);gun.getWorldPosition(_ag);
-  if(aimPtTP&&aimPtTP.distanceTo(_ag)>5)_sz.copy(aimPtTP).sub(_ag).normalize();else if(aimYawV!=null&&aimPitchV!=null)_sz.set(Math.sin(aimYawV)*Math.cos(aimPitchV),Math.sin(aimPitchV),Math.cos(aimYawV)*Math.cos(aimPitchV));else _sz.copy(_dir).normalize();
+  {const cp=Math.cos(camPitch);_sz.set(Math.sin(camYaw)*cp,Math.sin(camPitch),Math.cos(camYaw)*cp);   // this frame's look direction (the camera has not moved yet), so turning does not lag
+   if(aimPtTP){const D=Math.max(5,aimPtTP.distanceTo(camera.position));_ag2.copy(camera.position).addScaledVector(_sz,D);_sz.copy(_ag2).sub(_ag).normalize();}}
   _sx.set(0,1,0).cross(_sz);if(_sx.lengthSq()<1e-6)_sx.set(1,0,0);_sx.normalize();_sy.crossVectors(_sz,_sx);_sm.makeBasis(_sx,_sy,_sz);_sq.setFromRotationMatrix(_sm);
   J.chest.updateMatrixWorld(true);J.chest.getWorldQuaternion(_sq2);_sq2.invert();_sq3.copy(_sq2).multiply(_sq);
   _se.set(p.gunR[0],p.gunR[1],p.gunR[2],'ZYX');_sq2.setFromEuler(_se);_sq2.slerp(_sq3,k);_se.setFromQuaternion(_sq2,'ZYX');p.gunR=[_se.x,_se.y,_se.z];}
 function hunch(k){   // aiming: shoulders rise a touch and the neck sinks, so the head drops into the torso (head stays upright)
   if(!J.neck._by){J.neck._by=J.neck.position.y;J.lUpper._by=J.lUpper.position.y;J.rUpper._by=J.rUpper.position.y;}
+  if(k<0.004&&J.lHand._fg&&J.lHand._fg[0]&&J.lHand._fg[0].rotation.z!==0)J.lHand._fg.forEach(o=>o.rotation.z=0);
   const HN=window.SC_HN!==undefined?window.SC_HN:0.07,HS=window.SC_HS!==undefined?window.SC_HS:0.035;
   J.neck.position.y=J.neck._by-HN*k;J.lUpper.position.y=J.lUpper._by+HS*k;J.rUpper.position.y=J.rUpper._by+HS*k;}
 function updatePlayer(dt,time){
@@ -2738,7 +2743,7 @@ function updatePlayer(dt,time){
   let faceT=null;
   if(!(A_&&A_.lock)){if(pl.aimW>0.15||aimHeld||firing||viewFP)faceT=gunYaw();else if(hs>0.3)faceT=Math.atan2(pl.vel.x,pl.vel.z);else faceT=gunYaw();}   // standing still: the body turns to where the mouse points
   if(faceT!=null&&pl.slide){const sd=Math.atan2(pl.slide.dx,pl.slide.dz);faceT=sd+clamp(wrapA(faceT-sd),-1.1,1.1);}
-  if(faceT!=null){const rate=pl.stance==='prone'?3:12;pl.yaw+=wrapA(faceT-pl.yaw)*(1-Math.exp(-rate*dt));}
+  if(faceT!=null){const rate=(pl.aimW>0.15||aimHeld||firing||viewFP)?(pl.stance==='prone'?6:60):(pl.stance==='prone'?3:12);pl.yaw+=wrapA(faceT-pl.yaw)*(1-Math.exp(-rate*dt));}
   // gravity + integration
   pl.vel.y-=14*dt;
   const sx0=pl.pos.x,sz0=pl.pos.z;
@@ -3697,7 +3702,7 @@ const ZOOMS=[2,3,4]; let zoomI=0;   // magnification; field of view = 62 deg (no
 const _cp=V(0,0,0),_dir=V(0,0,0),_eye=V(0,0,0),_rt=V(0,0,0), camRay=new THREE.Raycaster();
 let breath=6, breathLock=0, swayT=0, range=null, rangeT=0;
 let camBoom=3;
-let aimYawV=null,aimPitchV=null,aimPtTP=null,_wasScoped=false,camAimT=0;
+let aimYawV=null,aimPitchV=null,aimPtTP=null,_wasScoped=false,camAimT=0,camHs=null;
 function gunYaw(){return aimYawV!=null?aimYawV:camYaw;}
 function gunPitch(){return aimPitchV!=null?aimPitchV:camPitch;}
 function updateCamera(dt){
@@ -3726,10 +3731,11 @@ function updateCamera(dt){
     if(pl.aimW>0.3)camAimT=0.9;else camAimT=Math.max(0,camAimT-dt);
     const aim=camAimT>0||pl.stance==='prone';   // prone: the rifle is always up
     const SC=(typeof USS!=='undefined'&&USS.on)?USS.big:1;   // a bigger body: the camera pivot rises with it
-    const h=((pl.stance==='prone'?0.8:(pl.stance==='crouch'?1.3:1.72))+(aim&&pl.stance!=='prone'?0.3:0))*(1+(SC-1)*0.8)-0.6*pl.slideW;
+    const h0=((pl.stance==='prone'?0.8:(pl.stance==='crouch'?1.3:1.72))+(aim&&pl.stance!=='prone'?0.3:0))*(1+(SC-1)*0.8)-0.6*pl.slideW;
+    if(camHs===null)camHs=h0;camHs=damp(camHs,h0,4.5,dt);const h=camHs;   // the pivot height eases between stances instead of jumping when the stance flips
     const dist=aim?Math.min(camDist,2.7):camDist, sh=aim?1.2:0.6;
-    camPivot.x=damp(camPivot.x,pl.pos.x,20,dt);camPivot.z=damp(camPivot.z,pl.pos.z,20,dt);camPivot.y=damp(camPivot.y,pl.pos.y+h,10,dt);
-    camSh.x=damp(camSh.x,sh,10,dt);camSh.y=damp(camSh.y,dist,10,dt);
+    camPivot.x=damp(camPivot.x,pl.pos.x,20,dt);camPivot.z=damp(camPivot.z,pl.pos.z,20,dt);camPivot.y=damp(camPivot.y,pl.pos.y+h,14,dt);
+    camSh.x=damp(camSh.x,sh,6,dt);camSh.y=damp(camSh.y,dist,6,dt);
     const piv=_cp.copy(camPivot).addScaledVector(_rt,camSh.x);
     let d=camSh.y;camRay.set(piv,_v9.copy(_dir).negate());camRay.far=d+0.3;const hs=camRay.intersectObjects(MAP.camBlockers,false);if(hs.length)d=Math.max(0.4,hs[0].distance-0.25);
     // obstacles between the pivot and the camera: rocks by their real shape, trunks thicker than a hand span; thin stems are ignored
@@ -4081,7 +4087,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=378;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=379;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
