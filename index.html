@@ -2685,6 +2685,17 @@ function palmUp(k){   // support hand under the fore-end: fingers along the barr
   _pM.makeBasis(_pX,_pY,_pZ);_pq.setFromRotationMatrix(_pM);
   J.lHand.parent.getWorldQuaternion(_pp);_pp.invert();_pq.premultiply(_pp);
   J.lHand.quaternion.slerp(_pq,Math.min(1,k));J.lHand.updateMatrixWorld(true);}
+const _ag=new THREE.Vector3();
+function aimGun(p,k){   // hip fire / ready: the barrel points at what the crosshair is on (the eye position is not moved)
+  applyPose(p);gun.updateMatrixWorld(true);gun.getWorldPosition(_ag);
+  if(aimPtTP&&aimPtTP.distanceTo(_ag)>5)_sz.copy(aimPtTP).sub(_ag).normalize();else if(aimYawV!=null&&aimPitchV!=null)_sz.set(Math.sin(aimYawV)*Math.cos(aimPitchV),Math.sin(aimPitchV),Math.cos(aimYawV)*Math.cos(aimPitchV));else _sz.copy(_dir).normalize();
+  _sx.set(0,1,0).cross(_sz);if(_sx.lengthSq()<1e-6)_sx.set(1,0,0);_sx.normalize();_sy.crossVectors(_sz,_sx);_sm.makeBasis(_sx,_sy,_sz);_sq.setFromRotationMatrix(_sm);
+  J.chest.updateMatrixWorld(true);J.chest.getWorldQuaternion(_sq2);_sq2.invert();_sq3.copy(_sq2).multiply(_sq);
+  _se.set(p.gunR[0],p.gunR[1],p.gunR[2],'ZYX');_sq2.setFromEuler(_se);_sq2.slerp(_sq3,k);_se.setFromQuaternion(_sq2,'ZYX');p.gunR=[_se.x,_se.y,_se.z];}
+function hunch(k){   // aiming: shoulders rise a touch and the neck sinks, so the head drops into the torso (head stays upright)
+  if(!J.neck._by){J.neck._by=J.neck.position.y;J.lUpper._by=J.lUpper.position.y;J.rUpper._by=J.rUpper.position.y;}
+  const HN=window.SC_HN!==undefined?window.SC_HN:0.07,HS=window.SC_HS!==undefined?window.SC_HS:0.035;
+  J.neck.position.y=J.neck._by-HN*k;J.lUpper.position.y=J.lUpper._by+HS*k;J.rUpper.position.y=J.rUpper._by+HS*k;}
 function updatePlayer(dt,time){
   carryOnTank();
   const pl=player, act=player.action, A_=act?ACTIONS[act.name]:null;
@@ -2801,6 +2812,8 @@ function updatePlayer(dt,time){
   if(act){const ap=cpose(ACTIONS[act.name].clip,act.t);p=mix(p,ap,clamp(act.w,0,1));p.flash=0;}
   marine.position.copy(pl.pos); marine.rotation.y=pl.yaw;
   {let want=0;try{want=((scoped||(input.rmb&&WPN.cur==='ar15'&&pl.aimW>0.5&&pl.reloadT<0&&!(pl.action&&ACTIONS[pl.action.name].lock)))&&pl.alive&&!pl.slide)?1:0;}catch(e){}pl.scK=(pl.scK||0)+(want-(pl.scK||0))*Math.min(1,dt*14);if(Math.abs(want-pl.scK)<0.004)pl.scK=want;
+   try{hunch(pl.scK);}catch(e){}
+   {const wk=((input.lmb||pl.aimW>0.3)&&pl.alive&&!pl.slide&&pl.reloadT<0&&WPN.cur!=='none'&&!(pl.action&&ACTIONS[pl.action.name].lock))?1:0;pl.hipK=(pl.hipK||0)+(wk-(pl.hipK||0))*Math.min(1,dt*14);if(Math.abs(wk-pl.hipK)<0.004)pl.hipK=wk;const kk=pl.hipK*(1-pl.scK);if(kk>0.004){p=Object.assign({},p);try{aimGun(p,kk);}catch(e){}}}
    if(pl.scK>0.004){p=Object.assign({},p);raiseScoped(p,pl.scK,_isAR());}}
   {const wa=(input.rmb&&WPN.cur==='at4'&&pl.aimW>0.5&&pl.alive&&!pl.slide&&pl.stance!=='prone'&&pl.reloadT<0)?1:0;pl.atK=(pl.atK||0)+(wa-(pl.atK||0))*Math.min(1,dt*12);if(Math.abs(wa-pl.atK)<0.004)pl.atK=wa;if(pl.atK>0.004){p=Object.assign({},p);try{raiseAT4(p,pl.atK);}catch(e){}}}   // AT4: tube up on the shoulder
   try{if(TW.climb)p=climbPose(p,pl);else if(ZIP.on)p=zipPose(p,pl);}catch(e){}
@@ -4068,7 +4081,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=377;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=378;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6389,7 +6402,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&NT.room&&
 
 ;setInterval(()=>{const b=document.getElementById('mpDx');if(b&&!b.hidden&&b.scrollHeight>b.clientHeight+2)b.style.height=(b.scrollHeight+6)+'px';},400);
 
-try{Object.assign(window._RIG,{WPN,slotGive,setWeapon});}catch(e){}
+try{Object.assign(window._RIG,{WPN,slotGive,setWeapon,get player(){return player;},get cam(){return [camYaw,camPitch,aimYawV,aimPitchV];}});}catch(e){}
 window.SNIPER={mp:{start:mpStart,fanfare:playFanfare,goodbye:playGoodbye,leave:mpLeave,NT,RPS,MPM,P2RHB,P2PAIRS,packPose,getDeerVer:()=>deerVer,getYaw:()=>player.yaw,getDeer:()=>DEER,getAim:()=>aimPtTP?aimPtTP.toArray():null,getCam:()=>{const d=new THREE.Vector3();camera.getWorldDirection(d);return [camera.position.toArray(),d.toArray(),scoped]}},deerSample,getDCGCD:()=>dcGCD,getP2:()=>P2M,getBoltT:()=>boltT,P1_SPAWN,P2_SPAWN,getFALL:()=>FALL,STREAM,BED,CW,getSE:()=>STREAM_END,hFull,lakeE,LOWR,hitBird,getAmb:()=>amb,SND,playSample,initAudio,getAC:()=>AC,DAY,stepDay,meadowK,resetGame,BZ,BGRP,setBuzzards,STAIRS,TORTOPS,rockTopAt,DEER,MARKS,ROCKS,PGRID,setDeerCounts,disturb,miniZoom,keysDown:keys,player,marine,J,MAP,SEAT_INFO,SUMMIT,LW,chunks,stats,keys,input,camera,scene,renderer,castRay,groundH,setZero,
   set(o){if(o.yaw!=null)camYaw=o.yaw;if(o.pitch!=null)camPitch=o.pitch;if(o.pos)player.pos.set(o.pos[0],o.pos[1],o.pos[2]);if(o.fp!=null)viewFP=o.fp;if(o.zoom!=null)zoomI=o.zoom;},
   play(){setPlaying(true);fallback=true;}, pause(v){paused=v;}, lod(){updateLOD();}, tick(dt){update(dt);renderer.render(scene,camera);}, step(dt){update(dt);}, info(){return {genMs,nTrees,nPlants,rocks:ROCKS.length,inst:instCount,LW,tris:renderer.info.render.triangles,calls:renderer.info.render.calls};}};
