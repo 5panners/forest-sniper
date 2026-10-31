@@ -3947,7 +3947,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=343;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=344;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5216,10 +5216,8 @@ function liftChairGeo(){const P=[],ST='#2c2f31',GV='#8d9396',SEAT='#d23a2a',SEAT
       bar(V(end.x,end.y-0.1,end.z),V(end.x,end.y+0.75,end.z),0.09,GV,8);                                  // hub shaft
       const o=zipEdge(hh)-0.35,px=S.x+sx*o,pz=S.z+sz*o;                                                  // gantry: two posts on the deck edge, a beam out to the hub
       for(const s of [-1,1]){const qx=px+sz*0.9*s,qz=pz-sx*0.9*s;bar(V(qx,dy,qz),V(qx,end.y+0.75,qz),0.07,GV,6);bar(V(qx,end.y+0.75,qz),V(end.x,end.y+0.75,end.z),0.06,GV,6);}
-      // boarding gates: a yellow arch and a sign at each side's gate
-      for(const L of LIFTS){if(L.Z!==Z||L.from!==ti)continue;const g=liftStand(L);bar(V(g.x-sz*0.5,dy,g.z+sx*0.5),V(g.x-sz*0.5,dy+2.2,g.z+sx*0.5),0.04,YEL,5);bar(V(g.x+sz*0.5,dy,g.z-sx*0.5),V(g.x+sz*0.5,dy+2.2,g.z-sx*0.5),0.04,YEL,5);
-        bar(V(g.x-sz*0.5,dy+2.2,g.z+sx*0.5),V(g.x+sz*0.5,dy+2.2,g.z-sx*0.5),0.04,YEL,5);parts.push(xf(tint(B(0.7,0.28,0.04),'#2a6a3a',0.02),[g.x,dy+2.0,g.z],[0,hh,0]));
-        parts.push(xf(tint(B(0.5,0.08,0.05),'#f4f4f0',0.01),[g.x,dy+2.0,g.z+0.0],[0,hh,0]));}}}
+      // boarding gate arches and signs removed
+      }}
   if(parts.length){const m=new THREE.Mesh(merge(parts),envMat);m.castShadow=true;m.receiveShadow=true;scene.add(m);}
   // moving chairs: instanced, spaced along each side
   const geo=liftChairGeo();let n=0;for(const L of LIFTS)n+=Math.max(2,Math.floor(L.Z.len/LIFT_GAP));
