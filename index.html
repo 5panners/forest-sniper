@@ -2693,6 +2693,7 @@ function aimGun(p,k){   // hip fire / ready: the barrel points at what the cross
   applyPose(p);gun.updateMatrixWorld(true);gun.getWorldPosition(_ag);
   {const cp=Math.cos(camPitch);_sz.set(Math.sin(camYaw)*cp,Math.sin(camPitch),Math.cos(camYaw)*cp);   // this frame's look direction (the camera has not moved yet), so turning does not lag
    if(aimPtTP){const D=Math.max(5,aimPtTP.distanceTo(camera.position));_ag2.copy(camera.position).addScaledVector(_sz,D);_sz.copy(_ag2).sub(_ag).normalize();}}
+  {const w=player.lowK||0;if(w>0.002){const yw=Math.atan2(_sz.x,_sz.z)+(window.LOW_Y!==undefined?window.LOW_Y:0.22)*w,pt=Math.asin(Math.max(-1,Math.min(1,_sz.y)))-(window.LOW_P!==undefined?window.LOW_P:0.16)*w,c2=Math.cos(pt);_sz.set(Math.sin(yw)*c2,Math.sin(pt),Math.cos(yw)*c2);}}   // not firing or aiming down sight: the barrel relaxes a little down and to the left
   _sx.set(0,1,0).cross(_sz);if(_sx.lengthSq()<1e-6)_sx.set(1,0,0);_sx.normalize();_sy.crossVectors(_sz,_sx);_sm.makeBasis(_sx,_sy,_sz);_sq.setFromRotationMatrix(_sm);
   J.chest.updateMatrixWorld(true);J.chest.getWorldQuaternion(_sq2);_sq2.invert();_sq3.copy(_sq2).multiply(_sq);
   _se.set(p.gunR[0],p.gunR[1],p.gunR[2],'ZYX');_sq2.setFromEuler(_se);_sq2.slerp(_sq3,k);_se.setFromQuaternion(_sq2,'ZYX');p.gunR=[_se.x,_se.y,_se.z];}
@@ -2818,7 +2819,7 @@ function updatePlayer(dt,time){
   marine.position.copy(pl.pos); marine.rotation.y=pl.yaw;
   {let want=0;try{want=((scoped||(input.rmb&&WPN.cur==='ar15'&&pl.aimW>0.5&&pl.reloadT<0&&!(pl.action&&ACTIONS[pl.action.name].lock)))&&pl.alive&&!pl.slide)?1:0;}catch(e){}pl.scK=(pl.scK||0)+(want-(pl.scK||0))*Math.min(1,dt*14);if(Math.abs(want-pl.scK)<0.004)pl.scK=want;
    try{hunch(pl.scK);}catch(e){}
-   {const wk=((input.lmb||pl.aimW>0.3)&&pl.alive&&!pl.slide&&pl.reloadT<0&&WPN.cur!=='none'&&!(pl.action&&ACTIONS[pl.action.name].lock))?1:0;pl.hipK=(pl.hipK||0)+(wk-(pl.hipK||0))*Math.min(1,dt*14);if(Math.abs(wk-pl.hipK)<0.004)pl.hipK=wk;const kk=pl.hipK*(1-pl.scK);if(kk>0.004){p=Object.assign({},p);try{aimGun(p,kk);}catch(e){}}}
+   {const wk=((input.lmb||pl.aimW>0.3)&&pl.alive&&!pl.slide&&pl.reloadT<0&&WPN.cur!=='none'&&!(pl.action&&ACTIONS[pl.action.name].lock))?1:0;pl.hipK=(pl.hipK||0)+(wk-(pl.hipK||0))*Math.min(1,dt*14);if(Math.abs(wk-pl.hipK)<0.004)pl.hipK=wk;pl.lowK=(pl.lowK||0)+((input.lmb?0:1)-(pl.lowK||0))*Math.min(1,dt*8);const kk=pl.hipK*(1-pl.scK);if(kk>0.004){p=Object.assign({},p);try{aimGun(p,kk);}catch(e){}}}
    if(pl.scK>0.004){p=Object.assign({},p);raiseScoped(p,pl.scK,_isAR());}}
   {const wa=(input.rmb&&WPN.cur==='at4'&&pl.aimW>0.5&&pl.alive&&!pl.slide&&pl.stance!=='prone'&&pl.reloadT<0)?1:0;pl.atK=(pl.atK||0)+(wa-(pl.atK||0))*Math.min(1,dt*12);if(Math.abs(wa-pl.atK)<0.004)pl.atK=wa;if(pl.atK>0.004){p=Object.assign({},p);try{raiseAT4(p,pl.atK);}catch(e){}}}   // AT4: tube up on the shoulder
   try{if(TW.climb)p=climbPose(p,pl);else if(ZIP.on)p=zipPose(p,pl);}catch(e){}
@@ -4093,7 +4094,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=382;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=383;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
