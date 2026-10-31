@@ -1893,9 +1893,11 @@ function poseBolt(){const b=boltState(boltT);boltG.rotation.z=-1.25*b.lift;boltG
 const C_=hex=>new THREE.Color(hex).convertSRGBToLinear();
 const PAL={lakebed:C_('#3b4038'),bed:C_('#6c6a60'),bedMoss:C_('#566444'),shore:C_('#8d8876'),gravel:C_('#9b9586'),verge:C_('#6c784a'),
   rock:C_('#8a8983'),rock2:C_('#76776f'),mossRock:C_('#69704f'),grass:C_('#6a8a3b'),grass2:C_('#7f9b47'),grass3:C_('#5f7d35'),heath:C_('#857f55'),
-  dry:C_('#8f8b5c'),needle:C_('#5a4a33'),moss:C_('#4f6833'),moss2:C_('#5d7639'),leaf:C_('#6f4f30'),leaf2:C_('#7a5a34'),cliffWood:C_('#2f4a2c'),cliffWood2:C_('#3a5530'),snow:C_('#d9dcd8'),lime:C_('#a4a196'),lime2:C_('#8f8d84'),far:C_('#3d5733'),far2:C_('#4a6339')};
+  dirt:C_('#7d5c3b'),dirt2:C_('#6b4e33'),dirt3:C_('#8c6a45'),dry:C_('#8f8b5c'),needle:C_('#5a4a33'),moss:C_('#4f6833'),moss2:C_('#5d7639'),leaf:C_('#6f4f30'),leaf2:C_('#7a5a34'),cliffWood:C_('#2f4a2c'),cliffWood2:C_('#3a5530'),snow:C_('#d9dcd8'),lime:C_('#a4a196'),lime2:C_('#8f8d84'),far:C_('#3d5733'),far2:C_('#4a6339')};
 const _gc=new THREE.Color();
 // ground colour for a point (linear rgb into out)
+const SEC_PTS=[[SEC_HOME.e,40],[TWPOS,42],[TWPOS4,42],[SILO_POS,48],[TWPOS3,42],[TWPOS2,42],[SEC_HOME.w,40]];
+function secDirt(x,z,n1){for(const [p,r] of SEC_PTS){if(Math.hypot(x-p.x,z-p.z)<r-3+3.5*n1)return true;}return false;}
 function groundColor(x,z,h,sl,dS,cw,dR,le,out){
   const n1=fbm(x/23,z/23,2), n2=vn(x/7,z/7);
   let c;
@@ -1906,6 +1908,7 @@ function groundColor(x,z,h,sl,dS,cw,dR,le,out){
   else if(dR<2.7)c=PAL.gravel;
   else if(dR<4.4)c=PAL.verge;
   else if(sl>1.05)c=(fbm(x/60,z/40,2)>0.05||sl>1.9)?(n2>0.2?PAL.rock:PAL.rock2):(n2>0?PAL.cliffWood:PAL.cliffWood2);
+  else if(secDirt(x,z,n1))c=n2>0.25?PAL.dirt3:n2>-0.3?PAL.dirt:PAL.dirt2;   // bare earth over every capture sector, so the zone reads against the forest floor
   else if(sl>0.72)c=PAL.mossRock;
   else if(Math.hypot(x-TWPOS.x,z-TWPOS.z)<34||Math.hypot(x-TWPOS2.x,z-TWPOS2.z)<34||Math.hypot(x-TWPOS3.x,z-TWPOS3.z)<34||Math.hypot(x-TWPOS4.x,z-TWPOS4.z)<34)c=n1>0?PAL.heath:PAL.dry;
   else if((Math.abs(x-XS.farm.x)<23+4*n1&&Math.abs(z-XS.farm.z)<12+3*n1)||Math.hypot(x-XS.look.x,z-XS.look.z)<9+3*n1)c=n1>0.1?PAL.dry:PAL.heath;   // trodden farmyard and the ground under the lookout
@@ -3949,7 +3952,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=357;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=359;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4091,7 +4094,7 @@ function carve(c){goneCarcass(c.o,c.k);let m,h=0;
   if(c.k==='d'){const y=CARVE[c.o.kind]||CARVE.roe;m=y.meat;h=y.hide;}else{m=1;}
   INV.meat+=m;INV.hide+=h;invUI();const bh=m*GAME.bMeat;if(bh>0){if(GAME.bInst)MPM.hp=Math.min(HP_MAX,MPM.hp+bh);else HEAL.pool=Math.min(120,HEAL.pool+bh);}toast('Butchered '+carcassName(c)+' · +'+m+' meat'+(h?' · +'+h+' hide':'')+(bh>0?' · +'+bh+'% health':''));try{sfx.click();}catch(e){}
   if(NT.room&&MPM.on)NT.room.emit('carve',{k:c.k,i:c.i,v:MPM.guest?NT.rosterV:deerVer}).catch(()=>{});}
-function nullSnd(){try{tone(170,0.1,0.07,'triangle',105);}catch(e){}}   // a small dull 'nothing happens' sound
+function nullSnd(){try{initAudio();if(AC&&AC.state==='suspended')AC.resume();tone(360,0.11,0.22,'square',250);setTimeout(()=>tone(260,0.16,0.22,'square',170),95);}catch(e){}}   // two short falling blips, loud enough for laptop speakers   // a small dull 'nothing happens' sound
 function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();if(c){carve(c);return;}if(zipTryMount())return;{const d=dropNearest();if(d){dropTake(d);return;}}const i=resNearest();if(i==null)return;const n=RES_NODES[i],R=RES_T[n.ti];
   if((R.k==='radio'||(R.k==='at4'&&!WPN.has))&&!slotCanTake(R.k)){toast('Gadget slots full · drop or use one first');return;}
   if(((R.k==='rifle'||R.k==='ar15')&&slotHas(R.k))||(R.k==='at4'&&WPN.has)){nullSnd();toast('You already carry '+(R.k==='at4'?'an AT4':'a'+(R.k==='ar15'?'n ':' ')+ITEM[R.k].name));return;}   // no taking ammo from a weapon you already have
