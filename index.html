@@ -3947,7 +3947,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=347;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=349;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3986,11 +3986,11 @@ $('stats').textContent=nTrees.toLocaleString()+' trees · '+nPlants.toLocaleStri
    Nodes are placed from a position hash only (no random numbers), so both players get exactly the same ones.
    Only "taken" events cross the network. Five instanced meshes, no shadows: a few hundred triangles each. */
 const RES_T=[
-  {k:'berries', label:'berries',   cell:11, p:0.050, amt:[2,4], n:0},
+  {k:'berries', label:'berries',   cell:11, p:0.30, amt:[1,1], n:300},
   {k:'mushroom',label:'Magic Mushrooms', cell:11, p:0.25, amt:[1,3], n:300},
   {k:'at4r',    label:'AT4 rounds',   cell:13, p:0.25, amt:[1,1], n:150},
   {k:'at4',     label:'AT4 launcher', cell:31, p:0.3, amt:[1,1], n:0},
-  {k:'radio',   label:'Radio',        cell:41, p:0.3, amt:[1,1], n:6},
+  {k:'radio',   label:'Radio',        cell:41, p:0.3, amt:[1,1], n:12},
   {k:'ar15',    label:'AR-15 rifle',  cell:31, p:0.3, amt:[1,1], n:0},
   {k:'scrap',   label:'Tech Chips',     cell:17, p:0.05, amt:[1,2], n:20},
   {k:'r762',    label:'7.62 rounds',  cell:13, p:0.25, amt:[1,1], n:300},
@@ -4051,7 +4051,7 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
       const h0=hsh(ix*31+ti*977,iz*17+ti*613);if(h0>R.p)continue;
       const x=(ix+hsh(ix+ti*5,iz*3+1))*R.cell,z=(iz+hsh(ix*7+2,iz+ti*11))*R.cell;
       if(resOK(x,z,R.k))cand.push([h0,x,z,ix*13+iz*7+ti*101]);}
-    if(R.k==='r762'||R.k==='at4r'){cand.sort((p,q)=>p[0]-q[0]);const IN=[],OUT=[];for(const c of cand)(inRing(c[1],c[2])?IN:OUT).push(c);const want=R.n-have,nin=Math.min(IN.length,Math.round(want*0.85)),pre=R.k==='r762'?(L=>{const E=[],O=[];for(const c of L)(edgeOK(c[1],c[2])?E:O).push(c);return E.concat(O);}):(L=>L);
+    if(R.k==='r762'||R.k==='at4r'||R.k==='berries'){cand.sort((p,q)=>p[0]-q[0]);const IN=[],OUT=[];for(const c of cand)(inRing(c[1],c[2])?IN:OUT).push(c);const want=R.n-have,nin=Math.min(IN.length,Math.round(want*0.85)),pre=R.k==='r762'?(L=>{const E=[],O=[];for(const c of L)(edgeOK(c[1],c[2])?E:O).push(c);return E.concat(O);}):(L=>L);
       const pick=pre(IN).slice(0,nin).concat(OUT.slice(0,want-nin));cand.length=0;for(const c of pick)cand.push(c);   // mostly inside the ring road
       if(cand.length<want){for(const c of IN.slice(nin)){if(cand.length>=want)break;if(!cand.includes(c))cand.push(c);}}}
     else if(R.k==='mushroom'){const E=[],O=[];cand.sort((p,q)=>p[0]-q[0]);for(const c of cand)(edgeOK(c[1],c[2])?E:O).push(c);cand.length=0;for(const c of E.concat(O)){if(cand.length>=R.n-have)break;cand.push(c);}window._mushEdge=E.length;}
@@ -4231,7 +4231,7 @@ window.SNIPER_RES.owlReady=()=>!!SND.ow;
 window.SNIPER_RES.logs=()=>LOGS;window.SNIPER_RES.piles=()=>PILES;window.SNIPER_RES.boost=BOOST;
 
 // ---- foraged food heals slowly, up to 200% of normal health. Raw meat gives nothing until cooking exists.
-const HEAL={pool:0,t:performance.now()},FOOD={berries:0,mushroom:0,meat:0},HP_MAX=200,HEAL_RATE=1.5;
+const HEAL={pool:0,t:performance.now()},FOOD={berries:2,mushroom:0,meat:0},HP_MAX=200,HEAL_RATE=1.5;
 function eatFood(k,q){if(k==='mushroom'){const g=GAME.stGain/100;STAM.v=Math.min(1,STAM.v+g);const hh=0;   // mushrooms give stamina only, no health
   if(hh>0)HEAL.pool=Math.min(120,HEAL.pool+hh);return ' · +'+GAME.stGain+'% stamina'+(hh>0?' · +'+hh+' health over time':'');}const v=(FOOD[k]||0);if(v<=0)return '';HEAL.pool=Math.min(120,HEAL.pool+v);return ' · +'+v+' health over time';}
 function healStep(){const now=performance.now(),dt=Math.min(0.25,(now-HEAL.t)/1000);HEAL.t=now;
