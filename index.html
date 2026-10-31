@@ -2689,10 +2689,10 @@ function palmUp(k){   // support hand under the fore-end: fingers along the barr
   {const C=window.SC_CURL!==undefined?window.SC_CURL:1.0;for(const o of J.lHand._fg)o.rotation.z=(/Thumb/.test(o.name)?-0.7:(/Fingers2/.test(o.name)?1.3:0.9))*C*k;}
   J.lHand.updateMatrixWorld(true);}
 function atEase(p,k){   // not aiming: rifle held across the body at the low ready, muzzle down and to the left, hands close in, elbows down
-  const E=window.EASE||{gp:[0.0,0.14,0.27],gr:[0.14,1.2,0.0]};
+  const E=window.EASE||{gp:[-0.04,0.08,0.27],gr:[0.18,1.1,0.0]};
   const mix=(n,v)=>{const a=p[n]||[0,0,0];p[n]=[a[0]+(v[0]-a[0])*k,a[1]+(v[1]-a[1])*k,a[2]+(v[2]-a[2])*k];};
   mix('gunP',E.gp);mix('gunR',E.gr);
-  try{const bt=gunButt(_isAR());if(isFinite(bt.zmax)){A.fore.position.z=bt.zmax-0.58*(bt.zmax-bt.z);A.fore.position.y=_isAR()?-0.06:-0.1;}}catch(e){}
+  try{const bt=gunButt(_isAR());if(isFinite(bt.zmax)){A.fore.position.z=bt.zmax-0.4*(bt.zmax-bt.z);A.fore.position.y=_isAR()?-0.06:-0.1;}}catch(e){}
   p.ikL=Math.max(p.ikL||0,k);p.ikR=Math.max(p.ikR||0,k);
   if(k>0.5){p.L={fore:1};p.R={grip:1};p.poleR=[-0.3,-1,-0.1];p.poleL=[0.5,-1,0.1];}}
 const _ag=new THREE.Vector3(),_ag2=new THREE.Vector3();
@@ -4102,7 +4102,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=385;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=387;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
