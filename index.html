@@ -2668,8 +2668,8 @@ function raiseScoped(p,k,ar){   // shouldered: body turns side-on so the butt si
   applyPose(p);J.head.updateMatrixWorld(true);_sE.set(EYE_L[0]-0.05,EYE_L[1],EYE_L[2]);J.head.localToWorld(_sE);
   if(ar&&aimYawV!=null&&aimPitchV!=null)_sz.set(Math.sin(aimYawV)*Math.cos(aimPitchV),Math.sin(aimPitchV),Math.cos(aimYawV)*Math.cos(aimPitchV));else _sz.copy(_dir).normalize();_sx.set(0,1,0).cross(_sz);if(_sx.lengthSq()<1e-6)_sx.set(1,0,0);_sx.normalize();_sy.crossVectors(_sz,_sx);
   _sm.makeBasis(_sx,_sy,_sz);_sq.setFromRotationMatrix(_sm);                                   // gun world rotation: barrel along the sight line, no roll
-  _sW.copy(_sE).addScaledVector(_sz,(window.SC_EP!==undefined?window.SC_EP:0.02)).addScaledVector(_sy,-0.1416).addScaledVector(_sz,0.036);   // gun origin so the eyepiece (0,0.118,-0.03) lands 7 cm ahead of the eye
-  if(ar){_sW.copy(_sE).addScaledVector(_sz,(window.AR_ER!==undefined?window.AR_ER:0.12)+0.045).addScaledVector(_sy,-0.165);}   // AR: the rear sight (0,0.165,-0.045) sits AR_ER ahead of the eye
+  _sW.copy(_sE).addScaledVector(_sz,(window.SC_EP!==undefined?window.SC_EP:0.02)).addScaledVector(_sy,-0.1416*GSC).addScaledVector(_sz,0.036*GSC);   // gun origin so the eyepiece (0,0.118,-0.03) lands 7 cm ahead of the eye
+  if(ar){_sW.copy(_sE).addScaledVector(_sz,(window.AR_ER!==undefined?window.AR_ER:0.12)+0.045*GSC).addScaledVector(_sy,-0.165*GSC);}   // AR: the rear sight (0,0.165,-0.045) sits AR_ER ahead of the eye
   try{seatButt(_sW,_sz,ar);}catch(e){}   // butt in the shoulder, sight line unchanged
   J.chest.updateMatrixWorld(true);J.chest.worldToLocal(_sW);
   J.chest.getWorldQuaternion(_sq2);_sq2.invert();_sq3.copy(_sq2).multiply(_sq);                 // target rotation in chest space
@@ -3417,6 +3417,7 @@ const USS_Q=20000,USS_PARTS=[
 {j:"Hips",d:0,p:"AADY9bAEAwPY9ZcDkQcw+AMGAADY9bAEkQcw+AMGAAAw+K4HAwPY9ZcDngTY9dAApAsw+F4BAwPY9ZcDpAsw+F4BkQcw+AMGngTY9dAADwTY9aj9BQow+CX8ngTY9dAABQow+CX8pAsw+F4BDwTY9aj9mgHY9Zj7BgQw+KH4DwTY9aj9BgQw+KH4BQow+CX8mgHY9Zj7Zv7Y9Zj7DPww+ML4mgHY9Zj7DPww+ML4BgQw+KH4Zv7Y9Zj78fvY9aj9x/Uw+BH8Zv7Y9Zj7x/Uw+BH8DPww+ML48fvY9aj9YvvY9dAASvQw+GAB8fvY9aj9SvQw+GABx/Uw+BH8YvvY9dAA/fzY9ZcDYfgw+A4GYvvY9dAAYfgw+A4GSvQw+GAB/fzY9ZcDAADY9bAEAAAw+K4H/fzY9ZcDAAAw+K4HYfgw+A4GAAAw+K4HkQcw+AMGrwjg/M0GAAAw+K4Hrwjg/M0GAADg/A8JkQcw+AMGpAsw+F4BTQ3g/IsBkQcw+AMGTQ3g/IsBrwjg/M0GpAsw+F4BBQow+CX8ugvg/Cr7pAsw+F4Bugvg/Cr7TQ3g/IsBBQow+CX8BgQw+KH4pATg/OT2BQow+CX8pATg/OT2ugvg/Cr7BgQw+KH4DPww+ML4Qvvg/LH2BgQw+KH4Qvvg/LH2pATg/OT2DPww+ML4x/Uw+BH8RfTg/Cn7DPww+ML4RfTg/Cn7Qvvg/LH2x/Uw+BH8SvQw+GABvPLg/IoBx/Uw+BH8vPLg/IoBRfTg/Cn7SvQw+GABYfgw+A4GUffg/M0GSvQw+GABUffg/M0GvPLg/IoBYfgw+A4GAAAw+K4HAADg/A8JYfgw+A4GAADg/A8JUffg/M0GAADg/A8Jrwjg/M0G3QggA6QGAADg/A8J3QggA6QGAAAgA38Irwjg/M0GTQ3g/IsBSA0gA3kBrwjg/M0GSA0gA3kB3QggA6QGTQ3g/IsBugvg/Cr75AsgA0v7TQ3g/IsB5AsgA0v7SA0gA3kBugvg/Cr7pATg/OT2sAQgAyr3ugvg/Cr7sAQgAyr35AsgA0v7pATg/OT2Qvvg/LH2SPsgAxz3pATg/OT2SPsgAxz3sAQgAyr3Qvvg/LH2RfTg/Cn7BfQgA0L7Qvvg/LH2BfQgA0L7SPsgAxz3RfTg/Cn7vPLg/IoBp/IgA3sBRfTg/Cn7p/IgA3sBBfQgA0L7vPLg/IoBUffg/M0GRPcgA4sGvPLg/IoBRPcgA4sGp/IgA3sBUffg/M0GAADg/A8JAAAgA38IUffg/M0GAAAgA38IRPcgA4sGAAAgA38I3QggA6QGSQjQB0kGAAAgA38ISQjQB0kGAADQBzQI3QggA6QGSA0gA3kBsgzQB20B3QggA6QGsgzQB20BSQjQB0kGSA0gA3kB5AsgA0v7KgvQB+b7SA0gA3kBKgvQB+b7sgzQB20B5AsgA0v7sAQgAyr3aQTQB0v45AsgA0v7aQTQB0v4KgvQB+b7sAQgAyr3SPsgAxz3l/vQB0v4sAQgAyr3l/vQB0v4aQTQB0v4SPsgAxz3BfQgA0L71vTQB+b7SPsgAxz31vTQB+b7l/vQB0v4BfQgA0L7p/IgA3sBTvPQB20BBfQgA0L7TvPQB20B1vTQB+b7p/IgA3sBRPcgA4sGt/fQB0kGp/IgA3sBt/fQB0kGTvPQB20BRPcgA4sGAAAgA38IAADQBzQIRPcgA4sGAADQBzQIt/fQB0kGAADY9QAAAwPY9ZcDAADY9bAEAADQBwAAAADQBzQISQjQB0kGAADY9QAAngTY9dAAAwPY9ZcDAADQBwAASQjQB0kGsgzQB20BAADY9QAADwTY9aj9ngTY9dAAAADQBwAAsgzQB20BKgvQB+b7AADY9QAAmgHY9Zj7DwTY9aj9AADQBwAAKgvQB+b7aQTQB0v4AADY9QAAZv7Y9Zj7mgHY9Zj7AADQBwAAaQTQB0v4l/vQB0v4AADY9QAA8fvY9aj9Zv7Y9Zj7AADQBwAAl/vQB0v41vTQB+b7AADY9QAAYvvY9dAA8fvY9aj9AADQBwAA1vTQB+b7TvPQB20BAADY9QAA/fzY9ZcDYvvY9dAAAADQBwAATvPQB20Bt/fQB0kGAADY9QAAAADY9bAE/fzY9ZcDAADQBwAAt/fQB0kGAADQBzQI",c:"bXJibXJibXJibXJibXJibXJiwrulwrulwrulwrulwrulwrulk5WMk5WMk5WMbXJibXJibXJik5WMk5WMk5WMk5WMk5WMk5WMwrulwrulwrulk5WMk5WMk5WMk5WMk5WMk5WMk5WMk5WMk5WMwrulwrulwrulwrulwrulwrulbXJibXJibXJibXJibXJibXJiwrulwrulwrulbXJibXJibXJiwrulwrulwrulk5WMk5WMk5WMbXJibXJibXJiwrulwrulwrulwrulwrulwrulbXJibXJibXJiwrulwrulwrulbXJibXJibXJibXJibXJibXJik5WMk5WMk5WMwrulwrulwrulk5WMk5WMk5WMk5WMk5WMk5WMwrulwrulwrulk5WMk5WMk5WMk5WMk5WMk5WMwrulwrulwrulwrulwrulwrulwrulwrulwrulk5WMk5WMk5WMbXJibXJibXJik5WMk5WMk5WMwrulwrulwrulk5WMk5WMk5WMbXJibXJibXJik5WMk5WMk5WMk5WMk5WMk5WMwrulwrulwrulwrulwrulwrulwrulwrulwrulbXJibXJibXJibXJibXJibXJibXJibXJibXJiwrulwrulwrulwrulwrulwrulbXJibXJibXJik5WMk5WMk5WMwrulwrulwrulbXJibXJibXJik5WMk5WMk5WMwrulwrulwrulwrulwrulwrulwrulwrulwrulk5WMk5WMk5WMk5WMk5WMk5WMk5WMk5WMk5WMbXJibXJibXJibXJibXJibXJik5WMk5WMk5WMk5WMk5WMk5WMk5WMk5WMk5WMwrulwrulwrulwrulwrulwrulk5WMk5WMk5WMk5WMk5WMk5WMk5WMk5WMk5WMwrulwrulwrulwrulwrulwrulwrulwrulwrulbXJibXJibXJik5WMk5WMk5WMwrulwrulwrulk5WMk5WMk5WMk5WMk5WMk5WMwrulwrulwrulwrulwrulwrulwrulwrulwrulwrulwrulwrulwrulwrulwrulk5WMk5WMk5WMwrulwrulwrulbXJibXJibXJi"}];
 
 let EYE_L=[0,0.2,0.18];   // the eye in head space (first person camera and the scope line); set to the soldier's eyes below
+const GSC=0.75;   // weapons at realistic size relative to the 1.98 m soldier
 const USS={on:false,s:0.85,sh:0.24,meshes:[],hidden:[],
   // joint in the GLB -> [rig joint, pivot offset inside that joint (GLB units), extra scale]
   big:1.2,   // the whole soldier is drawn 20% larger than the rig (the rifle keeps its size)
@@ -3442,7 +3443,7 @@ function ussApply(){if(USS.on)return;USS.on=true;
     jt.add(me);USS.meshes.push(me);}
   {const k=USS.s/J.head.scale.x,hy=USS.map.Head[1][1];EYE_L=[0,(0.085+hy)*k,0.075*k];}   // behind the sunglasses
   J.lUpper.position.x=USS.sh;J.rUpper.position.x=-USS.sh;   // shoulders in to where the soldier's arms meet the torso
-  marine.scale.setScalar(USS.big);gun.scale.multiplyScalar(1/USS.big);}
+  marine.scale.setScalar(USS.big);gun.scale.multiplyScalar(GSC/USS.big);}
 window._RIG={marine,J,mat,USS,apply:ussApply};
 // rear end of the stock in gun space (the butt plate), measured once from the model; used to seat the butt in the shoulder when aiming
 const _BUTT={};
@@ -4057,7 +4058,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=370;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=371;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
