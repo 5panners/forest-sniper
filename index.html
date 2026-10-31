@@ -1546,7 +1546,7 @@ anchor('pouch',J.chest,0.0,0.03,0.29);
 anchor('brow',J.head,-0.17,0.26,0.2);
 anchor('back',J.hips,0.0,0.02,-0.22);
 anchor('chestC',J.chest,-0.02,0.12,0.3);
-anchor('eject',gun,-0.04,0.05,0.06);anchor('fore',gun,0.0,-0.07,0.2);
+anchor('eject',gun,-0.04,0.05,0.06);anchor('fore',gun,0.0,-0.075,0.52);
 
 
 let jointCount=0; JOINT_NAMES.forEach(n=>{if(n!=='gun')jointCount++;});
@@ -2655,7 +2655,7 @@ function carryOnTank(){const pl=player;
 const _sq=new THREE.Quaternion(),_sq2=new THREE.Quaternion(),_sq3=new THREE.Quaternion(),_sm=new THREE.Matrix4(),_sx=new THREE.Vector3(),_sy=new THREE.Vector3(),_sz=new THREE.Vector3(),_sE=new THREE.Vector3(),_sW=new THREE.Vector3(),_se=new THREE.Euler(0,0,0,'ZYX');
 function _isAR(){return WPN.cur==='ar15';}
 function raiseScoped(p,k,ar){   // shouldered: body turns side-on so the butt sits in the shoulder pocket, scope axis through the eye and along the line of sight
-  const TW=ar?(window.AR_TW!==undefined?window.AR_TW:-0.95):(window.SC_TW!==undefined?window.SC_TW:-1.15);
+  const TW=ar?(window.AR_TW!==undefined?window.AR_TW:-0.2):(window.SC_TW!==undefined?window.SC_TW:-0.25);
   p.spine=[p.spine[0],p.spine[1]+TW*0.45*k,p.spine[2]];p.chest=[p.chest[0],p.chest[1]+TW*0.55*k,p.chest[2]];p.head=[p.head[0],p.head[1]-TW*k,p.head[2]];
   if(player.stance==='stand'&&Math.hypot(player.vel.x,player.vel.z)<0.6&&!(p.legIK>0.5)){   // standing shot: weak-side foot forward, strong-side foot back and turned out, knees soft
     const L=(n,v)=>{const a=p[n]||[0,0,0];p[n]=[a[0]+(v[0]-a[0])*k,a[1]+(v[1]-a[1])*k,a[2]+(v[2]-a[2])*k];};
@@ -2664,7 +2664,7 @@ function raiseScoped(p,k,ar){   // shouldered: body turns side-on so the butt si
     p.hipsR=[(p.hipsR||[0,0,0])[0],(p.hipsR||[0,0,0])[1]+TW*0.3*k,(p.hipsR||[0,0,0])[2]];p.spine=[p.spine[0]+0.1*k,p.spine[1],p.spine[2]];p.chest=[p.chest[0]+0.04*k,p.chest[1],p.chest[2]];p.head=[p.head[0]-0.1*k,p.head[1],p.head[2]];}   // lean into the gun
   {const NK=window.SC_NK!==undefined?window.SC_NK:0.15;p.neck=[p.neck[0]+NK*k,p.neck[1],p.neck[2]];p.head=[p.head[0]+NK*0.3*k,p.head[1],p.head[2]];}
   if(ar){const HR=window.AR_HR!==undefined?window.AR_HR:0.05,SP=window.AR_SP!==undefined?window.AR_SP:0.08;p.head=[p.head[0],p.head[1],p.head[2]+HR*k];p.chest=[p.chest[0]+SP*k,p.chest[1],p.chest[2]];p.spine=[p.spine[0]+SP*0.6*k,p.spine[1],p.spine[2]];}   // cheek down onto the stock
-  if(k>0.5){p.L={fore:1};p.R={grip:1};if(window.SC_PL)p.poleL=window.SC_PL;p.poleR=window.SC_PR||[-1,-0.15,-0.35];if(window.SC_LH)p.lHand=window.SC_LH;}
+  if(k>0.5){p.L={fore:1};p.R={grip:1};if(window.SC_PL)p.poleL=window.SC_PL;p.poleR=window.SC_PR||[-0.25,-1,-0.1];if(!window.SC_PL)p.poleL=[0.35,-1,0.15];if(window.SC_LH)p.lHand=window.SC_LH;}
   applyPose(p);J.head.updateMatrixWorld(true);_sE.set(EYE_L[0]-0.05,EYE_L[1],EYE_L[2]);J.head.localToWorld(_sE);
   if(ar&&aimYawV!=null&&aimPitchV!=null)_sz.set(Math.sin(aimYawV)*Math.cos(aimPitchV),Math.sin(aimPitchV),Math.cos(aimYawV)*Math.cos(aimPitchV));else _sz.copy(_dir).normalize();_sx.set(0,1,0).cross(_sz);if(_sx.lengthSq()<1e-6)_sx.set(1,0,0);_sx.normalize();_sy.crossVectors(_sz,_sx);
   _sm.makeBasis(_sx,_sy,_sz);_sq.setFromRotationMatrix(_sm);                                   // gun world rotation: barrel along the sight line, no roll
@@ -3023,7 +3023,7 @@ function arSwitch(prev,w){const pl=player;if(prev===w)return;
   if((prev==='rifle'||prev==='ar15')&&typeof SLOT!=='undefined'&&SLOT){const it=SLOT.w.find(q=>q&&q.k===prev);if(it)it.ammo=pl.ammo|0;}
   if(w==='rifle'||w==='ar15'){try{MAG=w==='ar15'?Math.max(5,GAME.arMag|0):12;let it=null;if(typeof SLOT!=='undefined'&&SLOT)it=SLOT.w.find(q=>q&&q.k===w);
     pl.ammo=it&&it.ammo!=null?Math.min(MAG,it.ammo|0):MAG;}catch(e){}}
-  pl.reloadT=-1;ARG.visible=w==='ar15';try{if(w==='ar15'){A.grip.position.set(0,-0.05,-0.05);A.guard.position.set(0,0.03,0.27);A.fore.position.set(0,0.03,0.25);}else{A.grip.position.set(-0.005,-0.075,-0.06);A.guard.position.set(0,-0.055,0.25);A.fore.position.set(0,-0.07,0.2);}}catch(e){}if(w==='ar15'){if(!FLASH0)FLASH0=flashGrp.position.clone();flashGrp.position.set(0,AR_C,AR_MZ);}else if(FLASH0)flashGrp.position.copy(FLASH0);}
+  pl.reloadT=-1;ARG.visible=w==='ar15';try{if(w==='ar15'){A.grip.position.set(0,-0.05,-0.05);A.guard.position.set(0,0.03,0.27);A.fore.position.set(0,0.0,0.43);}else{A.grip.position.set(-0.005,-0.075,-0.06);A.guard.position.set(0,-0.055,0.25);A.fore.position.set(0,-0.075,0.52);}}catch(e){}if(w==='ar15'){if(!FLASH0)FLASH0=flashGrp.position.clone();flashGrp.position.set(0,AR_C,AR_MZ);}else if(FLASH0)flashGrp.position.copy(FLASH0);}
 // one round: a little looser than the bolt rifle, wider from the hip, climbing recoil
 function shootAR(time){const pl=player;pl.ammo--;pl.lastShot=time;pl.kick=0.55;stats.shots++;roundNo++;
   const mv=Math.hypot(pl.vel.x,pl.vel.z),ads=input.rmb;
@@ -4058,7 +4058,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=371;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=372;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
