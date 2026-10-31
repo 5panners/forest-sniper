@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>FOrest Sniper Royale</title>
+<title>FOrest Sniper</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -97,9 +97,9 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 <div id="miniW"><canvas id="miniCv" width="400" height="400"></canvas><div id="miniT"></div></div>
 <div id="perf" class="chip" hidden></div>
 <div id="sndDbg" class="chip" hidden></div>
-<div id="mapPanel" hidden><div class="chip"><canvas id="mapCv" width="560" height="560"></canvas><p id="mapGrid" style="font:600 14px var(--f-mono);margin:6px 0 2px"></p><p>1 km playable square · grid 100 m · north up · P1 / P2 spawns · click to teleport (development)</p></div></div>
+<div id="mapPanel" hidden><div class="chip"><canvas id="mapCv" width="840" height="840"></canvas><p id="mapGrid" style="font:600 14px var(--f-mono);margin:6px 0 2px"></p><p>1 km playable square · grid 100 m · north up · P1 / P2 spawns · click to teleport (development)</p></div></div>
 <div id="overlay"><div class="card">
-  <h1 aria-label="FOrest Sniper Royale">F<svg class="scopeO" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="9"/><line x1="50" y1="2" x2="50" y2="34" stroke="currentColor" stroke-width="6"/><line x1="50" y1="66" x2="50" y2="98" stroke="currentColor" stroke-width="6"/><line x1="2" y1="50" x2="34" y2="50" stroke="currentColor" stroke-width="6"/><line x1="66" y1="50" x2="98" y2="50" stroke="currentColor" stroke-width="6"/><circle cx="50" cy="50" r="3.5" fill="#d4552e"/></svg>rest Sniper Royale</h1>
+  <h1 aria-label="FOrest Sniper">F<svg class="scopeO" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="33" fill="none" stroke="currentColor" stroke-width="8"/><g stroke="currentColor" stroke-width="5" stroke-linecap="butt"><line x1="50" y1="0" x2="50" y2="38"/><line x1="50" y1="62" x2="50" y2="100"/><line x1="0" y1="50" x2="38" y2="50"/><line x1="62" y1="50" x2="100" y2="50"/></g><circle cx="50" cy="50" r="4" fill="#d4552e"/></svg>rest Sniper</h1>
   <p class="sub">2 km of low-poly spruce and beech forest, granite tors, a mountain stream and a lake under the Alps. Only the centre 1 km square is playable.</p>
   <div class="tabs" role="tablist">
     <button role="tab" id="tabBrief" aria-selected="true" aria-controls="paneBrief">Briefing</button>
@@ -3649,21 +3649,22 @@ function drawScope(){
 
 /* ---------------- map (Tab) ---------------- */
 const mapCv=$('mapCv'), mctx=mapCv.getContext('2d');let mapBase=null, mapOpen=false;
-function buildMap(){const N=mapCv.width;const img=mctx.createImageData(N,N);const toS=v=>Math.round(255*Math.pow(clamp(v,0,1),1/2.2));
+const MAPL=560;   // the map is drawn in 560-unit coordinates on an 840 px canvas, so markers and text keep their size and the terrain is sharper
+function buildMap(){const N=mapCv.width,K=N/MAPL;const img=mctx.createImageData(N,N);const toS=v=>Math.round(255*Math.pow(clamp(v,0,1),1/2.2));
   for(let py=0;py<N;py++)for(let px=0;px<N;px++){const x=-FE+px/N*FE*2,z=-FE+py/N*FE*2;const i=clamp(Math.round((x+FE)/FS),0,FN),j=clamp(Math.round((z+FE)/FS),0,FN);const k=(j*FV+i)*3;
     let r=fineT.VC[k],g=fineT.VC[k+1],b=fineT.VC[k+2];const h=groundH(x,z);const sh=clamp(1+(groundH(x-3,z-3)-groundH(x+3,z+3))*0.08,0.55,1.35);
     if(lakeE(x,z)<1.0||gridB(FdS,FN,FS,-FE,x,z)<gridB(FCw,FN,FS,-FE,x,z)){r=0.08;g=0.18;b=0.24;}
     const tree=deadK(x,z)<=0&&meadowK(x,z)<=0.3&&fieldF(x,z,FdR,CdR)>5;if(tree){r*=0.7;g*=0.85;b*=0.7;}
     const cont=Math.abs(((h%10)+10)%10)<0.45;const o=(py*N+px)*4;img.data[o]=toS(r*sh*(cont?0.75:1));img.data[o+1]=toS(g*sh*(cont?0.75:1));img.data[o+2]=toS(b*sh*(cont?0.75:1));img.data[o+3]=255;}
-  mctx.putImageData(img,0,0);
-  const S=v=>(v+FE)/(FE*2)*N;mctx.strokeStyle='rgba(255,255,255,0.12)';mctx.lineWidth=1;for(let v=-500;v<=500;v+=100){mctx.beginPath();mctx.moveTo(S(v),S(-500));mctx.lineTo(S(v),S(500));mctx.moveTo(S(-500),S(v));mctx.lineTo(S(500),S(v));mctx.stroke();}
+  mctx.putImageData(img,0,0);mctx.setTransform(K,0,0,K,0,0);
+  const S=v=>(v+FE)/(FE*2)*MAPL;mctx.strokeStyle='rgba(255,255,255,0.12)';mctx.lineWidth=1;for(let v=-500;v<=500;v+=100){mctx.beginPath();mctx.moveTo(S(v),S(-500));mctx.lineTo(S(v),S(500));mctx.moveTo(S(-500),S(v));mctx.lineTo(S(500),S(v));mctx.stroke();}
   mctx.strokeStyle='#e8742a';mctx.lineWidth=2;mctx.strokeRect(S(-500),S(-500),S(500)-S(-500),S(500)-S(-500));
   mctx.fillStyle='#d8d2c2';mctx.fillRect(S(HUT.x)-5,S(HUT.z)-4,10,8);
   {const f=XS.farm;mctx.fillStyle='#c9a46a';mctx.fillRect(S(f.x-16.5)-1,S(f.z-10.6),S(f.x-5.5)-S(f.x-16.5)+2,S(f.z-3.4)-S(f.z-10.6)+1);mctx.fillRect(S(f.x-15.6)-1,S(f.z+4.8),S(f.x-6.4)-S(f.x-15.6)+2,S(f.z+11.2)-S(f.z+4.8)+1);mctx.fillStyle='#b5523e';mctx.fillRect(S(f.x+6.5)-1,S(f.z-9),S(f.x+13.5)-S(f.x+6.5)+2,S(f.z+9)-S(f.z-9));
    const l=XS.look;mctx.fillStyle='#d8d2c2';mctx.fillRect(S(l.x)-3,S(l.z)-3,6,6);mctx.strokeStyle='#a8392b';mctx.lineWidth=1.5;mctx.strokeRect(S(l.x)-4,S(l.z)-4,8,8);
    const sh=XS.shrine;if(XS_SHRINE){mctx.fillStyle='#ffd34d';mctx.fillRect(S(sh.x)-1,S(sh.z)-5,2,10);mctx.fillRect(S(sh.x)-3.5,S(sh.z)-2.5,7,2);}}
   mctx.fillStyle='#bdbab0';mctx.beginPath();mctx.moveTo(S(SUMMIT.x),S(SUMMIT.z)-7);mctx.lineTo(S(SUMMIT.x)+6,S(SUMMIT.z)+5);mctx.lineTo(S(SUMMIT.x)-6,S(SUMMIT.z)+5);mctx.fill();
-  mapBase=mctx.getImageData(0,0,N,N);}
+  mapBase=mctx.getImageData(0,0,N,N);mctx.setTransform(1,0,0,1,0,0);}
 // full map: free the mouse while it is open so you can click a spot (development teleport)
 function setMap(on){mapOpen=on;$('mapPanel').hidden=!on;
   if(on){input.lmb=input.rmb=false;try{if(document.pointerLockElement)document.exitPointerLock();}catch(e){}}
@@ -3681,7 +3682,7 @@ mapCv.addEventListener('contextmenu',e=>{e.preventDefault();if(!mapOpen)return;c
   const x=clamp(-FE+(e.clientX-r.left)/r.width*FE*2,-PLAY,PLAY),z=clamp(-FE+(e.clientY-r.top)/r.height*FE*2,-PLAY,PLAY);
   if(WPT.on&&Math.hypot(x-WPT.x,z-WPT.z)<14*FE*2/r.width){WPT.on=false;toast('Waypoint cleared');return;}
   WPT.on=true;WPT.x=x;WPT.z=z;toast('Waypoint set · '+Math.round(x)+' E  '+Math.round(-z)+' N · '+Math.round(wptDist())+' m');});
-function drawMap(){if(!mapBase)buildMap();const N=mapCv.width;mctx.putImageData(mapBase,0,0);const S=v=>(v+FE)/(FE*2)*N;
+function drawMap(){if(!mapBase)buildMap();const N=MAPL;mctx.setTransform(1,0,0,1,0,0);mctx.putImageData(mapBase,0,0);mctx.setTransform(mapCv.width/MAPL,0,0,mapCv.width/MAPL,0,0);const S=v=>(v+FE)/(FE*2)*N;
   if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));if($('optDeerMap').checked)BEARS.forEach(b=>drawBearMark(mctx,S(b.x),S(b.z),b,0.9,0));if($('optDeerMap').checked&&typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mctx,S(u.x),S(u.z),u,0.9));
   try{secDrawMap(mctx,S,N);}catch(e){}
   SILO_SITES.forEach(q=>drawSiloMark(mctx,S(q.x),S(q.z),1,0,true));
@@ -3692,7 +3693,7 @@ function drawMap(){if(!mapBase)buildMap();const N=mapCv.width;mctx.putImageData(
   const p=player.pos;mctx.save();mctx.translate(S(p.x),S(p.z));mctx.rotate(-camYaw+PI);mctx.fillStyle='#ffcc4a';mctx.strokeStyle='#000';mctx.lineWidth=1.5;mctx.beginPath();mctx.moveTo(0,-9);mctx.lineTo(6,7);mctx.lineTo(0,3);mctx.lineTo(-6,7);mctx.closePath();mctx.fill();mctx.stroke();mctx.restore();
   {const x=S(P1_SPAWN.x),y=S(P1_SPAWN.z);mctx.strokeStyle='#4ab0ff';mctx.lineWidth=2;mctx.beginPath();mctx.arc(x,y,7,0,PI*2);mctx.stroke();mctx.fillStyle='#4ab0ff';mctx.font='600 11px "IBM Plex Mono", monospace';mctx.fillText('P1',x+9,y+4);}
   {const x=S(P2_SPAWN.x),y=S(P2_SPAWN.z);mctx.strokeStyle='#ff5a4a';mctx.lineWidth=2;mctx.beginPath();mctx.arc(x,y,7,0,PI*2);mctx.stroke();mctx.fillStyle='#ff5a4a';mctx.font='600 11px "IBM Plex Mono", monospace';mctx.fillText('P2',x+9,y+4);}
-  mctx.fillStyle='#fff';mctx.font='600 13px "IBM Plex Mono", monospace';mctx.fillText('N',N/2-4,16);}
+  mctx.fillStyle='#fff';mctx.font='600 13px "IBM Plex Mono", monospace';mctx.fillText('N',N/2-4,16);mctx.setTransform(1,0,0,1,0,0);}
 
 /* ---------------- input ---------------- */
 const cv=renderer.domElement; let playing=false, locked=false, fallback=false, sens=1;
@@ -3948,7 +3949,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=352;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=357;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3993,7 +3994,7 @@ const RES_T=[
   {k:'at4',     label:'AT4 launcher', cell:31, p:0.3, amt:[1,1], n:0},
   {k:'radio',   label:'Radio',        cell:41, p:0.3, amt:[1,1], n:12},
   {k:'ar15',    label:'AR-15 rifle',  cell:31, p:0.3, amt:[1,1], n:0},
-  {k:'scrap',   label:'Tech Chips',     cell:17, p:0.05, amt:[1,2], n:20},
+  {k:'scrap',   label:'Tech Chips',     cell:17, p:0.05, amt:[1,2], n:0},
   {k:'r762',    label:'7.62 rounds',  cell:13, p:0.25, amt:[1,1], n:300},
   {k:'rifle',   label:'Rifle',        cell:31, p:0.3, amt:[1,1], n:0}];   // weapons (AR-15, AT4, rifle) are placed by hand: two of each within 100 m of every capture point
 const INV={radio:0,berries:0,mushroom:0,at4r:0,scrap:0,meat:0,hide:0};
@@ -4029,7 +4030,7 @@ function resOK(x,z,t){
   if(t==='berries'){if(mk<0.1&&hsh(Math.floor(x)+3,Math.floor(z)+9)<0.5)return false;}
   return true;}
 function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH(x,z);
-  RES_NODES.push({t,ti,x,y:h,z,ry:hsh(salt+11,salt+29)*PI*2,s:1.25+hsh(salt+5,salt+7)*0.5,got:false,a:hsh(salt+1,salt+2)});
+  RES_NODES.push({t,ti,x,y:h,z,ry:hsh(salt+11,salt+29)*PI*2,s:(1.25+hsh(salt+5,salt+7)*0.5)*(t==='berries'?0.6:1),got:false,a:hsh(salt+1,salt+2)});
   const n=RES_NODES.length-1,key=Math.floor(x/8)+','+Math.floor(z/8);let L=RES_CELLS.get(key);if(!L){L=[];RES_CELLS.set(key,L);}L.push(n);return n;}
 (function resGen(){
   // a few at each starting point so the first minute has something to do, and Tech Chips around the hut
@@ -4041,7 +4042,10 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
   {const pts=[SEC_HOME.e,TWPOS,TWPOS4,SILO_POS,TWPOS3,TWPOS2,SEC_HOME.w],placed=[];
    pts.forEach((c,si)=>['ar15','at4','rifle'].forEach((t,ti)=>{for(let k=0;k<2;k++){for(let a=0;a<120;a++){const ang=hsh(si*17+ti*5+k*3,a+3)*PI*2,r=16+hsh(si*7+ti*11+k,a*3+1)*80,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
         if(!resOK(x,z,t)||placed.some(q=>Math.hypot(q[0]-x,q[1]-z)<7))continue;placed.push([x,z]);resAdd(t,x,z,si*131+ti*37+k*11+a);break;}}}));window._wpnPlaced=placed.length;}
-  near({x:HUT.x,z:HUT.z},[['scrap',0.4,9],['scrap',2.2,11],['scrap',3.9,8],['scrap',5.4,12]]);
+  // Tech Chips: 20, spread over the seven capture points, each somewhere random within 150 m of its point and well apart from the others
+  {const pts=[SEC_HOME.e,TWPOS,TWPOS4,SILO_POS,TWPOS3,TWPOS2,SEC_HOME.w],put=[];
+   for(let k=0;k<20;k++){const c=pts[k%7];for(let a=0;a<200;a++){const ang=hsh(k*13+5,a+11)*PI*2,r=20+Math.sqrt(hsh(k*7+3,a*5+2))*130,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
+     if(!resOK(x,z,'scrap')||put.some(q=>Math.hypot(q[0]-x,q[1]-z)<30))continue;put.push([x,z]);resAdd('scrap',x,z,k*97+a+4001);break;}}window._chipPlaced=put.length;}
   // RPG rounds lie around the foot of rocks; Magic Mushrooms grow along forest edges (a tree close by, open ground in some directions)
   const rockD=(x,z)=>{let d=1e9;for(const rk of ROCKS){const q=Math.hypot(x-rk.x,z-rk.z)-Math.max(rk.w,rk.d)*0.5;if(q<d)d=q;}return d;};
   const leadC=[];window._rocks=ROCKS.length;ROCKS.forEach((rk,i)=>{const rr=Math.max(rk.w,rk.d)*0.5;for(let j=0;j<5;j++){const ang=hsh(i*7+j,3+j*11)*PI*2,r=rr+0.9+hsh(i+j*13,5+j)*3.2,x=rk.x+Math.cos(ang)*r,z=rk.z+Math.sin(ang)*r;if(resOK(x,z,'rpg'))leadC.push([hsh(i*5+j,17),x,z,i*13+j*7+777]);}});
@@ -5424,7 +5428,7 @@ function secDepth(i,team){return team===1?SEC_DEF[i].dp:4-SEC_DEF[i].dp;}
 function secReset(){SECT.s.forEach((s,i)=>{s.own=i===0?1:i===6?2:0;s.cap=0;s.by=0;});SECT.launch=0;SECT.tk=[TK_START,TK_START];SECT.dh=SECT.dg=1;SECT.deadT=-1;SECT.rsp=-1;SECT.prevOwn=SECT.s.map(s=>s.own);
   try{if(SILO.built&&SILO.st!=='idle')siloReset();}catch(e){}}
 function secArmed(team){const n=SECT.s.reduce((a,s)=>a+(s.own===team?1:0),0);return SECT.s[3].own===team&&n>=SEC_ARM;}
-function secAttackable(i,team){return SECT.s[i].own!==team;}   // any sector can be attacked at any time (no capture order)
+function secAttackable(i,team){return i!==0&&i!==6&&SECT.s[i].own!==team;}   // any sector can be attacked at any time (no capture order)
 function secPlayers(){const out=[],t=secTeam();out.push({team:t,x:player.pos.x,z:player.pos.z,al:player.alive&&MPM.hp>0});
   if(MPM.on&&NT.opp&&RPS.pos&&RPS.r===NT.M.r)out.push({team:3-t,x:RPS.pos.x,z:RPS.pos.z,al:!!RPS.al});return out;}
 // the host (or single player) runs the capture
@@ -5540,7 +5544,7 @@ function secHudDraw(){try{secTkDraw();}catch(e){}const show=playing&&!mapOpen;se
   if(S.built&&S.st==='count'&&MPM.on){t='MISSILE LAUNCH · '+Math.max(0,Math.ceil(SEC_CT-S.t))+' s';col='#ff7a4a';}
   else if(secArmed(mine)){t='MISSILE ARMED · L at the silo';col='#ffd24a';}
   else if(secArmed(3-mine)){t='ENEMY MISSILE ARMED · retake a sector';col='#ff7a4a';}
-  else{const n=SEC_DEF.findIndex((d,i)=>Math.hypot(px-d.x,pz-d.z)<d.r);if(n>=0){const s=SECT.s[n];if(s.own===mine)t=SEC_DEF[n].n+' · held';else if(!secAttackable(n,mine))t=SEC_DEF[n].n+(n===3?' · hold both your towers first':' · take the sector next to it first');else if(s.cap>0)t=(s.by===mine?'Capturing ':'Losing ')+SEC_DEF[n].n+' · '+Math.round(s.cap*100)+'%'+((s.in===3)?' · contested':'');else t=SEC_DEF[n].n+' · stand here to capture';}}
+  else{const n=SEC_DEF.findIndex((d,i)=>Math.hypot(px-d.x,pz-d.z)<d.r);if(n>=0){const s=SECT.s[n];if(s.own===mine)t=SEC_DEF[n].n+' · held';else if(!secAttackable(n,mine))t=SEC_DEF[n].n+' · cannot be captured';else if(s.cap>0)t=(s.by===mine?'Capturing ':'Losing ')+SEC_DEF[n].n+' · '+Math.round(s.cap*100)+'%'+((s.in===3)?' · contested':'');else t=SEC_DEF[n].n+' · stand here to capture';}}
   if(t){c.font='600 12px "IBM Plex Mono", monospace';c.textAlign='center';c.textBaseline='alphabetic';c.lineWidth=4;c.strokeStyle='rgba(0,0,0,0.85)';c.strokeText(t,W/2,82);c.fillStyle=col;c.fillText(t,W/2,82);}}
 secReset();
 window.SNIPER_SEC={DEF:SEC_DEF,S:SECT,sim:secSim,team:secTeam,armed:secArmed,respawn:secRespawn,reset:secReset,frame:secFrame,hud:secHudDraw};
