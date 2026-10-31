@@ -29,11 +29,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-ui);o
 #toast{position:fixed;top:calc(62px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:4;opacity:0;transition:opacity .25s;pointer-events:none;font:14px var(--f-mono)}
 #hit{position:fixed;left:50%;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;border:2px solid #fff;border-radius:50%;opacity:0;pointer-events:none;z-index:4}
 #cross{position:fixed;left:50%;top:50%;width:25px;height:25px;margin:-12px 0 0 -12px;z-index:3;pointer-events:none;background:linear-gradient(#000,#000) 50% 0/1px 6px no-repeat,linear-gradient(#000,#000) 50% 100%/1px 6px no-repeat,linear-gradient(#000,#000) 0 50%/6px 1px no-repeat,linear-gradient(#000,#000) 100% 50%/6px 1px no-repeat;filter:drop-shadow(0 0 0.7px rgba(255,255,255,.9))}#cross::after{content:'';position:absolute;left:11px;top:11px;width:3px;height:3px;border-radius:50%;background:#fff;box-shadow:0 0 1px .5px rgba(0,0,0,.9)}
-#mapPanel{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none}
+#mapPanel{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none;padding:46px 0 96px;box-sizing:border-box}   /* leaves the compass above and the hotbar below clear */
 #mapPanel .chip{padding:10px;pointer-events:none}
 #mapPanel .chip canvas{pointer-events:auto;cursor:crosshair}
-#mapCv{display:block;width:min(78vmin,560px);height:min(78vmin,560px);border-radius:4px}
+#mapCv{display:block;width:min(calc(100vw - 32px),calc(100vh - 46px - 96px - 58px));height:min(calc(100vw - 32px),calc(100vh - 46px - 96px - 58px));border-radius:4px}
 #mapPanel p{margin:6px 2px 0;font:12px var(--f-mono);color:var(--muted)}
+#mapPanel p:last-child{display:none}
 #overlay{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));
   background:radial-gradient(120% 90% at 50% 30%,rgba(20,30,18,.55),rgba(6,9,5,.92))}
 .card{width:min(940px,100%);max-height:calc(100% - 32px);overflow:auto;padding:22px 24px;background:rgba(17,22,14,.94);border:1px solid var(--line);border-radius:10px}
@@ -3947,7 +3948,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=349;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=352;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4086,8 +4087,12 @@ function carve(c){goneCarcass(c.o,c.k);let m,h=0;
   if(c.k==='d'){const y=CARVE[c.o.kind]||CARVE.roe;m=y.meat;h=y.hide;}else{m=1;}
   INV.meat+=m;INV.hide+=h;invUI();const bh=m*GAME.bMeat;if(bh>0){if(GAME.bInst)MPM.hp=Math.min(HP_MAX,MPM.hp+bh);else HEAL.pool=Math.min(120,HEAL.pool+bh);}toast('Butchered '+carcassName(c)+' · +'+m+' meat'+(h?' · +'+h+' hide':'')+(bh>0?' · +'+bh+'% health':''));try{sfx.click();}catch(e){}
   if(NT.room&&MPM.on)NT.room.emit('carve',{k:c.k,i:c.i,v:MPM.guest?NT.rosterV:deerVer}).catch(()=>{});}
+function nullSnd(){try{tone(170,0.1,0.07,'triangle',105);}catch(e){}}   // a small dull 'nothing happens' sound
 function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();if(c){carve(c);return;}if(zipTryMount())return;{const d=dropNearest();if(d){dropTake(d);return;}}const i=resNearest();if(i==null)return;const n=RES_NODES[i],R=RES_T[n.ti];
   if((R.k==='radio'||(R.k==='at4'&&!WPN.has))&&!slotCanTake(R.k)){toast('Gadget slots full · drop or use one first');return;}
+  if(((R.k==='rifle'||R.k==='ar15')&&slotHas(R.k))||(R.k==='at4'&&WPN.has)){nullSnd();toast('You already carry '+(R.k==='at4'?'an AT4':'a'+(R.k==='ar15'?'n ':' ')+ITEM[R.k].name));return;}   // no taking ammo from a weapon you already have
+  if(R.k==='berries'&&MPM.hp>=HP_MAX){nullSnd();return;}
+  if(R.k==='mushroom'&&STAM.v>=0.999){nullSnd();return;}
   resSetGot(n,true);const q=R.k==='r762'?Math.max(1,GAME.pk762|0):R.k==='at4r'?Math.max(1,GAME.pkAt4|0):R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));
   if(R.k==='radio'){const out=slotGive({k:'radio'});toast((out?'Swapped your '+out+' for a radio':'Radio picked up')+' · press '+slotKeyOf('radio')+' to call in a recon drone');pickSnd();if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});return;}
   if(R.k==='rifle'){if(slotHas('rifle')){player.reserve=(player.reserve|0)+12;invUI();toast('+12 7.62 rounds from the spare rifle');}else{const out=slotGive({k:'rifle',ammo:12});invUI();toast(out?'Swapped your '+out+' for the rifle · it dropped at your feet':'Rifle picked up · 12 rounds · press '+slotKeyOf('rifle')+' to use it');}
@@ -4102,7 +4107,7 @@ function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();i
   if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});}
 addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyF')resGather();});
 function resStep(dt){
-  let s='';if(playing&&player.alive&&!scoped&&!mapOpen){const c=carcassNearest(),zt=zipPromptTxt();if(zt)s=zt;else if(c)s='<b>F</b> · butcher '+carcassName(c);else{const d=dropNearest();if(d)s='<b>F</b> · '+(d.k==='at4'&&WPN.has?'take the round from the AT4':(d.k==='rifle'||d.k==='ar15')&&slotHas(d.k)?'take the rounds from the '+ITEM[d.k].name:slotTip(d.k));else{const i=resNearest();if(i!=null){const k=RES_T[RES_NODES[i].ti].k;s='<b>F</b> · '+(k==='at4'||k==='radio'||k==='ar15'||k==='rifle'?slotTip(k):'gather '+RES_T[RES_NODES[i].ti].label);}}}}
+  let s='';if(playing&&player.alive&&!scoped&&!mapOpen){const c=carcassNearest(),zt=zipPromptTxt();if(zt)s=zt;else if(c)s='<b>F</b> · butcher '+carcassName(c);else{const d=dropNearest();if(d)s='<b>F</b> · '+((d.k==='at4'&&WPN.has)||((d.k==='rifle'||d.k==='ar15')&&slotHas(d.k))?'you already carry one':slotTip(d.k));else{const i=resNearest();if(i!=null){const k=RES_T[RES_NODES[i].ti].k;s='<b>F</b> · '+(k==='at4'||k==='radio'||k==='ar15'||k==='rifle'?slotTip(k):'gather '+RES_T[RES_NODES[i].ti].label);}}}}
   if(s!==_prS){_prS=s;resPrompt.innerHTML=s;resPrompt.hidden=!s;}}
 window.SNIPER_RES={INV,RES_NODES};
 
@@ -4867,9 +4872,8 @@ function dropItem(it){const pl=player,fx=Math.sin(camYaw),fz=Math.cos(camYaw);co
   try{if(MPM.on&&NT.room)NT.room.emit('drop',{id,k:it.k,x:nr2(x),y:nr2(y),z:nr2(z),ld:it.ld?1:0,am:it.ammo|0,ry:+ry.toFixed(3)}).catch(()=>{});}catch(e){}}
 function dropNearest(){const p=player.pos;let best=null,bd=2.4*2.4;for(const d of DROPS){const dd=(d.x-p.x)**2+(d.z-p.z)**2;if(dd<bd&&Math.abs(d.y-p.y)<2){bd=dd;best=d;}}return best;}
 function dropTake(d){
-  if(d.k==='at4'&&WPN.has){INV.at4r=(INV.at4r|0)+(d.ld?1:0);toast(d.ld?'+1 AT4 round from the dropped launcher':'Empty AT4 · you already carry one');}
-  else if((d.k==='rifle'||d.k==='ar15')&&slotHas(d.k)){player.reserve=(player.reserve|0)+(d.ammo|0);toast('+'+(d.ammo|0)+' 7.62 rounds from the dropped '+ITEM[d.k].name);}
-  else{if(!slotCanTake(d.k)){toast('Gadget slots full');return;}const it={k:d.k,ld:d.ld,ammo:d.ammo};const out=slotGive(it);if(out===null){toast('Gadget slots full');return;}
+  if((d.k==='at4'&&WPN.has)||((d.k==='rifle'||d.k==='ar15')&&slotHas(d.k))){nullSnd();toast('You already carry '+(d.k==='at4'?'an AT4':'a'+(d.k==='ar15'?'n ':' ')+ITEM[d.k].name));return;}   // no taking ammo from a weapon you already have
+  {if(!slotCanTake(d.k)){toast('Gadget slots full');return;}const it={k:d.k,ld:d.ld,ammo:d.ammo};const out=slotGive(it);if(out===null){toast('Gadget slots full');return;}
     toast((out?'Swapped your '+out+' for the '+ITEM[d.k].name:'Picked up the '+ITEM[d.k].name+(d.k==='at4'?(d.ld?' · loaded':' · empty'):''))+' · '+slotKeyOf(d.k));}
   DROPS.splice(DROPS.indexOf(d),1);dropKill(d);try{pickSnd();}catch(e){}try{invUI();}catch(e){}
   try{if(MPM.on&&NT.room)NT.room.emit('dtake',{id:d.id}).catch(()=>{});}catch(e){}}
@@ -5452,17 +5456,22 @@ function secNotify(){const prev=SECT.prevOwn;if(!prev){SECT.prevOwn=SECT.s.map(s
       else if(rel===2){toast(SEC_DEF[i].n+' lost');try{playLost();}catch(e){}}
       prev[i]=s.own;}});}
 // every client, every frame
+// tickets: bleed for the sectors the enemy holds beyond half, and one per death (host in a match; also runs in single player for testing)
+function secTickets(dt,myT,oT,hd,od){const n1=SECT.s.reduce((a,s)=>a+(s.own===1?1:0),0),n2=SECT.s.reduce((a,s)=>a+(s.own===2?1:0),0);
+  SECT.tk[0]-=Math.max(0,n2-3)*TK_BLEED*dt;SECT.tk[1]-=Math.max(0,n1-3)*TK_BLEED*dt;
+  if(hd&&!SECT.dh){SECT.dh=1;SECT.tk[myT-1]-=TK_DEATH;}else if(!hd)SECT.dh=0;
+  if(od&&!SECT.dg){SECT.dg=1;SECT.tk[oT-1]-=TK_DEATH;}else if(!od)SECT.dg=0;
+  SECT.tk[0]=Math.max(0,SECT.tk[0]);SECT.tk[1]=Math.max(0,SECT.tk[1]);}
+// single-player test keys: Y = the enemy takes another sector (watch the bleed), Shift+Y = reset the sectors and tickets
+const TK_TEST=[3,5,4,2,1,6];
+addEventListener('keydown',e=>{if(e.code!=='KeyY'||e.repeat||!playing||MPM.on)return;if(e.shiftKey){secReset();toast('Sectors and tickets reset');return;}
+  const i=TK_TEST.find(k=>SECT.s[k].own!==2);if(i==null)return;SECT.s[i].own=2;SECT.s[i].cap=0;SECT.s[i].by=0;toast('Test: the enemy took '+SEC_DEF[i].n);});
 function secFrame(dt){
   const live=MPM.on&&NT.room&&NT.M.ph==='live';
+  if(!MPM.on&&playing)secTickets(dt,1,2,!player.alive,false);
   if(!MPM.on||(MPM.on&&!MPM.guest&&live)){if(!MPM.on||live)secSim(dt);}
   if(MPM.on&&!MPM.guest&&live){const M=NT.M;
-    // tickets: bleed for the sectors the enemy holds beyond half, and one per death
-    {const n1=SECT.s.reduce((a,s)=>a+(s.own===1?1:0),0),n2=SECT.s.reduce((a,s)=>a+(s.own===2?1:0),0);
-     SECT.tk[0]-=Math.max(0,n2-3)*TK_BLEED*dt;SECT.tk[1]-=Math.max(0,n1-3)*TK_BLEED*dt;
-     const myT=secTeam(),oT=3-myT,hd=!player.alive||MPM.hp<=0,od=RPS.hp!=null&&RPS.hp<=0&&RPS.r===M.r;
-     if(hd&&!SECT.dh){SECT.dh=1;SECT.tk[myT-1]-=TK_DEATH;}else if(!hd)SECT.dh=0;
-     if(od&&!SECT.dg){SECT.dg=1;SECT.tk[oT-1]-=TK_DEATH;}else if(!od)SECT.dg=0;
-     SECT.tk[0]=Math.max(0,SECT.tk[0]);SECT.tk[1]=Math.max(0,SECT.tk[1]);}
+    secTickets(dt,secTeam(),3-secTeam(),!player.alive||MPM.hp<=0,RPS.hp!=null&&RPS.hp<=0&&RPS.r===M.r);
     if(SECT.tk[0]<=0&&SECT.tk[1]<=0)secWin(SECT.tk[0]>=SECT.tk[1]?1:2,'out of tickets');
     else if(SECT.tk[0]<=0)secWin(2,'east out of tickets');else if(SECT.tk[1]<=0)secWin(1,'west out of tickets');
     else if(SECT.s[0].own===2)secWin(2,'east home captured');else if(SECT.s[6].own===1)secWin(1,'west home captured');
@@ -5511,7 +5520,7 @@ const SEC_POS=[[0,0.5],[1,0.2],[1,0.8],[2,0.5],[3,0.8],[3,0.2],[4,0.5]];   // co
 // ticket bar: yours fills leftwards from the centre, theirs rightwards; a small arrow shows which side is bleeding
 const tkEl=(()=>{const st=document.createElement('style');st.textContent='#tkHud{position:fixed;left:50%;top:calc(142px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:260px;z-index:3;pointer-events:none;display:none;align-items:center;gap:6px;font:700 12px var(--f-mono);color:#f1e6c0;text-shadow:0 1px 3px #000}#tkHud .tb{flex:1;height:8px;background:rgba(12,18,10,.7);border:1px solid rgba(255,255,255,.3);border-radius:2px;overflow:hidden;display:flex}#tkHud .tb i{display:block;height:100%;width:100%}#tkHud .n{min-width:22px;text-align:center}#tkHud .t{position:absolute;left:0;right:0;top:12px;text-align:center;font-size:9px;letter-spacing:.14em;opacity:.7}';document.head.appendChild(st);
   const e=document.createElement('div');e.id='tkHud';e.innerHTML='<span class="n" id="tkA"></span><div class="tb" style="justify-content:flex-end"><i id="tkAb" style="background:#3d9bff"></i></div><div class="tb"><i id="tkBb" style="background:#ff5a4a"></i></div><span class="n" id="tkB"></span><div class="t">TICKETS</div>';document.body.appendChild(e);return e;})();
-function secTkDraw(){const on=playing&&!mapOpen&&MPM.on&&NT.room&&(NT.M.ph==='live'||NT.M.ph==='end');tkEl.style.display=on?'flex':'none';if(!on)return;
+function secTkDraw(){const on=playing&&!mapOpen&&(!MPM.on||(NT.room&&(NT.M.ph==='live'||NT.M.ph==='end')));tkEl.style.display=on?'flex':'none';if(!on)return;
   const my=secTeam()-1,a=Math.max(0,SECT.tk[my]),b=Math.max(0,SECT.tk[1-my]),n1=SECT.s.reduce((q,s)=>q+(s.own===1?1:0),0),n2=SECT.s.reduce((q,s)=>q+(s.own===2?1:0),0),mine=my===0?n1:n2,theirs=my===0?n2:n1;
   const set=(id,t)=>{const e=document.getElementById(id);if(e.textContent!==t)e.textContent=t;};
   set('tkA',(theirs>3?'\u25BC':'')+Math.ceil(a));set('tkB',Math.ceil(b)+(mine>3?'\u25BC':''));
