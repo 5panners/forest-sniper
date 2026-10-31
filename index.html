@@ -3947,7 +3947,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=344;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=345;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5448,8 +5448,8 @@ function secPlace(x,z){const c=SEC_DEF[3];const yaw=Math.atan2(-(c.x-x),-(c.z-z)
   player.yaw=yaw;camYaw=yaw;camPitch=-0.05;camPivot.copy(player.pos).add(V(0,1.68,0));for(const b of bullets){if(b.tr)relP(b.tr);}bullets.length=0;try{NT.pend.clear();}catch(e){}}
 function secRespawn(){const sp=secSpawnFor(secTeam());secPlace(sp.x,sp.z);toast('Respawned at '+SEC_DEF[sp.i].n);}
 function secNotify(){const prev=SECT.prevOwn;if(!prev){SECT.prevOwn=SECT.s.map(s=>s.own);return;}
-  SECT.s.forEach((s,i)=>{if(prev[i]!==s.own){const rel=secRel(s.own);if(rel===1){toast(SEC_DEF[i].n+' captured');try{tone(660,0.1,0.05,'sine');setTimeout(()=>tone(990,0.16,0.05,'sine'),110);}catch(e){}}
-      else if(rel===2){toast(SEC_DEF[i].n+' lost');try{tone(420,0.14,0.06,'sawtooth');setTimeout(()=>tone(280,0.22,0.06,'sawtooth'),130);}catch(e){}}
+  SECT.s.forEach((s,i)=>{if(prev[i]!==s.own){const rel=secRel(s.own);if(rel===1){toast(SEC_DEF[i].n+' captured');try{playCaptured();}catch(e){}}
+      else if(rel===2){toast(SEC_DEF[i].n+' lost');try{playLost();}catch(e){}}
       prev[i]=s.own;}});}
 // every client, every frame
 function secFrame(dt){
@@ -6037,6 +6037,18 @@ function playGoodbye(ctx,dest){const C=ctx||AC;if(!C||(!ctx&&!soundOn))return;co
   timp(t0+1.7,0.55);
   const T=t0+1.8;brass(146.83,T,1.7,0.16,700,0.2);brass(220,T,1.7,0.12,700,0.2);
   return t0;}
+// sector captured: a short bright brass fanfare in C major over timpani; sector lost: a slow falling phrase in A minor with heavy drum hits and a low dark chord
+function playCaptured(){const C=AC;if(!C||!soundOn)return;const K=synthKit(null,null,0.5),t0=K.t0,{brass,timp,crash}=K;
+  const N=[[392,0,0.16],[392,0.19,0.16],[523.25,0.38,0.3],[659.25,0.72,0.2],[523.25,0.94,0.2],[659.25,1.16,0.2],[783.99,1.4,1.1]];
+  for(const [f,d,l] of N)brass(f,t0+d,l,0.32,2400,0.03);
+  timp(t0,0.7);timp(t0+0.38,0.55);timp(t0+1.4,0.9);crash(t0+1.4,0.14);
+  for(const f of [261.63,329.63,392,523.25])brass(f,t0+1.4,1.1,0.16,2400,0.04);}
+function playLost(){const C=AC;if(!C||!soundOn)return;const K=synthKit(null,null,0.5),t0=K.t0,{brass,timp}=K;
+  brass(55,t0,2.6,0.2,240,0.25);
+  const N=[[440,0,0.42],[392,0.5,0.42],[349.23,1.0,0.42],[329.63,1.5,1.1]];
+  for(const [f,d,l] of N)brass(f,t0+d,l,0.26,1000,0.07);
+  timp(t0,0.8);timp(t0+0.5,0.6);timp(t0+1.0,0.7);timp(t0+1.5,1.0);
+  for(const f of [110,130.81,164.81])brass(f,t0+1.5,1.5,0.18,650,0.12);}
 function audioUnlock(){try{initAudio();if(AC&&AC.state==='suspended')AC.resume();}catch(e){}}
 // ---- messages ----
 function onMsg(t,d,m){
