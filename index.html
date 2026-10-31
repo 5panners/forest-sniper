@@ -3392,7 +3392,8 @@ const USS_Q=20000,USS_PARTS=[
 
 const USS={on:false,s:0.85,meshes:[],hidden:[],
   // joint in the GLB -> [rig joint, pivot offset inside that joint (GLB units), extra scale]
-  map:{Hips:['hips'],Spine:['spine'],Chest:['chest'],Neck:['neck'],Head:['head'],
+  big:1.2,   // the whole soldier is drawn 20% larger than the rig (the rifle keeps its size)
+  map:{Hips:['hips'],Spine:['spine'],Chest:['chest'],Neck:['neck',[0,-0.035,0],0.6],Head:['head',[0,-0.06,0]],
     ThighL:['lThigh'],ShinL:['lShin'],FootL:['lFoot'],ToeL:['lFoot',[0,-0.062,0.112]],
     ThighR:['rThigh'],ShinR:['rShin'],FootR:['rFoot'],ToeR:['rFoot',[0,-0.062,0.112]],
     ClavicleL:['chest',[0.06,0.29,0]],UpperArmL:['lUpper'],ForearmL:['lFore'],HandL:['lHand'],Fingers1L:['lHand',[0,-0.085,0]],Fingers2L:['lHand',[0,-0.125,0]],Thumb1L:['lHand',[0,-0.02,0.04]],
@@ -3410,8 +3411,9 @@ function ussApply(){if(USS.on)return;USS.on=true;
     if(P.d){for(let t=0;t<n;t+=3)for(let k=0;k<3;k++){const a=(t+2-k)*3,b=(n+t+k)*3;for(let e=0;e<3;e++){pos[b+e]=pos[a+e];col[b+e]=col[a+e];}}}   // back faces for the two-sided camo
     const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(col,3));geo.computeVertexNormals();
     const me=new THREE.Mesh(geo,mat);me.castShadow=true;me.receiveShadow=true;me.name='uss_'+P.j;
-    const k=USS.s/(jt===J.head?jt.scale.x:1),o=m[1]||[0,0,0];me.scale.setScalar(k);me.position.set(o[0]*k,o[1]*k,o[2]*k);
-    jt.add(me);USS.meshes.push(me);}}
+    const k=USS.s/(jt===J.head?jt.scale.x:1),o=m[1]||[0,0,0];me.scale.set(k,k*(m[2]||1),k);me.position.set(o[0]*k,o[1]*k,o[2]*k);
+    jt.add(me);USS.meshes.push(me);}
+  marine.scale.setScalar(USS.big);gun.scale.multiplyScalar(1/USS.big);}
 window._RIG={marine,J,mat,USS,apply:ussApply};
 // player 2 spawn (future 1v1 survival): a second hunter stands here for now (clone of the player model with its own clothes)
 const P2_SPAWN=V(SEC_HOME.w.x,0,SEC_HOME.w.z);
@@ -4008,7 +4010,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=361;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=362;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
