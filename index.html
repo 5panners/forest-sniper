@@ -2118,7 +2118,7 @@ function placeTree(x,z,inner){
   let type,sc=1,col,r=0.3;
   if(dd>0&&wr()<0.82){if(wr()<0.6){type='snag';sc=wrr(0.7,1.15);col=SNAGC[Math.floor(wr()*3)];r=0.26;}else{type='young';sc=wrr(0.7,1.6);col=SPR[Math.floor(wr()*4)];r=0;}}
   else if(edge&&wr()<0.5){type='young';sc=wrr(0.8,1.8);col=SPR[Math.floor(wr()*4)];r=0;}
-  else{const dk=decK(x,z)+0.5*(1-sst(8,60,dS));const pB=clamp(0.08+0.6*dk,0.02,0.8);
+  else{const dk=decK(x,z)+0.5*(1-sst(8,60,dS));let pB=clamp(0.08+0.6*dk,0.02,0.8);if(slp<0.3&&fbm(x/48+31,z/48-7,2)>0.12)pB=0.85;   // birch groves on the flatter ground (the random draws are unchanged)
     if(wr()<pB){type='beech';sc=wrr(0.75,1.15);const aut=dk+0.15*vn(x/40,z/40);col=aut>0.15||wr()<0.35?AUT[Math.floor(wr()*AUT.length)]:GREENB[Math.floor(wr()*GREENB.length)];r=0.28;}
     else{type=wr()<0.5?'spruceA':'spruceB';sc=wrr(0.68,1.18);col=SPR[Math.floor(wr()*4)];r=0.32;}}
   {const ds=Math.hypot(x-SUMMIT.x,z-SUMMIT.z);if(ds<230&&type!=='young')sc*=0.4+0.6*sst(50,230,ds);}
@@ -2203,13 +2203,16 @@ for(let k=0,tr=0;k<110&&tr<3000;tr++){const x=wrr(-500,500),z=wrr(-500,500);if(m
  const push=(x,z,g)=>{const k=bk(x,z);if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(g);};
  ROCKS.forEach((r,i)=>{const g=rockGeo(r.w,r.h,r.d,i*31+7,r.moss,r.bl,r.jit);xf(g,[r.x,r.y,r.z],[0,r.ry,0]);push(r.x,r.z,g);});
  LOGS.forEach((l,i)=>{const dx=Math.cos(l.ry),dz=Math.sin(l.ry),lx=-dz,lz=dx;const Ls=l.L*0.5,r=l.r,d=r*2.04,hh=d*0.866;   // triangular stack of 6 half-length logs: 3 + 2 + 1
-   const cols=[-d,0,d];let gmax=-1e9;for(const o of cols)for(const s of [-Ls/2,0,Ls/2])gmax=Math.max(gmax,groundH(l.x+dx*s+lx*o,l.z+dz*s+lz*o));
-   let gmin=1e9;for(const o of cols)for(const s of [-Ls/2,0,Ls/2])gmin=Math.min(gmin,groundH(l.x+dx*s+lx*o,l.z+dz*s+lz*o));
-   const yc=gmax+r*0.75;const lay=[[-d,0],[0,0],[d,0],[-d/2,hh],[d/2,hh],[0,2*hh]];const parts=[];
+   const cols=[-d,0,d],SS=[-Ls/2,0,Ls/2];   // fit a plane to the ground under the stack so it lies with the land, buried a little
+   let sh=0,n=0,sa=0,sb=0,saa=0,sbb=0;const smp=[];for(const o of cols)for(const s of SS){const h=groundH(l.x+dx*s+lx*o,l.z+dz*s+lz*o);smp.push([s,o,h]);sh+=h;n++;sa+=h*s;sb+=h*o;saa+=s*s;sbb+=o*o;}
+   const h0=sh/n,ps=sa/saa,po=sb/sbb;let mr=-1e9;for(const [s,o,h] of smp)mr=Math.max(mr,h-(h0+ps*s+po*o));
+   const yc=h0+Math.max(0,mr)*0.6+r*0.62;   // bottom logs sit about a third of a radius into the ground
+   const lay=[[-d,0],[0,0],[d,0],[-d/2,hh],[d/2,hh],[0,2*hh]];const parts=[];
    lay.forEach((q,j)=>{parts.push(xf(tint(jitterGeo(CY(r,r*1.08,Ls,6),0.05,i*7+j),l.dead?'#8f8a80':(j%2?'#5a4733':'#654f39'),0.12),[0,q[1],q[0]],[0,0,HP]),xf(tint(CY(r*0.95,r,0.06,6),'#b39a6e'),[Ls/2,q[1],q[0]],[0,0,HP]));});
-   if(gmax-gmin>0.02){const bh=gmax-gmin+0.5,yb=-r*0.55;parts.push(xf(tint(new THREE.BoxGeometry(Ls*0.96,bh,2*(d+r)*0.8),'#3e3226'),[0,yb-bh/2+0.05,0]));}   // fills the gap under the downhill side so the stack never hovers
-   const g=merge(parts);xf(g,[l.x,yc,l.z],[0,-l.ry,0]);push(l.x,l.z,g);
-   cols.forEach((o,ci)=>{for(let s=-Ls/2;s<=Ls/2+0.01;s+=0.7)addPillar({x:l.x+dx*s+lx*o,z:l.z+dz*s+lz*o,r:r*1.05+0.05,y0:yc-r-1,y1:yc+(ci==1?2*hh+r:hh+r),rock:true,kind:'wood'});});});
+   const g=merge(parts);   // local x = along the logs, z = across, y = up: tilt to the ground plane, then turn to the heading
+   const nl=new THREE.Vector3(-ps,1,-po).normalize(),Mt=new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),nl));
+   const My=new THREE.Matrix4().makeRotationY(-l.ry);My.setPosition(l.x,yc,l.z);g.applyMatrix4(Mt);g.applyMatrix4(My);push(l.x,l.z,g);
+   cols.forEach((o,ci)=>{for(let s=-Ls/2;s<=Ls/2+0.01;s+=0.7){const yp=yc+ps*s+po*o;addPillar({x:l.x+dx*s+lx*o,z:l.z+dz*s+lz*o,r:r*1.05+0.05,y0:yp-r-1,y1:yp+(ci==1?2*hh+r:hh+r),rock:true,kind:'wood'});}});});
  buckets.forEach(list=>{const m=new THREE.Mesh(merge(list),envMat);m.castShadow=true;m.receiveShadow=true;scene.add(m);});}
 
 // structures: hunting hut, log piles, boundary posts
@@ -3944,7 +3947,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=341;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=343;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
