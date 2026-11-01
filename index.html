@@ -3601,10 +3601,10 @@ const CHM=(()=>{   // low-poly ram-air canopy: 14 air cells in an arc, dark nose
   const L=[];const risL=[-0.2,0,0.05],risR=[0.2,0,0.05];
   for(let i=0;i<=NC;i++){const u=i/NC,riser=u<0.5?risL:risR;for(const v of [0.18,0.78]){const b=pt(u,v,false);L.push(b[0],b[1],b[2],riser[0],riser[1]-CH_LINE,riser[2]);}}
   const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(L),3));
-  const lm=new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0x2f4a2a,transparent:true,opacity:0.95,fog:true}));lm.frustumCulled=false;
+  const lm=new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0x1a2d17,transparent:true,opacity:0.95,fog:true}));lm.frustumCulled=false;
   const grp=new THREE.Group();grp.add(mesh);grp.add(lm);grp.visible=false;scene.add(grp);
   // brake lines + riser tails (world space, rewritten each frame)
-  const sm=new THREE.MeshBasicMaterial({color:0x2a4226,side:THREE.DoubleSide}),jm=new THREE.MeshStandardMaterial({color:0xb5893a,metalness:0.8,roughness:0.35,flatShading:true}),jgeo=new THREE.BoxGeometry(0.11,0.075,0.11);
+  const sm=new THREE.MeshBasicMaterial({color:0x172814,side:THREE.DoubleSide}),jm=new THREE.MeshStandardMaterial({color:0xb5893a,metalness:0.8,roughness:0.35,flatShading:true}),jgeo=new THREE.BoxGeometry(0.11,0.075,0.11);
   const harness=()=>{const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(72),3));   // 4 flat webbing ribbons, rewritten every frame
     const bl=new THREE.Group(),rb=new THREE.Mesh(bg,sm);rb.frustumCulled=false;bl.add(rb);const jn=[0,1].map(()=>{const m=new THREE.Mesh(jgeo,jm);m.frustumCulled=false;bl.add(m);return m;});   // a joiner block where each strap splits into the lines
     bl.visible=false;scene.add(bl);return {bl,bg,jn};};
@@ -4059,7 +4059,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=384;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=385;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
