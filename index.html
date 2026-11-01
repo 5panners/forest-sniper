@@ -1491,7 +1491,9 @@ const cheekCut=(x,y,z)=>z>0.1&&y>0.168&&Math.abs(x)<0.165;
 // beard: a flat-fronted block with crisp edges, a clean rectangular opening round the grin, and a V-shaped chin
 // mouth: the lips are just coloured polys of the head surface (no extra geometry)
 // finer polys laid on the head surface (a hair outside it), coloured as upper lip, mouth line and lower lip
-{const lip=(y0,y1,c)=>hp(J.head,hunterHead(96,72),c,[0,0.2,0.015],null,[1.012,1.012,1.012],{cut:(x,y,z)=>!(Math.abs(x)<0.052&&z>0.12&&y>=y0&&y<y1)});
+{const rowsY=[...new Set(Array.from(hunterHead(96,72).attributes.position.array).filter((_,i)=>i%3===1).map(v=>+(0.2+1.012*v).toFixed(6)))].sort((p,q)=>p-q);
+ const snap=v=>rowsY.reduce((b,r)=>Math.abs(r-v)<Math.abs(b-v)?r:b,rowsY[0])-1e-5;   // band edges sit exactly on a row of polys, so the edges run straight
+ const lip=(a,b,c)=>{const y0=snap(a),y1=snap(b);return hp(J.head,hunterHead(96,72),c,[0,0.2,0.015],null,[1.012,1.012,1.012],{cut:(x,y,z)=>!(Math.abs(x)<0.052&&z>0.12&&y>=y0&&y<y1)});};
  lip(0.123,0.142,'#c46a60');lip(0.115,0.123,'#7e3d36');lip(0.097,0.115,'#c46a60');}
 // ---------- arms and legs ----------
 ['l','r'].forEach((s,i)=>{
@@ -3955,7 +3957,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=369;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=371;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4097,7 +4099,7 @@ function carve(c){goneCarcass(c.o,c.k);let m,h=0;
   if(c.k==='d'){const y=CARVE[c.o.kind]||CARVE.roe;m=y.meat;h=y.hide;}else{m=1;}
   INV.meat+=m;INV.hide+=h;invUI();const bh=m*GAME.bMeat;if(bh>0){if(GAME.bInst)MPM.hp=Math.min(HP_MAX,MPM.hp+bh);else HEAL.pool=Math.min(120,HEAL.pool+bh);}toast('Butchered '+carcassName(c)+' · +'+m+' meat'+(h?' · +'+h+' hide':'')+(bh>0?' · +'+bh+'% health':''));try{sfx.click();}catch(e){}
   if(NT.room&&MPM.on)NT.room.emit('carve',{k:c.k,i:c.i,v:MPM.guest?NT.rosterV:deerVer}).catch(()=>{});}
-function nullSnd(){try{initAudio();if(AC&&AC.state==='suspended')AC.resume();tone(360,0.11,0.22,'square',250);setTimeout(()=>tone(260,0.16,0.22,'square',170),95);}catch(e){}}   // two short falling blips, loud enough for laptop speakers   // a small dull 'nothing happens' sound
+function nullSnd(){try{initAudio();if(AC&&AC.state==='suspended')AC.resume();tone(140,0.1,0.3,'triangle',120);}catch(e){}}   // two short falling blips, loud enough for laptop speakers   // a small dull 'nothing happens' sound
 function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();if(c){carve(c);return;}if(zipTryMount())return;{const d=dropNearest();if(d){dropTake(d);return;}}const i=resNearest();if(i==null)return;const n=RES_NODES[i],R=RES_T[n.ti];
   if((R.k==='radio'||(R.k==='at4'&&!WPN.has))&&!slotCanTake(R.k)){toast('Gadget slots full · drop or use one first');return;}
   if(((R.k==='rifle'||R.k==='ar15')&&slotHas(R.k))||(R.k==='at4'&&WPN.has)){nullSnd();toast('You already carry '+(R.k==='at4'?'an AT4':'a'+(R.k==='ar15'?'n ':' ')+ITEM[R.k].name));return;}   // no taking ammo from a weapon you already have
