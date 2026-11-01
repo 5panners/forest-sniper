@@ -1464,9 +1464,9 @@ function hunterHead(){const g=ell(0.2,0.215,0.2,16,12),p=g.attributes.position;
       if(y<-0.2){y=-0.2+(y+0.2)*0.18;}}
     p.setXYZ(i,x,y,z);}return g;}
 const inBeard=(x,y,z)=>y<0.17&&z>-0.03&&!(Math.abs(x)<0.075&&y>0.085&&y<0.16&&z>0.12);
-const headMesh=hp(J.head,hunterHead(),'SKIN',[0,0.2,0.015],null,null,{cut:(x,y,z)=>inBeard(x,y,z)});
+const inMouth=(x,y,z)=>Math.abs(x)<0.075&&y>0.085&&y<0.16&&z>0.12;
+const headMesh=hp(J.head,hunterHead(),'SKIN',[0,0.2,0.015],null,null,{cut:(x,y,z)=>inBeard(x,y,z)||inMouth(x,y,z)});
 hp(J.head,hunterHead(),BEARDC,[0,0.2,0.015],null,null,{f:12,cut:(x,y,z)=>!inBeard(x,y,z)});
-[1,-1].forEach(sx=>{hp(J.head,rbox(0.09,0.045,0.075,0.012,2),'SKIN',[sx*0.1,0.168,0.158],[0.2,-sx*0.45,-sx*0.3]);});   // angular cheekbone planes
 hp(J.head,new THREE.ConeGeometry(0.05,0.12,4),'SKIN',[0,0.215,0.232],[-0.45,0,0]);   // wedge nose: narrow bridge between the lenses, wide tip pointing down-forward
 hp(J.head,ell(0.036,0.022,0.03,6,4),'SKIN',[0,0.168,0.252]);
 // sunglasses
@@ -1491,10 +1491,8 @@ const hat=new THREE.Group();hat.name='hat';hat.position.set(0,0.278,-0.01);hat.r
 const mouthCut=(x,y,z)=>z>0.15&&Math.abs(x)<0.082&&y>0.072&&y<0.152;
 const cheekCut=(x,y,z)=>z>0.1&&y>0.168&&Math.abs(x)<0.165;
 // beard: a flat-fronted block with crisp edges, a clean rectangular opening round the grin, and a V-shaped chin
-hp(J.head,rbox(0.17,0.085,0.03,0.01,2),'SKIN',[0,0.113,0.205]);
-hp(J.head,rbox(0.108,0.024,0.02,0.008,2),'#c46a60',[0,0.128,0.219]);
-hp(J.head,rbox(0.1,0.02,0.02,0.008,2),'#c46a60',[0,0.108,0.218]);
-hp(J.head,rbox(0.11,0.008,0.022,0.003,1),'#8e4840',[0,0.117,0.22]);
+// mouth: the lips are just coloured polys of the head surface (no extra geometry)
+hp(J.head,hunterHead(),'#c46a60',[0,0.2,0.015],null,null,{cut:(x,y,z)=>!inMouth(x,y,z)});
 // ---------- arms and legs ----------
 ['l','r'].forEach((s,i)=>{
   const sx=i===0?1:-1;
@@ -3957,7 +3955,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=364;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=365;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
