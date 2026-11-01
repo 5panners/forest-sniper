@@ -1793,6 +1793,7 @@ function applyPose(p){
     marine.updateMatrixWorld(true);
   }
   // arms
+  if(p.chute)chuteArms(p.chute);
   if(p.ikR>0.001&&anchorTarget(p.R,TR)){PR.fromArray(p.poleR);J.chest.localToWorld(PR);twoBone(J.rUpper,J.rFore,J.rHand,TR,PR,Math.min(1,p.ikR),false);}
   if(p.ikL>0.001&&anchorTarget(p.L,TL)){PL.fromArray(p.poleL);J.chest.localToWorld(PL);twoBone(J.lUpper,J.lFore,J.lHand,TL,PL,Math.min(1,p.ikL),false);}
   marine.updateMatrixWorld(true);
@@ -2670,9 +2671,10 @@ function raiseScoped(p,k,ar){   // shouldered: body turns side-on so the butt si
   _se.set(p.gunR[0],p.gunR[1],p.gunR[2],'ZYX');_sq2.setFromEuler(_se);_sq2.slerp(_sq3,k);_se.setFromQuaternion(_sq2,'ZYX');
   p.gunP=[p.gunP[0]+(_sW.x-p.gunP[0])*k,p.gunP[1]+(_sW.y-p.gunP[1])*k,p.gunP[2]+(_sW.z-p.gunP[2])*k];p.gunR=[_se.x,_se.y,_se.z];}
 function updatePlayer(dt,time){
+  if(CHUTE.on&&(!player.alive||MPM.hp<=0))chuteLand();
   carryOnTank();
   const pl=player, act=player.action, A_=act?ACTIONS[act.name]:null;
-  const mi=moveInput(); const firing=input.lmb&&!tank.on&&!MPM.freeze;
+  const mi=moveInput(); const firing=input.lmb&&!tank.on&&!MPM.freeze&&!CHUTE.on;
   const fwd=V(Math.sin(camYaw),0,Math.cos(camYaw)), rgt=V(-Math.cos(camYaw),0,Math.sin(camYaw));
   const wish=V(0,0,0).addScaledVector(fwd,mi.f).addScaledVector(rgt,mi.r); if(wish.lengthSq()>0)wish.normalize();
   const moving=wish.lengthSq()>0;
@@ -2680,7 +2682,7 @@ function updatePlayer(dt,time){
   const aimHeld=input.rmb;
   if(pl.stance!=='stand'&&sprint&&mi.f>0&&!act&&pl.stance==='crouch'&&canFit(HEIGHT.stand))pl.stance='stand';
   const recentFire=time-pl.lastShot<0.55;
-  const canAim=pl.alive&&!act&&pl.reloadT<0&&pl.stance!=='prone';
+  const canAim=pl.alive&&!act&&pl.reloadT<0&&pl.stance!=='prone'&&!CHUTE.on;
   const aimT=canAim&&(aimHeld||recentFire||firing)?1:(canAim&&!viewFP&&!(sprint&&mi.f>0)?0.7:0);   // third person: the rifle is carried up and ready, so you can see it beside the character
   pl.aimW=damp(pl.aimW,aimT,14,dt);
   const isSprint=sprint&&mi.f>0&&pl.stance==='stand'&&!aimHeld&&!firing&&!recentFire&&pl.reloadT<0&&stamOK();stamStep(isSprint,dt);const boostOn=boostStep(mi.f>0&&pl.stance==='stand'&&pl.alive&&!aimHeld&&!firing&&pl.reloadT<0,dt);
@@ -2697,7 +2699,7 @@ function updatePlayer(dt,time){
   if(pl.slide)stepSlide(dt,wish,moving);
   else{const tv=wish.clone().multiplyScalar(moving?spd:0);
   const acc=pl.grounded?12:2.5;
-  pl.vel.x=damp(pl.vel.x,tv.x,acc,dt); pl.vel.z=damp(pl.vel.z,tv.z,acc,dt);}
+  if(!CHUTE.on){pl.vel.x=damp(pl.vel.x,tv.x,acc,dt); pl.vel.z=damp(pl.vel.z,tv.z,acc,dt);}}
   const hs=Math.hypot(pl.vel.x,pl.vel.z);
   // footsteps: one per stride of ground covered, quieter the slower / lower you move; none while sliding, airborne or in an action
   if(pl.grounded&&!pl.slide&&pl.alive&&!(A_&&A_.lock)&&hs>0.35){
@@ -2713,7 +2715,7 @@ function updatePlayer(dt,time){
   if(faceT!=null&&pl.slide){const sd=Math.atan2(pl.slide.dx,pl.slide.dz);faceT=sd+clamp(wrapA(faceT-sd),-1.1,1.1);}
   if(faceT!=null){const rate=pl.stance==='prone'?3:12;pl.yaw+=wrapA(faceT-pl.yaw)*(1-Math.exp(-rate*dt));}
   // gravity + integration
-  pl.vel.y-=14*dt;
+  if(CHUTE.on)chuteSteer(pl,dt,wish,mi);else pl.vel.y-=14*dt;
   const sx0=pl.pos.x,sz0=pl.pos.z;
   pl.pos.x+=pl.vel.x*dt; pl.pos.z+=pl.vel.z*dt;
   resolvePlayer();try{towerStep(pl,dt);}catch(e){}
@@ -2787,7 +2789,7 @@ function updatePlayer(dt,time){
   {let want=0;try{want=((scoped||(input.rmb&&WPN.cur==='ar15'&&pl.aimW>0.5&&pl.reloadT<0&&!(pl.action&&ACTIONS[pl.action.name].lock)))&&pl.alive&&!pl.slide)?1:0;}catch(e){}pl.scK=(pl.scK||0)+(want-(pl.scK||0))*Math.min(1,dt*14);if(Math.abs(want-pl.scK)<0.004)pl.scK=want;
    if(pl.scK>0.004){p=Object.assign({},p);raiseScoped(p,pl.scK,_isAR());}}
   try{if(TW.climb)p=climbPose(p,pl);else if(ZIP.on)p=zipPose(p,pl);}catch(e){}
-  applyPose(p);player.pose=p;
+  if(CHUTE.on){const pc=Object.assign({},p);pc.chute={l:CHUTE.l,r:CHUTE.r};pc.ikL=0;pc.ikR=0;applyPose(pc);}else applyPose(p);player.pose=p;
   // HUD label
   let lab=act?ACTIONS[act.name].clip:(pl.slide?'Slide':(!pl.grounded?'Jump':null));
   if(!lab){let best='idle',bw=0;for(const k in lw)if(lw[k]>bw){bw=lw[k];best=k;}lab=LABEL[best];if(pl.reloadT>=0)lab+=' + Reload';else if(pl.aimW>0.5&&pl.stance!=='prone'&&best!=='kneel')lab+=' + Aim';if(pl.dir<0&&moveK)lab+=' (back)';}
@@ -2835,10 +2837,10 @@ function groundPlayer(dt){
   const pl=player;const r=PRAD*0.7;let g=supportAt(pl.pos.x,pl.pos.z,pl.pos.y,r);
   if(pl.vel.y>0){const h=HEIGHT[pl.stance];for(const c of colliders){if(!c.on||c.min.y<=pl.pos.y+0.5||c.min.y>pl.pos.y+h)continue;if(pl.pos.x+r<c.min.x||pl.pos.x-r>c.max.x||pl.pos.z+r<c.min.z||pl.pos.z-r>c.max.z)continue;pl.vel.y=0;}}
   if(pl.pos.y<=g+0.001&&pl.vel.y<=0){
-    if(!pl.grounded){try{fallHurt(pl,g);}catch(e){}}pl.fy=null;
+    if(!pl.grounded){try{if(!CHUTE.on)fallHurt(pl,g);}catch(e){}}pl.fy=null;
     if(!pl.grounded&&pl.fallV<-4.5&&!pl.action&&pl.stance==='stand')startAction('land');
     if(!pl.grounded&&pl.fallV<-3&&!pl.slide)sfx.thud();
-    pl.pos.y=g;pl.vel.y=0;pl.grounded=true;pl.fallV=0;}
+    pl.pos.y=g;pl.vel.y=0;pl.grounded=true;pl.fallV=0;if(CHUTE.on)chuteLand();}
   else if(pl.grounded&&pl.vel.y<=0&&pl.pos.y-g<STEP){pl.pos.y=g;pl.vel.y=0;}
   else{if(pl.grounded||pl.fy==null)pl.fy=pl.pos.y;else pl.fy=Math.max(pl.fy,pl.pos.y);pl.grounded=false;pl.fallV=Math.min(pl.fallV,pl.vel.y);}
 }
@@ -3568,6 +3570,88 @@ function stepBullets1(dt){
 }
 function startReload(){const pl=player;if(pl.reloadT>=0||pl.ammo>=MAG||pl.action||!pl.alive)return;if(!(pl.reserve>0)){toast('No spare rounds · pick up 7.62 ammo boxes');return;}pl.reloadT=0;sfx.click();}
 
+/* ---------------- parachute: Space off a tower, Space again to open the camo canopy; first-person view with both arms steering; gone the moment your feet touch down ---------------- */
+const CH_LINE=5.0;
+const CHUTE={on:false,t:0,open:0,l:0,r:0,bank:0,prevFP:false,hinted:false,dropped:false,sx:0,sz:0};
+const CHM=(()=>{   // low-poly ram-air canopy: 14 air cells in an arc, dark nose inlets, scalloped trailing edge, tan digital camo, thin lines to two risers
+  const NC=14,SPAN=8.4,CH_=3.3,KC=4,KR=6,R=7.5,A=SPAN/R;   // cells, span, chord, columns per cell, rows along the chord, arc radius
+  const P=[],C=[],col=new THREE.Color();
+  const tans=['#d7c8a0','#c9b98c','#bba97a','#a89868','#e4d9b8','#948558'];
+  const hash=(a,b)=>{const v=Math.sin(a*127.1+b*311.7)*43758.5453;return v-Math.floor(v);};
+  const pt=(u,v,top)=>{   // u 0..1 across the span, v 0..1 from the leading to the trailing edge
+    const a=(u-0.5)*A, cell=u*NC, fu=cell-Math.floor(cell);
+    const th=0.62*Math.pow(Math.sin(Math.PI*Math.min(1,v*1.02+0.02)),0.6)*(1-0.75*v);   // aerofoil thickness
+    const bulge=top?0.2*Math.sin(Math.PI*fu)*Math.sin(Math.PI*Math.min(1,v*1.1+0.02)):0;
+    const y0=(top?th+bulge:0)-R*(1-Math.cos(a))*0.55, z=(v-0.5)*CH_*(1-0.06*Math.abs(a)/A*2);
+    const r=R-(top?0:0);return [R*Math.sin(a)*(top?1:1),y0+(top?0:-0.02),z];};
+  const tri=(a,b,c,hex,j)=>{col.set(hex).convertSRGBToLinear();const k=(j==null?1:j)*1.75;for(const v of [a,b,c]){P.push(v[0],v[1],v[2]);C.push(col.r*k,col.g*k,col.b*k);}};
+  const camo=(u,v)=>tans[Math.floor(hash(Math.floor(u*NC*KC*0.75),Math.floor(v*KR*1.6))*tans.length)%tans.length];
+  for(let i=0;i<NC*KC;i++)for(let j=0;j<KR;j++){const u0=i/(NC*KC),u1=(i+1)/(NC*KC),v0=j/KR,v1=(j+1)/KR;
+    const a=pt(u0,v0,true),b=pt(u1,v0,true),c=pt(u1,v1,true),d=pt(u0,v1,true),hx=camo((u0+u1)/2,(v0+v1)/2),jj=0.94+hash(i,j)*0.1;
+    tri(a,d,b,hx,jj);tri(b,d,c,hx,jj);
+    const e=pt(u0,v0,false),f=pt(u1,v0,false),g=pt(u1,v1,false),h=pt(u0,v1,false);   // under-skin, a shade darker
+    tri(e,f,h,hx,0.9);tri(f,g,h,hx,0.9);}
+  for(let i=0;i<NC*KC;i++){const u0=i/(NC*KC),u1=(i+1)/(NC*KC);   // nose: the dark air inlets between top and bottom skin
+    const t0=pt(u0,0,true),t1=pt(u1,0,true),b0=pt(u0,0,false),b1=pt(u1,0,false);tri(t0,b0,t1,'#2b2519',1);tri(t1,b0,b1,'#2b2519',1);}
+  for(let i=0;i<=NC;i++){const u=i/NC;   // ribs: cell walls seen through the inlets
+    const t=pt(u,0,true),b=pt(u,0,false),t2=pt(u,0.14,true),b2=pt(u,0.14,false);tri(t,b,t2,'#5a4e36',1);tri(t2,b,b2,'#5a4e36',1);tri(t,t2,b,'#5a4e36',1);}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(P),3));g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(C),3));g.computeVertexNormals();
+  const mat=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:0.95,metalness:0,side:THREE.DoubleSide,emissive:0x2e2818});
+  const mesh=new THREE.Mesh(g,mat);mesh.frustumCulled=false;mesh.castShadow=false;
+  // lines: each rib's underside to the riser on its side (rear lines land lower), from the risers to the shoulders; the two brake lines are rewritten every frame
+  const L=[];const risL=[-0.2,0,0.05],risR=[0.2,0,0.05];
+  for(let i=0;i<=NC;i++){const u=i/NC,riser=u<0.5?risL:risR;for(const v of [0.18,0.78]){const b=pt(u,v,false);L.push(b[0],b[1],b[2],riser[0],riser[1]-CH_LINE,riser[2]);}}
+  const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(L),3));
+  const lm=new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0xd9d2bb,transparent:true,opacity:0.8,fog:true}));lm.frustumCulled=false;
+  const grp=new THREE.Group();grp.add(mesh);grp.add(lm);grp.visible=false;scene.add(grp);
+  // brake lines + riser tails (world space, rewritten each frame)
+  const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6*4),3));
+  const bl=new THREE.LineSegments(bg,new THREE.LineBasicMaterial({color:0xe8e1c8,transparent:true,opacity:0.9}));bl.frustumCulled=false;bl.visible=false;scene.add(bl);
+  return {grp,bl,bg,pt,NC};})();
+const _cv=new THREE.Vector3(),_cr=new THREE.Vector3(),_cl=new THREE.Vector3();
+function chuteHeight(pl){return pl.pos.y-supportAt(pl.pos.x,pl.pos.z,pl.pos.y,PRAD*0.7);}
+function chuteOpen(instant){const pl=player;CHUTE.on=true;CHUTE.t=0;CHUTE.open=instant?1:0;CHUTE.l=CHUTE.r=0;CHUTE.bank=0;CHUTE.prevFP=viewFP;viewFP=true;
+  pl.fy=pl.pos.y;pl.fallV=0;pl.stance='stand';pl.slide=null;pl.aimW=0;input.rmb=false;input.lmb=false;gun.visible=false;CHM.grp.visible=true;CHM.bl.visible=true;
+  if(!instant){try{shake=Math.max(shake,0.55);}catch(e){}try{nz&&0;}catch(e){}
+    try{initAudio();if(AC){tone(70,0.28,0.5,'sawtooth',40);tone(180,0.2,0.25,'triangle',90);}}catch(e){}}
+  toast('Parachute open · mouse steers · W faster · S brake · A / D drift');}
+function chuteLand(){if(!CHUTE.on)return;CHUTE.on=false;CHM.grp.visible=false;CHM.bl.visible=false;gun.visible=true;viewFP=CHUTE.prevFP;CHUTE.hinted=false;}
+// Space in the air: open the chute if you are clear of the structure and well above what you would land on
+function chuteKey(){const pl=player;if(CHUTE.on||pl.grounded||!pl.alive||pl.action||pl.slide)return false;
+  try{if(TW.climb||ZIP.on)return false;}catch(e){}try{if(LIFT&&LIFT.p1)return false;}catch(e){}
+  if(pl.vel.y>1.5||chuteHeight(pl)<3)return false;                       // still rising, or too low for the canopy to open
+  const o=_cv.set(pl.pos.x,pl.pos.y+1.9,pl.pos.z),up=_cr.set(0,1,0);
+  for(const dx of [0,-2.6,2.6]){const oo=o.clone();oo.x+=dx*Math.cos(camYaw);oo.z-=dx*Math.sin(camYaw)*-1;const h=castRay(oo,up,8.5);if(h&&h.dist<8.2){toast('Not clear · get away from the tower or trees before opening the chute');return true;}}
+  chuteOpen(false);return true;}
+// glide: forward about 10 m/s and sinking 3.4 (glide ratio near 3); W dives for speed, S brakes and flares, A/D drift sideways; the mouse turns you
+function chuteSteer(pl,dt,wish,mi){CHUTE.t+=dt;CHUTE.open=Math.min(1,CHUTE.open+dt/0.55);
+  const fwd=mi.f>0?1:mi.f<0?-1:0,spd=fwd>0?14:fwd<0?5.5:10,sink=fwd>0?4.6:fwd<0?2.3:3.4;
+  const fx=Math.sin(camYaw),fz=Math.cos(camYaw),rx=-Math.cos(camYaw),rz=Math.sin(camYaw);
+  const tx=fx*spd+rx*mi.r*3.5,tz=fz*spd+rz*mi.r*3.5;
+  pl.vel.x=damp(pl.vel.x,tx,CHUTE.t<0.7?2.6:1.6,dt);pl.vel.z=damp(pl.vel.z,tz,CHUTE.t<0.7?2.6:1.6,dt);
+  pl.vel.y=damp(pl.vel.y,-sink,CHUTE.t<0.7?4.5:2,dt)*CHUTE.open+(pl.vel.y)*(1-CHUTE.open)*0;    // the opening shock slows the fall within half a second
+  pl.vel.y=Math.max(pl.vel.y,-sink*1.6)*1;pl.fy=pl.pos.y;pl.fallV=0;
+  CHUTE.l=damp(CHUTE.l,mi.r<0||fwd<0?1:0,8,dt);CHUTE.r=damp(CHUTE.r,mi.r>0||fwd<0?1:0,8,dt);CHUTE.bank=damp(CHUTE.bank,mi.r,2.5,dt);}
+// canopy placement, brake lines, and the very first drop over the home base
+function chuteVis(dt){
+  if(!CHUTE.on){ const pl=player;if(!CHUTE.hinted&&!pl.grounded&&pl.alive&&pl.vel.y<0&&chuteHeight(pl)>4&&!pl.action){CHUTE.hinted=true;toast('Space · open the parachute');}if(pl.grounded)CHUTE.hinted=false;return;}
+  const pl=player,y=camYaw,g=CHM.grp,k=(0.3+0.7*CHUTE.open)*1.3;   // canopy is drawn 30% bigger than its model
+  g.position.set(pl.pos.x,pl.pos.y+2.15+CH_LINE*k,pl.pos.z);g.rotation.set(0.1,y,-CHUTE.bank*0.22,'YXZ');
+  g.position.x+=Math.sin(y)*0.55*k;g.position.z+=Math.cos(y)*0.55*k;g.scale.setScalar(k);g.updateMatrixWorld(true);
+  // brake lines: from the trailing edge, a quarter in from each tip, to the two hands; plus the riser tails to the shoulders
+  const a=CHM.bg.attributes.position.array;
+  J.lHand.getWorldPosition(_cl);_cv.copy(CHM.pt(0.2,1,false));_cv.applyMatrix4(g.matrixWorld);a[0]=_cv.x;a[1]=_cv.y;a[2]=_cv.z;a[3]=_cl.x;a[4]=_cl.y;a[5]=_cl.z;
+  J.rHand.getWorldPosition(_cl);_cv.copy(CHM.pt(0.8,1,false));_cv.applyMatrix4(g.matrixWorld);a[6]=_cv.x;a[7]=_cv.y;a[8]=_cv.z;a[9]=_cl.x;a[10]=_cl.y;a[11]=_cl.z;
+  for(let k=0;k<2;k++){const sx=k?-1:1;_cv.set(sx*0.2,0,0.05).applyMatrix4(g.matrixWorld);_cv.y-=CH_LINE*g.scale.x;const o=12+k*6;a[o]=_cv.x;a[o+1]=_cv.y;a[o+2]=_cv.z;
+    J.chest.getWorldPosition(_cl);_cl.x+=Math.cos(y)*sx*-0.16*-1;_cl.z+=-Math.sin(y)*sx*0.16*-1;_cl.y+=0.28;a[o+3]=_cl.x;a[o+4]=_cl.y;a[o+5]=_cl.z;}
+  CHM.bg.attributes.position.needsUpdate=true;}
+// the first drop: you start high above the home base with the chute already open
+function chuteInitialDrop(){if(CHUTE.dropped||MPM.on)return;CHUTE.dropped=true;const pl=player,x=P1_SPAWN.x,z=P1_SPAWN.z;
+  pl.pos.set(x,groundH(x,z)+70,z);pl.vel.set(0,-3.4,0);pl.grounded=false;camYaw=Math.atan2(-x,-z);camPitch=-0.12;pl.yaw=camYaw;chuteOpen(true);}
+// steering arms: both hands up on the toggles above and ahead, pulled down as you steer
+function chuteArms(c){TR.set(-0.34,2.0-0.24*c.r,0.5-0.1*c.r);marine.localToWorld(TR);TL.set(0.34,2.0-0.24*c.l,0.5-0.1*c.l);marine.localToWorld(TL);
+  PR.set(-0.9,-0.1,-0.4);J.chest.localToWorld(PR);PL.set(0.9,-0.1,-0.4);J.chest.localToWorld(PL);
+  twoBone(J.rUpper,J.rFore,J.rHand,TR,PR,1,false);twoBone(J.lUpper,J.lFore,J.lHand,TL,PL,1,false);}
 /* ---------------- camera: third person, first person and the scope ---------------- */
 const ZOOMS=[2,3,4]; let zoomI=0;   // magnification; field of view = 62 deg (normal view) / mag
 const _cp=V(0,0,0),_dir=V(0,0,0),_eye=V(0,0,0),_rt=V(0,0,0), camRay=new THREE.Raycaster();
@@ -3579,6 +3663,7 @@ function gunYaw(){return aimYawV!=null?aimYawV:camYaw;}
 function gunPitch(){return aimPitchV!=null?aimPitchV:camPitch;}
 function updateCamera(dt){
   const pl=player;
+  chuteVis(dt);
   scoped=input.rmb&&WPN.cur==='rifle'&&pl.alive&&!(pl.action&&ACTIONS[pl.action.name].lock)&&pl.reloadT<0&&(pl.aimW>0.5||pl.stance==='prone')&&!pl.slide;
   // sway: less crouched, much less prone; Shift holds the breath for a few seconds
   swayT+=dt;const st=pl.stance==='prone'?0.22:pl.stance==='crouch'?0.55:1;
@@ -3712,7 +3797,7 @@ let everLocked=false;
 function goFallback(){if(fallback)return;if(everLocked){toast('Click the game to capture the mouse');return;}   // after Esc the browser refuses a re-lock for about a second: never give up on lock once it has worked
   if(MPM.on&&(MPM.lf=(MPM.lf||0)+1)<4){toast('Click the game to capture the mouse');return;}   // in a match, keep trying the lock rather than dropping to drag-to-look
   fallback=true;toast('Mouse lock unavailable here · hold a mouse button and drag to look');}
-$('deployBtn').addEventListener('click',()=>{initAudio();if(AC&&AC.state==='suspended')AC.resume();startAmbience();setPlaying(true);cv.focus();requestLock();});
+$('deployBtn').addEventListener('click',()=>{initAudio();if(AC&&AC.state==='suspended')AC.resume();startAmbience();try{chuteInitialDrop();}catch(e){console.warn('drop',e);}setPlaying(true);cv.focus();requestLock();});
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===cv;if(locked){everLocked=true;fallback=false;}if(!locked&&playing&&!fallback&&!mapOpen){if(MPM.on){for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;toast('Mouse released · click the game to capture it · Esc for the menu');}else setPlaying(false);}else if(locked)MPM.lf=0;});   // in a match the game stays up when the mouse is released (switching tabs): click to take it back
 document.addEventListener('pointerlockerror',()=>goFallback());
 cv.addEventListener('contextmenu',e=>e.preventDefault());
@@ -3732,7 +3817,7 @@ addEventListener('keydown',e=>{
   switch(e.code){
     case 'Escape': if(fallback||(MPM.on&&!locked))setPlaying(false); break;
     case 'KeyW': wTap(); break;
-    case 'KeyV': viewFP=!viewFP; break;
+    case 'KeyV': if(CHUTE.on)break; viewFP=!viewFP; break;
     case 'Backquote': godSet(!GOD.on); break;
     case 'KeyH': DEVFACE.on=!DEVFACE.on;toast(DEVFACE.on?'Dev camera: facing the player (H again to return)':'Dev camera: normal');break;
     case 'KeyM': soundOn=!soundOn;toast(soundOn?'Sound on':'Sound muted'); break;
@@ -3750,7 +3835,7 @@ addEventListener('keydown',e=>{
     case 'ControlLeft': case 'ControlRight': if(!busy)tryStartSlide(); break;
     case 'KeyC': if(busy)break; if(pl.slide)break; if(pl.stance==='stand'&&Math.hypot(pl.vel.x,pl.vel.z)>(streamAt(pl.pos.x,pl.pos.z)||fallRow(pl.pos.x,pl.pos.z)?2.4:5.2)&&tryStartSlide())break; if(pl.stance==='stand')pl.stance='crouch';else if(pl.stance==='crouch'){if(canFit(HEIGHT.stand))pl.stance='stand';else toast('No headroom');}else if(pl.stance==='prone'){if(canFit(HEIGHT.crouch)){startAction('proneUp',{crouch:true});}else toast('No headroom');} break;
     case 'KeyZ': if(busy||!pl.grounded)break; if(pl.stance==='prone'){if(canFit(HEIGHT.stand))startAction('proneUp');else toast('No headroom');}else{pl.reloadT=-1;startAction('proneDown');} break;
-    case 'Space': if(busy)break; if(pl.slide){endSlide();if(pl.stance==='stand'&&pl.grounded){pl.vel.y=5.6*(BOOST.on?(GAME.bJump||1.4):1);pl.grounded=false;}break;} if(pl.stance==='prone'){if(canFit(HEIGHT.stand))startAction('proneUp');else toast('No headroom');}else if(pl.grounded){if(pl.stance==='crouch'){if(!canFit(HEIGHT.stand))break;pl.stance='stand';}pl.vel.y=5.6*(BOOST.on?(GAME.bJump||1.4):1);pl.grounded=false;} break;
+    case 'Space': if(busy)break; if(chuteKey())break; if(pl.slide){endSlide();if(pl.stance==='stand'&&pl.grounded){pl.vel.y=5.6*(BOOST.on?(GAME.bJump||1.4):1);pl.grounded=false;}break;} if(pl.stance==='prone'){if(canFit(HEIGHT.stand))startAction('proneUp');else toast('No headroom');}else if(pl.grounded){if(pl.stance==='crouch'){if(!canFit(HEIGHT.stand))break;pl.stance='stand';}pl.vel.y=5.6*(BOOST.on?(GAME.bJump||1.4):1);pl.grounded=false;} break;
     case 'KeyR': if(WPN.cur==='at4')at4Reload();else if(WPN.cur==='rifle'||WPN.cur==='ar15')startReload(); break;
     case 'KeyX': at4Switch(); break;
     case 'KeyG': if(busy||pl.stance==='prone'||pl.nadeCD>0||!pl.grounded)break; pl.reloadT=-1; if(pl.stance==='crouch'&&canFit(HEIGHT.stand))pl.stance='stand'; if(pl.stance==='stand')startAction('throw'); break;
@@ -3761,7 +3846,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;});
 
-const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['God mode (dev)','` backquote'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Launch the missile (at the silo console)','L'],['Shadows','O'],['Mute','M']];
+const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Parachute','Space to jump · Space again in the air to open · mouse steers, W / S speed, A / D drift'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['God mode (dev)','` backquote'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Launch the missile (at the silo console)','L'],['Shadows','O'],['Mute','M']];
 $('keyList').innerHTML=KEYS.map(k=>`<div><kbd>${k[1]}</kbd><span>${k[0]}</span></div>`).join('');
 
 /* ---------------- menu tabs + graphics options ---------------- */
@@ -3957,7 +4042,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=375;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=377;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
