@@ -3601,10 +3601,10 @@ const CHM=(()=>{   // low-poly ram-air canopy: 14 air cells in an arc, dark nose
   const L=[];const risL=[-0.2,0,0.05],risR=[0.2,0,0.05];
   for(let i=0;i<=NC;i++){const u=i/NC,riser=u<0.5?risL:risR;for(const v of [0.18,0.78]){const b=pt(u,v,false);L.push(b[0],b[1],b[2],riser[0],riser[1]-CH_LINE,riser[2]);}}
   const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(L),3));
-  const lm=new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0x8c8c8c,transparent:true,opacity:0.9,fog:true}));lm.frustumCulled=false;
+  const lm=new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0x2f4a2a,transparent:true,opacity:0.95,fog:true}));lm.frustumCulled=false;
   const grp=new THREE.Group();grp.add(mesh);grp.add(lm);grp.visible=false;scene.add(grp);
   // brake lines + riser tails (world space, rewritten each frame)
-  const sm=new THREE.MeshBasicMaterial({color:0x7a7a7a,side:THREE.DoubleSide}),jm=new THREE.MeshBasicMaterial({color:0x4a4a4a}),jgeo=new THREE.BoxGeometry(0.11,0.075,0.11);
+  const sm=new THREE.MeshBasicMaterial({color:0x2a4226,side:THREE.DoubleSide}),jm=new THREE.MeshStandardMaterial({color:0xb5893a,metalness:0.8,roughness:0.35,flatShading:true}),jgeo=new THREE.BoxGeometry(0.11,0.075,0.11);
   const harness=()=>{const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(72),3));   // 4 flat webbing ribbons, rewritten every frame
     const bl=new THREE.Group(),rb=new THREE.Mesh(bg,sm);rb.frustumCulled=false;bl.add(rb);const jn=[0,1].map(()=>{const m=new THREE.Mesh(jgeo,jm);m.frustumCulled=false;bl.add(m);return m;});   // a joiner block where each strap splits into the lines
     bl.visible=false;scene.add(bl);return {bl,bg,jn};};
@@ -3618,7 +3618,7 @@ function chuteOpen(instant){const pl=player;CHUTE.on=true;CHUTE.t=0;CHUTE.open=i
   pl.fy=pl.pos.y;pl.fallV=0;pl.stance='stand';pl.slide=null;CHM.grp.visible=true;CHM.bl.visible=true;   // harness straps from the shoulders: both hands stay on the weapon
   if(!instant){try{shake=Math.max(shake,0.55);}catch(e){}try{nz&&0;}catch(e){}
     try{initAudio();if(AC){tone(70,0.28,0.5,'sawtooth',40);tone(180,0.2,0.25,'triangle',90);}}catch(e){}}
-  toast('Parachute open · mouse steers · W faster · S brake · A / D turn · you can still aim and fire');}
+  toast('Parachute open · mouse steers · W faster · S brake · A / D drift · you can still aim and fire');}
 function chuteLand(){if(!CHUTE.on)return;CHUTE.on=false;CHM.grp.visible=false;CHM.bl.visible=false;CHUTE.hinted=false;}
 // Space in the air: open the chute if you are clear of the structure and well above what you would land on
 function chuteKey(){const pl=player;if(CHUTE.on||pl.grounded||!pl.alive||pl.action||pl.slide)return false;
@@ -3631,7 +3631,7 @@ function chuteKey(){const pl=player;if(CHUTE.on||pl.grounded||!pl.alive||pl.acti
 function chuteSteer(pl,dt,wish,mi){CHUTE.t+=dt;CHUTE.open=Math.min(1,CHUTE.open+dt/0.55);
   const fwd=mi.f>0?1:mi.f<0?-1:0,spd=fwd>0?14:fwd<0?5.5:10,sink=fwd>0?4.6:fwd<0?2.3:3.4;
   const fx=Math.sin(camYaw),fz=Math.cos(camYaw),rx=-Math.cos(camYaw),rz=Math.sin(camYaw);
-  camYaw-=mi.r*1.1*dt;const tx=fx*spd,tz=fz*spd;
+  const tx=fx*spd+rx*mi.r*3.5,tz=fz*spd+rz*mi.r*3.5;
   pl.vel.x=damp(pl.vel.x,tx,CHUTE.t<0.7?2.6:1.6,dt);pl.vel.z=damp(pl.vel.z,tz,CHUTE.t<0.7?2.6:1.6,dt);
   pl.vel.y=damp(pl.vel.y,-sink,CHUTE.t<0.7?4.5:2,dt)*CHUTE.open+(pl.vel.y)*(1-CHUTE.open)*0;    // the opening shock slows the fall within half a second
   pl.vel.y=Math.max(pl.vel.y,-sink*1.6)*1;pl.fy=pl.pos.y;pl.fallV=0;
@@ -3863,7 +3863,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;});
 
-const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Parachute','Space to jump · Space again in the air to open · mouse steers, W / S speed, A / D turn'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['God mode (dev)','` backquote'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Launch the missile (at the silo console)','L'],['Shadows','O'],['Mute','M']];
+const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Parachute','Space to jump · Space again in the air to open · mouse steers, W / S speed, A / D drift'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['God mode (dev)','` backquote'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Launch the missile (at the silo console)','L'],['Shadows','O'],['Mute','M']];
 $('keyList').innerHTML=KEYS.map(k=>`<div><kbd>${k[1]}</kbd><span>${k[0]}</span></div>`).join('');
 
 /* ---------------- menu tabs + graphics options ---------------- */
@@ -4059,7 +4059,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=383;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=384;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
