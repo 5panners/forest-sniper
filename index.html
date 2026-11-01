@@ -1458,17 +1458,15 @@ hp(J.chest,rbox(0.035,0.05,0.012,0.006,1),'#8a7c66',[0,0.07,-0.43]);
  [-0.15,0.15].forEach(x=>hp(J.chest,tcyl(0.09,0.09,0.03,14,1),STRAP,[x,R[1],R[2]],[0,0,HP]));}
 // ---------- neck and head ----------
 hp(J.neck,tcyl(0.115,0.13,0.14,12),'SKIN',[0,0.03,0]);
-function hunterHead(){const g=ell(0.2,0.215,0.2,16,12),p=g.attributes.position;
+function hunterHead(ws,hs){const g=ell(0.2,0.215,0.2,ws||16,hs||12),p=g.attributes.position;
   for(let i=0;i<p.count;i++){let x=p.getX(i),y=p.getY(i),z=p.getZ(i);const ny=y/0.215;
     if(ny<0){const k=-ny;y*=1+0.28*k;x*=1-0.08*k*k;z*=1-0.08*k*k;if(z>0)z+=0.1*k*k;   // longer, narrower jaw with a chin that juts forward
       if(y<-0.2){y=-0.2+(y+0.2)*0.18;}}
     p.setXYZ(i,x,y,z);}return g;}
 const inBeard=(x,y,z)=>y<0.17&&z>-0.03&&!(Math.abs(x)<0.075&&y>0.085&&y<0.16&&z>0.12);
-const inMouth=(x,y,z)=>Math.abs(x)<0.075&&y>0.085&&y<0.16&&z>0.12;
-const headMesh=hp(J.head,hunterHead(),'SKIN',[0,0.2,0.015],null,null,{cut:(x,y,z)=>inBeard(x,y,z)||inMouth(x,y,z)});
+const headMesh=hp(J.head,hunterHead(),'SKIN',[0,0.2,0.015],null,null,{cut:(x,y,z)=>inBeard(x,y,z)});
 hp(J.head,hunterHead(),BEARDC,[0,0.2,0.015],null,null,{f:12,cut:(x,y,z)=>!inBeard(x,y,z)});
 hp(J.head,new THREE.ConeGeometry(0.05,0.12,4),'SKIN',[0,0.215,0.232],[-0.45,0,0]);   // wedge nose: narrow bridge between the lenses, wide tip pointing down-forward
-hp(J.head,ell(0.036,0.022,0.03,6,4),'SKIN',[0,0.168,0.252]);
 // sunglasses
 [1,-1].forEach(sx=>{
   hp(J.head,rbox(0.135,0.085,0.022,0.01,3),'#3e4043',[sx*0.088,0.23,0.222],[0,sx*0.12,0]);
@@ -1492,7 +1490,9 @@ const mouthCut=(x,y,z)=>z>0.15&&Math.abs(x)<0.082&&y>0.072&&y<0.152;
 const cheekCut=(x,y,z)=>z>0.1&&y>0.168&&Math.abs(x)<0.165;
 // beard: a flat-fronted block with crisp edges, a clean rectangular opening round the grin, and a V-shaped chin
 // mouth: the lips are just coloured polys of the head surface (no extra geometry)
-hp(J.head,hunterHead(),'#c46a60',[0,0.2,0.015],null,null,{cut:(x,y,z)=>!inMouth(x,y,z)});
+// finer polys laid on the head surface (a hair outside it), coloured as upper lip, mouth line and lower lip
+{const lip=(y0,y1,c)=>hp(J.head,hunterHead(96,72),c,[0,0.2,0.015],null,[1.012,1.012,1.012],{cut:(x,y,z)=>!(Math.abs(x)<0.052&&z>0.12&&y>=y0&&y<y1)});
+ lip(0.123,0.142,'#c46a60');lip(0.115,0.123,'#7e3d36');lip(0.097,0.115,'#c46a60');}
 // ---------- arms and legs ----------
 ['l','r'].forEach((s,i)=>{
   const sx=i===0?1:-1;
@@ -3958,7 +3958,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=367;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=368;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
