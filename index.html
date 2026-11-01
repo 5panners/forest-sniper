@@ -1051,6 +1051,14 @@ const CS=20, CN=HALF*2/CS, CV=CN+1;
 const FH=new Float32Array(FV*FV), FdS=new Float32Array(FV*FV), FdR=new Float32Array(FV*FV), FLe=new Float32Array(FV*FV), FCw=new Float32Array(FV*FV);
 const CH=new Float32Array(CV*CV), CdS=new Float32Array(CV*CV), CdR=new Float32Array(CV*CV), CLe=new Float32Array(CV*CV), CCw=new Float32Array(CV*CV);
 for(let j=0;j<FV;j++)for(let i=0;i<FV;i++){const k=j*FV+i,f=fieldsAt(-FE+i*FS,-FE+j*FS);FH[k]=f.h;FdS[k]=f.dS;FdR[k]=f.dR;FLe[k]=f.le;FCw[k]=f.cw;}
+// ===== underground control centre: carve the height grid (the building itself is made further down) =====
+const BK={ix0:12.5,ix1:32.5,iz0:92.5,iz1:107.5,x0:10,x1:35,z0:90,z1:110};   // interior and outer footprint (all on the 2.5 m height-grid lines)
+{const fi=(x,z)=>Math.round((z+FE)/FS)*FV+Math.round((x+FE)/FS);
+ let gmax=-1e9;for(let x=BK.x0;x<=BK.x1+0.01;x+=FS)for(let z=BK.z0;z<=BK.z1+0.01;z+=FS)gmax=Math.max(gmax,FH[fi(x,z)]);
+ BK.roof=Math.ceil(gmax*10)/10+0.35;BK.F=BK.roof-0.7-4.2;BK.g0=FH[fi(0,100)];
+ for(let x=BK.ix0;x<=BK.ix1+0.01;x+=FS)for(let z=BK.iz0;z<=BK.iz1+0.01;z+=FS)FH[fi(x,z)]=BK.F;   // the room floor
+ BK.prof=[];for(let i=0;i<=4;i++){const x=i*FS,h=BK.g0+(BK.F-BK.g0)*i/4;BK.prof.push([x,h]);for(const z of [97.5,100,102.5])FH[fi(x,z)]=h;}   // the stair cutting, 3 vertex lines wide
+}
 for(let j=0;j<CV;j++)for(let i=0;i<CV;i++){const k=j*CV+i,f=fieldsAt(-HALF+i*CS,-HALF+j*CS);CH[k]=f.h;CdS[k]=f.dS;CdR[k]=f.dR;CLe[k]=f.le;CCw[k]=f.cw;}
 // height lookup that matches the rendered triangles exactly (cells split along the 00-11 diagonal)
 function gridH(A,n,step,o,x,z){let fx=(x-o)/step,fz=(z-o)/step;fx=clamp(fx,0,n-1e-6);fz=clamp(fz,0,n-1e-6);const i=Math.floor(fx),j=Math.floor(fz);fx-=i;fz-=j;const w=n+1;
@@ -1137,7 +1145,7 @@ const XS=(()=>{
   return out;})();
 // true where the extra structures stand (no trees, rocks, logs or ferns)
 const XS_SHRINE=false;
-function xsClear(x,z){const s=XS.shrine,l=XS.look,f=XS.farm;return (XS_SHRINE&&Math.hypot(x-s.x,z-s.z)<4.5)||Math.hypot(x-l.x,z-l.z)<18||(Math.abs(x-f.x)<27&&Math.abs(z-f.z)<16)||Math.hypot(x-SEC_HOME.e.x,z-SEC_HOME.e.z)<16||Math.hypot(x-SEC_HOME.w.x,z-SEC_HOME.w.z)<16;}
+function xsClear(x,z){const s=XS.shrine,l=XS.look,f=XS.farm;return (x>-8&&x<40&&z>84&&z<116)||(XS_SHRINE&&Math.hypot(x-s.x,z-s.z)<4.5)||Math.hypot(x-l.x,z-l.z)<18||(Math.abs(x-f.x)<27&&Math.abs(z-f.z)<16)||Math.hypot(x-SEC_HOME.e.x,z-SEC_HOME.e.z)<16||Math.hypot(x-SEC_HOME.w.x,z-SEC_HOME.w.z)<16;}
 function addRock(x,z,w,h,d,ry,moss,col,yOff){const g=Math.min(groundH(x-w*0.35,z-d*0.35),groundH(x+w*0.35,z+d*0.35),groundH(x-w*0.35,z+d*0.35),groundH(x+w*0.35,z-d*0.35));
   const r={x,z,y:(yOff!=null?yOff:g-h*0.28),w,h,d,ry,moss,col:col!==false,i:ROCKS.length};ROCKS.push(r);return r;}
 const _nTor0=ROCKS.length;
@@ -3698,7 +3706,7 @@ function gunYaw(){return aimYawV!=null?aimYawV:camYaw;}
 function gunPitch(){return aimPitchV!=null?aimPitchV:camPitch;}
 function updateCamera(dt){
   const pl=player;
-  chuteVis(dt);
+  chuteVis(dt);try{bunkerAnim(dt);}catch(e){}
   scoped=input.rmb&&WPN.cur==='rifle'&&pl.alive&&!(pl.action&&ACTIONS[pl.action.name].lock)&&pl.reloadT<0&&(pl.aimW>0.5||pl.stance==='prone')&&!pl.slide;
   // sway: less crouched, much less prone; Shift holds the breath for a few seconds
   swayT+=dt;const st=pl.stance==='prone'?0.22:pl.stance==='crouch'?0.55:1;
@@ -4077,7 +4085,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=392;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=393;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4148,6 +4156,7 @@ const RES_GEO={
 const RES_MAT=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:0.9,metalness:0});
 const RES_MESH={},RES_NODES=[],RES_CELLS=new Map(),_rm=new THREE.Matrix4(),_rq=new THREE.Quaternion(),_re=new THREE.Euler(),_rp=new THREE.Vector3(),_rs=new THREE.Vector3(),_ZERO=new THREE.Matrix4().makeScale(0,0,0),_RC=new THREE.Color();
 function resOK(x,z,t){
+  if(xsClear(x,z))return false;
   if(Math.abs(x)>PLAY-6||Math.abs(z)>PLAY-6)return false;
   if(lakeE(x,z)<1.12||fieldF(x,z,FdR,CdR)<5.5)return false;
   if(fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw,CCw)+1.6)return false;
@@ -5409,6 +5418,174 @@ window.SNIPER_ZIP={ZIP,ZIPS,LIFTS,LIFT,liftStand,liftNear,mount:zipTryMount,step
 // ================= ICBM silo (compact: everything is modelled at full size and built at scale K): reinforced concrete pad and collar sunk into an open meadow, a deep shaft, a sliding blast hatch and a launchable missile =================
 // The shaft is seen through the ground with a stencil: the opening writes a mask, then the shaft walls draw only inside it (ignoring the terrain's depth).
 // Walk to the launch console beside the pad and press L: klaxon, hatch rolls back, ignition, the missile climbs out on a column of smoke and pitches over.
+// ================= underground ICBM command & control centre =================
+// Stairs down from the meadow east of the silo into a reinforced room: map wall, consoles, server racks, a command table and the launch console with two C4 pads.
+// The room is lit with baked vertex colours (so the sun never leaks in) plus three coloured point lights; screens are animated canvases.
+const BKM=(()=>{
+const F=BK.F,R=BK.roof,CE=F+4.2,CX=22.5,CZ=100;
+const INT={P:[],C:[]},EXT={P:[],C:[]};
+const K=(x0,x1,y0,y1,z0,z1)=>colliders.push({min:V(x0,y0,z0),max:V(x1,y1,z1),on:true});
+const LS=[[16.5,95],[22.5,95],[28.5,95],[16.5,100],[28.5,100],[16.5,105],[22.5,105],[28.5,105],[8.2,100],[11.4,100]];   // ceiling lamps
+const glow=(x,y,z)=>{let l=0.2;for(const q of LS){const d=Math.hypot(x-q[0],z-q[1])+Math.max(0,CE-y)*0.3;l+=0.7*Math.exp(-d*d/30);}
+  l+=0.4*Math.exp(-((z-93)**2)/12)*Math.max(0,1-Math.abs(x-CX)/10);                    // glow off the map wall
+  const r=Math.exp(-(((x-31)**2)+((z-CZ)**2))/20);                                      // red light round the launch console
+  return [Math.min(1.3,l*0.78+r*0.7),Math.min(1.2,l*0.93),Math.min(1.5,l*1.22+0.04)];};
+const FACES=[['U',1,1],['D',1,-1],['E',0,1],['W',0,-1],['S',2,1],['N',2,-1]];
+const _c=new THREE.Color();
+function box(x0,x1,y0,y1,z0,z1,hex,o){o=o||{};const lo=[x0,y0,z0],hi=[x1,y1,z1];
+  for(const [L,ax,sg] of FACES){if(o.skip&&o.skip.indexOf(L)>=0)continue;
+    const ext=!!(o.ext&&o.ext.indexOf(L)>=0),T=ext?EXT:INT,a1=ax===0?1:0,a2=ax===2?1:2,p=sg>0?hi[ax]:lo[ax];
+    const st=o.sub||(ext?99:1.25),n1=Math.max(1,Math.ceil((hi[a1]-lo[a1])/st-1e-6)),n2=Math.max(1,Math.ceil((hi[a2]-lo[a2])/st-1e-6));
+    for(let i=0;i<n1;i++)for(let j=0;j<n2;j++){
+      const u0=lo[a1]+(hi[a1]-lo[a1])*i/n1,u1=lo[a1]+(hi[a1]-lo[a1])*(i+1)/n1,v0=lo[a2]+(hi[a2]-lo[a2])*j/n2,v1=lo[a2]+(hi[a2]-lo[a2])*(j+1)/n2;
+      const pt=(u,v)=>{const q=[0,0,0];q[ax]=p;q[a1]=u;q[a2]=v;return q;};
+      const A=pt(u0,v0),B=pt(u1,v0),Cc=pt(u1,v1),D=pt(u0,v1),cx=(A[0]+Cc[0])/2,cy=(A[1]+Cc[1])/2,cz=(A[2]+Cc[2])/2;
+      _c.set(o.chk&&((i+j)&1)?o.chk:hex);_c.convertSRGBToLinear();
+      const jv=(o.var==null?0.1:o.var),k=1-jv/2+bHash(cx*9.1,cy*9.1,cz*9.1)*jv;let r=_c.r*k,g=_c.g*k,b=_c.b*k;
+      if(o.e){r*=o.e;g*=o.e;b*=o.e;}
+      else if(!ext){const sh=ax===1?(sg>0?1:0.55):ax===0?(sg>0?0.8:0.7):(sg>0?0.86:0.72),gl=glow(cx,cy,cz);r*=sh*gl[0];g*=sh*gl[1];b*=sh*gl[2];}
+      const nd=[0,0,0];nd[ax]=sg;
+      for(const tri of [[A,B,Cc],[A,Cc,D]]){let [a,b2,c2]=tri;const nx=(b2[1]-a[1])*(c2[2]-a[2])-(b2[2]-a[2])*(c2[1]-a[1]),ny=(b2[2]-a[2])*(c2[0]-a[0])-(b2[0]-a[0])*(c2[2]-a[2]),nz=(b2[0]-a[0])*(c2[1]-a[1])-(b2[1]-a[1])*(c2[0]-a[0]);
+        if(nx*nd[0]+ny*nd[1]+nz*nd[2]<0){const t=b2;b2=c2;c2=t;}
+        for(const v of [a,b2,c2]){T.P.push(v[0],v[1],v[2]);T.C.push(r,g,b);}}}}}
+// ---- canvases (screens)
+const TEX=[],texMesh=[];
+function mkTex(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;return {c,x:c.getContext('2d'),t,w,h};}
+function screen(T,cx,cy,cz,w,h,dir,rot){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:T.t,side:THREE.DoubleSide,toneMapped:false}));m.position.set(cx,cy,cz);
+  if(dir==='N')m.rotation.y=Math.PI;else if(dir==='E')m.rotation.y=Math.PI/2;else if(dir==='W')m.rotation.y=-Math.PI/2;else if(dir==='U'){m.rotation.x=-Math.PI/2;if(rot)m.rotation.z=rot;}
+  m.frustumCulled=false;scene.add(m);texMesh.push(m);return m;}
+const MAPT=mkTex(1024,384),RADT=mkTex(256,192),STAT=mkTex(384,288),TBLT=mkTex(384,256),LNCT=mkTex(640,200),CON=[mkTex(160,110),mkTex(160,110),mkTex(160,110)],PADT=mkTex(128,128);
+// ---- drawing
+const CONT=[   // crude low-poly continents, lon/lat
+ [[-168,66],[-160,71],[-141,70],[-125,70],[-95,72],[-82,68],[-62,60],[-55,52],[-66,45],[-70,42],[-76,35],[-81,30],[-80,25],[-84,30],[-90,29],[-97,26],[-97,20],[-105,20],[-110,24],[-117,32],[-124,40],[-124,48],[-135,58],[-150,60],[-165,60]],
+ [[-73,78],[-60,82],[-30,83],[-20,75],[-40,65],[-50,62],[-58,70]],
+ [[-80,10],[-72,12],[-62,10],[-50,0],[-35,-6],[-40,-20],[-48,-27],[-58,-38],[-65,-42],[-68,-52],[-72,-48],[-74,-35],[-71,-18],[-81,-5]],
+ [[-10,36],[-9,43],[-2,47],[-5,50],[4,52],[8,56],[10,59],[18,60],[25,65],[30,70],[40,68],[45,60],[40,50],[30,45],[28,40],[20,38],[12,38],[5,43],[-1,37]],
+ [[-17,21],[-10,30],[-5,36],[10,37],[20,32],[32,31],[35,25],[43,12],[51,12],[42,0],[40,-15],[35,-25],[27,-34],[18,-34],[12,-18],[9,-1],[8,5],[-8,4],[-17,14]],
+ [[28,41],[40,42],[50,45],[55,52],[60,70],[80,73],[100,77],[140,72],[170,70],[180,66],[160,58],[140,52],[135,43],[122,40],[120,30],[110,20],[105,10],[100,2],[98,16],[90,22],[80,12],[72,20],[67,25],[58,25],[48,30],[40,36]],
+ [[114,-22],[122,-18],[132,-12],[142,-11],[146,-19],[153,-27],[150,-37],[140,-38],[130,-32],[116,-35]]];
+const TGT=[[-0.1,51.5],[37.6,55.7],[116.4,39.9],[139.7,35.7],[77.2,28.6],[2.3,48.9],[-74,40.7],[151.2,-33.9],[31.2,30],[-46.6,-23.5]];   // marker cities
+const SILO_LL=[-104,47];
+function drawMap(t){const {x,w,h}=MAPT,mx=lon=>(lon+180)/360*w,my=lat=>(80-lat)/(80+58)*(h-40)+34;
+  x.fillStyle='#04141c';x.fillRect(0,0,w,h);
+  x.strokeStyle='rgba(60,170,200,0.18)';x.lineWidth=1;for(let lo=-180;lo<=180;lo+=30){x.beginPath();x.moveTo(mx(lo),my(80));x.lineTo(mx(lo),my(-58));x.stroke();}
+  for(let la=-60;la<=80;la+=20){x.beginPath();x.moveTo(0,my(la));x.lineTo(w,my(la));x.stroke();}
+  for(const poly of CONT){x.beginPath();poly.forEach((p,i)=>i?x.lineTo(mx(p[0]),my(p[1])):x.moveTo(mx(p[0]),my(p[1])));x.closePath();x.fillStyle='#0d3a46';x.fill();x.strokeStyle='#38d0e8';x.lineWidth=1.6;x.stroke();}
+  const sx=mx(SILO_LL[0]),sy=my(SILO_LL[1]);
+  TGT.forEach((q,i)=>{const tx=mx(q[0]),ty=my(q[1]),ph=((t*0.35+i*0.13)%1);x.strokeStyle='rgba(255,90,60,0.5)';x.lineWidth=1.3;x.setLineDash([5,5]);x.beginPath();x.moveTo(sx,sy);x.quadraticCurveTo((sx+tx)/2,Math.min(sy,ty)-70-Math.abs(tx-sx)*0.1,tx,ty);x.stroke();x.setLineDash([]);
+    const bx=(1-ph)*(1-ph)*sx+2*(1-ph)*ph*(sx+tx)/2+ph*ph*tx,by=(1-ph)*(1-ph)*sy+2*(1-ph)*ph*(Math.min(sy,ty)-70-Math.abs(tx-sx)*0.1)+ph*ph*ty;
+    x.fillStyle='#ffb09a';x.beginPath();x.arc(bx,by,3,0,7);x.fill();
+    x.fillStyle=(Math.floor(t*2+i)&1)?'#ff5a3c':'#7a2a1c';x.fillRect(tx-3,ty-3,6,6);});
+  x.fillStyle='#7dffb0';x.beginPath();x.arc(sx,sy,5+Math.sin(t*4)*1.5,0,7);x.fill();x.strokeStyle='#7dffb0';x.lineWidth=1.5;x.beginPath();x.arc(sx,sy,12+(t*14%16),0,7);x.stroke();
+  x.fillStyle='#bfefff';x.font='bold 17px monospace';x.fillText('STRATEGIC COMMAND  ·  GLOBAL STATUS',12,22);x.fillStyle='#ffcf5a';x.textAlign='right';x.fillText('DEFCON 2',w-12,22);x.textAlign='left';
+  x.fillStyle='#7dffb0';x.font='13px monospace';x.fillText('SILO 01  ARMED  ·  10 TRACKS  ·  UPLINK OK',12,h-10);x.textAlign='right';const d=new Date();x.fillText(('0'+d.getUTCHours()).slice(-2)+':'+('0'+d.getUTCMinutes()).slice(-2)+':'+('0'+d.getUTCSeconds()).slice(-2)+' Z',w-12,h-10);x.textAlign='left';MAPT.t.needsUpdate=true;}
+function drawRadar(t){const {x,w,h}=RADT,cx=w/2,cy=h/2,r=h/2-8;x.fillStyle='#021a12';x.fillRect(0,0,w,h);x.strokeStyle='#1f7a52';x.lineWidth=1;for(let k=1;k<=3;k++){x.beginPath();x.arc(cx,cy,r*k/3,0,7);x.stroke();}x.beginPath();x.moveTo(cx-r,cy);x.lineTo(cx+r,cy);x.moveTo(cx,cy-r);x.lineTo(cx,cy+r);x.stroke();
+  const a=t*1.6;for(let k=0;k<26;k++){x.strokeStyle='rgba(80,255,170,'+(0.5*(1-k/26))+')';x.lineWidth=2;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+Math.cos(a-k*0.04)*r,cy+Math.sin(a-k*0.04)*r);x.stroke();}
+  x.fillStyle='#b9ffd8';for(let i=0;i<6;i++){const an=i*1.1+0.4,rr=r*(0.25+0.14*i),px=cx+Math.cos(an+t*0.02*i)*rr,py=cy+Math.sin(an+t*0.02*i)*rr;x.fillRect(px-2,py-2,4,4);}
+  x.fillStyle='#7dffb0';x.font='12px monospace';x.fillText('AIR / SPACE TRACK',8,16);RADT.t.needsUpdate=true;}
+function drawStat(t){const {x,w,h}=STAT;x.fillStyle='#07131d';x.fillRect(0,0,w,h);x.fillStyle='#bfefff';x.font='bold 16px monospace';x.fillText('SILO 01 · STATUS',10,22);
+  const rows=[['REACTOR / FUEL','OK',0.96],['GUIDANCE','OK',0.9],['TARGETING','LOADED',1],['WARHEAD','SAFE',0.4],['LAUNCH AUTH','LOCKED',0.05]];
+  rows.forEach((r,i)=>{const y=52+i*40;x.fillStyle='#7aa3b3';x.font='12px monospace';x.fillText(r[0],10,y);x.fillStyle=r[1]==='LOCKED'?'#ff6a4a':'#7dffb0';x.textAlign='right';x.fillText(r[1],w-10,y);x.textAlign='left';x.fillStyle='#10303c';x.fillRect(10,y+6,w-20,9);x.fillStyle=r[1]==='LOCKED'?'#ff6a4a':'#2fd0a0';x.fillRect(10,y+6,(w-20)*r[2],9);});
+  x.fillStyle=(Math.floor(t*2)&1)?'#ffcf5a':'#7a6228';x.font='bold 13px monospace';x.fillText('C4 ARMING  0 / 2',10,h-10);STAT.t.needsUpdate=true;}
+function drawTable(t){const {x,w,h}=TBLT;x.fillStyle='#03222b';x.fillRect(0,0,w,h);x.strokeStyle='rgba(80,220,255,0.35)';x.lineWidth=1;for(let i=0;i<=w;i+=24){x.beginPath();x.moveTo(i,0);x.lineTo(i,h);x.stroke();}for(let j=0;j<=h;j+=24){x.beginPath();x.moveTo(0,j);x.lineTo(w,j);x.stroke();}
+  x.strokeStyle='#38d0e8';x.lineWidth=2;x.beginPath();for(let i=0;i<=40;i++){const px=i/40*w,py=h*0.5+Math.sin(i*0.5)*30+Math.sin(i*1.3)*14;i?x.lineTo(px,py):x.moveTo(px,py);}x.stroke();
+  x.fillStyle='#ffcf5a';x.fillRect(w*0.47-5,h*0.45-5,10,10);x.strokeStyle='#ffcf5a';x.beginPath();x.arc(w*0.47,h*0.45,14+(t*20%24),0,7);x.stroke();
+  x.fillStyle='#bfefff';x.font='12px monospace';x.fillText('TERRAIN · SILO SECTOR',8,16);TBLT.t.needsUpdate=true;}
+function drawLaunch(t){const {x,w,h}=LNCT;x.fillStyle='#14070a';x.fillRect(0,0,w,h);x.fillStyle=(Math.floor(t*2)&1)?'#ff3b30':'#8a1d18';x.font='bold 40px monospace';x.textAlign='center';x.fillText('LAUNCH CONTROL',w/2,60);
+  x.fillStyle='#ffcf5a';x.font='bold 24px monospace';x.fillText('AWAITING C4 ARMING',w/2,110);x.fillStyle='#ff9a8a';x.font='20px monospace';x.fillText('PAD A  [ — ]      PAD B  [ — ]',w/2,150);x.fillStyle='#7a2a22';x.font='14px monospace';x.fillText('DUAL KEY · TWO-PERSON RULE',w/2,184);x.textAlign='left';LNCT.t.needsUpdate=true;}
+const CLINES=['> SYNC UPLINK ........ OK','> TRK 0417 BEARING 072','> CRYPTO ROTATE ...... OK','> SILO 01 HATCH SEALED','> BATT 98% · TEMP 21C','> AUTH CHAIN 2/3','> PING 12ms','> CELL 7 NOMINAL','> SCAN SECTOR E4','> LINK B ESTABLISHED'];
+function drawCon(n,t){const T=CON[n],{x,w,h}=T;x.fillStyle=n===1?'#1a1204':'#031a14';x.fillRect(0,0,w,h);x.fillStyle=n===1?'#ffc24a':'#6dffb4';x.font='11px monospace';const off=Math.floor(t*2+n*3);for(let i=0;i<8;i++)x.fillText(CLINES[(off+i)%CLINES.length],6,16+i*13);
+  x.fillStyle=n===1?'#7a5a1a':'#1f7a52';x.fillRect(6,h-12,(w-12)*(0.4+0.3*Math.sin(t+n)),5);T.t.needsUpdate=true;}
+function drawPad(){const {x,w,h}=PADT;x.clearRect(0,0,w,h);x.fillStyle='#16090a';x.fillRect(0,0,w,h);x.strokeStyle='#ffcf5a';x.lineWidth=6;x.strokeRect(5,5,w-10,h-10);x.fillStyle='#ff4a3a';x.font='bold 54px monospace';x.textAlign='center';x.fillText('C4',w/2,h/2+12);x.font='bold 13px monospace';x.fillStyle='#ffcf5a';x.fillText('PLANT HERE',w/2,h-18);PADT.t.needsUpdate=true;}
+// ---- the building
+const WALL='#474d52',WALL2='#40454a',CONC='#565b60',DARK='#2a2f35',STEEL='#343a41',TOP='#2c3238',TOP2='#252a2f';
+// floor
+box(12.5,32.5,F-0.3,F+0.012,92.5,107.5,TOP,{chk:TOP2,var:0.08});
+// roof slab (underside lit, top and edges outdoors)
+box(10,35,CE,R,90,110,CONC,{ext:'UESNW',sub:1.25,var:0.08});K(10,35,CE,R,90,110);
+// walls: inner faces baked, outer faces lit
+box(10,35,F-0.3,CE,90,92.5,WALL,{ext:'N',skip:'D'});K(10,35,F-1,R,90,92.5);
+box(10,35,F-0.3,CE,107.5,110,WALL,{ext:'S',skip:'D'});K(10,35,F-1,R,107.5,110);
+box(32.5,35,F-0.3,CE,92.5,107.5,WALL,{ext:'E',skip:'D'});K(32.5,35,F-1,R,92.5,107.5);
+box(10,12.5,F-0.3,CE,92.5,98.5,WALL,{ext:'W',skip:'D'});K(10,12.5,F-1,R,92.5,98.5);
+box(10,12.5,F-0.3,CE,101.5,107.5,WALL,{ext:'W',skip:'D'});K(10,12.5,F-1,R,101.5,107.5);
+box(10,12.5,F+2.9,CE,98.5,101.5,WALL,{ext:'W',skip:'D'});K(10,12.5,F+2.9,R,98.5,101.5);
+box(10,12.5,F-0.3,F,98.5,101.5,TOP,{skip:'D'});
+// blast-door frame and the open door leaf on the inside of the west wall
+box(12.5,12.9,F,F+2.9,98.35,98.55,STEEL);box(12.5,12.9,F,F+2.9,101.45,101.65,STEEL);box(12.5,12.9,F+2.9,F+3.15,98.35,101.65,STEEL);
+box(12.55,12.95,F,F+2.8,96.2,98.35,'#585f66',{chk:'#4d535a'});for(let k=0;k<4;k++)box(12.5,12.56,F+0.2+k*0.65,F+0.5+k*0.65,96.25,98.3,(k&1)?'#d9a62a':'#1d1f22',{var:0.04});K(12.5,12.95,F,F+2.8,96.2,98.35);
+// stairs and cutting
+const hs=x=>{const p=BK.prof;for(let i=0;i<p.length-1;i++)if(x<=p[i+1][0])return p[i][1]+(p[i+1][1]-p[i][1])*(x-p[i][0])/(p[i+1][0]-p[i][0]);return p[p.length-1][1];};
+for(let i=0;i<16;i++){const xa=i*0.625,xb=xa+0.625,top=hs(xa+0.31),inside=xa>=5;const ex=inside?'':'UESNW';
+  box(xa,xb,top-0.7,top,98.4,101.6,'#8a8d8e',{ext:inside?'':'UESNW',var:0.1});
+  for(const [z0,z1] of [[98.0,98.4],[101.6,102.0]]){const wt=inside?R:hs(xa)+1.15;box(xa,xb,top-0.9,wt,z0,z1,CONC,{ext:inside?'':'UESNW',var:0.1});if(!inside&&i%4===0)K(xa,xa+2.5,F-1,hs(xa)+1.2,z0,z1);}}
+K(5,10,F-1,R,98.0,98.4);K(5,10,F-1,R,101.6,102.0);
+box(5,10,R-0.7,R,98.0,102.0,CONC,{ext:'UESNW',var:0.08});K(5,10,R-0.7,R,98.0,102.0);                       // porch roof over the lower stairs
+box(5,5.35,hs(5)+2.6,R-0.7,98.0,102.0,'#4f5558',{ext:'NSEW'});                                                  // lintel face
+box(4.2,4.6,hs(4.4),hs(4.4)+2.2,97.7,98.0,'#d9a62a',{ext:'UESNW'});box(4.2,4.6,hs(4.4),hs(4.4)+2.2,102.0,102.3,'#d9a62a',{ext:'UESNW'});   // warning posts
+// ---- ceiling kit: light strips, beams, pipes
+for(const q of LS)box(q[0]-1.3,q[0]+1.3,CE-0.07,CE,q[1]-0.12,q[1]+0.12,'#d8eeff',{e:2.4,sub:9,skip:'U'});
+for(let z=92.5;z<=107.5;z+=2.5)box(12.5,32.5,CE-0.28,CE,z-0.12,z+0.12,'#4a5056',{sub:2.5,skip:'U'});
+box(12.5,32.5,CE-0.55,CE-0.35,93.3,93.65,'#5a6168',{sub:2.5});box(12.5,32.5,CE-0.5,CE-0.36,106.4,106.7,'#7a5a3a',{sub:2.5});box(12.5,32.5,CE-0.62,CE-0.4,101.2,101.8,'#40474e',{sub:2.5});
+for(let k=0;k<5;k++)box(12.5+k*4.5,12.6+k*4.5+0.12,CE-0.95,CE-0.28,93.2,93.8,'#3a4046',{skip:'U'});
+// ---- main map wall (north)
+box(12.9,32.1,F+0.15,F+4.05,92.5,92.56,'#14181c',{sub:9,skip:'N'});                                              // backing panel
+screen(MAPT,CX,F+2.3,92.6,8.6,3.2,'S');box(CX-4.45,CX+4.45,F+0.55,F+0.68,92.5,92.66,STEEL,{sub:9});box(CX-4.45,CX+4.45,F+3.92,F+4.05,92.5,92.66,STEEL,{sub:9});box(CX-4.45,CX-4.32,F+0.55,F+4.05,92.5,92.66,STEEL,{sub:9});box(CX+4.32,CX+4.45,F+0.55,F+4.05,92.5,92.66,STEEL,{sub:9});
+screen(RADT,16.8,F+2.35,92.6,3.0,2.25,'S');screen(STAT,28.2,F+2.35,92.6,3.0,2.25,'S');
+for(const cx of [16.8,28.2]){box(cx-1.58,cx+1.58,F+1.1,F+1.2,92.5,92.66,STEEL,{sub:9});box(cx-1.58,cx+1.58,F+3.5,F+3.6,92.5,92.66,STEEL,{sub:9});box(cx-1.58,cx-1.48,F+1.1,F+3.6,92.5,92.66,STEEL,{sub:9});box(cx+1.48,cx+1.58,F+1.1,F+3.6,92.5,92.66,STEEL,{sub:9});}
+// command dais with a row of consoles
+box(13.0,32.0,F,F+0.3,92.5,95.0,'#3a4046',{ext:'',sub:1.25});K(13,32,F,F+0.3,92.5,95.0);
+box(13.0,32.0,F+0.3,F+0.34,94.9,95.0,'#ffcf5a',{e:1.4,sub:9});
+const monitors=[];
+function desk(x0,x1,z0,z1,dir,n,h){h=h||1.0;box(x0,x1,F,F+h,z0,z1,'#2b3036',{sub:1.25});box(x0-0.05,x1+0.05,F+h,F+h+0.07,z0-0.05,z1+0.05,'#3d454d',{sub:1.25});K(x0,x1,F,F+h+0.07,z0,z1);
+  box(x0+0.1,x1-0.1,F+0.08,F+0.14,z0-0.02,z0,'#38d0e8',{e:1.9,sub:9,skip:'N'});box(x0+0.1,x1-0.1,F+0.08,F+0.14,z1,z1+0.02,'#38d0e8',{e:1.9,sub:9,skip:'S'});       // under-glow strips
+  for(const f of [0.27,0.73]){const mx=x0+(x1-x0)*f,mz=dir==='S'?z1-0.2:z0+0.2,sz=dir==='S'?z1-0.15:z0+0.15;monitors.push([mx,F+h+0.45,sz,0.82,0.56,dir,n+(f>0.5?1:0)]);box(mx-0.46,mx+0.46,F+h+0.07,F+h+0.74,mz-0.05,mz+0.05,'#1c2126',{sub:9});}}
+desk(14.0,17.4,94.1,95.0,'S',0);desk(18.0,21.4,94.1,95.0,'S',1);desk(23.6,27.0,94.1,95.0,'S',2);desk(27.6,31.0,94.1,95.0,'S',0);
+// consoles in the room: cover
+desk(14.2,17.6,97.0,97.9,'S',1);desk(18.4,21.8,97.0,97.9,'S',2);desk(23.2,26.6,97.0,97.9,'S',0);
+desk(14.2,17.6,102.9,103.8,'N',2);desk(18.4,21.8,102.9,103.8,'N',0);desk(23.2,26.6,102.9,103.8,'N',1);
+for(const m of monitors)screen(CON[m[6]%3],m[0],m[1],m[2],m[3],m[4],m[5]);
+// command table (cover) with a glowing terrain map
+box(20.2,24.8,F,F+0.9,98.9,101.1,'#252a30',{sub:1.25});K(20.2,24.8,F,F+1.0,98.9,101.1);box(20.1,24.9,F+0.9,F+1.0,98.8,101.2,'#3d454d',{sub:2.5});
+screen(TBLT,CX,F+1.012,CZ,4.4,2.0,'U');for(const z of [98.8,101.2])box(20.1,24.9,F+0.96,F+1.02,z-0.03,z+0.03,'#38d0e8',{e:2.2,sub:9});
+// server racks along the south wall: tall cover with gaps
+const rnd=(a,b)=>bHash(a*3.7,b*5.3,a+b);
+for(let i=0;i<8;i++){const x0=13.2+i*2.38,x1=x0+1.05;box(x0,x1,F,F+2.45,105.9,107.5,'#23282d',{sub:1.25});K(x0,x1,F,F+2.45,105.9,107.5);box(x0+0.06,x1-0.06,F+2.45,F+2.5,105.96,107.4,'#14181c',{sub:9});
+  for(let r=0;r<10;r++){const y=F+0.25+r*0.215;box(x0+0.08,x1-0.08,y,y+0.15,105.86,105.9,'#12161a',{sub:9});for(let c=0;c<5;c++){const on=rnd(i*13+r,c);const hex=on>0.78?'#ffb02e':on>0.3?'#46ff9a':'#46b8ff';box(x0+0.14+c*0.17,x0+0.2+c*0.17,y+0.05,y+0.1,105.82,105.86,hex,{e:on>0.1?2.4:0.25,sub:9});}}}
+// the south wall panel and east wall launch console
+box(12.5,32.5,F,F+0.12,107.38,107.5,'#d9a62a',{chk:'#1d1f22',sub:0.6,var:0.03,skip:'DN'});
+box(31.2,32.5,F,F+1.05,95.6,104.4,'#2a2328',{sub:1.25});K(31.2,32.5,F,F+1.2,95.6,104.4);box(30.9,32.5,F+1.05,F+1.2,95.4,104.6,'#40343a',{sub:1.25});
+for(const z of [97.4,102.6]){box(30.95,31.5,F+1.2,F+1.5,z-0.45,z+0.45,'#5a1d1d',{sub:9});box(31.05,31.4,F+1.5,F+1.58,z-0.3,z+0.3,'#ff3b30',{e:2.6,sub:9});}
+for(let k=0;k<6;k++)box(30.95,31.25,F+1.2,F+1.32,99.1+k*0.35,99.1+k*0.35+0.14,k%2?'#ffcf5a':'#46ff9a',{e:2,sub:9});
+screen(LNCT,32.46,F+2.65,CZ,6.0,1.9,'W');box(32.42,32.5,F+1.65,F+1.72,96.9,103.1,STEEL,{sub:9});box(32.42,32.5,F+3.58,F+3.65,96.9,103.1,STEEL,{sub:9});
+// C4 pads
+function pad(z){const m=new THREE.Mesh(new THREE.PlaneGeometry(1.9,1.9),new THREE.MeshBasicMaterial({map:PADT.t}));m.rotation.x=-Math.PI/2;m.position.set(29.6,F+0.025,z);scene.add(m);texMesh.push(m);
+  box(28.62,28.68,F,F+0.03,z-0.96,z+0.96,'#ff3b30',{e:2.4,sub:9});box(30.52,30.58,F,F+0.03,z-0.96,z+0.96,'#ff3b30',{e:2.4,sub:9});box(28.62,30.58,F,F+0.03,z-0.99,z-0.93,'#ff3b30',{e:2.4,sub:9});box(28.62,30.58,F,F+0.03,z+0.93,z+0.99,'#ff3b30',{e:2.4,sub:9});}
+pad(98.0);pad(102.0);BK.pads=[[29.6,98.0],[29.6,102.0]];
+// pillars, barricades, crates and jersey barriers
+for(const [px,pz] of [[18.0,100.0],[27.0,100.0]]){box(px-0.45,px+0.45,F,CE,pz-0.45,pz+0.45,'#4b5054',{sub:1.25});K(px-0.45,px+0.45,F,CE,pz-0.45,pz+0.45);box(px-0.47,px+0.47,F,F+0.5,pz-0.47,pz+0.47,'#d9a62a',{chk:'#1d1f22',sub:0.5,var:0.03,skip:'UD'});}
+for(const z of [96.3,103.7]){box(13.3,14.5,F,F+1.0,z-0.6,z+0.6,'#6f6850',{sub:1.25});K(13.3,14.5,F,F+1.0,z-0.6,z+0.6);box(13.35,14.45,F+1.0,F+1.55,z-0.5,z+0.5,'#5a5441',{sub:1.25});K(13.35,14.45,F+1.0,F+1.55,z-0.5,z+0.5);}
+for(const z of [96.5,103.5]){box(27.9,29.6,F,F+1.0,z-0.3,z+0.3,'#5c6064',{sub:1.25});K(27.9,29.6,F,F+1.0,z-0.3,z+0.3);box(27.9,29.6,F+1.0,F+1.15,z-0.2,z+0.2,'#5c6064',{sub:1.25});}
+// floor markings, signs, wall kit
+box(13.0,32.0,F,F+0.012,99.85,100.15,'#ffcf5a',{sub:9,skip:'D',e:0.9});box(13.0,32.0,F,F+0.012,95.6,95.75,'#5fb8d8',{sub:9,skip:'D',e:0.9});box(13.0,32.0,F,F+0.012,104.3,104.45,'#5fb8d8',{sub:9,skip:'D',e:0.9});
+box(12.55,12.7,F+3.3,F+3.7,99.2,100.8,'#46ff9a',{e:2.6,sub:9});                                      // EXIT sign
+for(const z of [93.4,106.6])box(12.5,12.62,F+0.2,F+3.2,z-0.3,z+0.3,'#3a4046',{sub:1.25,skip:'W'});
+for(let k=0;k<4;k++)box(32.0,32.5,F+0.1,F+0.9,93.0+k*0.9,93.6+k*0.9,'#2b3036',{sub:9});
+// red alert beacons over the launch console
+for(const z of [97.4,102.6])box(30.6,31.2,CE-0.25,CE,z-0.25,z+0.25,'#ff3b30',{e:2.8,sub:9,skip:'U'});
+// ---- meshes
+const bi=new THREE.BufferGeometry();bi.setAttribute('position',new THREE.BufferAttribute(new Float32Array(INT.P),3));bi.setAttribute('color',new THREE.BufferAttribute(new Float32Array(INT.C),3));
+const im=new THREE.Mesh(bi,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide}));im.frustumCulled=false;scene.add(im);MAP.rayMeshes.push(im);MAP.camBlockers.push(im);
+const be=new THREE.BufferGeometry();be.setAttribute('position',new THREE.BufferAttribute(new Float32Array(EXT.P),3));be.setAttribute('color',new THREE.BufferAttribute(new Float32Array(EXT.C),3));be.computeVertexNormals();
+const em=new THREE.Mesh(be,envMat);em.castShadow=true;em.receiveShadow=true;scene.add(em);MAP.rayMeshes.push(em);MAP.camBlockers.push(em);
+// ---- three coloured lights inside (always present, dimmed to nothing when you are far away so the shader never changes)
+const L1=new THREE.PointLight(0x66ccff,0,17,2),L2=new THREE.PointLight(0xfff0d8,0,17,2),L3=new THREE.PointLight(0xff3b30,0,12,2);L1.position.set(CX,CE-0.6,95.2);L2.position.set(CX,CE-0.6,103.5);L3.position.set(30.2,F+2.6,CZ);scene.add(L1,L2,L3);
+drawPad();let acc=9,T=0;
+function anim(dt,pos){const d=Math.hypot(pos.x-CX,pos.z-CZ),near=d<60&&pos.y<R+3;L1.intensity=near?1.5:0;L2.intensity=near?1.0:0;L3.intensity=near?(1.2+0.5*Math.sin(T*4)):0;
+  for(const m of texMesh)m.visible=near;im.visible=em.visible=true;if(!near)return;T+=dt;acc+=dt;if(acc<0.22)return;acc=0;drawMap(T);drawRadar(T);drawStat(T);drawTable(T);drawLaunch(T);drawCon((Math.floor(T*4))%3,T);}
+drawMap(0);drawRadar(0);drawStat(0);drawTable(0);drawLaunch(0);drawCon(0,0);drawCon(1,0);drawCon(2,0);
+return {anim,F,R,CE};})();
+function bunkerAnim(dt){try{BKM.anim(dt,camera.position);}catch(e){}}
 const SILO={built:false,x:SILO_POS.x,z:SILO_POS.z,K:0.55,y0:0,R:2.15,D:20,hx:0,st:'idle',t:0,mis:null,hatch:null,hcol:null,blk:null,beac:[],tip:null,lt:0,v:0,pos:null,dir:null,yaw:0.7,flame:null,glow:null};
 const SILO_MAT=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:0.92,metalness:0});
 const SILO_MIS=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.6,metalness:0.1});
