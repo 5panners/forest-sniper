@@ -3394,7 +3394,11 @@ function placeP2Stag(){if(P2M)return;P2_SPAWN.y=groundH(P2_SPAWN.x,P2_SPAWN.z);
        if(cz>0.15&&cy>0.18){const gi=gl.findIndex(c=>near(r,g2,b,c,0.12));if(gi>=1){drop.push(t);continue;}if(gi>=0){const k=BUR[gi];for(let v=0;v<3;v++){C2[i+v*3]=k.r;C2[i+v*3+1]=k.g;C2[i+v*3+2]=k.b;}hit=true;continue;}}
        if(tg.some(c=>near(r,g2,b,c,0.3))){const k=BLK[t%3];for(let v=0;v<3;v++){C2[i+v*3]=k.r;C2[i+v*3+1]=k.g;C2[i+v*3+2]=k.b;}hit=true;}}
      if(drop.length){const dr=new Set(drop),ng=new THREE.BufferGeometry();for(const nm in geo.attributes){const a=geo.attributes[nm],sz=a.itemSize,arr=[];for(let t=0;t<n;t++){if(dr.has(t))continue;for(let k=0;k<9/3*sz;k++)arr.push(a.array[t*3*sz+k]);}ng.setAttribute(nm,new THREE.BufferAttribute(new (a.array.constructor)(arr),sz));}geo=ng;}
-     {const Q=geo.attributes.position.array;for(let i=0;i<Q.length;i+=3){let x=Q[i]*0.9;const L=0.185;if(Math.abs(x)>L)x=Math.sign(x)*(L+(Math.abs(x)-L)*0.25);Q[i]=x;}geo.attributes.position.needsUpdate=true;geo.computeBoundingSphere();geo.computeBoundingBox();}   // narrower head, sides pressed flatter
+     {const Q=geo.attributes.position.array;for(let i=0;i<Q.length;i+=3){let x=Q[i]*0.9,y=Q[i+1],z=Q[i+2];const jt=Math.max(0,Math.min(1,(0.17-y)/0.1));   // jt: 0 above the jaw line, 1 at the chin
+      x*=1+0.16*jt;const L=0.185+0.03*jt;if(Math.abs(x)>L)x=Math.sign(x)*(L+(Math.abs(x)-L)*0.25);   // jaw wider and squarer
+      if(z>0.02){z+=0.02*jt;y-=0.012*jt;}                                                              // chin juts a little
+      if(y>0.33)y=0.33+(y-0.33)*0.3;                                                                     // flat crown
+      Q[i]=x;Q[i+1]=y;Q[i+2]=z;}geo.attributes.position.needsUpdate=true;geo.computeBoundingSphere();geo.computeBoundingBox();}   // narrower head, sides pressed flatter
      o.geometry=geo;geo.attributes.color.needsUpdate=true;});}
   // swap the felt hat for a plain grey baseball cap
   {const head=g.getObjectByName('head');const old=head.children.find(c=>c.isGroup||(c.children.length&&c.type==='Group'));if(old){head.remove(old);for(let i=P2PAIRS.length-1;i>=0;i--){let q=P2PAIRS[i][1];while(q&&q!==old)q=q.parent;if(q===old)P2PAIRS.splice(i,1);}}
@@ -4073,7 +4077,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=390;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=391;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
