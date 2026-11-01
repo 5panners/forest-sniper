@@ -1798,7 +1798,7 @@ function applyPose(p){
   marine.updateMatrixWorld(true);
   // magazine in hand during reload
   if(p.mag>0.5){J.lHand.getWorldPosition(tv[0]);tv[0].y-=0.02;gun.worldToLocal(tv[0]);mag.position.copy(tv[0]).add(V(0,0.04,0));}
-  let scF=false;try{scF=scoped&&!viewFP;}catch(e){}
+  let scF=false;try{scF=scoped;}catch(e){}
   flashGrp.visible=p.flash>0.5; flashLight.intensity=p.flash>0.5?3:0;
   if(flashGrp.visible){fs.rotation.z=Math.random()*PI;flashGrp.scale.setScalar(1.6+Math.random()*0.7);}
   // scoped: the rifle is hidden, so the flame is drawn as a screen burst and the light hangs just ahead of the camera
@@ -2660,10 +2660,10 @@ function raiseScoped(p,k,ar){   // shouldered: body turns side-on so the butt si
   {const NK=window.SC_NK!==undefined?window.SC_NK:0.15;p.neck=[p.neck[0]+NK*k,p.neck[1],p.neck[2]];p.head=[p.head[0]+NK*0.3*k,p.head[1],p.head[2]];}
   if(ar){const HR=window.AR_HR!==undefined?window.AR_HR:0.05,SP=window.AR_SP!==undefined?window.AR_SP:0.08;p.head=[p.head[0],p.head[1],p.head[2]+HR*k];p.chest=[p.chest[0]+SP*k,p.chest[1],p.chest[2]];p.spine=[p.spine[0]+SP*0.6*k,p.spine[1],p.spine[2]];}   // cheek down onto the stock
   if(k>0.5){p.L={fore:1};p.R={grip:1};if(window.SC_PL)p.poleL=window.SC_PL;if(window.SC_PR)p.poleR=window.SC_PR;if(window.SC_LH)p.lHand=window.SC_LH;}
-  applyPose(p);J.head.updateMatrixWorld(true);_sE.set(EYE_R[0],EYE_R[1],EYE_R[2]);J.head.localToWorld(_sE);
+  applyPose(p);J.head.updateMatrixWorld(true);_sE.set(-0.05,0.2,0.18);J.head.localToWorld(_sE);
   if(ar&&aimYawV!=null&&aimPitchV!=null)_sz.set(Math.sin(aimYawV)*Math.cos(aimPitchV),Math.sin(aimPitchV),Math.cos(aimYawV)*Math.cos(aimPitchV));else _sz.copy(_dir).normalize();_sx.set(0,1,0).cross(_sz);if(_sx.lengthSq()<1e-6)_sx.set(1,0,0);_sx.normalize();_sy.crossVectors(_sz,_sx);
   _sm.makeBasis(_sx,_sy,_sz);_sq.setFromRotationMatrix(_sm);                                   // gun world rotation: barrel along the sight line, no roll
-  _sW.copy(_sE).addScaledVector(_sz,(window.SC_ER!==undefined?window.SC_ER:0.15)+0.036).addScaledVector(_sy,-0.1416);   // gun origin so the eyepiece (0,0.118,-0.03) lands 7 cm ahead of the eye
+  _sW.copy(_sE).addScaledVector(_sz,(window.SC_EP!==undefined?window.SC_EP:0.02)).addScaledVector(_sy,-0.1416).addScaledVector(_sz,0.036);   // gun origin so the eyepiece (0,0.118,-0.03) lands 7 cm ahead of the eye
   if(ar){_sW.copy(_sE).addScaledVector(_sz,(window.AR_ER!==undefined?window.AR_ER:0.12)+0.045).addScaledVector(_sy,-0.165);}   // AR: the rear sight (0,0.165,-0.045) sits AR_ER ahead of the eye
   J.chest.updateMatrixWorld(true);J.chest.worldToLocal(_sW);
   J.chest.getWorldQuaternion(_sq2);_sq2.invert();_sq3.copy(_sq2).multiply(_sq);                 // target rotation in chest space
@@ -3574,7 +3574,6 @@ const _cp=V(0,0,0),_dir=V(0,0,0),_eye=V(0,0,0),_rt=V(0,0,0), camRay=new THREE.Ra
 let breath=6, breathLock=0, swayT=0, range=null, rangeT=0;
 let camBoom=3;
 const DEVFACE={on:false};
-const EYE_R=[-0.088,0.23,0.1], FPFOV=55;   // the player's right eye in head space: the first-person scope camera sits exactly here, on the scope axis
 let aimYawV=null,aimPitchV=null,aimPtTP=null,_wasScoped=false;
 function gunYaw(){return aimYawV!=null?aimYawV:camYaw;}
 function gunPitch(){return aimPitchV!=null?aimPitchV:camPitch;}
@@ -3593,11 +3592,11 @@ function updateCamera(dt){
   _rt.set(-Math.cos(yaw),0,Math.sin(yaw));
   let fov=62;
   if(scoped||viewFP){
-    J.head.updateMatrixWorld(true);if(viewFP&&scoped)_eye.set(EYE_R[0],EYE_R[1],EYE_R[2]);else _eye.set(0,0.235,scoped?0.212:-0.136);J.head.localToWorld(_eye);   // first person (unscoped): camera sits back at the nose so more of the weapon is in view; the scope keeps the eye position
+    J.head.updateMatrixWorld(true);_eye.set(0,0.235,scoped?0.212:-0.136);J.head.localToWorld(_eye);   // first person (unscoped): camera sits back at the nose so more of the weapon is in view; the scope keeps the eye position
     if(scoped&&!_wasScoped&&aimPtTP&&!viewFP){const dx=aimPtTP.x-_eye.x,dy=aimPtTP.y-_eye.y,dz=aimPtTP.z-_eye.z,hz=Math.hypot(dx,dz);   // entering the scope: look at the point the third-person crosshair was on
       if(hz>6){camYaw=Math.atan2(dx,dz);camPitch=clamp(Math.atan2(dy,hz),-1.25,1.05);_dir.set(Math.sin(camYaw)*Math.cos(camPitch),Math.sin(camPitch),Math.cos(camYaw)*Math.cos(camPitch));}}
-    camera.position.copy(_eye);J.head.visible=false;marine.visible=!scoped||viewFP;
-    if(scoped)fov=viewFP?FPFOV:62/ZOOMS[zoomI];   // first person: the view stays wide and the magnified picture is inside the scope lens
+    camera.position.copy(_eye);J.head.visible=false;marine.visible=!scoped;
+    if(scoped)fov=62/ZOOMS[zoomI];
   } else {
     J.head.visible=true;marine.visible=true;
     const h=(pl.stance==='prone'?0.8:(pl.stance==='crouch'?1.3:1.72))+0.3-0.6*pl.slideW;
@@ -3620,7 +3619,6 @@ function updateCamera(dt){
     if(aim)fov=(input.rmb&&WPN.cur==='at4')?56/1.25:(input.rmb&&WPN.cur==='ar15')?56/1.45:56;
   }
   camera.fov=scoped?fov:damp(camera.fov,fov,12,dt);camera.updateProjectionMatrix();
-  if(scoped&&viewFP&&pl.scK>0.97)fpGunSnap();
   camera.lookAt(_v9.copy(camera.position).add(_dir));camera.updateMatrixWorld();
   if(shake>0){camera.position.add(rv(shake*0.15));camera.rotation.z+=(Math.random()-0.5)*shake*0.02;shake=Math.max(0,shake-dt*2.2);}
   aimYawV=aimPitchV=null;
@@ -3635,37 +3633,6 @@ function updateCamera(dt){
     camera.lookAt(camPivot);camera.updateMatrixWorld();marine.visible=true;J.head.visible=true;}
   rangeT-=dt;if(scoped&&rangeT<=0){rangeT=0.12;camera.getWorldDirection(_cd);const h=castRay(camera.position,_cd,1800);range=h?h.dist:null;}
 }
-/* ---------------- first-person scope: the real rifle with a magnified picture inside the lens, the rest of the view stays normal ---------------- */
-const PIP={on:false,key:'',rt:new THREE.WebGLRenderTarget(512,512,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter}),cam:new THREE.PerspectiveCamera(20,1,0.05,15000),cv:document.createElement('canvas')};
-PIP.cv.width=PIP.cv.height=256;PIP.tex=new THREE.CanvasTexture(PIP.cv);
-PIP.lens=new THREE.Mesh(new THREE.CircleGeometry(0.0205,28),new THREE.MeshBasicMaterial({map:PIP.rt.texture,fog:false}));
-PIP.ret=new THREE.Mesh(new THREE.CircleGeometry(0.0205,28),new THREE.MeshBasicMaterial({map:PIP.tex,transparent:true,fog:false,depthWrite:false}));
-for(const m of [PIP.lens,PIP.ret]){m.rotation.y=PI;m.visible=false;m.frustumCulled=false;gun.add(m);}   // turned to face the eye behind the eyepiece
-PIP.lens.position.set(0,0.118,-0.0352);PIP.ret.position.set(0,0.118,-0.0355);
-function pipDraw(){const c=PIP.cv.getContext('2d'),w=256,cx=128,R=128;c.clearRect(0,0,w,w);
-  const g=c.createRadialGradient(cx,cx,R*0.78,cx,cx,R);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,0.9)');c.fillStyle=g;c.beginPath();c.arc(cx,cx,R,0,PI*2);c.fill();
-  const ink=DAY.dark>0.55?'rgba(255,70,48,0.95)':'rgba(10,10,8,0.95)';c.strokeStyle=ink;c.fillStyle=ink;
-  const mil=(w/2)/Math.tan(PIP.cam.fov*PI/360)*0.001;   // pixels per milliradian
-  c.lineWidth=2.6;[[1,0],[-1,0],[0,1]].forEach(([x,y])=>{c.beginPath();c.moveTo(cx+x*mil*5,cx+y*mil*5);c.lineTo(cx+x*R*0.97,cx+y*R*0.97);c.stroke();});
-  c.lineWidth=1;c.beginPath();c.moveTo(cx-mil*5,cx);c.lineTo(cx+mil*5,cx);c.moveTo(cx,cx-mil*5);c.lineTo(cx,cx+mil*5);c.moveTo(cx,cx);c.lineTo(cx,cx-R*0.97);c.stroke();
-  for(let i=-4;i<=4;i++){if(!i)continue;c.beginPath();c.arc(cx+i*mil,cx,1.6,0,PI*2);c.fill();c.beginPath();c.arc(cx,cx+i*mil,1.6,0,PI*2);c.fill();}
-  c.font='600 11px ui-monospace, monospace';c.textAlign='center';c.fillStyle='rgba(235,220,170,0.92)';c.fillText(ZOOMS[zoomI]+'×  '+(range==null?'---':Math.round(range)+' m')+'  Z'+zeroM,cx,cx+R*0.8);
-  PIP.tex.needsUpdate=true;}
-function pipStep(){PIP.on=!!(scoped&&viewFP&&player.alive&&player.scK>0.9);PIP.lens.visible=PIP.ret.visible=PIP.on;if(!PIP.on)return;
-  PIP.cam.fov=62/ZOOMS[zoomI];PIP.cam.updateProjectionMatrix();
-  const k=ZOOMS[zoomI]+'|'+(range==null?-1:Math.round(range/5))+'|'+zeroM+'|'+(DAY.dark>0.55);if(k!==PIP.key){PIP.key=k;pipDraw();}}
-function renderFrame(){
-  if(PIP.on){camera.updateMatrixWorld();PIP.cam.position.copy(camera.position);PIP.cam.quaternion.copy(camera.quaternion);PIP.cam.updateMatrixWorld();
-    const mv=marine.visible,au=renderer.shadowMap.autoUpdate;marine.visible=false;PIP.lens.visible=PIP.ret.visible=false;renderer.shadowMap.autoUpdate=false;
-    renderer.setRenderTarget(PIP.rt);renderer.clear();renderer.render(scene,PIP.cam);renderer.setRenderTarget(null);
-    renderer.shadowMap.autoUpdate=au;marine.visible=mv;PIP.lens.visible=PIP.ret.visible=true;}
-  renderer.render(scene,camera);}
-// the rifle is re-seated on this frame's exact view direction, so the lens never lags the mouse
-function fpGunSnap(){_sz.copy(_dir).normalize();_sx.set(0,1,0).cross(_sz);if(_sx.lengthSq()<1e-6)_sx.set(1,0,0);_sx.normalize();_sy.crossVectors(_sz,_sx);
-  _sm.makeBasis(_sx,_sy,_sz);_sq.setFromRotationMatrix(_sm);
-  _sW.copy(_eye).addScaledVector(_sz,(window.SC_ER!==undefined?window.SC_ER:0.15)+0.036).addScaledVector(_sy,-0.1416);   // the rifle group is scaled 1.2, so the eyepiece (0,0.118,-0.03) sits at (0,0.1416,-0.036) from the gun origin
-  J.chest.updateMatrixWorld(true);J.chest.worldToLocal(_sW);J.chest.getWorldQuaternion(_sq2).invert();_sq3.copy(_sq2).multiply(_sq);
-  J.gun.position.copy(_sW);J.gun.quaternion.copy(_sq3);J.gun.updateMatrixWorld(true);}
 /* ---------------- scope overlay (first focal plane mil reticle) ---------------- */
 const scv=$('scopeCv'), sctx=scv.getContext('2d');
 function drawScope(){
@@ -3990,7 +3957,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=373;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=374;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4005,7 +3972,7 @@ function update(dt){
   stepAmbience(dt,clockT);
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').style.opacity=0;}
   if(hitT>0){hitT-=dt;if(hitT<=0)$('hit').style.opacity=0;}
-  {const full=scoped&&!viewFP;scv.hidden=!full;$('cross').style.display=scoped?'none':'block';if(full)drawScope();pipStep();}
+  scv.hidden=!scoped;$('cross').style.display=scoped?'none':'block';if(scoped)drawScope();
   const brg=Math.round(((Math.atan2(Math.sin(camYaw),-Math.cos(camYaw))*180/PI)+360)%360);
   brgEl.textContent=hhmm(DAY.tod);
   hudL.innerHTML='<span>'+player.ammo+' loaded · '+(player.reserve|0)+' spare'+(boltT>=0?' · chambering':'')+'</span><span>grid '+Math.round(player.pos.x)+' E  '+Math.round(-player.pos.z)+' N  ·  '+Math.round(player.pos.y)+' m</span>';
@@ -4018,7 +3985,7 @@ let paused=false;
 let lastF=performance.now();
 function frame(now){
   const dt=Math.min(0.05,Math.max(0.0001,(now-last)/1000));last=now;
-  if(!paused){update(dt);renderFrame();perfTick(Math.max(0.0001,(now-lastF)/1000));}lastF=now;requestAnimationFrame(frame);
+  if(!paused){update(dt);renderer.render(scene,camera);perfTick(Math.max(0.0001,(now-lastF)/1000));}lastF=now;requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 const genMs=Math.round(performance.now()-T0);
@@ -6312,7 +6279,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&NT.room&&
 
 window.SNIPER={mp:{start:mpStart,fanfare:playFanfare,goodbye:playGoodbye,leave:mpLeave,NT,RPS,MPM,P2RHB,P2PAIRS,packPose,getDeerVer:()=>deerVer,getYaw:()=>player.yaw,getDeer:()=>DEER,getAim:()=>aimPtTP?aimPtTP.toArray():null,getCam:()=>{const d=new THREE.Vector3();camera.getWorldDirection(d);return [camera.position.toArray(),d.toArray(),scoped]}},deerSample,getDCGCD:()=>dcGCD,getP2:()=>P2M,getBoltT:()=>boltT,P1_SPAWN,P2_SPAWN,getFALL:()=>FALL,STREAM,BED,CW,getSE:()=>STREAM_END,hFull,lakeE,LOWR,hitBird,getAmb:()=>amb,SND,playSample,initAudio,getAC:()=>AC,DAY,stepDay,meadowK,resetGame,BZ,BGRP,setBuzzards,STAIRS,TORTOPS,rockTopAt,DEER,MARKS,ROCKS,PGRID,setDeerCounts,disturb,miniZoom,keysDown:keys,player,marine,J,MAP,SEAT_INFO,SUMMIT,LW,chunks,stats,keys,input,camera,scene,renderer,castRay,groundH,setZero,
   set(o){if(o.yaw!=null)camYaw=o.yaw;if(o.pitch!=null)camPitch=o.pitch;if(o.pos)player.pos.set(o.pos[0],o.pos[1],o.pos[2]);if(o.fp!=null)viewFP=o.fp;if(o.zoom!=null)zoomI=o.zoom;},
-  play(){setPlaying(true);fallback=true;}, pause(v){paused=v;}, lod(){updateLOD();}, tick(dt){update(dt);renderFrame();}, step(dt){update(dt);}, info(){return {genMs,nTrees,nPlants,rocks:ROCKS.length,inst:instCount,LW,tris:renderer.info.render.triangles,calls:renderer.info.render.calls};}};
+  play(){setPlaying(true);fallback=true;}, pause(v){paused=v;}, lod(){updateLOD();}, tick(dt){update(dt);renderer.render(scene,camera);}, step(dt){update(dt);}, info(){return {genMs,nTrees,nPlants,rocks:ROCKS.length,inst:instCount,LW,tris:renderer.info.render.triangles,calls:renderer.info.render.calls};}};
 }
 requestAnimationFrame(()=>setTimeout(init,30));
 })();
