@@ -4077,7 +4077,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=391;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=392;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4168,7 +4168,7 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
   near({x:P1_SPAWN.x,z:P1_SPAWN.z},starts);near({x:P2_SPAWN.x,z:P2_SPAWN.z},starts);
   // weapons: two AR-15s, two AT4s and two rifles within 100 m of each of the seven capture points (14 of each)
   {const pts=[SEC_HOME.e,TWPOS,TWPOS4,SILO_POS,TWPOS3,TWPOS2,SEC_HOME.w],placed=[];
-   pts.forEach((c,si)=>['ar15','at4','rifle'].forEach((t,ti)=>{for(let k=0;k<2;k++){for(let a=0;a<120;a++){const ang=hsh(si*17+ti*5+k*3,a+3)*PI*2,r=16+hsh(si*7+ti*11+k,a*3+1)*80,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
+   pts.forEach((c,si)=>['ar15','at4','rifle'].forEach((t,ti)=>{for(let k=0;k<2;k++){for(let a=0;a<120;a++){const ang=hsh(si*17+ti*5+k*3,a+3)*PI*2,r=(si===6&&k===0)?10+hsh(si*7+ti*11+k,a*3+1)*26:16+hsh(si*7+ti*11+k,a*3+1)*80,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
         if(!resOK(x,z,t)||placed.some(q=>Math.hypot(q[0]-x,q[1]-z)<7))continue;placed.push([x,z]);resAdd(t,x,z,si*131+ti*37+k*11+a);break;}}}));window._wpnPlaced=placed.length;}
   // Tech Chips: 20, spread over the seven capture points, each somewhere random within 150 m of its point and well apart from the others
   {const pts=[SEC_HOME.e,TWPOS,TWPOS4,SILO_POS,TWPOS3,TWPOS2,SEC_HOME.w],put=[];
