@@ -2952,7 +2952,7 @@ function at4Blast(p,r){
   if(r&&r.mine)try{uavBlast(p,R);}catch(e){}   // drones: the rocket's owner reports the damage
   if(MPM.on&&MPM.guest)return;   // the world is the host's
   const from=r&&r.o?r.o:p,dist=Math.round(Math.hypot(from.x-p.x,from.z-p.z)),mine=r&&r.mine;
-  try{for(const u of UGVS){if(u.dead)continue;const d=Math.hypot(u.x-p.x,u.y+0.8-p.y,u.z-p.z);if(d>R+1.2)continue;
+  try{for(const u of UGVS){if(u.dead||u.gone||(u.pl&&u.pl===(mine?secTeam():3-secTeam())))continue;const d=Math.hypot(u.x-p.x,u.y+0.8-p.y,u.z-p.z);if(d>R+1.2)continue;
     const dm=GAME.at4Ugv*(d<2.2?1:Math.pow(1-(d-2.2)/(R-1),1.2));if(dm<=0)continue;u.hp-=dm;try{dmgNum(u.x,u.y+2.2,u.z,dm,'#ffd25a',GAME.uHp);}catch(e){}
     u.lx=from.x;u.lz=from.z;u.ly=from.y+1;u.boost=20;if(u.st==='patrol'||u.st==='return'){u.st='search';u.stT=GAME.uMem+10;}
     if(u.hp<=0){u.hp=0;ugvWreck(u,true);if(mine)toast('UGV destroyed · AT4 · '+dist+' m');}else if(mine)toast('UGV hit · AT4 · '+Math.round(100*u.hp/Math.max(1,GAME.uHp))+'% armour left · '+dist+' m');}}catch(e){}
@@ -3570,7 +3570,7 @@ function stepBullets1(dt){
     b.v.y-=GBUL*dt;b.v.multiplyScalar(Math.exp(-DRAG*dt));
     const len=b.v.length()*dt;_bd.copy(b.v).normalize();
     const h=castRay(b.p,_bd,len,b.rem);
-    if(b.ugv&&player.alive){const ph=rayPlayerZones(b.p,_bd,h?Math.min(len,h.dist):len);if(ph){ugvHurtMe(ph.zone,b.ud);impact(ph.point,_bd.clone().negate(),'flesh');b.end=ph.point.clone();if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}}
+    if(b.ugv&&player.alive&&!(b.tm&&b.tm===secTeam())){const ph=rayPlayerZones(b.p,_bd,h?Math.min(len,h.dist):len);if(ph){ugvHurtMe(ph.zone,b.ud);impact(ph.point,_bd.clone().negate(),'flesh');b.end=ph.point.clone();if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}}
     if(b.hostile&&player.alive){const ph=rayPlayerZones(b.p,_bd,h?Math.min(len,h.dist):len);if(ph){damagePlayer(ph.zone,b.dmg);impact(ph.point,_bd.clone().negate(),'dirt');if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}}
     if(h||b.t>4||b.p.y<-200){
       if(h){b.end=h.point.clone();impact(h.point,h.normal,h.kind);impactSnd(h.point,h.kind);if(h.kind!=='water'&&h.kind!=='flesh'&&h.kind!=='metal')addMark(h.point,h.normal,h.kind,h.point.distanceTo(b.o),null);const dist=h.point.distanceTo(b.o);stats.last=[h.point.x,h.point.y,h.point.z,h.kind,dist];
@@ -3808,7 +3808,7 @@ function wptPin(c,x,y,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWidth=2.2;
 mapCv.addEventListener('contextmenu',e=>{e.preventDefault();if(!mapOpen)return;const r=mapCv.getBoundingClientRect();
   const x=clamp(-FE+(e.clientX-r.left)/r.width*FE*2,-PLAY,PLAY),z=clamp(-FE+(e.clientY-r.top)/r.height*FE*2,-PLAY,PLAY);
   if(WPT.on&&Math.hypot(x-WPT.x,z-WPT.z)<14*FE*2/r.width){WPT.on=false;toast('Waypoint cleared');return;}
-  WPT.on=true;WPT.x=x;WPT.z=z;toast('Waypoint set · '+Math.round(x)+' E  '+Math.round(-z)+' N · '+Math.round(wptDist())+' m');});
+  WPT.on=true;WPT.x=x;WPT.z=z;toast('Waypoint set · '+Math.round(x)+' E  '+Math.round(-z)+' N · '+Math.round(wptDist())+' m');try{ugvMapOrder(x,z);}catch(e){}});
 function drawMap(){if(!mapBase)buildMap();const N=MAPL;mctx.setTransform(1,0,0,1,0,0);mctx.putImageData(mapBase,0,0);mctx.setTransform(mapCv.width/MAPL,0,0,mapCv.width/MAPL,0,0);const S=v=>(v+FE)/(FE*2)*N;
   if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));if($('optDeerMap').checked)BEARS.forEach(b=>drawBearMark(mctx,S(b.x),S(b.z),b,0.9,0));if($('optDeerMap').checked&&typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mctx,S(u.x),S(u.z),u,0.9));
   try{secDrawMap(mctx,S,N);}catch(e){}
@@ -4077,7 +4077,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=399;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=400;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4221,11 +4221,12 @@ function carve(c){goneCarcass(c.o,c.k);let m,h=0;
   if(NT.room&&MPM.on)NT.room.emit('carve',{k:c.k,i:c.i,v:MPM.guest?NT.rosterV:deerVer}).catch(()=>{});}
 function nullSnd(){try{initAudio();if(AC&&AC.state==='suspended')AC.resume();tone(210,0.1,0.28,'triangle',190);}catch(e){}}   // two short falling blips, loud enough for laptop speakers   // a small dull 'nothing happens' sound
 function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();if(c){carve(c);return;}if(zipTryMount())return;{const d=dropNearest();if(d){dropTake(d);return;}}const i=resNearest();if(i==null)return;const n=RES_NODES[i],R=RES_T[n.ti];
-  if((R.k==='radio'||(R.k==='at4'&&!WPN.has))&&!slotCanTake(R.k)){toast('Gadget slots full · drop or use one first');return;}
+  if((R.k==='radio'||R.k==='scrap'||(R.k==='at4'&&!WPN.has))&&!slotCanTake(R.k==='scrap'?'ugv':R.k)){toast('Gadget slots full · drop or use one first');return;}
   if(((R.k==='rifle'||R.k==='ar15')&&slotHas(R.k))||(R.k==='at4'&&WPN.has)){nullSnd();toast('You already carry '+(R.k==='at4'?'an AT4':'a'+(R.k==='ar15'?'n ':' ')+ITEM[R.k].name));return;}   // no taking ammo from a weapon you already have
   if(R.k==='berries'&&MPM.hp>=HP_MAX){nullSnd();return;}
   if(R.k==='mushroom'&&STAM.v>=0.999){nullSnd();return;}
   resSetGot(n,true);const q=R.k==='r762'?Math.max(1,GAME.pk762|0):R.k==='at4r'?Math.max(1,GAME.pkAt4|0):R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));
+  if(R.k==='scrap'){const out=slotGive({k:'ugv'});toast((out?'Swapped your '+out+' for a UGV':'UGV picked up')+' · press '+slotKeyOf('ugv')+' to deploy it beside you');pickSnd();if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});return;}
   if(R.k==='radio'){const out=slotGive({k:'radio'});toast((out?'Swapped your '+out+' for a radio':'Radio picked up')+' · press '+slotKeyOf('radio')+' to call in a recon drone');pickSnd();if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});return;}
   if(R.k==='rifle'){if(slotHas('rifle')){player.reserve=(player.reserve|0)+12;invUI();toast('+12 7.62 rounds from the spare rifle');}else{const out=slotGive({k:'rifle',ammo:12});invUI();toast(out?'Swapped your '+out+' for the rifle · it dropped at your feet':'Rifle picked up · 12 rounds · press '+slotKeyOf('rifle')+' to use it');}
     pickSnd();if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});return;}
@@ -4449,6 +4450,8 @@ ${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Hei
 <h4>Flight</h4>${sl('uavDur','Time on station (s)',15,180,5,0)}${sl('uavR','Orbit radius (m)',100,460,10,0)}${sl('uavAlt','Height above the highest ground (m)',20,250,5,0)}${sl('uavSpd','Speed (m/s)',15,80,1,0)}
 <h4>Toughness and sound</h4>${sl('uavHp','Hit points (a body hit does the rifle bear-body damage)',20,600,10,0)}${sl('uavVol','Engine loudness',0,3,0.1,1)}
 <p class="tn">Pick up a radio (cyan glow) and press its gadget key (3 or 4). The drone flies in from the map edge, circles for the time on station with the other player marked on your map and minimap, then leaves. Either player can shoot it down: wings and tail take 75% damage, an AT4 burst within 3 m destroys it. Only one drone per player at a time.</p></section>
+<section class="wc"><div class="wh">${IC.ugv}<div><h3>UGV gadget</h3><p>Pickup (teal glow) · gadget key deploys a Termit robot beside you</p></div><span class="tag">Team robot</span></div>
+<p class="tn">It fires only at the other team, drives to the spot you right-click on the map (the waypoint), and captures sectors for your team while it sits in them. One per team: when it is destroyed the gadget is spent. It can be shot (rifle) or blasted (AT4) by the other side, not by you.</p></section>
 <section class="wc"><div class="wh">${IC.ugv}<div><h3>Termit UGV .50 cal</h3><p>Fired by the patrolling robot, not by players</p></div><span class="tag">AI weapon</span></div>
 ${sp([['Damage / hit',GAME.uDmg+' hp'],['Rate of fire',GAME.uRpm+' rpm'],['Burst',GAME.uBurst+' rounds'],['Spread',GAME.uSpread+' mrad'],['Opens fire',GAME.uRange+' m'],['Armour',GAME.uHp+' hp']])}
 <p class="tn">Headshots count double, limbs 60%. Change these in the UGV tab.</p></section>
@@ -4922,10 +4925,11 @@ const EQB=(()=>{
     bar.innerHTML=h;}
   function radioTxt(it){if(it.used){const u=UAVS.find(q=>q.mine&&q.st!=='gone');if(!u)return 'done';return u.st==='in'?'inbound':u.st==='loiter'?'on station '+Math.max(0,Math.ceil(GAME.uavDur-u.t))+' s':u.st==='down'?'shot down':'leaving';}
     return UAVS.some(q=>!q.mine&&q.st!=='gone')?'in use':'ready';}
+  IC.ugv='<svg viewBox="0 0 48 48"><g stroke="#e8d9b0" stroke-width="1.3" stroke-linejoin="round"><rect x="6" y="28" width="36" height="8" rx="3" fill="#6b5f3e"/><rect x="14" y="21" width="18" height="8" rx="2" fill="#7b6e48"/><rect x="30" y="23" width="14" height="3" fill="#2a2a28"/><circle cx="12" cy="37" r="3.5" fill="#222"/><circle cx="24" cy="37" r="3.5" fill="#222"/><circle cx="36" cy="37" r="3.5" fill="#222"/></g></svg>';
   function cell(el,ic,name,sub,act,off){if(el.dataset.ic!==ic){el.dataset.ic=ic;el.querySelector('.ic').outerHTML='<span class="ic">'+(IC[ic]||EMPTY)+'</span>';}
     el.querySelector('b').textContent=name;el.querySelector('i').textContent=sub;el.classList.toggle('act',!!act);el.classList.toggle('off',!!off);}
   function ui(f){if(!SLOT)return;layout();const pl=player,a=INV.at4r|0;
-    const s=(playing?1:0)+'|'+(pl.ammo|0)+'|'+(pl.reserve|0)+'|'+WPN.cur+WPN.ld+(WPN.rl>=0)+a+'|'+SLOT.w.map(q=>q?q.k:'-').join()+'|'+SLOT.g.map(q=>q?q.k+(q.used?'*':'')+radioTxt(q):'-').join();
+    const s=(playing?1:0)+'|'+(pl.ammo|0)+'|'+(pl.reserve|0)+'|'+WPN.cur+WPN.ld+(WPN.rl>=0)+a+'|'+SLOT.w.map(q=>q?q.k:'-').join()+'|'+SLOT.g.map(q=>q?q.k+(q.used?'*':'')+(q.k==='ugv'?ugvTxt(q):radioTxt(q)):'-').join();
     if(s===barS&&!f)return;barS=s;
     SLOT.w.forEach((it,i)=>{const el=$e('eqW'+i);if(!el)return;
       if(!it)cell(el,'',"Empty",'weapon slot',false,true);
@@ -4934,6 +4938,7 @@ const EQB=(()=>{
       else if(it.k==='at4')cell(el,'at4','AT4',(WPN.rl>=0?'loading':(WPN.ld?'loaded':'empty'))+' · '+a+' spare',WPN.cur==='at4',false);});
     SLOT.g.forEach((it,i)=>{const el=$e('eqG'+i);if(!el)return;
       if(!it)cell(el,'','Empty','gadget slot',false,true);
+      else if(it.k==='ugv'){const t=ugvTxt(it);cell(el,'ugv','UGV',t,it.used&&t!=='destroyed',false);}
       else if(it.k==='radio'){const t=radioTxt(it);cell(el,'radio','Drone',t,it.used&&UAVS.some(u=>u.mine&&(u.st==='in'||u.st==='loiter')),t==='in use');}});
     bar.style.display=playing?'flex':'none';}
   const OLD={eqRifle:'rifle',eqAt4:'at4',eqUav:'radio'};
@@ -4950,7 +4955,7 @@ function eqStep(){try{slotStep();}catch(e){}EQB.ui();}
 // Counts are set on the Weapons tab (Carry slots), 1-3 of each.
 var SLOT={w:[{k:'rifle'},null],g:[null,null]};
 var DROPS=[];
-const ITEM={rifle:{name:'Rifle',kind:'w',col:0xffe08a},ar15:{name:'AR-15',kind:'w',col:0xff8a2a},at4:{name:'AT4',kind:'w',col:0xff2fbf},radio:{name:'Radio',kind:'g',col:0x3ad8ff}};
+const ITEM={rifle:{name:'Rifle',kind:'w',col:0xffe08a},ar15:{name:'AR-15',kind:'w',col:0xff8a2a},at4:{name:'AT4',kind:'w',col:0xff2fbf},radio:{name:'Radio',kind:'g',col:0x3ad8ff},ugv:{name:'UGV',kind:'g',col:0x45e6c8}};
 function slotN(t){return Math.max(1,Math.min(3,Math.round(+(t==='w'?GAME.slotW:GAME.slotG))||2));}
 function slotHas(k){if(!SLOT)return k==='rifle';return SLOT.w.some(i=>i&&i.k===k)||SLOT.g.some(i=>i&&i.k===k);}
 function slotKeyOf(k){if(!SLOT)return '';let j=SLOT.w.findIndex(i=>i&&i.k===k);if(j>=0)return String(j+1);j=SLOT.g.findIndex(i=>i&&i.k===k&&!i.used);return j>=0?String(SLOT.w.length+j+1):'';}
@@ -4987,6 +4992,7 @@ function slotSelW(i){if(!player.alive)return;const it=SLOT.w[i];if(!it){toast('W
 function slotCycleW(){if(!player.alive)return;const L=SLOT.w,n=L.length;let j=L.findIndex(q=>q&&q.k===WPN.cur);
   for(let s=1;s<=n;s++){const q=L[((j<0?-1:j)+s+n)%n];if(q&&q.k!==WPN.cur){slotSelW(L.indexOf(q));return;}}toast('No other weapon · find one');}
 function slotUseG(i){if(!player.alive)return;const it=SLOT.g[i];if(!it){toast('Gadget slot '+(SLOT.w.length+i+1)+' is empty');return;}
+  if(it.k==='ugv'){ugvDeploy(i);return;}
   if(it.k==='radio'){if(it.used){toast('Your drone is already up');return;}uavCall(i);}}
 function slotKey(n){const nw=SLOT.w.length;if(n<=nw)slotSelW(n-1);else if(n-nw<=SLOT.g.length)slotUseG(n-nw-1);}
 function slotDrop(){if(!player.alive||!playing)return;const k=WPN.cur;if(k==='none')return;
@@ -4995,7 +5001,7 @@ function slotDrop(){if(!player.alive||!playing)return;const k=WPN.cur;if(k==='no
 // ---- items on the ground
 const DROP_GEO={ar15:(()=>{const g=build(arParts());g.rotateZ(PI/2);g.translate(0.03,0.05,0);return g;})(),rifle:build([[B(0.62,0.07,0.05),'#4a3a2a',[-0.05,0.035,0]],[B(0.2,0.1,0.05),'#4a3a2a',[-0.38,0.05,0]],[CY(0.012,0.012,0.5,6),'#2a2c2e',[0.5,0.045,0],[0,0,HP]],
   [CY(0.026,0.026,0.32,8),'#20262a',[0.04,0.1,0],[0,0,HP]],[B(0.05,0.05,0.02),'#2a2c2e',[0.02,0.06,0]],[B(0.06,0.03,0.04),'#3a3020',[-0.08,0.0,0]]])};
-function dropGeo(k){return DROP_GEO[k]||RES_GEO[k];}
+function dropGeo(k){return DROP_GEO[k]||RES_GEO[k==='ugv'?'scrap':k];}
 function dropMake(id,k,x,y,z,ld,ammo,ry){if(!ITEM[k]||DROPS.some(d=>d.id===id))return null;const m=new THREE.Mesh(dropGeo(k),RES_MAT);m.position.set(x,y,z);m.rotation.y=ry||0;
   const gm=new THREE.Mesh(dropGeo(k),new THREE.MeshBasicMaterial({color:ITEM[k].col,side:THREE.BackSide,transparent:true,opacity:0.5,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
   gm.scale.setScalar(1.13);gm.renderOrder=6;m.add(gm);scene.add(m);const d={id,k,x,y,z,ld:ld?1:0,ammo:ammo|0,m,gm};DROPS.push(d);return d;}
@@ -5015,7 +5021,8 @@ function dropTake(d){
 function dropNet(t,d){if(t==='drop'){dropMake(String(d.id),d.k,+d.x,+d.y,+d.z,d.ld,d.am,+d.ry||0);}
   else if(t==='dtake'){const q=DROPS.find(x=>x.id===String(d.id));if(q){DROPS.splice(DROPS.indexOf(q),1);dropKill(q);}}}
 function slotStep(){if(player.arAuto>0&&--player.arAuto===0&&WPN.cur==='ar15'&&player.ammo<=0&&player.reloadT<0)startReload();   // the AR reloads itself a few frames after the last round
-  if(SLOT.g.some(q=>q&&q.used)&&!UAVS.some(u=>u.mine&&u.st!=='gone')){for(let j=0;j<SLOT.g.length;j++)if(SLOT.g[j]&&SLOT.g[j].used)SLOT.g[j]=null;slotSync();}
+  if(SLOT.g.some(q=>q&&q.used&&q.k==='radio')&&!UAVS.some(u=>u.mine&&u.st!=='gone')){for(let j=0;j<SLOT.g.length;j++)if(SLOT.g[j]&&SLOT.g[j].used&&SLOT.g[j].k==='radio')SLOT.g[j]=null;slotSync();}
+  if(SLOT.g.some(q=>q&&q.used&&q.k==='ugv'&&performance.now()-(q.t0||0)>5000)&&!ugvMine()){for(let j=0;j<SLOT.g.length;j++)if(SLOT.g[j]&&SLOT.g[j].used&&SLOT.g[j].k==='ugv'&&performance.now()-(SLOT.g[j].t0||0)>5000)SLOT.g[j]=null;slotSync();}
   if(DROPS.length){const o=0.15+0.6*(0.5-0.5*Math.cos(performance.now()/1000*Math.PI*2/3));for(const d of DROPS)d.gm.material.opacity=o;}}
 window.SNIPER_SLOT={G:GAME,rr:()=>resReset(),SLOT,DROPS,give:slotGive,drop:slotDrop,key:slotKey,reset:slotReset,fit:slotFit,take:dropTake,net:dropNet,get:()=>SLOT};
 
@@ -5561,7 +5568,9 @@ function secReset(){SECT.s.forEach((s,i)=>{s.own=i===0?1:i===6?2:0;s.cap=0;s.by=
 function secArmed(team){const n=SECT.s.reduce((a,s)=>a+(s.own===team?1:0),0);return SECT.s[3].own===team&&n>=SEC_ARM;}
 function secAttackable(i,team){return i!==0&&i!==6&&SECT.s[i].own!==team;}   // any sector can be attacked at any time (no capture order)
 function secPlayers(){const out=[],t=secTeam();out.push({team:t,x:player.pos.x,z:player.pos.z,al:player.alive&&MPM.hp>0});
-  if(MPM.on&&NT.opp&&RPS.pos&&RPS.r===NT.M.r)out.push({team:3-t,x:RPS.pos.x,z:RPS.pos.z,al:!!RPS.al});return out;}
+  if(MPM.on&&NT.opp&&RPS.pos&&RPS.r===NT.M.r)out.push({team:3-t,x:RPS.pos.x,z:RPS.pos.z,al:!!RPS.al});
+  for(const u of UGVS)if(u.pl&&!u.dead&&!u.gone)out.push({team:u.pl,x:u.x,z:u.z,al:true,ugv:true});   // team UGVs capture too
+  return out;}
 // the host (or single player) runs the capture
 function secSim(dt){const P=secPlayers();
   SEC_DEF.forEach((d,i)=>{const s=SECT.s[i],inn=[false,false,false];for(const p of P)if(p.al&&Math.hypot(p.x-d.x,p.z-d.z)<d.r)inn[p.team]=true;
@@ -5694,6 +5703,7 @@ function ugcGet(i){let c=UGC[i];if(!c){c={};const src=i?ugcGet(0):GAME;for(const
 function ugvW(u,fn){const prev=UGV.cur;UGV.cur=u;const c=ugcGet(u.i||0),sv={};for(const k of UGKEYS){sv[k]=GAME[k];GAME[k]=c[k];}
   try{return fn();}finally{for(const k of UGKEYS)GAME[k]=sv[k];UGV.cur=prev;}}
 const UGVS=[],UGV={lt:0};
+const PUG={cmd:null};   // my UGV's current order (for the map)
 const UGV_MAT=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:0.78,metalness:0.12});
 const UGV_BURNT=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:0.95,metalness:0.05,color:0x2c2a27});
 const UGV_LENS=new THREE.MeshStandardMaterial({color:0xfff6dc,emissive:0xfff2c8,emissiveIntensity:0.9,roughness:0.3});
@@ -5780,10 +5790,10 @@ function ugvWaypoint(u){const h=ugvHome();for(let k=0;k<40;k++){const a=Math.ran
 function ugvSpawnSpot(u){const h=ugvHome(u);for(let r=16;r<60;r+=3)for(let k=0;k<16;k++){const a=k/16*Math.PI*2+r,x=h.x+Math.sin(a)*r,z=h.z+Math.cos(a)*r;if(!ugvBlocked(x,z)&&!ugvBlocked(x+2,z)&&!ugvBlocked(x-2,z))return {x,z,a};}return {x:h.x+18,z:h.z,a:0};}
 function ugvBuildOne(i){const s=ugvSpawnSpot({i});const u=makeUgv(s.x,s.z);u.i=i;u.hp=ugcGet(i).uHp;u.yaw=s.a;UGVS.push(u);ugvW(u,()=>ugvWaypoint(u));ugvPlace(u,1);return u;}
 function ugvBuildAll(){const n=Math.max(1,Math.min(6,Math.round(GAME.uCnt||1)));for(let i=0;i<n;i++)ugvBuildOne(i);}
-function ugvClear(){while(UGVS.length){const u=UGVS.pop();scene.remove(u.root);u.root.traverse(o=>{if(o.geometry&&o.geometry!==undefined)try{o.geometry.dispose();}catch(e){}});}}
-function ugvRespawn(u){const s=ugvSpawnSpot(u);Object.assign(u,{x:s.x,z:s.z,yaw:s.a,spd:0,ty:0,tp:0,st:'patrol',stT:2,hp:GAME.uHp,dead:0,deadT:0,tgt:null,mem:0,blind:0,boost:0,burstN:0,pauseT:0,fireT:0,smT:0});
+function ugvClear(){for(let k=UGVS.length-1;k>=0;k--){const u=UGVS[k];if(u.pl)continue;UGVS.splice(k,1);scene.remove(u.root);u.root.traverse(o=>{if(o.geometry&&o.geometry!==undefined)try{o.geometry.dispose();}catch(e){}});}}
+function ugvRespawn(u){if(u.pl){ugvPlRevive(u);return;}const s=ugvSpawnSpot(u);Object.assign(u,{x:s.x,z:s.z,yaw:s.a,spd:0,ty:0,tp:0,st:'patrol',stT:2,hp:GAME.uHp,dead:0,deadT:0,tgt:null,mem:0,blind:0,boost:0,burstN:0,pauseT:0,fireT:0,smT:0});
   u.meshes.forEach(m=>{m.material=UGV_MAT;});u.root.traverse(o=>{if(o.material===UGV_LENS)o.visible=true;});ugvWaypoint(u);ugvPlace(u,1);}
-function ugvReset(){UGVS.forEach(ugvRespawn);}
+function ugvReset(){UGVS.forEach(u=>{if(u.pl)ugvPlGone(u);else ugvRespawn(u);});PUG.cmd=null;}
 // sit the hull on the ground: pitch from the track ends, roll from the two sides, smoothed so it rocks rather than snaps
 function ugvPlace(u,dt){const s=Math.sin(u.yaw),c=Math.cos(u.yaw),F=1.05,W=0.62;
   const hF=groundH(u.x+s*F,u.z+c*F),hB=groundH(u.x-s*F,u.z-c*F),hR=groundH(u.x+c*W,u.z-s*W),hL=groundH(u.x-c*W,u.z+s*W),hC=groundH(u.x,u.z);
@@ -5792,7 +5802,9 @@ function ugvPlace(u,dt){const s=Math.sin(u.yaw),c=Math.cos(u.yaw),F=1.05,W=0.62;
   u.root.position.set(u.x,u.y-0.02,u.z);u.root.rotation.set(u.pit,u.yaw,u.rol);u.yawG.rotation.y=u.ty;u.pitG.rotation.x=-u.tp;u.root.updateMatrixWorld(true);}
 // ---- people it can see
 function ugvHumans(){const L=[];try{if(player.alive&&MPM.hp>0)L.push({x:player.pos.x,y:player.pos.y,z:player.pos.z,opp:false,st:player.stance,sp:Math.hypot(player.vel.x,player.vel.z),vx:player.vel.x,vz:player.vel.z});}catch(e){}
-  try{if(MPM.on&&NT.opp&&RPS.al&&RPS.pos)L.push({x:RPS.pos.x,y:RPS.pos.y,z:RPS.pos.z,opp:true,st:RPS.stn,sp:RPS.sp||0,vx:0,vz:0});}catch(e){}return L;}
+  try{if(MPM.on&&NT.opp&&RPS.al&&RPS.pos)L.push({x:RPS.pos.x,y:RPS.pos.y,z:RPS.pos.z,opp:true,st:RPS.stn,sp:RPS.sp||0,vx:0,vz:0});}catch(e){}
+  {const cu=UGV.cur;if(cu&&cu.pl){const mt=secTeam();return L.filter(h=>(h.opp?3-mt:mt)!==cu.pl);}}   // a team UGV only sees the other side
+  return L;}
 const ugvChestY=h=>h.y+(h.st==='prone'?0.3:h.st==='crouch'?0.95:1.35);
 const _uo=new THREE.Vector3(),_ud=new THREE.Vector3(),_ua=new THREE.Vector3();
 function ugvEye(u){return u.pitG.localToWorld(_uo.set(0.17,0.06,0.25));}
@@ -5803,7 +5815,7 @@ function ugvLook(u){try{if(MPM.on&&NT.M.ph!=='live')return null;}catch(e){}let b
   for(const h of ugvHumans()){const d=Math.hypot(h.x-u.x,h.z-u.z);if(d>ugvRangeFor(u,h)||d>=bd)continue;if(!ugvSees(u,h))continue;best=h;bd=d;}return best;}
 function ugvFresh(T){const L=ugvHumans();for(const h of L)if(h.opp===T.opp)return h;return null;}
 // ---- driving: tracked, so it pivots on the spot when the heading is far off; steers round trunks and rocks
-function ugvDrive(u,tx,tz,want,dt){const h=ugvHome(),lr=Math.hypot(tx-h.x,tz-h.z);if(lr>GAME.uLeash){const k=GAME.uLeash/lr;tx=h.x+(tx-h.x)*k;tz=h.z+(tz-h.z)*k;}
+function ugvDrive(u,tx,tz,want,dt){const h=ugvHome(),lr=u.pl?0:Math.hypot(tx-h.x,tz-h.z);if(lr>GAME.uLeash){const k=GAME.uLeash/lr;tx=h.x+(tx-h.x)*k;tz=h.z+(tz-h.z)*k;}
   const d=Math.hypot(tx-u.x,tz-u.z);if(d<2.5)want=0;
   let turn=wrapA(Math.atan2(tx-u.x,tz-u.z)-u.yaw);
   {const pr=a=>ugvBlocked(u.x+Math.sin(u.yaw+a)*3.4,u.z+Math.cos(u.yaw+a)*3.4);if(want>0&&(pr(0)||ugvBlocked(u.x+Math.sin(u.yaw)*1.8,u.z+Math.cos(u.yaw)*1.8))){const l=pr(0.7),r=pr(-0.7);turn+=!l?1.3:!r?-1.3:(u.sk||(u.sk=Math.random()<0.5?1:-1))*1.8;}else u.sk=0;}
@@ -5812,7 +5824,7 @@ function ugvDrive(u,tx,tz,want,dt){const h=ugvHome(),lr=Math.hypot(tx-h.x,tz-h.z
   u.spd+=(fw-u.spd)*Math.min(1,dt*(fw>u.spd?1.5:3.5));
   if(Math.abs(u.spd)>0.01){let nx=u.x+Math.sin(u.yaw)*u.spd*dt,nz=u.z+Math.cos(u.yaw)*u.spd*dt;
     for(const p of pillarsNear(nx,nz)){const dx=nx-p.x,dz=nz-p.z,dd=Math.hypot(dx,dz),r=p.r+1.1;if(dd<r&&dd>1e-4){nx=p.x+dx/dd*r;nz=p.z+dz/dd*r;}}
-    let ok=Math.abs(nx)<475&&Math.abs(nz)<475;try{if(inWater(nx,nz))ok=false;}catch(e){}{const hh=ugvHome();if(Math.hypot(nx-hh.x,nz-hh.z)<7.5)ok=false;}
+    let ok=Math.abs(nx)<475&&Math.abs(nz)<475;try{if(inWater(nx,nz))ok=false;}catch(e){}if(!u.pl){const hh=ugvHome();if(Math.hypot(nx-hh.x,nz-hh.z)<7.5)ok=false;}
     if(ok){u.wd+=Math.hypot(nx-u.x,nz-u.z);u.x=nx;u.z=nz;}else{u.spd=0;if(u.st==='patrol')ugvWaypoint(u);u.yaw+=Math.PI*0.4;}}
   // stuck: little progress for 3 s while it wants to move → new heading; twice → hop to the nearest open spot
   u.skT=(u.skT||0)+dt;if(u.skT>=3){const mv=u.skX==null?99:Math.hypot(u.x-u.skX,u.z-u.skZ);u.skX=u.x;u.skZ=u.z;u.skT=0;
@@ -5832,18 +5844,19 @@ function ugvShoot(u,T){const o=ugvMuzzle(u),d=Math.hypot(T.x-o.x,T.z-o.z);const 
   const dir=_ua.clone().sub(o).normalize();const sd=GAME.uSpread/1000*(1+Math.min(2,(T.sp||0)*0.25))*(u.shots<3?1.6:1)*(u.blind>0?3:1);
   const g=()=>(Math.random()+Math.random()+Math.random()-1.5)*1.15;const s1=new THREE.Vector3(dir.z,0,-dir.x).normalize(),s2=new THREE.Vector3().crossVectors(dir,s1);
   dir.addScaledVector(s1,g()*sd).addScaledVector(s2,g()*sd).normalize();
-  u.shots++;const tr=u.shots%3===1;ugvRound(o,dir,tr);u.fl=0.05;
-  try{if(MPM.on&&NT.room)NT.room.emit('ugvf',{o:[nr2(o.x),nr2(o.y),nr2(o.z)],v:[+dir.x.toFixed(4),+dir.y.toFixed(4),+dir.z.toFixed(4)],t:tr?1:0}).catch(()=>{});}catch(e){}}
-function ugvRound(o,dir,tr){const b={p:o.clone(),o:o.clone(),v:dir.clone().multiplyScalar(V0),t:0,tr:getP(gTracer,matTracer),rem:true,ugv:true,ud:GAME.uDmg};bullets.push(b);if(tr)try{mkStreak(b);}catch(e){}
+  u.shots++;const tr=u.shots%3===1;ugvRound(o,dir,tr,u.pl);u.fl=0.05;
+  try{if(MPM.on&&NT.room)NT.room.emit('ugvf',{i:UGVS.indexOf(u),tm:u.pl|0,o:[nr2(o.x),nr2(o.y),nr2(o.z)],v:[+dir.x.toFixed(4),+dir.y.toFixed(4),+dir.z.toFixed(4)],t:tr?1:0}).catch(()=>{});}catch(e){}}
+function ugvRound(o,dir,tr,tm){const b={tm:tm|0,p:o.clone(),o:o.clone(),v:dir.clone().multiplyScalar(V0),t:0,tr:getP(gTracer,matTracer),rem:true,ugv:true,ud:GAME.uDmg};bullets.push(b);if(tr)try{mkStreak(b);}catch(e){}
   ugvGunSnd(o);try{farFlash(o);}catch(e){}try{disturb(o.x,o.z,200,650);}catch(e){}}
 function ugvNetFire(d){if(!Array.isArray(d.o)||!Array.isArray(d.v))return;const o=V(+d.o[0],+d.o[1],+d.o[2]),v=V(+d.v[0],+d.v[1],+d.v[2]);if(!isFinite(o.x+o.y+o.z+v.x)||v.lengthSq()<0.5)return;
-  v.normalize();ugvRound(o,v,!!d.t);const u=UGVS[0];if(u)u.fl=0.05;}
+  v.normalize();ugvRound(o,v,!!d.t,d.tm|0);const u=UGVS[d.i|0]||UGVS[0];if(u)u.fl=0.05;}
 function ugvHurtMe(zone,ud){if(!player.alive||MPM.hp<=0)return;try{if(MPM.on&&NT.M.ph!=='live')return;}catch(e){}
   const dmg=(ud!=null?ud:GAME.uDmg)*(zone==='head'?2:zone==='limb'?0.6:1);MPM.hp-=dmg;try{flashHit();edgeFlash();shake=Math.max(shake,0.3);dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,dmg,'#ff3a3a');impactSnd(player.pos,'flesh');}catch(e){}
   toast('Hit by the UGV · '+(zone==='head'?'head':zone==='limb'?'limb':'body')+' · -'+Math.round(dmg));
   if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed by the UGV');}}
 // ---- the brain (host)
 function ugvHost(u,dt){
+  if(u.pl)return ugvHostP(u,dt);
   if(u.dead){u.deadT+=dt;if(GAME.uRespawn>0&&u.deadT>GAME.uRespawn&&!MPM.on)ugvRespawn(u);return;}
   u.blind=Math.max(0,u.blind-dt);u.boost=Math.max(0,u.boost-dt);u.losT-=dt;u.stT-=dt;
   if(u.losT<=0){u.losT=0.2;const T=ugvLook(u);
@@ -5873,12 +5886,12 @@ function ugvGuest(u,dt){if(u.dead)u.deadT+=dt;const n=u.net;if(!n)return;const a
   if(Math.hypot(tx-u.x,tz-u.z)>10){u.x=tx;u.z=tz;u.yaw=n.yaw;}else{const k=Math.min(1,dt*8);const ox=u.x,oz=u.z;u.x+=(tx-u.x)*k;u.z+=(tz-u.z)*k;u.wd+=Math.hypot(u.x-ox,u.z-oz)*Math.sign(n.spd||1);u.yaw+=wrapA(n.yaw-u.yaw)*k;}
   const k2=Math.min(1,dt*10);const oty=u.ty;u.ty+=wrapA(n.ty-u.ty)*k2;u.tRate=Math.abs(wrapA(u.ty-oty))/Math.max(dt,1e-3);u.tp+=(n.tp-u.tp)*k2;u.spd=n.spd;
   if(n.st!==u.st&&n.st==='alert')ugvBeep(u);u.st=n.st;u.hp=n.hp;if(n.dead&&!u.dead)ugvWreck(u,false);else if(!n.dead&&u.dead)ugvRespawn(u);}
-function ugvNetList(){return UGVS.map(u=>[nr1(u.x),nr1(u.z),nr2(wrapA(u.yaw)),nr2(u.ty),nr2(u.tp),Math.max(0,UST.indexOf(u.st)),Math.round(u.hp),nr1(u.spd),u.dead?1:0]);}
-function ugvNetApply(arr){if(!Array.isArray(arr))return;const now=performance.now();arr.forEach((a,i)=>{const u=UGVS[i];if(u)u.net={x:+a[0],z:+a[1],yaw:+a[2],ty:+a[3],tp:+a[4],st:UST[a[5]]||'patrol',hp:+a[6],spd:+a[7]||0,dead:!!a[8],at:now};});}
+function ugvNetList(){return UGVS.map(u=>[nr1(u.x),nr1(u.z),nr2(wrapA(u.yaw)),nr2(u.ty),nr2(u.tp),Math.max(0,UST.indexOf(u.st)),Math.round(u.hp),nr1(u.spd),u.gone?2:u.dead?1:0,u.pl|0]);}
+function ugvNetApply(arr){if(!Array.isArray(arr))return;const now=performance.now();arr.forEach((a,i)=>{const u=UGVS[i];if(u)u.net={x:+a[0],z:+a[1],yaw:+a[2],ty:+a[3],tp:+a[4],st:UST[a[5]]||'patrol',hp:+a[6],spd:+a[7]||0,dead:!!a[8],gone:a[8]===2,at:now};});}
 // ---- shooting it
 const _uRay=new THREE.Raycaster();
 function rayUgv(o,dir,len,noRem){let best=null;if(noRem)return null;   // the UGV's own rounds and other players' tracers never hit it
-  for(const u of UGVS){const cx=u.x-o.x,cy=u.y+0.8-o.y,cz=u.z-o.z;
+  for(const u of UGVS){if(u.gone||(u.pl&&u.pl===secTeam()))continue;const cx=u.x-o.x,cy=u.y+0.8-o.y,cz=u.z-o.z;
     const t=cx*dir.x+cy*dir.y+cz*dir.z;if(t<-3||t>len+3)continue;const tt=clamp(t,0,len);const ex=cx-dir.x*tt,ey=cy-dir.y*tt,ez=cz-dir.z*tt;if(ex*ex+ey*ey+ez*ez>2.4*2.4)continue;
     _uRay.set(o,dir);_uRay.near=0;_uRay.far=best?best.dist:len;const hs=_uRay.intersectObjects(u.hb,false);if(!hs.length)continue;
     let h=hs[0];for(const q of hs){if(q.object.userData.sub==='optic'&&q.distance<h.distance+0.15)h=q;}
@@ -5920,26 +5933,79 @@ function ugvWheels(u){for(const w of u.wheels)w.m.rotation.x=u.wd/w.r;u.wd=u.wd%
 // keep people out of the hull
 function ugvPush(u){const p=player.pos,dx=p.x-u.x,dz=p.z-u.z,d=Math.hypot(dx,dz);if(d<1.55&&d>1e-3&&p.y<u.y+1.6&&p.y>u.y-1.2){const k=1.55/d;p.x=u.x+dx*k;p.z=u.z+dz*k;}}
 function ugvStep(dtO){const now=performance.now();const dt=dtO!=null?dtO:Math.min(0.1,(now-(UGV.lt||now))/1000);UGV.lt=now;
-  if(!GAME.uOn){if(UGVS.length)ugvClear();return;}
-  const gst=!!(MPM&&MPM.on&&MPM.guest);
-  if(!gst&&UGVS.length&&UGVS.length!==Math.max(1,Math.min(6,Math.round(GAME.uCnt||1))))ugvClear();   // the number of UGVs was changed on the options tab
-  if(!UGVS.length){if(!(typeof SILO!=='undefined'&&SILO.built))return;ugvBuildAll();}
-  for(const u of UGVS){if(gst)ugvGuest(u,dt);else if(playing||dtO!=null)ugvHost(u,dt);
-    ugvPlace(u,dt);ugvWheels(u);ugvFx(u,dt);try{ugvAudio(u,dt);}catch(e){}try{ugvPush(u);}catch(e){}}}
+  const gst=!!(MPM&&MPM.on&&MPM.guest);const nAI=()=>UGVS.reduce((a,u)=>a+(u.pl?0:1),0);
+  if(!GAME.uOn){if(nAI())ugvClear();}
+  else{if(!gst&&nAI()&&nAI()!==Math.max(1,Math.min(6,Math.round(GAME.uCnt||1))))ugvClear();   // the number of UGVs was changed on the options tab
+    if(!nAI()&&typeof SILO!=='undefined'&&SILO.built)ugvBuildAll();}
+  for(const u of UGVS){if(u.pl&&u.gone){u.root.visible=false;if(gst)ugvGuest(u,dt);continue;}
+    if(gst)ugvGuest(u,dt);else if(playing||dtO!=null)ugvHost(u,dt);
+    ugvPlace(u,dt);ugvWheels(u);ugvFx(u,dt);try{ugvAudio(u,dt);}catch(e){}try{ugvPush(u);}catch(e){}if(u.pl)try{ugvFlag(u);}catch(e){}}}
 ugvHost=(f=>function(u,dt){return ugvW(u,()=>f(u,dt));})(ugvHost);
-ugvGuest=(f=>function(u,dt){return ugvW(u,()=>f(u,dt));})(ugvGuest);
+ugvGuest=(f=>function(u,dt){if(u.pl&&u.net&&u.net.gone){if(!u.gone)ugvPlGone(u);return;}if(u.pl&&u.gone){ugvPlRevive(u);u.dead=0;}return ugvW(u,()=>f(u,dt));})(ugvGuest);
 hitUgv=(f=>function(u){const a=arguments;return ugvW(u,()=>f.apply(this,a));})(hitUgv);
 netUgvHit=(f=>function(u){const a=arguments;return ugvW(u,()=>f.apply(this,a));})(netUgvHit);
 ugvRespawn=(f=>function(u){return ugvW(u,()=>f(u));})(ugvRespawn);
 // a guest builds as many UGVs as the host sends
-ugvNetApply=(f=>function(arr){if(Array.isArray(arr)&&!UGVS.length===false){try{while(UGVS.length<arr.length&&typeof SILO!=='undefined'&&SILO.built&&UGVS.length<6)ugvBuildOne(UGVS.length);while(UGVS.length>arr.length&&UGVS.length>1){const u=UGVS.pop();scene.remove(u.root);}}catch(e){}}return f(arr);})(ugvNetApply);
+ugvNetApply=(f=>function(arr){if(Array.isArray(arr)&&UGVS.length>0){try{while(UGVS.length<arr.length&&UGVS.length<8){const a=arr[UGVS.length],tm=a?a[9]|0:0;if(tm>0)ugvPlMake(tm);else{if(!(typeof SILO!=='undefined'&&SILO.built))break;ugvBuildOne(UGVS.reduce((n,q)=>n+(q.pl?0:1),0));}}while(UGVS.length>arr.length&&UGVS.length>1){const u=UGVS.pop();scene.remove(u.root);}}catch(e){}}return f(arr);})(ugvNetApply);
 function ugvShowHB(on){UGVS.forEach(u=>u.hb.forEach(m=>m.userData.edge.visible=on));}
 try{showBearHB=(f=>function(on){f(on);ugvShowHB(on);})(showBearHB);}catch(e){}
 resReset=(f=>function(){f.apply(this,arguments);try{ugvReset();}catch(e){}})(resReset);
+// ================= the UGV gadget: a team robot you deploy beside you =================
+// Pick up the UGV (teal glow) and press its gadget key: a Termit robot drives off beside you. It fires only at the other team, drives to the spot you right-click on the map,
+// and counts as a capturer for your team while it sits in a sector. One per team; when it is destroyed the gadget is spent. The host runs both teams' robots (the guest sends orders).
+function ugvPlMake(team){const u=makeUgv(0,0);u.i=0;u.pl=team;u.gone=1;u.dead=1;u.cmd=null;u.root.visible=false;
+  const mat=new THREE.MeshBasicMaterial({color:0x3d9bff,side:THREE.DoubleSide});
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,1.1,5),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.set(-0.5,2.25,-0.9);
+  const fl=new THREE.Mesh(new THREE.PlaneGeometry(0.55,0.32),mat);fl.position.set(-0.5+0.28,2.55,-0.9);fl.rotation.y=PI/2;
+  u.root.add(pole,fl);u.flagMat=mat;UGVS.push(u);return u;}
+function ugvFlag(u){u.flagMat.color.setHex(secRel(u.pl)===1?0x3d9bff:0xff4a3a);}
+function ugvPlRevive(u){u.gone=0;u.dead=0;u.deadT=0;u.hp=GAME.uHp;u.tgt=null;u.mem=0;u.blind=0;u.boost=0;u.burstN=0;u.pauseT=0;u.fireT=0;u.smT=0;u.spd=0;u.ty=0;u.tp=0;u.st='patrol';u.root.visible=true;
+  u.meshes.forEach(m=>{m.material=UGV_MAT;});u.root.traverse(o=>{if(o.material===UGV_LENS)o.visible=true;});}
+function ugvPlGone(u){u.gone=1;u.dead=1;u.tgt=null;u.cmd=null;u.root.visible=false;}
+function ugvPlSpawn(team,x,z,ya){let u=UGVS.find(q=>q.pl===team);if(!u)u=ugvPlMake(team);else if(!u.dead&&!u.gone)return u;
+  Object.assign(u,{x,z,hx:x,hz:z,tx:x,tz:z,yaw:ya,y:0,pit:0,rol:0});u.cmd=null;ugvPlRevive(u);ugvPlace(u,1);return u;}
+function ugvMine(){const t=secTeam();for(const u of UGVS)if(u.pl===t&&!u.dead&&!u.gone)return u;return null;}
+function ugvTxt(it){if(!it.used)return 'ready';const u=ugvMine();if(u)return u.st==='engage'?'firing':Math.abs(u.spd)>0.3?'moving':'holding';return performance.now()-(it.t0||0)<5000?'deploying':'destroyed';}
+function ugvDeploy(gi){const it=SLOT.g[gi];if(!it||it.k!=='ugv'||!playing||!player.alive)return;
+  if(it.used){toast('Your UGV is already out · right-click the map to send it somewhere');return;}
+  if(MPM.on&&NT.M.ph!=='live'){toast('Deploy the UGV once the round is live');return;}
+  if(ugvMine()){toast('Your team already has a UGV out');return;}
+  let sp=null;for(const r of [5,7,9,4,12]){for(const k of [0,0.5,-0.5,1,-1,1.6,-1.6]){const x=player.pos.x-Math.sin(camYaw+k)*r,z=player.pos.z-Math.cos(camYaw+k)*r;
+    if(!ugvBlocked(x,z)&&!ugvBlocked(x+2,z)&&!ugvBlocked(x-2,z)&&Math.abs(groundH(x,z)-player.pos.y)<2.5){sp={x,z};break;}}if(sp)break;}
+  if(!sp){toast('No room for a UGV here · move to open ground');return;}
+  const ya=wrapA(camYaw+PI);it.used=true;it.t0=performance.now();PUG.cmd=null;
+  if(MPM.on&&MPM.guest){try{NT.room.emit('pug',{c:'spawn',x:nr1(sp.x),z:nr1(sp.z),ya:nr2(ya)}).catch(()=>{});}catch(e){}}
+  else ugvPlSpawn(secTeam(),sp.x,sp.z,ya);
+  try{sfx.click();}catch(e){}toast('UGV deployed · right-click the map to send it somewhere');try{EQB.ui(true);}catch(e){}}
+function ugvOrder(u,x,z){u.cmd={x:clamp(x,-465,465),z:clamp(z,-465,465)};}
+function ugvMapOrder(x,z){const u=ugvMine();if(!u)return false;
+  if(MPM.on&&MPM.guest){try{NT.room.emit('pug',{c:'go',x:nr1(x),z:nr1(z)}).catch(()=>{});}catch(e){}}else ugvOrder(u,x,z);
+  PUG.cmd={x,z};toast('UGV ordered to '+Math.round(x)+' E  '+Math.round(-z)+' N · '+Math.round(Math.hypot(x-u.x,z-u.z))+' m away');return true;}
+function ugvNetCmd(d){if(!MPM.on||MPM.guest)return;const gt=3-secTeam();
+  if(d.c==='spawn'){if(NT.M.ph!=='live')return;const x=+d.x,z=+d.z,ya=+d.ya;if(!isFinite(x+z+ya))return;ugvPlSpawn(gt,clamp(x,-470,470),clamp(z,-470,470),ya);}
+  else if(d.c==='go'){const x=+d.x,z=+d.z;if(!isFinite(x+z))return;const u=UGVS.find(q=>q.pl===gt&&!q.dead&&!q.gone);if(u)ugvOrder(u,x,z);}}
+// the brain of a team UGV (host): look for the other side, stop and fire when one is in range, otherwise drive to the order
+function ugvHostP(u,dt){if(u.gone)return;if(u.dead){u.deadT+=dt;return;}
+  u.blind=Math.max(0,u.blind-dt);u.boost=Math.max(0,u.boost-dt);u.losT-=dt;
+  let live=true;try{if(MPM.on&&NT.M.ph!=='live')live=false;}catch(e){}
+  if(u.losT<=0){u.losT=0.2;const T0=live?ugvLook(u):null;if(T0){if(!u.tgt)u.shots=0;u.tgt=T0;u.mem=3;}else if(u.tgt){u.mem-=0.2;if(u.mem<=0)u.tgt=null;}}
+  const T=u.tgt?ugvFresh(u.tgt):null;if(u.tgt&&!T)u.tgt=null;
+  const go=()=>{if(u.cmd){const d=ugvDrive(u,u.cmd.x,u.cmd.z,GAME.uChase*0.8,dt);if(d<3){u.cmd=null;if(u.pl===secTeam())PUG.cmd=null;}}else ugvDrive(u,u.x,u.z,0,dt);};
+  let err=9;
+  if(T){u.lx=T.x;u.lz=T.z;u.ly=ugvChestY(T);const td=Math.hypot(T.x-u.x,T.z-u.z);
+    if(td<GAME.uRange*0.95){ugvDrive(u,u.x,u.z,0,dt);u.st='engage';}else{go();u.st='close';}
+    err=ugvAimAt(u,T.x,ugvChestY(T),T.z,dt);}
+  else{go();u.st='patrol';ugvSlew(u,Math.sin(performance.now()/1000*0.3)*0.6,0.02,dt);}
+  if(u.st==='engage'&&T&&live){if(u.pauseT>0)u.pauseT-=dt;else if(err<0.04){u.fireT-=dt;let n=0;while(u.fireT<=0&&n<4){n++;ugvShoot(u,T);u.fireT+=60/GAME.uRpm;u.burstN++;if(u.burstN>=GAME.uBurst){u.burstN=0;u.pauseT=GAME.uPause*(0.8+Math.random()*0.4);u.fireT=0;break;}}}}
+  else{u.burstN=0;u.fireT=0;}}
+// the order on the full map: a dashed line and a diamond
+{const _dm=drawMap;drawMap=function(){_dm.apply(this,arguments);try{const u=ugvMine();if(!u||!PUG.cmd)return;const K=mapCv.width/MAPL,S=v=>(v+FE)/(FE*2)*MAPL;mctx.setTransform(K,0,0,K,0,0);mctx.save();
+  mctx.strokeStyle='#3d9bff';mctx.lineWidth=1.6;mctx.setLineDash([5,4]);mctx.beginPath();mctx.moveTo(S(u.x),S(u.z));mctx.lineTo(S(PUG.cmd.x),S(PUG.cmd.z));mctx.stroke();mctx.setLineDash([]);
+  const cx=S(PUG.cmd.x),cy=S(PUG.cmd.z);mctx.fillStyle='#3d9bff';mctx.strokeStyle='#04202a';mctx.lineWidth=1.5;mctx.beginPath();mctx.moveTo(cx,cy-7);mctx.lineTo(cx+7,cy);mctx.lineTo(cx,cy+7);mctx.lineTo(cx-7,cy);mctx.closePath();mctx.fill();mctx.stroke();mctx.restore();mctx.setTransform(1,0,0,1,0,0);}catch(e){}};}
 // map / minimap marker: a little utan hull pointing the way it drives, the gun showing where the turret looks; a grey cross when destroyed
 function drawUgvMark(c,x,y,u,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWidth=2;
   if(u.dead){c.strokeStyle='#9a9a94';c.beginPath();c.moveTo(-6,-6);c.lineTo(6,6);c.moveTo(6,-6);c.lineTo(-6,6);c.stroke();c.restore();return;}
-  c.rotate(Math.PI-u.yaw);c.fillStyle=u.st==='engage'||u.st==='close'||u.st==='alert'?'#ff5a3c':'#b39c70';c.strokeStyle='#1d1d1b';c.beginPath();c.rect(-5,-7,10,14);c.fill();c.stroke();
+  c.rotate(Math.PI-u.yaw);c.fillStyle=u.pl?(secRel(u.pl)===1?'#3d9bff':'#ff5a4a'):(u.st==='engage'||u.st==='close'||u.st==='alert'?'#ff5a3c':'#b39c70');c.strokeStyle='#1d1d1b';c.beginPath();c.rect(-5,-7,10,14);c.fill();c.stroke();
   c.rotate(-u.ty);c.strokeStyle='#1d1d1b';c.lineWidth=2.5;c.beginPath();c.moveTo(0,0);c.lineTo(0,-12);c.stroke();c.fillStyle='#4e5636';c.beginPath();c.arc(0,0,3,0,PI*2);c.fill();c.restore();}
 // ---- UGV options tab
 (function(){
@@ -6108,7 +6174,7 @@ function mpAttach(room,kind,role,code,why){
   NT.pend.clear();NT.seen.clear();RPS.buf=[];RPS.off=null;RPS.lastT=0;RPS.vis=false;RPS.al=false;
   MPM.on=true;MPM.guest=role==='g';MPM.hp=100;player.reserve=SPARE;
   room.presence({v:NET_V,role}).catch(()=>{});
-  ['shot','hit','ack','wild','need','roster','dhit','bhit','brhit','take','carve','silo','bmaul','ugvf','uhit','at4','uav','drop','dtake'].forEach(t=>room.on(t,m=>{if(m.sameTab||NT.room!==room)return;try{onMsg(t,m.data||{},m);}catch(e){console.warn('net',t,e);}},()=>{}));
+  ['shot','hit','ack','wild','need','roster','dhit','bhit','brhit','take','carve','silo','bmaul','ugvf','uhit','at4','uav','drop','dtake','pug'].forEach(t=>room.on(t,m=>{if(m.sameTab||NT.room!==room)return;try{onMsg(t,m.data||{},m);}catch(e){console.warn('net',t,e);}},()=>{}));
   if(MPM.guest)clearWildlife();
   setLooks(MPM.guest);
   if(P2M)P2M.visible=false;
@@ -6213,6 +6279,7 @@ function onMsg(t,d,m){
   else if(t==='uav'){try{uavNet(d);}catch(e){}}
   else if(t==='drop'||t==='dtake'){try{dropNet(t,d);}catch(e){}}
   else if(t==='at4'){if(!Array.isArray(d.o)||!Array.isArray(d.v))return;const o=V(+d.o[0],+d.o[1],+d.o[2]),v=V(+d.v[0],+d.v[1],+d.v[2]);if(!isFinite(o.x+o.y+o.z+v.x)||v.lengthSq()<0.5)return;try{at4Spawn(o,v,false);}catch(e){}}
+  else if(t==='pug'){try{ugvNetCmd(d);}catch(e){}}
   else if(t==='ugvf'){if(MPM.guest)try{ugvNetFire(d);}catch(e){}}
   else if(t==='uhit'){if(MPM.guest)return;const u=UGVS[d.i|0];if(!u)return;hitFrom=RPS.pos;MPM.mute=true;try{hitUgv(u,String(d.sub),+d.dist||0,true);}finally{MPM.mute=false;hitFrom=null;}}
   else if(t==='bmaul'){if(MPM.guest)try{bearHurtMe(+d.d||0,null);}catch(e){}}
