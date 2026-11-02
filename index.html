@@ -4077,7 +4077,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=402;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=403;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5981,7 +5981,35 @@ function ugvDeploy(gi){const it=SLOT.g[gi];if(!it||it.k!=='ugv'||!playing||!play
   if(MPM.on&&MPM.guest){try{NT.room.emit('pug',{c:'spawn',x:nr1(sp.x),z:nr1(sp.z),ya:nr2(ya)}).catch(()=>{});}catch(e){}}
   else ugvPlSpawn(secTeam(),sp.x,sp.z,ya);
   try{sfx.click();}catch(e){}toast('UGV deployed · right-click the map to send it somewhere');try{EQB.ui(true);}catch(e){}}
-function ugvOrder(u,x,z){u.cmd={x:clamp(x,-465,465),z:clamp(z,-465,465)};}
+// ---- route planning: A* over a 3 m grid (trees, rocks, water, steep ground and the silo count as blocked), then the corners are cut with line-of-sight checks
+const UGP={cs:3,R:160,cache:new Map(),G:null,P:null,ST:null,stamp:0};
+function ugpBlk(i,j){const k=(i+400)*1000+(j+400);let v=UGP.cache.get(k);if(v===undefined){v=ugvBlocked(i*UGP.cs,j*UGP.cs)?1:0;UGP.cache.set(k,v);}return v;}
+function ugpLos(ax,az,bx,bz){const d=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.ceil(d/1.5));for(let k=1;k<=n;k++){const t=k/n;if(ugvBlocked(ax+(bx-ax)*t,az+(bz-az)*t))return false;}return true;}
+function ugvPlan(sx,sz,tx,tz){const cs=UGP.cs,R=UGP.R,N=2*R+1;
+  if(!UGP.G){UGP.G=new Float32Array(N*N);UGP.P=new Int32Array(N*N);UGP.ST=new Uint32Array(N*N);}
+  const G=UGP.G,P=UGP.P,ST=UGP.ST,stamp=++UGP.stamp,CL=UGP.CL||(UGP.CL=new Uint32Array(N*N));
+  const C=v=>clamp(Math.round(v/cs),-R,R),id=(i,j)=>(j+R)*N+(i+R);
+  const si=C(sx),sj=C(sz);let ti=C(tx),tj=C(tz);
+  if(ugpBlk(ti,tj)){let f=false;for(let r=1;r<=14&&!f;r++)for(let a=-r;a<=r&&!f;a++)for(let b=-r;b<=r;b++){if(Math.max(Math.abs(a),Math.abs(b))!==r)continue;const ii=ti+a,jj=tj+b;if(Math.abs(ii)>R||Math.abs(jj)>R)continue;if(!ugpBlk(ii,jj)){ti=ii;tj=jj;f=true;break;}}}
+  const goal=id(ti,tj),hf=(i,j)=>{const dx=Math.abs(i-ti),dz=Math.abs(j-tj);return (dx+dz)+(1.414-2)*Math.min(dx,dz);};
+  const H=[],K=[];   // binary min-heap: keys and ids
+  const push=(f,v)=>{let n=H.length;H.push(f);K.push(v);while(n>0){const q=(n-1)>>1;if(H[q]<=H[n])break;[H[q],H[n]]=[H[n],H[q]];[K[q],K[n]]=[K[n],K[q]];n=q;}};
+  const pop=()=>{const v=K[0],l=H.pop(),lk=K.pop();if(H.length){H[0]=l;K[0]=lk;let n=0;for(;;){let a=2*n+1,b=a+1,m=n;if(a<H.length&&H[a]<H[m])m=a;if(b<H.length&&H[b]<H[m])m=b;if(m===n)break;[H[m],H[n]]=[H[n],H[m]];[K[m],K[n]]=[K[n],K[m]];n=m;}}return v;};
+  const s0=id(si,sj);G[s0]=0;P[s0]=-1;ST[s0]=stamp;push(hf(si,sj),s0);
+  let best=s0,bh=hf(si,sj),found=false,ex=0;const dI=[1,-1,0,0,1,1,-1,-1],dJ=[0,0,1,-1,1,-1,1,-1];
+  while(H.length&&ex<70000){const cur=pop();if(CL[cur]===stamp)continue;CL[cur]=stamp;ex++;if(cur===goal){found=true;break;}
+    const ci=cur%N-R,cj=((cur/N)|0)-R,hc=hf(ci,cj);if(hc<bh){bh=hc;best=cur;}
+    for(let k=0;k<8;k++){const ni=ci+dI[k],nj=cj+dJ[k];if(Math.abs(ni)>R||Math.abs(nj)>R)continue;if(ugpBlk(ni,nj))continue;
+      if(k>=4&&(ugpBlk(ci+dI[k],cj)||ugpBlk(ci,cj+dJ[k])))continue;   // no cutting corners
+      const nid=id(ni,nj),g=G[cur]+(k>=4?1.414:1);if(ST[nid]===stamp&&G[nid]<=g)continue;ST[nid]=stamp;G[nid]=g;P[nid]=cur;push(g+hf(ni,nj),nid);}}
+  let c=found?goal:best;const cells=[];while(c>=0&&c!==s0){cells.push({x:(c%N-R)*cs,z:(((c/N)|0)-R)*cs});c=P[c];}cells.reverse();
+  if(found&&!ugvBlocked(tx,tz))cells[cells.length-1]={x:tx,z:tz};
+  // string pulling: from each point jump to the farthest one it can see
+  const pts=[{x:sx,z:sz}].concat(cells),out=[];let a=0;
+  while(a<pts.length-1){let b=pts.length-1;while(b>a+1&&!ugpLos(pts[a].x,pts[a].z,pts[b].x,pts[b].z))b--;out.push(pts[b]);a=b;}
+  return {path:out,found,ex};}
+function ugvRoute(u){const r=ugvPlan(u.x,u.z,u.cmd.x,u.cmd.z);u.path=r.path;u.pi=0;u.pT=0;u.pX=u.x;u.pZ=u.z;u.pFound=r.found;return r;}
+function ugvOrder(u,x,z){u.cmd={x:clamp(x,-465,465),z:clamp(z,-465,465)};try{ugvW(u,()=>ugvRoute(u));}catch(e){u.path=null;}}
 function ugvMapOrder(x,z){const u=ugvMine();if(!u)return false;
   if(MPM.on&&MPM.guest){try{NT.room.emit('pug',{c:'go',x:nr1(x),z:nr1(z)}).catch(()=>{});}catch(e){}}else ugvOrder(u,x,z);
   PUG.cmd={x,z};toast('UGV ordered to '+Math.round(x)+' E  '+Math.round(-z)+' N · '+Math.round(Math.hypot(x-u.x,z-u.z))+' m away');return true;}
@@ -5994,7 +6022,12 @@ function ugvHostP(u,dt){if(u.gone)return;if(u.dead){u.deadT+=dt;return;}
   let live=true;try{if(MPM.on&&NT.M.ph!=='live')live=false;}catch(e){}
   if(u.losT<=0){u.losT=0.2;const T0=live?ugvLook(u):null;if(T0){if(!u.tgt)u.shots=0;u.tgt=T0;u.mem=3;}else if(u.tgt){u.mem-=0.2;if(u.mem<=0)u.tgt=null;}}
   const T=u.tgt?ugvFresh(u.tgt):null;if(u.tgt&&!T)u.tgt=null;
-  const go=()=>{if(u.cmd){const d=ugvDrive(u,u.cmd.x,u.cmd.z,GAME.uChase*0.8,dt);if(d<3){u.cmd=null;if(u.pl===secTeam())PUG.cmd=null;}}else ugvDrive(u,u.x,u.z,0,dt);};
+  const go=()=>{if(!u.cmd){ugvDrive(u,u.x,u.z,0,dt);return;}
+    if(!u.path)ugvRoute(u);
+    u.pT+=dt;if(u.pT>5){u.pT=0;if(Math.hypot(u.x-u.pX,u.z-u.pZ)<3)ugvRoute(u);else{u.pX=u.x;u.pZ=u.z;}}   // no progress for 5 s: plan again from here
+    const P=u.path;if(!P||!P.length){u.cmd=null;u.path=null;if(u.pl===secTeam())PUG.cmd=null;return;}
+    let w=P[u.pi],last=u.pi>=P.length-1;if(Math.hypot(w.x-u.x,w.z-u.z)<(last?3:4.5)){if(last){u.cmd=null;u.path=null;if(u.pl===secTeam())PUG.cmd=null;ugvDrive(u,u.x,u.z,0,dt);return;}u.pi++;w=P[u.pi];}
+    ugvDrive(u,w.x,w.z,GAME.uChase*0.8,dt);};
   let err=9;
   if(T){u.lx=T.x;u.lz=T.z;u.ly=ugvChestY(T);const td=Math.hypot(T.x-u.x,T.z-u.z);
     if(td<GAME.uRange*0.95){ugvDrive(u,u.x,u.z,0,dt);u.st='engage';}else{go();u.st='close';}
@@ -6004,7 +6037,7 @@ function ugvHostP(u,dt){if(u.gone)return;if(u.dead){u.deadT+=dt;return;}
   else{u.burstN=0;u.fireT=0;}}
 // the order on the full map: a dashed line and a diamond
 {const _dm=drawMap;drawMap=function(){_dm.apply(this,arguments);try{const u=ugvMine();if(!u||!PUG.cmd)return;const K=mapCv.width/MAPL,S=v=>(v+FE)/(FE*2)*MAPL;mctx.setTransform(K,0,0,K,0,0);mctx.save();
-  mctx.strokeStyle='#3d9bff';mctx.lineWidth=1.6;mctx.setLineDash([5,4]);mctx.beginPath();mctx.moveTo(S(u.x),S(u.z));mctx.lineTo(S(PUG.cmd.x),S(PUG.cmd.z));mctx.stroke();mctx.setLineDash([]);
+  mctx.strokeStyle='#3d9bff';mctx.lineWidth=1.6;mctx.setLineDash([5,4]);mctx.beginPath();mctx.moveTo(S(u.x),S(u.z));if(u.path&&u.path.length){for(let k=u.pi||0;k<u.path.length;k++)mctx.lineTo(S(u.path[k].x),S(u.path[k].z));}else mctx.lineTo(S(PUG.cmd.x),S(PUG.cmd.z));mctx.stroke();mctx.setLineDash([]);
   const cx=S(PUG.cmd.x),cy=S(PUG.cmd.z);mctx.fillStyle='#3d9bff';mctx.strokeStyle='#04202a';mctx.lineWidth=1.5;mctx.beginPath();mctx.moveTo(cx,cy-7);mctx.lineTo(cx+7,cy);mctx.lineTo(cx,cy+7);mctx.lineTo(cx-7,cy);mctx.closePath();mctx.fill();mctx.stroke();mctx.restore();mctx.setTransform(1,0,0,1,0,0);}catch(e){}};}
 // map / minimap marker: a little utan hull pointing the way it drives, the gun showing where the turret looks; a grey cross when destroyed
 function drawUgvMark(c,x,y,u,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWidth=2;
