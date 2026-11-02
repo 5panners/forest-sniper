@@ -3775,7 +3775,7 @@ function drawScope(){
 }
 
 /* ---------------- map (Tab) ---------------- */
-const mapCv=$('mapCv'), mctx=mapCv.getContext('2d');let mapBase=null, mapOpen=false;
+const mapCv=$('mapCv'), mctx=mapCv.getContext('2d');let mapBase=null, mapBaseCv=null, mapOpen=false;
 const MAPL=560;   // the map is drawn in 560-unit coordinates on an 840 px canvas, so markers and text keep their size and the terrain is sharper
 function buildMap(){const N=mapCv.width,K=N/MAPL;const img=mctx.createImageData(N,N);const toS=v=>Math.round(255*Math.pow(clamp(v,0,1),1/2.2));
   for(let py=0;py<N;py++)for(let px=0;px<N;px++){const x=-FE+px/N*FE*2,z=-FE+py/N*FE*2;const i=clamp(Math.round((x+FE)/FS),0,FN),j=clamp(Math.round((z+FE)/FS),0,FN);const k=(j*FV+i)*3;
@@ -3797,21 +3797,23 @@ function setMap(on){mapOpen=on;if(!on)try{UGSEL.sel=UGSEL.hov=false;mapCv.style.
   if(on){input.lmb=input.rmb=false;try{if(document.pointerLockElement)document.exitPointerLock();}catch(e){}}
   else if(playing&&!fallback&&!document.pointerLockElement)requestLock();}
 mapCv.addEventListener('click',e=>{if(!mapOpen)return;const r=mapCv.getBoundingClientRect();
-  const x=clamp(-FE+(e.clientX-r.left)/r.width*FE*2,-PLAY+2,PLAY-2),z=clamp(-FE+(e.clientY-r.top)/r.height*FE*2,-PLAY+2,PLAY-2);
+  const mw=mapW(e),x=clamp(mw.x,-PLAY+2,PLAY-2),z=clamp(mw.z,-PLAY+2,PLAY-2);
   const pl=player;pl.vel.set(0,0,0);pl.slide=null;pl.stance='stand';pl.pos.set(x,supportAt(x,z,1e4,PRAD*0.7)+0.05,z);pl.grounded=true;pl.fallV=0;
   camPivot.copy(pl.pos).add(V(0,1.68,0));toast('Teleported · '+Math.round(x)+' E  '+Math.round(-z)+' N');setMap(false);e.stopPropagation();});
-// ---- zoom the full map with the scroll wheel (towards the pointer), drag to pan
-const MZ={k:1,x:0,y:0,drag:null,moved:false};
-function mzApply(){const w=mapCv.clientWidth||1;MZ.k=clamp(MZ.k,1,8);MZ.x=clamp(MZ.x,w*(1-MZ.k),0);MZ.y=clamp(MZ.y,w*(1-MZ.k),0);mapCv.style.transform=MZ.k===1?'':'translate('+MZ.x+'px,'+MZ.y+'px) scale('+MZ.k+')';}
-mapCv.addEventListener('wheel',e=>{if(!mapOpen)return;e.preventDefault();const wr=mapCv.parentNode.getBoundingClientRect(),px=e.clientX-wr.left,py=e.clientY-wr.top,k0=MZ.k,k1=clamp(k0*Math.exp(-e.deltaY*0.0016),1,8);
-  MZ.x=px-(px-MZ.x)*k1/k0;MZ.y=py-(py-MZ.y)*k1/k0;MZ.k=k1;mzApply();},{passive:false});
+// ---- zoom the full map with the scroll wheel (towards the pointer), drag to pan. The terrain is redrawn bigger; icons and labels keep their size.
+const MZ={k:1,x:0,y:0,drag:null,moved:false};   // x, y: where the map's corner sits on the canvas, in canvas pixels
+function mzClamp(){const W=mapCv.width;MZ.k=clamp(MZ.k,1,6);MZ.x=clamp(MZ.x,W*(1-MZ.k),0);MZ.y=clamp(MZ.y,W*(1-MZ.k),0);}
+function mapW(e){const r=mapCv.getBoundingClientRect(),W=mapCv.width,cx=(e.clientX-r.left)/r.width*W,cy=(e.clientY-r.top)/r.height*W;return {x:-FE+(cx-MZ.x)/(W*MZ.k)*FE*2,z:-FE+(cy-MZ.y)/(W*MZ.k)*FE*2};}
+function mapPx(x,z){const r=mapCv.getBoundingClientRect(),W=mapCv.width;return {x:r.left+(MZ.x+(x+FE)/(FE*2)*W*MZ.k)/W*r.width,y:r.top+(MZ.y+(z+FE)/(FE*2)*W*MZ.k)/W*r.height};}
+mapCv.addEventListener('wheel',e=>{if(!mapOpen)return;e.preventDefault();const r=mapCv.getBoundingClientRect(),W=mapCv.width,cx=(e.clientX-r.left)/r.width*W,cy=(e.clientY-r.top)/r.height*W,k0=MZ.k,k1=clamp(k0*Math.exp(-e.deltaY*0.0016),1,6);
+  MZ.x=cx-(cx-MZ.x)*k1/k0;MZ.y=cy-(cy-MZ.y)*k1/k0;MZ.k=k1;mzClamp();},{passive:false});
 mapCv.addEventListener('mousedown',e=>{if(!mapOpen||e.button!==0)return;MZ.drag={x:e.clientX,y:e.clientY,ox:MZ.x,oy:MZ.y};MZ.moved=false;});
-addEventListener('mousemove',e=>{const d=MZ.drag;if(!d)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;if(!MZ.moved&&Math.hypot(dx,dy)<5)return;MZ.moved=true;if(MZ.k>1){MZ.x=d.ox+dx;MZ.y=d.oy+dy;mzApply();}});
+addEventListener('mousemove',e=>{const d=MZ.drag;if(!d)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;if(!MZ.moved&&Math.hypot(dx,dy)<5)return;MZ.moved=true;if(MZ.k>1){const f=mapCv.width/mapCv.getBoundingClientRect().width;MZ.x=d.ox+dx*f;MZ.y=d.oy+dy*f;mzClamp();}});
 addEventListener('mouseup',()=>{MZ.drag=null;});
 mapCv.addEventListener('click',e=>{if(MZ.moved){MZ.moved=false;e.stopImmediatePropagation();e.stopPropagation();}},true);   // a drag is not a teleport click
 // ---- the map and your UGV: it highlights when the pointer is over it; right-click it to select, then right-click a spot to send it there
 const UGSEL={hov:false,sel:false};
-function ugvMapHit(e){const u=ugvMine();if(!u)return null;const r=mapCv.getBoundingClientRect(),px=r.left+(u.x+FE)/(FE*2)*r.width,py=r.top+(u.z+FE)/(FE*2)*r.height;return Math.hypot(e.clientX-px,e.clientY-py)<=16?u:null;}
+function ugvMapHit(e){const u=ugvMine();if(!u)return null;const q=mapPx(u.x,u.z);return Math.hypot(e.clientX-q.x,e.clientY-q.y)<=16?u:null;}
 mapCv.addEventListener('mousemove',e=>{if(!mapOpen)return;let h=false;try{h=!!ugvMapHit(e);}catch(err){}UGSEL.hov=h;mapCv.style.cursor=h||UGSEL.sel?'pointer':'';});
 mapCv.addEventListener('mouseleave',()=>{UGSEL.hov=false;});
 // ---- personal waypoint: right-click the map to drop it (one at a time, only on your own screen; right-click it again to clear it)
@@ -3820,11 +3822,13 @@ function wptDist(){return Math.hypot(WPT.x-player.pos.x,WPT.z-player.pos.z);}
 function wptBrg(){return ((Math.atan2(WPT.x-player.pos.x,-(WPT.z-player.pos.z))*180/PI)+360)%360;}
 function wptPin(c,x,y,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWidth=2.2;c.strokeStyle='#04202a';c.fillStyle='#35d6ff';c.beginPath();c.moveTo(0,0);c.bezierCurveTo(-9,-9,-8,-20,0,-20);c.bezierCurveTo(8,-20,9,-9,0,0);c.closePath();c.fill();c.stroke();c.fillStyle='#04202a';c.beginPath();c.arc(0,-13,3,0,PI*2);c.fill();c.restore();}
 mapCv.addEventListener('contextmenu',e=>{e.preventDefault();if(!mapOpen)return;const r=mapCv.getBoundingClientRect();
-  const x=clamp(-FE+(e.clientX-r.left)/r.width*FE*2,-PLAY,PLAY),z=clamp(-FE+(e.clientY-r.top)/r.height*FE*2,-PLAY,PLAY);
+  const mw=mapW(e),x=clamp(mw.x,-PLAY,PLAY),z=clamp(mw.z,-PLAY,PLAY);
   try{const hu=ugvMapHit(e);if(hu){UGSEL.sel=!UGSEL.sel;toast(UGSEL.sel?'UGV selected · right-click the map to send it there':'UGV deselected');return;}
     if(UGSEL.sel){ugvMapOrder(x,z);UGSEL.sel=false;return;}}catch(err){}
   });   // right-click no longer drops a personal waypoint: it only selects your UGV and sends it
-function drawMap(){if(!mapBase)buildMap();const N=MAPL;mctx.setTransform(1,0,0,1,0,0);mctx.putImageData(mapBase,0,0);mctx.setTransform(mapCv.width/MAPL,0,0,mapCv.width/MAPL,0,0);const S=v=>(v+FE)/(FE*2)*N;
+function drawMap(){if(!mapBase)buildMap();const W=mapCv.width,Z=MZ.k,N=MAPL*Z;   // zoom: the terrain is drawn bigger, positions use the zoomed S, but icons and text keep their size
+  if(!mapBaseCv){mapBaseCv=document.createElement('canvas');mapBaseCv.width=mapBaseCv.height=W;mapBaseCv.getContext('2d').putImageData(mapBase,0,0);}
+  mctx.setTransform(1,0,0,1,0,0);mctx.imageSmoothingEnabled=true;mctx.fillStyle='#0b0f10';mctx.fillRect(0,0,W,W);mctx.drawImage(mapBaseCv,MZ.x,MZ.y,W*Z,W*Z);mctx.setTransform(W/MAPL,0,0,W/MAPL,MZ.x,MZ.y);const S=v=>(v+FE)/(FE*2)*N;
   if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));if($('optDeerMap').checked)BEARS.forEach(b=>drawBearMark(mctx,S(b.x),S(b.z),b,0.9,0));if($('optDeerMap').checked&&typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mctx,S(u.x),S(u.z),u,0.9));
   try{secDrawMap(mctx,S,N);}catch(e){}
   SILO_SITES.forEach(q=>drawSiloMark(mctx,S(q.x),S(q.z),1,0,true));
@@ -3835,7 +3839,7 @@ function drawMap(){if(!mapBase)buildMap();const N=MAPL;mctx.setTransform(1,0,0,1
   const p=player.pos;mctx.save();mctx.translate(S(p.x),S(p.z));mctx.rotate(-camYaw+PI);mctx.fillStyle='#ffcc4a';mctx.strokeStyle='#000';mctx.lineWidth=1.5;mctx.beginPath();mctx.moveTo(0,-9);mctx.lineTo(6,7);mctx.lineTo(0,3);mctx.lineTo(-6,7);mctx.closePath();mctx.fill();mctx.stroke();mctx.restore();
   {const x=S(P1_SPAWN.x),y=S(P1_SPAWN.z);mctx.strokeStyle='#4ab0ff';mctx.lineWidth=2;mctx.beginPath();mctx.arc(x,y,7,0,PI*2);mctx.stroke();mctx.fillStyle='#4ab0ff';mctx.font='600 11px "IBM Plex Mono", monospace';mctx.fillText('P1',x+9,y+4);}
   {const x=S(P2_SPAWN.x),y=S(P2_SPAWN.z);mctx.strokeStyle='#ff5a4a';mctx.lineWidth=2;mctx.beginPath();mctx.arc(x,y,7,0,PI*2);mctx.stroke();mctx.fillStyle='#ff5a4a';mctx.font='600 11px "IBM Plex Mono", monospace';mctx.fillText('P2',x+9,y+4);}
-  mctx.fillStyle='#fff';mctx.font='600 13px "IBM Plex Mono", monospace';mctx.fillText('N',N/2-4,16);mctx.setTransform(1,0,0,1,0,0);}
+  mctx.fillStyle='#fff';mctx.font='600 13px "IBM Plex Mono", monospace';mctx.setTransform(W/MAPL,0,0,W/MAPL,0,0);mctx.fillText('N',MAPL/2-4,16);mctx.setTransform(1,0,0,1,0,0);}
 
 /* ---------------- input ---------------- */
 const cv=renderer.domElement; let playing=false, locked=false, fallback=false, sens=1;
@@ -4092,7 +4096,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=408;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=409;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6059,11 +6063,11 @@ function ugvHostP(u,dt){if(u.gone)return;if(u.dead){u.deadT+=dt;return;}
   if(u.st==='engage'&&T&&live){if(u.pauseT>0)u.pauseT-=dt;else if(err<0.04){u.fireT-=dt;let n=0;while(u.fireT<=0&&n<4){n++;ugvShoot(u,T);u.fireT+=60/GAME.uRpm;u.burstN++;if(u.burstN>=GAME.uBurst){u.burstN=0;u.pauseT=GAME.uPause*(0.8+Math.random()*0.4);u.fireT=0;break;}}}}
   else{u.burstN=0;u.fireT=0;}}
 // the order on the full map: a dashed line and a diamond
-{const _dm=drawMap;drawMap=function(){_dm.apply(this,arguments);try{const u=ugvMine();if(!u||!PUG.cmd)return;const K=mapCv.width/MAPL,S=v=>(v+FE)/(FE*2)*MAPL;mctx.setTransform(K,0,0,K,0,0);mctx.save();
+{const _dm=drawMap;drawMap=function(){_dm.apply(this,arguments);try{const u=ugvMine();if(!u||!PUG.cmd)return;const K=mapCv.width/MAPL,S=v=>(v+FE)/(FE*2)*MAPL*MZ.k;mctx.setTransform(K,0,0,K,MZ.x,MZ.y);mctx.save();
   mctx.strokeStyle='#3d9bff';mctx.lineWidth=1.6;mctx.setLineDash([5,4]);mctx.beginPath();mctx.moveTo(S(u.x),S(u.z));if(u.path&&u.path.length){for(let k=u.pi||0;k<u.path.length;k++)mctx.lineTo(S(u.path[k].x),S(u.path[k].z));}else mctx.lineTo(S(PUG.cmd.x),S(PUG.cmd.z));mctx.stroke();mctx.setLineDash([]);
   const cx=S(PUG.cmd.x),cy=S(PUG.cmd.z);mctx.fillStyle='#3d9bff';mctx.strokeStyle='#04202a';mctx.lineWidth=1.5;mctx.beginPath();mctx.moveTo(cx,cy-7);mctx.lineTo(cx+7,cy);mctx.lineTo(cx,cy+7);mctx.lineTo(cx-7,cy);mctx.closePath();mctx.fill();mctx.stroke();mctx.restore();mctx.setTransform(1,0,0,1,0,0);}catch(e){}
-  try{const u=ugvMine();if(!u||!(UGSEL.hov||UGSEL.sel))return;const wr=mapCv.getBoundingClientRect(),K=mapCv.width/MAPL,S=v=>(v+FE)/(FE*2)*MAPL,rr=15*MAPL/wr.width,pu=0.5+0.5*Math.sin(performance.now()/180);
-    mctx.setTransform(K,0,0,K,0,0);mctx.save();mctx.lineWidth=2.4*MAPL/wr.width*1.4;mctx.strokeStyle=UGSEL.sel?'#ffd34d':'#ffffff';mctx.globalAlpha=UGSEL.sel?0.6+0.4*pu:1;mctx.beginPath();mctx.arc(S(u.x),S(u.z),rr*(UGSEL.sel?1+0.15*pu:1),0,PI*2);mctx.stroke();
+  try{const u=ugvMine();if(!u||!(UGSEL.hov||UGSEL.sel))return;const wr=mapCv.getBoundingClientRect(),K=mapCv.width/MAPL,S=v=>(v+FE)/(FE*2)*MAPL*MZ.k,rr=15*MAPL/wr.width,pu=0.5+0.5*Math.sin(performance.now()/180);
+    mctx.setTransform(K,0,0,K,MZ.x,MZ.y);mctx.save();mctx.lineWidth=2.4*MAPL/wr.width*1.4;mctx.strokeStyle=UGSEL.sel?'#ffd34d':'#ffffff';mctx.globalAlpha=UGSEL.sel?0.6+0.4*pu:1;mctx.beginPath();mctx.arc(S(u.x),S(u.z),rr*(UGSEL.sel?1+0.15*pu:1),0,PI*2);mctx.stroke();
     mctx.font=(11*MAPL/wr.width)+'px sans-serif';mctx.fillStyle=UGSEL.sel?'#ffd34d':'#ffffff';mctx.textAlign='center';mctx.fillText(UGSEL.sel?'UGV · right-click a destination':'UGV · right-click to select',S(u.x),S(u.z)-rr-4*MAPL/wr.width);mctx.restore();mctx.setTransform(1,0,0,1,0,0);}catch(e){}};}
 // a clear landing area near you: 12 m square with no trunks, rocks, water or steep ground, preferably ahead of you
 function ugvLandSpot(){const P=player.pos,f0=camYaw+PI;let best=null,bc=-1;
