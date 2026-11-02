@@ -4077,7 +4077,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=400;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=401;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5934,9 +5934,7 @@ function ugvWheels(u){for(const w of u.wheels)w.m.rotation.x=u.wd/w.r;u.wd=u.wd%
 function ugvPush(u){const p=player.pos,dx=p.x-u.x,dz=p.z-u.z,d=Math.hypot(dx,dz);if(d<1.55&&d>1e-3&&p.y<u.y+1.6&&p.y>u.y-1.2){const k=1.55/d;p.x=u.x+dx*k;p.z=u.z+dz*k;}}
 function ugvStep(dtO){const now=performance.now();const dt=dtO!=null?dtO:Math.min(0.1,(now-(UGV.lt||now))/1000);UGV.lt=now;
   const gst=!!(MPM&&MPM.on&&MPM.guest);const nAI=()=>UGVS.reduce((a,u)=>a+(u.pl?0:1),0);
-  if(!GAME.uOn){if(nAI())ugvClear();}
-  else{if(!gst&&nAI()&&nAI()!==Math.max(1,Math.min(6,Math.round(GAME.uCnt||1))))ugvClear();   // the number of UGVs was changed on the options tab
-    if(!nAI()&&typeof SILO!=='undefined'&&SILO.built)ugvBuildAll();}
+  if(nAI())ugvClear();   // the AI patrol robots are removed: only team UGVs (the gadget) exist
   for(const u of UGVS){if(u.pl&&u.gone){u.root.visible=false;if(gst)ugvGuest(u,dt);continue;}
     if(gst)ugvGuest(u,dt);else if(playing||dtO!=null)ugvHost(u,dt);
     ugvPlace(u,dt);ugvWheels(u);ugvFx(u,dt);try{ugvAudio(u,dt);}catch(e){}try{ugvPush(u);}catch(e){}if(u.pl)try{ugvFlag(u);}catch(e){}}}
