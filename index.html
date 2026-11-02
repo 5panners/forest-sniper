@@ -1051,13 +1051,18 @@ const CS=20, CN=HALF*2/CS, CV=CN+1;
 const FH=new Float32Array(FV*FV), FdS=new Float32Array(FV*FV), FdR=new Float32Array(FV*FV), FLe=new Float32Array(FV*FV), FCw=new Float32Array(FV*FV);
 const CH=new Float32Array(CV*CV), CdS=new Float32Array(CV*CV), CdR=new Float32Array(CV*CV), CLe=new Float32Array(CV*CV), CCw=new Float32Array(CV*CV);
 for(let j=0;j<FV;j++)for(let i=0;i<FV;i++){const k=j*FV+i,f=fieldsAt(-FE+i*FS,-FE+j*FS);FH[k]=f.h;FdS[k]=f.dS;FdR[k]=f.dR;FLe[k]=f.le;FCw[k]=f.cw;}
-// ===== underground villain's lair (ICBM command & control): carve the height grid; the building itself is made further down =====
-const BK={ix0:12.5,ix1:57.5,iz0:85,iz1:115,x0:10,x1:60,z0:82.5,z1:117.5};   // interior and outer footprint, all on the 2.5 m height-grid lines
+// ===== underground command facility (60 x 60 m hall, 20 m ceiling): carve the height grid; the building itself is made further down =====
+const BK={ix0:15,ix1:75,iz0:70,iz1:130,x0:12.5,x1:77.5,z0:67.5,z1:132.5};   // interior and outer footprint, all on the 2.5 m height-grid lines
 {const fi=(x,z)=>Math.round((z+FE)/FS)*FV+Math.round((x+FE)/FS);
- let gmax=-1e9;for(let x=BK.x0;x<=BK.x1+0.01;x+=FS)for(let z=BK.z0;z<=BK.z1+0.01;z+=FS)gmax=Math.max(gmax,FH[fi(x,z)]);
- BK.roof=Math.ceil(gmax*10)/10+0.35;BK.F=BK.roof-0.8-8.0;BK.B=BK.F+3.8;BK.CE=BK.F+8.0;BK.g0=FH[fi(-7.5,100)];
+ let gmax=-1e9,gmin=1e9;for(let x=BK.x0;x<=BK.x1+0.01;x+=FS)for(let z=BK.z0;z<=BK.z1+0.01;z+=FS){const h=FH[fi(x,z)];gmax=Math.max(gmax,h);gmin=Math.min(gmin,h);}
+ BK.gmax=gmax;BK.gmin=gmin;BK.roof=Math.ceil(gmax*10)/10+0.35;BK.CE=BK.roof-0.8;BK.F=BK.CE-20;BK.MID=BK.F+9;BK.TOP=BK.F+16.5;
  for(let x=BK.ix0;x<=BK.ix1+0.01;x+=FS)for(let z=BK.iz0;z<=BK.iz1+0.01;z+=FS)FH[fi(x,z)]=BK.F;   // the hall floor
- BK.prof=[];for(let i=0;i<=7;i++){const x=-7.5+i*FS,h=BK.g0+(BK.F-BK.g0)*i/7;BK.prof.push([x,h]);for(const z of [97.5,100,102.5])FH[fi(x,z)]=h;}   // the stair cutting, 3 vertex lines wide
+ // the two entrances (north and south, x 42.5..47.5): a cutting that runs down from the meadow to the mid-level door
+ BK.ent=[];
+ for(const sg of [1,-1]){const zz=i=>sg>0?67.5-2.5*i:132.5+2.5*i;let NI=10;
+  for(let it=0;it<8;it++){const g=FH[fi(45,zz(NI))];NI=Math.max(4,Math.ceil((g-BK.MID)*2.2/2.5));}
+  const g0=FH[fi(45,zz(NI))];BK.ent.push({sg,NI,g0});
+  for(let i=0;i<=NI;i++)for(const x of [42.5,45,47.5])FH[fi(x,zz(i))]=BK.MID+(g0-BK.MID)*i/NI;}
 }
 for(let j=0;j<CV;j++)for(let i=0;i<CV;i++){const k=j*CV+i,f=fieldsAt(-HALF+i*CS,-HALF+j*CS);CH[k]=f.h;CdS[k]=f.dS;CdR[k]=f.dR;CLe[k]=f.le;CCw[k]=f.cw;}
 // height lookup that matches the rendered triangles exactly (cells split along the 00-11 diagonal)
@@ -1145,7 +1150,7 @@ const XS=(()=>{
   return out;})();
 // true where the extra structures stand (no trees, rocks, logs or ferns)
 const XS_SHRINE=false;
-function xsClear(x,z){const s=XS.shrine,l=XS.look,f=XS.farm;return (x>-8&&x<64&&z>78&&z<122)||(XS_SHRINE&&Math.hypot(x-s.x,z-s.z)<4.5)||Math.hypot(x-l.x,z-l.z)<18||(Math.abs(x-f.x)<27&&Math.abs(z-f.z)<16)||Math.hypot(x-SEC_HOME.e.x,z-SEC_HOME.e.z)<16||Math.hypot(x-SEC_HOME.w.x,z-SEC_HOME.w.z)<16;}
+function xsClear(x,z){const s=XS.shrine,l=XS.look,f=XS.farm;return (x>8&&x<82&&z>25&&z<175)||(XS_SHRINE&&Math.hypot(x-s.x,z-s.z)<4.5)||Math.hypot(x-l.x,z-l.z)<18||(Math.abs(x-f.x)<27&&Math.abs(z-f.z)<16)||Math.hypot(x-SEC_HOME.e.x,z-SEC_HOME.e.z)<16||Math.hypot(x-SEC_HOME.w.x,z-SEC_HOME.w.z)<16;}
 function addRock(x,z,w,h,d,ry,moss,col,yOff){const g=Math.min(groundH(x-w*0.35,z-d*0.35),groundH(x+w*0.35,z+d*0.35),groundH(x-w*0.35,z+d*0.35),groundH(x+w*0.35,z-d*0.35));
   const r={x,z,y:(yOff!=null?yOff:g-h*0.28),w,h,d,ry,moss,col:col!==false,i:ROCKS.length};ROCKS.push(r);return r;}
 const _nTor0=ROCKS.length;
@@ -4086,7 +4091,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=395;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=396;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5425,23 +5430,25 @@ window.SNIPER_ZIP={ZIP,ZIPS,LIFTS,LIFT,liftStand,liftNear,mount:zipTryMount,step
 // Glass breaks when shot, barrels explode, scientists can be shot (all driven from stepBullets via bkHit).
 let BKM=null;
 try{BKM=(()=>{
-const F=BK.F,B=BK.B,CE=BK.CE,R=BK.roof,CX=35,CZ=100;
-const INT={P:[],C:[]},EXT={P:[],C:[]};
+const F=BK.F,MID=BK.MID,TP=BK.TOP,CE=BK.CE,R=BK.roof,CX=45,CZ=100;
+const INT={P:[],C:[],D:[]},EXT={P:[],C:[]},LED={P:[],C:[]},LED2={P:[],C:[]};
 const K=(x0,x1,y0,y1,z0,z1)=>{const c={min:V(x0,y0,z0),max:V(x1,y1,z1),on:true};colliders.push(c);return c;};
 const hsh=(a,b)=>bHash(a*3.7+1.3,b*5.3+2.1,a+b);
 // ---- baked lighting: ambient + coloured sources
 const SRC=[];const src=(x,y,z,r2,c)=>SRC.push([x,y,z,r2,c]);
-for(const x of [18,26,34,42,50,56])for(const z of [88,96,104,112])src(x,CE,z,34,[0.46,0.54,0.68]);
-for(const x of [16,24,32,40,48,55])src(x,B+3.8,89,14,[0.3,0.35,0.45]);
-src(CX,F+0.4,102,70,[0.05,0.5,0.55]);src(53,F+2.5,106,40,[0.62,0.4,0.12]);src(40,B+1,87,34,[0.6,0.1,0.07]);src(34,B+2.5,85.5,110,[0.1,0.24,0.5]);src(18,F+2,110,34,[0.08,0.4,0.2]);src(18,B+2.5,85.5,50,[0.1,0.3,0.4]);
-src(3,26,100,12,[0.5,0.55,0.7]);src(7.5,26,100,12,[0.5,0.55,0.7]);
+for(const x of [22.5,37.5,52.5,67.5])for(const z of [77.5,92.5,107.5,122.5])src(x,CE,z,300,[0.26,0.32,0.44]);
+src(CX,F+0.6,100,160,[0.04,0.34,0.38]);src(CX,F+4,100,260,[0.03,0.2,0.24]);src(30,F+1,84,150,[0.1,0.12,0.18]);src(60,F+1,116,150,[0.1,0.12,0.18]);
+for(const z of [80,100,118]){src(19.5,MID+1.5,z,160,[0.2,0.14,0.07]);src(70.5,MID+1.5,200-z,160,[0.2,0.14,0.07]);}
+src(45,MID+7,70.5,350,[0.1,0.22,0.4]);src(45,MID+7,129.5,350,[0.1,0.22,0.4]);src(36,MID+2,73,70,[0.3,0.28,0.2]);src(54,MID+2,127,70,[0.3,0.28,0.2]);
+src(20,TP+1,100,60,[0.2,0.05,0.06]);src(70,TP+1,100,60,[0.2,0.05,0.06]);
+const dynf=(x,y,z)=>{const a=Math.exp(-(((x-45)/17)**2+((z-100)/11)**2+((y-F-3)/9)**2));const w=px=>Math.exp(-((x-px)**2+(z-100)**2)/70-((y-TP-1)**2)/30);return [a,w(20),w(70)];};
 const glow=(x,y,z)=>{let r=0.15,g=0.17,b=0.23;for(const q of SRC){const dx=x-q[0],dy=(y-q[1])*0.5,dz=z-q[2],k=Math.exp(-(dx*dx+dy*dy+dz*dz)/q[3]);r+=q[4][0]*k;g+=q[4][1]*k;b+=q[4][2]*k;}return [Math.min(1.35,r),Math.min(1.3,g),Math.min(1.5,b)];};
 const _c=new THREE.Color();const lin=h=>{_c.set(h);_c.convertSRGBToLinear();return [_c.r,_c.g,_c.b];};
 // ---- geometry builders
 const FACES=[['U',1,1],['D',1,-1],['E',0,1],['W',0,-1],['S',2,1],['N',2,-1]];
 function box(x0,x1,y0,y1,z0,z1,hex,o){o=o||{};const lo=[x0,y0,z0],hi=[x1,y1,z1];
   for(const [L,ax,sg] of FACES){if(o.skip&&o.skip.indexOf(L)>=0)continue;
-    const ext=!!(o.ext&&o.ext.indexOf(L)>=0),T=ext?EXT:INT,a1=ax===0?1:0,a2=ax===2?1:2,p=sg>0?hi[ax]:lo[ax];
+    const ext=!!(o.ext&&o.ext.indexOf(L)>=0),T=o.led?(o.led===2?LED2:LED):(ext?EXT:INT),a1=ax===0?1:0,a2=ax===2?1:2,p=sg>0?hi[ax]:lo[ax];
     const st=o.sub||(ext?99:1.25),n1=Math.max(1,Math.ceil((hi[a1]-lo[a1])/st-1e-6)),n2=Math.max(1,Math.ceil((hi[a2]-lo[a2])/st-1e-6));
     for(let i=0;i<n1;i++)for(let j=0;j<n2;j++){
       const u0=lo[a1]+(hi[a1]-lo[a1])*i/n1,u1=lo[a1]+(hi[a1]-lo[a1])*(i+1)/n1,v0=lo[a2]+(hi[a2]-lo[a2])*j/n2,v1=lo[a2]+(hi[a2]-lo[a2])*(j+1)/n2;
@@ -5454,14 +5461,14 @@ function box(x0,x1,y0,y1,z0,z1,hex,o){o=o||{};const lo=[x0,y0,z0],hi=[x1,y1,z1];
       const nd=[0,0,0];nd[ax]=sg;
       for(const tri of [[A,Bq,Cc],[A,Cc,D]]){let [a,b2,c2]=tri;const nx=(b2[1]-a[1])*(c2[2]-a[2])-(b2[2]-a[2])*(c2[1]-a[1]),ny=(b2[2]-a[2])*(c2[0]-a[0])-(b2[0]-a[0])*(c2[2]-a[2]),nz=(b2[0]-a[0])*(c2[1]-a[1])-(b2[1]-a[1])*(c2[0]-a[0]);
         if(nx*nd[0]+ny*nd[1]+nz*nd[2]<0){const t=b2;b2=c2;c2=t;}
-        for(const v of [a,b2,c2]){T.P.push(v[0],v[1],v[2]);T.C.push(r,g,b);}}}}}
+        for(const v of [a,b2,c2]){T.P.push(v[0],v[1],v[2]);T.C.push(r,g,b);if(T.D){const dd=dynf(cx,cy,cz);T.D.push(dd[0],dd[1],dd[2]);}}}}}}
 // a free quad (any four points), baked light, double sided
 function quadP(P0,P1,P2,P3,hex,o){o=o||{};const T=o.ext?EXT:INT,[r0,g0,b0]=lin(hex);
   const cx=(P0[0]+P1[0]+P2[0]+P3[0])/4,cy=(P0[1]+P1[1]+P2[1]+P3[1])/4,cz=(P0[2]+P1[2]+P2[2]+P3[2])/4;
   const ux=P1[0]-P0[0],uy=P1[1]-P0[1],uz=P1[2]-P0[2],vx=P3[0]-P0[0],vy=P3[1]-P0[1],vz=P3[2]-P0[2];let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const nl=Math.hypot(nx,ny,nz)||1;ny/=nl;nz/=nl;
   const jv=o.var==null?0.14:o.var,k=1-jv/2+bHash(cx*7.7,cy*7.7,cz*7.7)*jv;let r=r0*k,g=g0*k,b=b0*k;
   if(o.e){r*=o.e;g*=o.e;b*=o.e;}else if(!o.ext){const sh=0.62+0.38*Math.abs(ny)+0.1*Math.abs(nz),gl=glow(cx,cy,cz);r*=sh*gl[0];g*=sh*gl[1];b*=sh*gl[2];}
-  for(const t of [[P0,P1,P2],[P0,P2,P3]])for(const v of t){T.P.push(v[0],v[1],v[2]);T.C.push(r,g,b);}}
+  for(const t of [[P0,P1,P2],[P0,P2,P3]])for(const v of t){T.P.push(v[0],v[1],v[2]);T.C.push(r,g,b);if(T.D){const dd=dynf(cx,cy,cz);T.D.push(dd[0],dd[1],dd[2]);}}}
 function prism(cx,cz,y0,y1,r0,r1,hex,seg,o,tx,tz){seg=seg||8;tx=tx||0;tz=tz||0;
   for(let i=0;i<seg;i++){const a0=i/seg*Math.PI*2,a1=(i+1)/seg*Math.PI*2;
     quadP([cx+Math.cos(a0)*r0,y0,cz+Math.sin(a0)*r0],[cx+Math.cos(a1)*r0,y0,cz+Math.sin(a1)*r0],[cx+tx+Math.cos(a1)*r1,y1,cz+tz+Math.sin(a1)*r1],[cx+tx+Math.cos(a0)*r1,y1,cz+tz+Math.sin(a0)*r1],hex,o);}}
@@ -5518,78 +5525,18 @@ function drawCCTV(t){const {x,w,h}=CCT,tw=w/4,th=h/2;x.fillStyle='#000';x.fillRe
   CCT.t.needsUpdate=true;}
 function drawPad(){const {x,w,h}=PADT;x.fillStyle='#16090a';x.fillRect(0,0,w,h);x.strokeStyle='#ffcf5a';x.lineWidth=6;x.strokeRect(5,5,w-10,h-10);x.fillStyle='#ff4a3a';x.font='bold 54px monospace';x.textAlign='center';x.fillText('C4',w/2,h/2+12);x.font='bold 13px monospace';x.fillStyle='#ffcf5a';x.fillText('PLANT HERE',w/2,h-18);PADT.t.needsUpdate=true;}
 // ================== the building ==================
-const WALL='#474d52',CONC='#565b60',STEEL='#343a41',TOP='#2c3238',TOP2='#252a2f',MARB='#9aa3a8',STONE='#3d4448';
-const hs=x=>{const p=BK.prof;if(x<=p[0][0])return p[0][1];for(let i=0;i<p.length-1;i++)if(x<=p[i+1][0])return p[i][1]+(p[i+1][1]-p[i][1])*(x-p[i][0])/(p[i+1][0]-p[i][0]);return p[p.length-1][1];};
-const PT=BK.g0+1.6;
-// floor (a hair above the carved terrain) and a red runner from the door
-box(12.5,57.5,F-0.3,F+0.012,85,115,TOP,{chk:TOP2,var:0.08});
-box(12.5,24,F+0.012,F+0.02,98.6,101.4,'#5a1f26',{var:0.06,skip:'D'});box(12.5,24,F+0.02,F+0.025,98.6,98.75,'#c9a24a',{e:1.2,sub:9,skip:'D'});box(12.5,24,F+0.02,F+0.025,101.25,101.4,'#c9a24a',{e:1.2,sub:9,skip:'D'});
-// roof slab
-box(10,60,CE,R,82.5,117.5,CONC,{ext:'UESNW',sub:2.5,var:0.08});K(10,60,CE,R,82.5,117.5);
-// outer walls: inner faces baked, outer faces lit
-box(10,60,F-0.3,CE,82.5,85,WALL,{ext:'N',skip:'D'});K(10,60,F-1,R,82.5,85);
-box(10,60,F-0.3,CE,115,117.5,WALL,{ext:'S',skip:'D'});K(10,60,F-1,R,115,117.5);
-box(57.5,60,F-0.3,CE,85,115,WALL,{ext:'E',skip:'D'});K(57.5,60,F-1,R,85,115);
-box(10,12.5,F-0.3,CE,85,98.5,WALL,{ext:'W',skip:'D'});K(10,12.5,F-1,R,85,98.5);
-box(10,12.5,F-0.3,CE,101.5,115,WALL,{ext:'W',skip:'D'});K(10,12.5,F-1,R,101.5,115);
-box(10,12.5,F+3.4,CE,98.5,101.5,WALL,{ext:'W',skip:'D'});K(10,12.5,F+3.4,R,98.5,101.5);
-box(10,12.5,F-0.3,F+0.012,98.5,101.5,TOP,{skip:'D'});
-// blast door frame and the open door leaf against the inside of the west wall
-box(12.5,12.9,F,F+3.4,98.35,98.55,STEEL);box(12.5,12.9,F,F+3.4,101.45,101.65,STEEL);box(12.5,12.9,F+3.4,F+3.65,98.35,101.65,STEEL);
-box(12.55,12.95,F,F+3.3,95.6,98.35,'#585f66',{chk:'#4d535a'});for(let k=0;k<5;k++)box(12.5,12.56,F+0.2+k*0.65,F+0.5+k*0.65,95.65,98.3,(k&1)?'#d9a62a':'#1d1f22',{var:0.04});K(12.5,12.95,F,F+3.3,95.6,98.35);
-// ---- entrance: long stair down from the meadow, porch roof over the lower part
-for(let i=0;i<28;i++){const xa=-7.5+i*0.625,xb=xa+0.625,top=hs(xa+0.31),under=xa>=0;
-  box(xa,xb,top-0.7,top,98.4,101.6,'#8a8d8e',{ext:under?'':'UESNW',var:0.1});
-  for(const [z0,z1] of [[98.0,98.4],[101.6,102.0]]){const wt=under?PT:hs(xa)+1.15;box(xa,xb,top-0.9,wt,z0,z1,CONC,{ext:under?'':'UESNW',var:0.1});if(!under&&i%4===0)K(xa,xa+2.5,F-1,hs(xa)+1.2,z0,z1);}}
-K(0,10,F-1,PT,98.0,98.4);K(0,10,F-1,PT,101.6,102.0);
-box(0,10,PT-0.7,PT,98.0,102.0,CONC,{ext:'UESNW',var:0.08});K(0,10,PT-0.7,PT,98.0,102.0);
-box(-0.3,0,hs(0)+2.3,PT-0.7,98.0,102.0,'#4f5558',{ext:'NSEW'});
-for(const z of [97.7,102.0])box(-4.2,-3.8,hs(-4),hs(-4)+2.0,z,z+0.3,'#d9a62a',{ext:'UESNW'});
-// ---- ceiling kit: panels, beams, pipes, chandelier
-for(const x of [18,26,34,42,50,56])for(const z of [88,96,104,112])box(x-1.1,x+1.1,CE-0.07,CE,z-0.4,z+0.4,'#d8eeff',{e:2.4,sub:9,skip:'U'});
-for(let z=85;z<=115;z+=5)box(12.5,57.5,CE-0.4,CE,z-0.15,z+0.15,'#4a5056',{sub:2.5,skip:'U'});
-for(let x=15;x<=55;x+=10)box(x-0.2,x+0.2,CE-0.6,CE,85,115,'#454b51',{sub:2.5,skip:'U'});
-box(12.5,57.5,CE-0.9,CE-0.7,92.4,92.8,'#5a6168',{sub:2.5});box(12.5,57.5,CE-0.8,CE-0.68,109.4,109.7,'#7a5a3a',{sub:2.5});box(12.5,57.5,CE-1.0,CE-0.78,100.7,101.3,'#40474e',{sub:2.5});
-{for(let k=0;k<10;k++){const a=k/10*Math.PI*2;box(CX+Math.cos(a)*3.6-0.12,CX+Math.cos(a)*3.6+0.12,CE-2.6,CE-2.3,102+Math.sin(a)*3.6-0.12,102+Math.sin(a)*3.6+0.12,'#fff0d0',{e:2.6,sub:9});}
- for(const a of [0,1.57,3.14,4.71])box(CX+Math.cos(a)*1.8-0.03,CX+Math.cos(a)*1.8+0.03,CE-2.4,CE,102+Math.sin(a)*1.8-0.03,102+Math.sin(a)*1.8+0.03,'#7a6a3a',{sub:9});
- box(CX-0.5,CX+0.5,CE-3.0,CE-2.4,101.5,102.5,'#fff0d0',{e:2.2,sub:9});}
-// ---- floor columns and balcony columns
-for(const [px,pz] of [[22,96],[22,107],[48,96],[48,107]]){box(px-0.55,px+0.55,F,CE,pz-0.55,pz+0.55,'#4b5054',{sub:1.25});K(px-0.55,px+0.55,F,CE,pz-0.55,pz+0.55);box(px-0.58,px+0.58,F,F+0.45,pz-0.58,pz+0.58,'#d9a62a',{chk:'#1d1f22',sub:0.5,var:0.03,skip:'UD'});}
-for(const px of [24,32,40,48,56]){box(px-0.35,px+0.35,F,B-0.4,90.35,91.05,'#4b5054',{sub:1.25});K(px-0.35,px+0.35,F,B-0.4,90.35,91.05);}
-// ---- the balcony
-box(12.5,57.5,B-0.4,B,85,91.2,'#4d4136',{chk:'#40362d',var:0.06,sub:1.25});K(12.5,57.5,B-0.4,B,85,91.2);
-box(12.5,57.5,B-0.4,B,91.2,91.4,'#2a2f35',{sub:2.5,skip:'U'});
-// ---- grand staircase (x 14..19.5): 20 steps rising north onto the balcony
-for(let i=0;i<20;i++){const top=F+0.19*(i+1),za=97.2-0.3*(i+1),zb=za+0.3;box(14,19.5,F,top,za,zb,(i&1)?'#5a5e62':'#666a6e',{sub:1.25,var:0.05,skip:'D'});K(14,19.5,F-0.2,top,za,zb);
-  for(const [x0,x1] of [[13.6,14],[19.5,19.9]]){box(x0,x1,F,top+0.95,za,zb,'#2f343a',{sub:1.25,skip:'D'});}
-  box(13.6,19.9,top+0.95,top+1.05,za,zb,'#c9a24a',{e:0.9,sub:9,skip:'D'});}
-K(13.6,14,F-1,B+1.1,91.2,97.2);K(19.5,19.9,F-1,B+1.1,91.2,97.2);
-// ---- east service stair (x 54.3..57.3): 17 steps
-for(let i=0;i<17;i++){const top=F+(B-F)/17*(i+1),za=96.3-0.3*(i+1),zb=za+0.3;box(54.3,57.3,F,top,za,zb,'#6a6f73',{sub:1.25,var:0.05,skip:'D'});K(54.3,57.3,F-0.2,top,za,zb);box(54.0,54.3,F,top+0.9,za,zb,'#2f343a',{sub:1.25,skip:'D'});}
-K(54.0,54.3,F-1,B+1.0,91.2,96.3);
-// steel railing at the west end of the balcony; glass panes along the rest are made further down
-box(12.5,14,B,B+1.1,91.0,91.15,STEEL,{sub:9});K(12.5,14,B-0.4,B+1.1,90.95,91.2);
-// ---- map wall screens (north wall, balcony level)
-const SY=B+2.6;
-screen(CCT,18.3,SY,85.1,10.2,2.6,'S');screen(MAPT,32.4,SY,85.1,15.6,2.6,'S');screen(RADT,43.5,SY,85.1,4.2,2.6,'S');screen(STAT,51.6,SY,85.1,9.6,2.6,'S');
-for(const [a,b2] of [[13.2,23.4],[24.6,40.2],[41.4,45.6],[46.8,56.4]]){box(a-0.1,b2+0.1,B+1.2,B+1.3,85,85.16,STEEL,{sub:9});box(a-0.1,b2+0.1,B+3.9,B+4.0,85,85.16,STEEL,{sub:9});box(a-0.1,a,B+1.2,B+4.0,85,85.16,STEEL,{sub:9});box(b2,b2+0.1,B+1.2,B+4.0,85,85.16,STEEL,{sub:9});}
-box(12.5,57.5,B,B+1.2,85,85.12,'#23282d',{sub:2.5,skip:'N'});
-// launch gantry sign over the pads
-box(30.5,31,CE-1.9,CE,88.5,88.7,STEEL,{sub:9});box(49,49.5,CE-1.9,CE,88.5,88.7,STEEL,{sub:9});box(30.4,49.6,CE-2.0,CE-0.4,88.4,88.8,'#14181c',{sub:9});screen(LNCT,40,CE-1.2,88.82,19,1.4,'S');
-// ---- desks / consoles (cover)
+const OX0=12.5,OX1=77.5,OZ0=67.5,OZ1=132.5,X0=15,X1=75,Z0=70,Z1=130;
+const WALL='#474d52',CONC='#565b60',STEEL='#343a41',FLR='#2c3238',FLR2='#252a2f',MARB='#9aa3a8',STONE='#3d4448';
+// the hall is point-symmetric about (45,100): sg=-1 builds the rotated twin of anything drawn with sg=1
+const Mx=(sg,a,b)=>sg>0?[a,b]:[90-b,90-a],Mz=(sg,a,b)=>sg>0?[a,b]:[200-b,200-a];
+const flipL=s=>s?s.split('').map(c=>({E:'W',W:'E',N:'S',S:'N'})[c]||c).join(''):s;
+function B2(sg,x0,x1,y0,y1,z0,z1,hex,o,kc){const [a,b]=Mx(sg,x0,x1),[c,d]=Mz(sg,z0,z1);let o2=o;if(sg<0&&o){o2=Object.assign({},o);if(o.skip)o2.skip=flipL(o.skip);if(o.ext)o2.ext=flipL(o.ext);}box(a,b,y0,y1,c,d,hex,o2);if(kc)K(a,b,kc[0],kc[1],c,d);}
+const GL=(sg,xa,za,xb,zb,n,y0,h)=>glassLine(sg>0?xa:90-xa,sg>0?za:200-za,sg>0?xb:90-xb,sg>0?zb:200-zb,n,y0,h);
+const PT=(sg,x,z)=>[sg>0?x:90-x,sg>0?z:200-z];
 const monitors=[];
 function desk(x0,x1,z0,z1,dir,n,y0,h){h=h||1.0;y0=y0==null?F:y0;box(x0,x1,y0,y0+h,z0,z1,'#2b3036',{sub:1.25});box(x0-0.05,x1+0.05,y0+h,y0+h+0.07,z0-0.05,z1+0.05,'#3d454d',{sub:1.25});K(x0,x1,y0,y0+h+0.07,z0,z1);
   box(x0+0.1,x1-0.1,y0+0.08,y0+0.14,z0-0.02,z0,'#38d0e8',{e:1.9,sub:9,skip:'N'});box(x0+0.1,x1-0.1,y0+0.08,y0+0.14,z1,z1+0.02,'#38d0e8',{e:1.9,sub:9,skip:'S'});
   const nm=Math.max(2,Math.round((x1-x0)/1.9));for(let q=0;q<nm;q++){const mx=x0+(x1-x0)*(q+0.5)/nm,mz=dir==='S'?z1-0.2:z0+0.2,sz=dir==='S'?z1-0.15:z0+0.15;monitors.push([mx,y0+h+0.45,sz,0.82,0.56,dir,(n+q)%3]);box(mx-0.46,mx+0.46,y0+h+0.07,y0+h+0.74,mz-0.05,mz+0.05,'#1c2126',{sub:9});}}
-// balcony: launch console and the CCTV desks
-box(33,47,B,B+1.05,85.2,86.8,'#2a2328',{sub:1.25});K(33,47,B,B+1.2,85.2,86.8);box(32.8,47.2,B+1.05,B+1.2,85.2,87.0,'#40343a',{sub:1.25});
-for(const x of [35.5,40,44.5]){box(x-0.55,x+0.55,B+1.2,B+1.5,85.4,86.4,'#5a1d1d',{sub:9});box(x-0.35,x+0.35,B+1.5,B+1.58,85.55,86.25,'#ff3b30',{e:2.6,sub:9});}
-for(let k=0;k<10;k++)box(33.4+k*1.35,33.4+k*1.35+0.3,B+1.2,B+1.3,86.4,86.7,k%2?'#ffcf5a':'#46ff9a',{e:2,sub:9});
-desk(14,17.6,86.6,87.5,'S',0,B);desk(18.8,22.4,86.6,87.5,'S',1,B);desk(26,30,86.0,86.9,'S',2,B);desk(48.5,52.5,86.0,86.9,'S',0,B);
-function pad(x,z){const m=new THREE.Mesh(new THREE.PlaneGeometry(1.9,1.9),new THREE.MeshBasicMaterial({map:PADT.t}));m.rotation.x=-Math.PI/2;m.position.set(x,B+0.025,z);scene.add(m);texMesh.push(m);
-  for(const [a,b2,c,d] of [[x-0.96,x-0.9,z-0.99,z+0.99],[x+0.9,x+0.96,z-0.99,z+0.99],[x-0.99,x+0.99,z-0.99,z-0.93],[x-0.99,x+0.99,z+0.93,z+0.99]])box(a,b2,B,B+0.03,c,d,'#ff3b30',{e:2.4,sub:9});}
-pad(36.5,89.0);pad(43.5,89.0);BK.pads=[[36.5,89.0],[43.5,89.0]];
-// ---- sofas (u along the length, v from the back to the front)
 function sofa(x0,z0,len,dep,face,col,col2){col=col||'#5a1a22';col2=col2||'#6e2430';
   const m=(u,v)=>face==='S'?[x0+u,z0+v]:face==='N'?[x0+u,z0+dep-v]:face==='E'?[x0+v,z0+u]:[x0+dep-v,z0+u];
   const bx=(u0,u1,y0,y1,v0,v1,c)=>{const a=m(u0,v0),b2=m(u1,v1);box(Math.min(a[0],b2[0]),Math.max(a[0],b2[0]),y0,y1,Math.min(a[1],b2[1]),Math.max(a[1],b2[1]),c,{sub:0.9,var:0.07});};
@@ -5600,29 +5547,6 @@ function sofaY(y0,x0,z0,len,dep,face,col,col2){col=col||'#5a1a22';col2=col2||'#6
   bx(0,len,0,0.42,0,dep,col);bx(0,len,0.42,1.0,0,0.3,col);bx(0,0.3,0.42,0.75,0.3,dep,col);bx(len-0.3,len,0.42,0.75,0.3,dep,col);bx(0.3,len-0.3,0.42,0.58,0.3,dep,col2);
   const a=m(0,0),b2=m(len,dep);K(Math.min(a[0],b2[0]),Math.max(a[0],b2[0]),y0,y0+1.0,Math.min(a[1],b2[1]),Math.max(a[1],b2[1]));}
 function table(x0,x1,z0,z1,y0){y0=y0==null?F:y0;box(x0,x1,y0+0.38,y0+0.42,z0,z1,'#9fd8e0',{sub:9,e:0.5});box(x0+0.1,x0+0.2,y0,y0+0.38,z0+0.1,z0+0.2,'#2a2f35',{sub:9});box(x1-0.2,x1-0.1,y0,y0+0.38,z1-0.2,z1-0.1,'#2a2f35',{sub:9});K(x0,x1,y0,y0+0.45,z0,z1);}
-// ground floor lounge on the south side of the pool
-sofa(26.5,108.3,4.6,1.9,'N');sofa(40,108.3,4.6,1.9,'N','#2c3a4a','#374a5e');table(29,32,106.6,107.7);table(39,41.4,106.6,107.7);
-// east vault lounge
-sofa(50.3,100.5,3.8,1.7,'E','#2c3a4a','#374a5e');sofa(50.3,105.5,3.6,1.7,'E');sofa(53.2,110.5,3.6,1.7,'S','#2c3a4a','#374a5e');table(53,55,102.6,104.6);table(53,55,107.4,109);
-// bar in the east vault with stools
-box(55.6,57.4,F,F+1.1,98.5,108,'#3a2a22',{sub:1.25});K(55.6,57.4,F,F+1.15,98.5,108);box(55.5,57.4,F+1.1,F+1.18,98.4,108.1,'#c9a24a',{sub:1.25});
-for(const z of [99.5,101.5,103.5,105.5])prism(54.6,z,F,F+0.7,0.2,0.18,'#2a2f35',6);
-for(let k=0;k<12;k++)box(55.8+0.15*(k%4),55.9+0.15*(k%4),F+1.18,F+1.18+0.22+hsh(k,3)*0.1,98.8+k*0.75,98.9+k*0.75,k%3?'#3a7d44':'#8a3a2a',{sub:9});
-// balcony lounge
-sofaY(B,48,86.2,3.8,1.7,'S');sofaY(B,53.6,86.2,3.8,1.7,'S','#2c3a4a','#374a5e');sofaY(B,56.0,88.4,3.4,1.5,'W');table(51.4,53.4,88.6,90.0,B);
-// ---- racks under the balcony, along the north wall (tall cover with gaps)
-const rnd=(a,b)=>hsh(a,b);
-for(let i=0;i<12;i++){const x0=23.2+i*2.3,x1=x0+1.05;box(x0,x1,F,F+2.45,85.2,86.8,'#23282d',{sub:1.25});K(x0,x1,F,F+2.45,85.2,86.8);box(x0+0.06,x1-0.06,F+2.45,F+2.5,85.26,86.7,'#14181c',{sub:9});
-  for(let r=0;r<10;r++){const y=F+0.25+r*0.215;box(x0+0.08,x1-0.08,y,y+0.15,86.8,86.84,'#12161a',{sub:9});for(let c=0;c<5;c++){const on=rnd(i*13+r,c),hex=on>0.78?'#ffb02e':on>0.3?'#46ff9a':'#46b8ff';box(x0+0.14+c*0.17,x0+0.2+c*0.17,y+0.05,y+0.1,86.84,86.88,hex,{e:on>0.1?2.4:0.25,sub:9});}}}
-// CCTV control room desks on the ground floor, under the stairs side
-desk(13.0,15.8,86.0,86.9,'S',1);desk(16.4,19.2,86.0,86.9,'S',2);
-// ---- lab (south-west): benches, centrifuge, consoles
-for(const x of [14.2,18.2]){box(x,x+3,F,F+0.95,109.0,110.0,'#cfd6d9',{sub:1.25});box(x-0.05,x+3.05,F+0.95,F+1.02,108.95,110.05,'#2f3a40',{sub:1.25});K(x,x+3,F,F+1.0,109.0,110.0);
-  for(let k=0;k<4;k++)prism(x+0.4+k*0.7,109.5,F+1.02,F+1.3,0.1,0.1,k%2?'#46ff9a':'#ff9a3a',6,{e:1.5});}
-prism(22.0,112.5,F,F+1.5,0.8,0.8,'#aab4b8',10);prism(22.0,112.5,F+1.5,F+1.62,0.85,0.85,'#2f3a40',10);K(21.2,22.8,F,F+1.5,111.7,113.3);
-desk(13.0,17.0,113.9,114.8,'N',0);desk(18.0,21.0,113.9,114.8,'N',1);
-box(13,13.4,F,F+2.4,106,110,'#23282d',{sub:1.25});K(13,13.4,F,F+2.4,106,110);
-// ---- planters, palms, bushes
 function planter(x,z,w,d,h){h=h||0.55;box(x-w/2,x+w/2,F,F+h,z-d/2,z+d/2,STONE,{sub:1.25});box(x-w/2+0.08,x+w/2-0.08,F+h,F+h+0.02,z-d/2+0.08,z+d/2-0.08,'#2a1f18',{sub:9});K(x-w/2,x+w/2,F,F+h,z-d/2,z+d/2);}
 function planterY(y0,x,z,w,d,h){h=h||0.5;box(x-w/2,x+w/2,y0,y0+h,z-d/2,z+d/2,STONE,{sub:1.25});box(x-w/2+0.08,x+w/2-0.08,y0+h,y0+h+0.02,z-d/2+0.08,z+d/2-0.08,'#2a1f18',{sub:9});K(x-w/2,x+w/2,y0,y0+h,z-d/2,z+d/2);}
 const GREENS=['#2f7d3a','#3b8f43','#256a35','#4a9a48','#1f5a30'];
@@ -5632,32 +5556,12 @@ function leaf(T,dx,dz,L,wid,droop,hex,n){const sx=-dz,sz=dx;   // the leaf blade
 function palm(x,z,h,y0,seed){y0=y0==null?F:y0;seed=seed||1;const lean=(hsh(seed,1)-0.5)*0.9,lz=(hsh(seed,2)-0.5)*0.9;let px=x,pz=z;
   for(let s=0;s<5;s++){const f0=s/5,f1=(s+1)/5;prism(x+lean*f0*f0,z+lz*f0*f0,y0+h*f0,y0+h*f1,0.2-0.07*f0,0.2-0.07*f1,s&1?'#6d5a45':'#7a6650',7,{var:0.1},lean*(f1*f1-f0*f0),lz*(f1*f1-f0*f0));}
   px=x+lean;pz=z+lz;const T=[px,y0+h,pz],nl=9;
-  for(let k=0;k<nl;k++){const a=k/nl*Math.PI*2+hsh(seed,k)*0.5,L=2.3+hsh(seed,k+9)*0.7;leaf(T,Math.cos(a),Math.sin(a),L,0.42,1.0+hsh(seed,k+3)*0.7,GREENS[(k+seed)%GREENS.length],4);}
+  for(let k=0;k<nl;k++){const a=k/nl*Math.PI*2+hsh(seed,k)*0.5,L=(2.3+hsh(seed,k+9)*0.7)*(h>5?1.55:1);leaf(T,Math.cos(a),Math.sin(a),L,0.42,1.0+hsh(seed,k+3)*0.7,GREENS[(k+seed)%GREENS.length],4);}
   K(x-0.25,x+0.25,y0,y0+h*0.9,z-0.25,z+0.25);}
 function bush(x,z,y0,r,seed){y0=y0==null?F:y0;seed=seed||1;for(let k=0;k<8;k++){const a=k/8*Math.PI*2+hsh(seed,k)*0.6;leaf([x,y0+0.35,z],Math.cos(a),Math.sin(a),r,0.3,0.45+hsh(seed,k+2)*0.4,GREENS[(k+seed)%GREENS.length],3);}}
-// ---- the kidney pool: rim, water and stepping stones
-const PC=[CX,102],PN=40,PP=[];
-for(let i=0;i<PN;i++){const a=i/PN*Math.PI*2,rr=1-0.34*Math.exp(-((a-Math.PI/2)**2)/0.32)-0.34*Math.exp(-((a-Math.PI/2-6.2832)**2)/0.32)+0.05*Math.cos(2*a);PP.push([PC[0]+9.5*Math.cos(a)*rr,PC[1]+5.2*Math.sin(a)*rr]);}
-const WATER={P:[],C:[]};
-for(let i=0;i<PN;i++){const p=PP[i],q=PP[(i+1)%PN],po=[PC[0]+(p[0]-PC[0])*1.13,PC[1]+(p[1]-PC[1])*1.13],qo=[PC[0]+(q[0]-PC[0])*1.13,PC[1]+(q[1]-PC[1])*1.13];
-  quadP([p[0],F+0.14,p[1]],[q[0],F+0.14,q[1]],[qo[0],F+0.14,qo[1]],[po[0],F+0.14,po[1]],MARB,{var:0.1});
-  quadP([po[0],F+0.14,po[1]],[qo[0],F+0.14,qo[1]],[qo[0],F,qo[1]],[po[0],F,po[1]],'#7f888d',{var:0.1});
-  quadP([p[0],F+0.03,p[1]],[q[0],F+0.03,q[1]],[q[0],F+0.14,q[1]],[p[0],F+0.14,p[1]],'#6f787d',{var:0.1});
-  quadP([p[0]*0.96+PC[0]*0.04,F+0.045,p[1]*0.96+PC[1]*0.04],[q[0]*0.96+PC[0]*0.04,F+0.045,q[1]*0.96+PC[1]*0.04],[q[0],F+0.045,q[1]],[p[0],F+0.045,p[1]],'#7fffe8',{e:2.4});   // underwater lights round the edge
-  const wc=lin(hsh(i,5)>0.5?'#1fb8c9':'#18a6bd'),k=0.85+hsh(i,7)*0.3;for(const v of [[PC[0],F+0.08,PC[1]],[p[0],F+0.08,p[1]],[q[0],F+0.08,q[1]]]){WATER.P.push(v[0],v[1],v[2]);WATER.C.push(wc[0]*k*1.5,wc[1]*k*1.5,wc[2]*k*1.5);}}
-for(const [sx,sz] of [[29.5,102.5],[32.5,101.2],[35.5,103.4],[38.5,101.8],[41.3,102.6]])box(sx-0.45,sx+0.45,F+0.04,F+0.2,sz-0.45,sz+0.45,'#6f787d',{sub:0.9,var:0.12});
-planter(35,98.2,2.4,1.1,0.5);palm(35,98.2,4.6,F+0.5,7);
-// ---- palms, planters and bushes round the hall
-for(const [x,z,h,s] of [[24.5,92.5,4.2,1],[46.5,92.5,4.4,2],[24.5,113,4.0,3],[45.5,113.5,4.6,4],[27,99,3.6,5],[44,98,3.8,6]]){planter(x,z,1.5,1.5,0.55);palm(x,z,h,F+0.55,s);}
-for(const [x,z,s] of [[30,112,1],[37,112.8,2],[33.5,90.6,3],[19,111.5,4],[52,92,5],[56,114,6],[49,112,7]]){planter(x,z,1.2,1.2,0.4);bush(x,z,F+0.4,1.15,s);}
-for(const x of [24,31,38,45,52]){planterY(B,x,90.5,1.5,0.6,0.5);bush(x,90.5,B+0.5,0.9,x|0);}
-for(const [x,z,s] of [[53.5,97.6,11],[57,98,12],[53,114.2,13]]){planter(x,z,1.1,1.1,0.4);bush(x,z,F+0.4,1.0,s);}
-palm(13.6,96.2,3.8,F,21);palm(13.6,104,3.4,F,22);
-// ---- the CCTV cameras (animated) and wall mounts
 const CAMS=[];function mkCam(x,y,z,yaw){const g=new THREE.Group();g.position.set(x,y,z);const mt=new THREE.MeshBasicMaterial({color:0x2a2f35}),lens=new THREE.MeshBasicMaterial({color:0x0c0e10}),led=new THREE.MeshBasicMaterial({color:0xff3b30});
   const body=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.22,0.6),mt),ln=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,0.12,8),lens);ln.rotation.x=Math.PI/2;ln.position.z=0.34;const l=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.06,0.06),led);l.position.set(0.1,0.13,0.2);
   const pole=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,0.1),mt);pole.position.set(0,0.35,-0.1);g.add(body,ln,l,pole);g.userData.yaw=yaw;g.userData.led=led;g.rotation.y=yaw;scene.add(g);CAMS.push(g);}
-for(const [x,z,y] of [[13.2,86,0],[13.2,114,3.14*0.5],[57.0,86.5,-1.0],[57,114,-2.2],[35,89.6,3.14],[35,111.5,0]])mkCam(x,CE-0.9,z,y||0);
 // ---- shootable glass: partitions and balcony balustrade
 const GLASS=[];const glassMat=new THREE.MeshBasicMaterial({color:0x8fe3f0,transparent:true,opacity:0.24,side:THREE.DoubleSide,depthWrite:false});
 function pane(x0,z0,x1,z1,y0,h){const cx=(x0+x1)/2,cz=(z0+z1)/2,alongX=Math.abs(x1-x0)>Math.abs(z1-z0),w=alongX?Math.abs(x1-x0):Math.abs(z1-z0);
@@ -5666,15 +5570,6 @@ function pane(x0,z0,x1,z1,y0,h){const cx=(x0+x1)/2,cz=(z0+z1)/2,alongX=Math.abs(
 function glassLine(xa,za,xb,zb,n,y0,h){const len=Math.hypot(xb-xa,zb-za);for(let i=0;i<n;i++){const t0=i/n,t1=(i+1)/n;pane(xa+(xb-xa)*t0,za+(zb-za)*t0,xa+(xb-xa)*t1,za+(zb-za)*t1,y0,h);}
   box(Math.min(xa,xb)-0.04,Math.max(xa,xb)+0.04,y0+h,y0+h+0.12,Math.min(za,zb)-0.05,Math.max(za,zb)+0.05,STEEL,{sub:9});box(Math.min(xa,xb)-0.04,Math.max(xa,xb)+0.04,y0-0.05,y0+0.06,Math.min(za,zb)-0.05,Math.max(za,zb)+0.05,STEEL,{sub:9});
   for(let i=0;i<=n;i++){const px=xa+(xb-xa)*i/n,pz=za+(zb-za)*i/n;box(px-0.05,px+0.05,y0,y0+h,pz-0.05,pz+0.05,STEEL,{sub:9});}}
-// lab: four panes along x=24 and 3 + 1 along z=105 with a door gap
-glassLine(24,105,24,115,4,F,3.2);glassLine(12.5,105,20,105,3,F,3.2);glassLine(22,105,24,105,1,F,3.2);
-// east vault: x=49.5 with a door gap, and the north side
-glassLine(49.5,97.5,49.5,103.5,2,F,3.2);glassLine(49.5,106,49.5,115,4,F,3.2);glassLine(49.5,97.5,54.0,97.5,2,F,3.2);
-// the long gallery screen in front of the under-balcony strip, with two gaps
-glassLine(24,94.5,31.5,94.5,3,F,3.2);glassLine(34,94.5,41.5,94.5,3,F,3.2);glassLine(44,94.5,46.5,94.5,1,F,3.2);
-// balcony balustrade (the stairs stay open)
-glassLine(19.9,91.2,54.0,91.2,14,B,1.15);
-// ---- barrels (shot them)
 const BAR=[],barMat=new THREE.MeshBasicMaterial({vertexColors:true});
 function barrel(x,z,y0){y0=y0==null?F:y0;const P=[],C=[],r=0.3,h=0.95,seg=8;const col=(hex,k)=>{const c=lin(hex),gl=glow(x,y0+0.5,z);return [c[0]*k*gl[0],c[1]*k*gl[1],c[2]*k*gl[2]];};
   const ring=(ya,yb,hex,k)=>{for(let i=0;i<seg;i++){const a0=i/seg*Math.PI*2,a1=(i+1)/seg*Math.PI*2,c=col(hex,k*(0.85+0.3*(i&1)*0.4));const pts=[[Math.cos(a0)*r,ya,Math.sin(a0)*r],[Math.cos(a1)*r,ya,Math.sin(a1)*r],[Math.cos(a1)*r,yb,Math.sin(a1)*r],[Math.cos(a0)*r,yb,Math.sin(a0)*r]];for(const t of [[0,1,2],[0,2,3]])for(const q of t){P.push(pts[q][0],pts[q][1],pts[q][2]);C.push(c[0],c[1],c[2]);}}};
@@ -5686,12 +5581,6 @@ function barrel(x,z,y0){y0=y0==null?F:y0;const P=[],C=[],r=0.3,h=0.95,seg=8;cons
   const c=K(x-0.31,x+0.31,y0,y0+h,z-0.31,z+0.31);BAR.push({m,c,x,y:y0+0.5,z,dead:false,t:-1});
   // a yellow hazard band as a lit stripe
   box(x-r-0.005,x+r+0.005,y0+0.4,y0+0.5,z-r-0.005,z+r+0.005,'#e8c23a',{e:1.3,sub:9,skip:'UD'});}
-for(const [x,z] of [[21.2,93.4],[21.9,94.3],[20.8,94.6],[46.6,112.2],[47.4,111.4],[47.5,113],[55.6,98.8],[56.3,97.9],[14.2,112.8],[15.0,113.4],[27.2,89.2],[52,89.6],[17.5,103.3],[44.8,89.6]])barrel(x,z,F);
-barrel(27.4,89.4,B);barrel(40,89.6,B);
-// crates for cover
-for(const [x,z,w,d,h] of [[16.6,92.6,1.2,1.2,1.2],[16.6,95.6,1.0,1.0,0.9],[53,93,1.4,1.4,1.2],[29.5,116.4-2.4,1.2,1.2,1.0]]){box(x-w/2,x+w/2,F,F+h,z-d/2,z+d/2,'#6f6850',{sub:1.25});K(x-w/2,x+w/2,F,F+h,z-d/2,z+d/2);}
-for(const [x,z] of [[21,89],[16,89.6]]){box(x-0.6,x+0.6,B,B+1.1,z-0.6,z+0.6,'#5a5441',{sub:1.25});K(x-0.6,x+0.6,B,B+1.1,z-0.6,z+0.6);}
-// ---- scientists (white coats)
 const SCI=[],sm={};const smat=h=>sm[h]||(sm[h]=new THREE.MeshBasicMaterial({color:new THREE.Color(h).convertSRGBToLinear()}));
 function part(g,w,h,d,hex,x,y,z,i,hit){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),smat(hex));m.position.set(x,y,z);g.add(m);if(hit){m.userData={bk:'sci',i};m.frustumCulled=false;MAP.rayMeshes.push(m);}return m;}
 function scientist(x,z,y0,path,spd,skin,hair){const i=SCI.length,g=new THREE.Group();g.position.set(x,y0,z);
@@ -5702,20 +5591,118 @@ function scientist(x,z,y0,path,spd,skin,hair){const i=SCI.length,g=new THREE.Gro
   part(armL,0.13,0.62,0.15,'#e8eef0',0,-0.3,0,i,true);part(armR,0.13,0.62,0.15,'#e8eef0',0,-0.3,0,i,true);part(armL,0.1,0.1,0.1,skin,0,-0.66,0,i,false);part(armR,0.1,0.1,0.1,skin,0,-0.66,0,i,false);
   const head=new THREE.Group();head.position.set(0,1.68,0);g.add(head);part(head,0.22,0.26,0.24,skin,0,0.05,0,i,true);part(head,0.24,0.1,0.26,hair,0,0.2,-0.01,i,false);part(head,0.2,0.05,0.04,'#14181c',0,0.07,0.13,i,false);part(g,0.2,0.3,0.03,'#8a6a3a',-0.22,1.08,0.19,i,false);
   scene.add(g);SCI.push({g,legL,legR,armL,armR,head,path,seg:0,spd,ph:i*1.3,dead:false,fall:0,t:0,x,z,y0});return i;}
-scientist(15.6,87.9,B,[[15.6,88.0]],0,'#c99a7a','#2a2420');scientist(22,88.6,B,[[22,88.6],[31,88.6],[31,89.4],[22,89.4]],0.9,'#8a5a3a','#16181a');
-scientist(15,107,F,[[15,107.2],[23,107.2],[23,108],[15,108]],0.9,'#d9aa88','#6a4a2a');scientist(18,112.6,F,[[18,112.6]],0,'#c99a7a','#a0a0a0');
-scientist(27,113.4,F,[[27,113.4],[45,113.4]],1.0,'#8a5a3a','#16181a');scientist(55.6,105.5,F,[[55.6,105.5]],0,'#d9aa88','#2a2420');
-scientist(26,88.0,F,[[26,88.4],[52,88.4]],1.1,'#c99a7a','#4a3a2a');scientist(20.6,99.5,F,[[20.6,92.5],[20.6,99.5]],0.9,'#d9aa88','#16181a');
+// ---------------- shell ----------------
+box(X0,X1,F-0.3,F+0.012,Z0,Z1,FLR,{chk:FLR2,var:0.08,sub:2.5,skip:'D'});
+box(OX0,OX1,CE,R,OZ0,OZ1,'#454d37',{ext:'UESNW',sub:2.5,var:0.1});K(OX0,OX1,CE,R,OZ0,OZ1);
+for(const sg of [1,-1]){   // north and south walls with the 5 m door openings (x 42.5..47.5, 4.2 m high at mid level)
+  B2(sg,OX0,42.5,F-0.3,CE,OZ0,Z0,WALL,{ext:'N',skip:'D',var:0.08},[F-1,R]);
+  B2(sg,47.5,OX1,F-0.3,CE,OZ0,Z0,WALL,{ext:'N',skip:'D',var:0.08},[F-1,R]);
+  B2(sg,42.5,47.5,F-0.3,MID,OZ0,Z0,FLR,{ext:'N',skip:'D'},[F-1,MID]);
+  B2(sg,42.5,47.5,MID+4.2,CE,OZ0,Z0,WALL,{ext:'N',skip:'D'},[MID+4.2,R]);
+  B2(sg,42.3,42.5,MID,MID+4.3,Z0-0.02,Z0+0.3,STEEL,{sub:9});B2(sg,47.5,47.7,MID,MID+4.3,Z0-0.02,Z0+0.3,STEEL,{sub:9});
+  B2(sg,42.3,47.7,MID+4.2,MID+4.45,Z0-0.02,Z0+0.3,STEEL,{sub:9});
+  B2(sg,42.6,47.4,MID+3.9,MID+4.05,Z0+0.28,Z0+0.34,'#ff3b30',{e:2.4,sub:9,skip:'N'});
+}
+box(OX0,X0,F-0.3,CE,Z0,Z1,WALL,{ext:'W',skip:'D',var:0.08});K(OX0,X0,F-1,R,Z0,Z1);
+box(X1,OX1,F-0.3,CE,Z0,Z1,WALL,{ext:'E',skip:'D',var:0.08});K(X1,OX1,F-1,R,Z0,Z1);
+// ---------------- the two entrances: stairs cut down from the meadow to the mid-level doors ----------------
+for(const e of BK.ent){const sg=e.sg,NI=e.NI,g0=e.g0,D=g0-MID,Lt=NI*2.5,NS=Math.max(6,Math.ceil(D/0.3)),run=Lt/NS,hN=d=>MID+D*d/Lt;
+  for(let j=0;j<NS;j++){const d0=j*run,d1=d0+run,top=hN((d0+d1)/2)+0.12;B2(sg,42.7,47.3,top-0.9,top,OZ0-d1,OZ0-d0,'#8a8d8e',{ext:'UESNW',var:0.1},[top-0.9,top]);}
+  for(let i=0;i<NI;i++){const d0=i*2.5,d1=d0+2.5,h0=hN(d0),h1=hN(d1),lo=Math.min(h0,h1)-1.6,tp=Math.max(h0,h1)+1.3;
+    B2(sg,41.9,42.6,lo,tp,OZ0-d1,OZ0-d0,CONC,{ext:'UESNW',var:0.08},[lo,tp]);B2(sg,47.4,48.1,lo,tp,OZ0-d1,OZ0-d0,CONC,{ext:'UESNW',var:0.08},[lo,tp]);}
+  for(const [a,b] of [[41.9,42.3],[47.7,48.1]])B2(sg,a,b,g0,g0+1.2,OZ0-Lt-0.4,OZ0-Lt,'#d9a62a',{ext:'UESNW'});
+}
+// ---------------- wall ribs, light strips, ceiling kit ----------------
+for(const z of [78,86,94,106,114,122])for(const sg of [1,-1]){B2(sg,X0,X0+0.45,F,CE,z-0.5,z+0.5,'#3d4248',{sub:2.5,skip:'D'});}
+for(const [y,l] of [[F+5,1],[CE-2,2]]){
+  box(X0,X1,y,y+0.18,Z0+0.5,Z0+0.62,'#ffffff',{led:l,e:1,sub:99,skip:'UDEWN',var:0});box(X0,X1,y,y+0.18,Z1-0.62,Z1-0.5,'#ffffff',{led:l,e:1,sub:99,skip:'UDEWS',var:0});
+  box(X0+0.5,X0+0.62,y,y+0.18,Z0,Z1,'#ffffff',{led:l,e:1,sub:99,skip:'UDWNS',var:0});box(X1-0.62,X1-0.5,y,y+0.18,Z0,Z1,'#ffffff',{led:l,e:1,sub:99,skip:'UDENS',var:0});}
+for(const x of [22.5,37.5,52.5,67.5])for(const z of [77.5,92.5,107.5,122.5])box(x-1.6,x+1.6,CE-0.08,CE,z-0.6,z+0.6,'#d8eeff',{e:2.4,sub:9,skip:'U'});
+for(const z of [80,100,120])box(X0,X1,CE-0.8,CE,z-0.3,z+0.3,'#4a5056',{sub:2.5,skip:'U'});
+for(const x of [25,45,65])box(x-0.3,x+0.3,CE-0.6,CE,Z0,Z1,'#454b51',{sub:2.5,skip:'U'});
+for(let k=0;k<24;k++){const a=k/24*Math.PI*2,cx=45+Math.cos(a)*10.5,cz=100+Math.sin(a)*6.5;box(cx-0.5,cx+0.5,CE-5.1,CE-4.9,cz-0.5,cz+0.5,'#ffffff',{led:2,e:1,sub:9,var:0});}
+for(const [cx,cz] of [[55.5,100],[34.5,100],[45,106.5],[45,93.5]])box(cx-0.04,cx+0.04,CE-5,CE,cz-0.04,cz+0.04,'#7a6a3a',{sub:9});
+// ---------------- mid level: balconies, landings, bridge ----------------
+for(const sg of [1,-1]){
+  B2(sg,15,24,MID-0.5,MID,70,123,'#4d4136',{chk:'#40362d',var:0.06,sub:1.25},[MID-0.5,MID]);
+  B2(sg,24,48,MID-0.5,MID,70,76,'#3c4147',{chk:'#353a3f',var:0.06,sub:1.25},[MID-0.5,MID]);
+  for(const z of [74,86,94,106,114,122])B2(sg,23.2,24.0,F,MID-0.5,z-0.4,z+0.4,'#4b5054',{sub:1.25},[F,MID-0.5]);
+  B2(sg,33.2,34.2,F,MID-0.6,99.5,100.5,'#4b5054',{sub:1.25},[F,MID-0.6]);
+  B2(sg,24,48,MID-0.9,MID-0.5,75.3,76.0,STEEL,{sub:2.5});B2(sg,14.9,24,MID-0.9,MID-0.5,122.3,123,STEEL,{sub:2.5});
+  GL(sg,24,76,24,98,4,MID,1.15);GL(sg,24,102,24,123,4,MID,1.15);GL(sg,15,123,24,123,2,MID,1.15);GL(sg,24,76,48,76,5,MID,1.15);
+  // the long ramp down to the floor along the north wall (and its twin along the south wall)
+  for(let i=0;i<36;i++){const xa=48+i*0.75,top=MID-0.25*(i+1);
+    B2(sg,xa,xa+0.75,F-0.2,top,70,76,'#5a5e62',{sub:1.25,skip:'D',var:0.05},[F-0.2,top]);
+    if(top>F+1.2){B2(sg,xa,xa+0.75,top,top+1.0,75.85,76,STEEL,{sub:9},[top,top+1.0]);B2(sg,xa,xa+0.75,top+1.0,top+1.08,75.8,76,'#ffffff',{led:1,e:1,sub:9,var:0});}}
+  // stair up to the top level (wall side of the balcony) and the top platform with the C4 station
+  for(let i=0;i<30;i++){const za=76+i*0.4,top=MID+0.25*(i+1);
+    B2(sg,15,19.5,MID-0.1,top,za,za+0.4,'#5a5e62',{sub:1.25,skip:'D',var:0.05},[MID-0.2,top]);
+    if(i%5===4)B2(sg,19.5,19.65,MID,top+1.0,za-1.6,za+0.4,STEEL,{sub:2.5},[MID,top+1.0]);}
+  B2(sg,15,24,TP-0.5,TP,88,112,'#3a3f44',{chk:'#33383c',var:0.06,sub:1.25},[TP-0.5,TP]);
+  B2(sg,15,24,TP-0.9,TP-0.5,88,112,STEEL,{sub:2.5,skip:'D'});
+  for(const z of [90,110])B2(sg,23.3,24.0,MID,TP-0.5,z-0.35,z+0.35,'#4b5054',{sub:1.25},[MID,TP-0.5]);
+  GL(sg,24,88,24,112,5,TP,1.15);GL(sg,19.5,88,24,88,1,TP,1.15);GL(sg,15,112,24,112,2,TP,1.15);
+  B2(sg,15.2,16.4,TP,TP+1.15,97,103,'#2b3036',{sub:1.25},[TP,TP+1.15]);B2(sg,15.1,16.5,TP+1.15,TP+1.22,96.9,103.1,'#40474e',{sub:1.25});
+  {const [px,pz]=PT(sg,20.5,100);const m=new THREE.Mesh(new THREE.PlaneGeometry(1.9,1.9),new THREE.MeshBasicMaterial({map:PADT.t}));m.rotation.x=-Math.PI/2;m.position.set(px,TP+0.025,pz);scene.add(m);texMesh.push(m);
+   for(const [a,b,c,d] of [[px-0.96,px-0.9,pz-0.99,pz+0.99],[px+0.9,px+0.96,pz-0.99,pz+0.99],[px-0.99,px+0.99,pz-0.99,pz-0.93],[px-0.99,px+0.99,pz+0.93,pz+0.99]])box(a,b,TP,TP+0.03,c,d,'#ff3b30',{e:2.4,sub:9});
+   const [sx,sz]=PT(sg,16.43,100);screen(CON[sg>0?1:2],sx,TP+0.65,sz,5,0.8,sg>0?'E':'W');
+   const [lx,lz]=PT(sg,15.55,100);screen(LNCT,lx,TP+2.9,lz,8.5,1.5,sg>0?'E':'W');
+   const [rx,rz]=PT(sg,15.55,86);screen(RADT,rx,TP+2.0,rz,4.3,3.0,sg>0?'E':'W');const [cx2,cz2]=PT(sg,15.55,114);screen(CCT,cx2,TP+2.0,cz2,6.4,3.0,sg>0?'E':'W');}
+}
+// the bridge across the hall at mid level
+box(24,66,MID-0.6,MID,98,102,'#4d4136',{chk:'#40362d',var:0.06,sub:1.25});K(24,66,MID-0.6,MID,98,102);box(24,66,MID-1.2,MID-0.6,99.5,100.5,STEEL,{sub:2.5,skip:'U'});
+box(24,66,MID-0.62,MID-0.5,97.9,98.0,'#ffffff',{led:1,e:1,sub:99,var:0});box(24,66,MID-0.62,MID-0.5,102.0,102.1,'#ffffff',{led:1,e:1,sub:99,var:0});
+glassLine(24,98,66,98,8,MID,1.15);glassLine(24,102,66,102,8,MID,1.15);
+// big wall displays beside the mid-level doors
+{const SYm=MID+7.7;
+ screen(MAPT,45,SYm,70.55,24,5.4,'S');screen(CCT,27,SYm,70.55,11,5.4,'S');screen(STAT,63,SYm,70.55,11,5.4,'S');
+ screen(MAPT,45,SYm,129.45,24,5.4,'N');screen(STAT,27,SYm,129.45,11,5.4,'N');screen(CCT,63,SYm,129.45,11,5.4,'N');
+ for(const [a,b] of [[33,57],[21.5,32.5],[57.5,68.5]]){for(const [z,s] of [[70.5,'N'],[129.5,'S']]){box(a-0.2,b+0.2,SYm-2.9,SYm-2.7,z-0.06,z+0.06,STEEL,{sub:9});box(a-0.2,b+0.2,SYm+2.7,SYm+2.9,z-0.06,z+0.06,STEEL,{sub:9});}}}
+BK.pads=[[20.5,100,TP],[69.5,100,TP]];
+// ---------------- the floor: kidney pool, rooms behind glass, lounges ----------------
+const PC=[CX,100],PN=44,PP=[],WATER={P:[],C:[]};
+for(let i=0;i<PN;i++){const a=i/PN*Math.PI*2,rr=1-0.34*Math.exp(-((a-Math.PI/2)**2)/0.32)-0.34*Math.exp(-((a-Math.PI/2-6.2832)**2)/0.32)+0.05*Math.cos(2*a);PP.push([PC[0]+12.5*Math.cos(a)*rr,PC[1]+6.2*Math.sin(a)*rr]);}
+for(let i=0;i<PN;i++){const p=PP[i],q=PP[(i+1)%PN],po=[PC[0]+(p[0]-PC[0])*1.1,PC[1]+(p[1]-PC[1])*1.1],qo=[PC[0]+(q[0]-PC[0])*1.1,PC[1]+(q[1]-PC[1])*1.1];
+  quadP([p[0],F+0.14,p[1]],[q[0],F+0.14,q[1]],[qo[0],F+0.14,qo[1]],[po[0],F+0.14,po[1]],MARB,{var:0.1});
+  quadP([po[0],F+0.14,po[1]],[qo[0],F+0.14,qo[1]],[qo[0],F,qo[1]],[po[0],F,po[1]],'#7f888d',{var:0.1});
+  quadP([p[0],F+0.03,p[1]],[q[0],F+0.03,q[1]],[q[0],F+0.14,q[1]],[p[0],F+0.14,p[1]],'#6f787d',{var:0.1});
+  quadP([p[0]*0.96+PC[0]*0.04,F+0.045,p[1]*0.96+PC[1]*0.04],[q[0]*0.96+PC[0]*0.04,F+0.045,q[1]*0.96+PC[1]*0.04],[q[0],F+0.045,q[1]],[p[0],F+0.045,p[1]],'#7fffe8',{e:2.4});
+  const wc=lin(hsh(i,5)>0.5?'#1fb8c9':'#18a6bd'),k=0.85+hsh(i,7)*0.3;for(const v of [[PC[0],F+0.08,PC[1]],[p[0],F+0.08,p[1]],[q[0],F+0.08,q[1]]]){WATER.P.push(v[0],v[1],v[2]);WATER.C.push(wc[0]*k*1.5,wc[1]*k*1.5,wc[2]*k*1.5);}}
+for(const [sx,sz] of [[34.5,100.4],[39,99.2],[43.5,100.6],[48,99.4],[52.5,100.5],[56,99.6]])box(sx-0.45,sx+0.45,F+0.04,F+0.2,sz-0.45,sz+0.45,'#6f787d',{sub:0.9,var:0.12});
+for(const sg of [1,-1]){   // two work rooms behind shootable glass
+  GL(sg,25,78,37,78,2,F,3.4);GL(sg,25,78,25,88,2,F,3.4);GL(sg,37,78,37,88,2,F,3.4);GL(sg,25,88,29,88,1,F,3.4);GL(sg,32,88,37,88,1,F,3.4);
+  B2(sg,25,37,F+0.012,F+0.03,78,88,'#1e2a32',{var:0.05,skip:'D'});
+}
+desk(26,30,78.6,79.5,'S',0);desk(32,36,78.6,79.5,'S',1);desk(60,64,120.5,121.4,'N',0);desk(54,58,120.5,121.4,'N',1);
+sofa(41,88.3,4.6,1.9,'S');sofa(46.4,88.3,4.6,1.9,'S','#2c3a4a','#374a5e');table(43.5,46.5,91,92);
+sofa(44.4,109.8,4.6,1.9,'N');sofa(39,109.8,4.6,1.9,'N','#2c3a4a','#374a5e');table(43.5,46.5,108,109);
+// ---------------- tropical planting ----------------
+for(const [x,z,h,s] of [[31,94,8,1],[31,106,7,2],[59,94,7.5,3],[59,106,8.5,4],[40,92.4,6,5],[50,107.6,6.5,6],[66,82,6,7],[24,118,6,8]]){planter(x,z,1.7,1.7,0.6);palm(x,z,h,F+0.6,s);}
+for(const [x,z,s] of [[28,99,1],[62,101,2],[36,111,3],[54,89,4],[20,111,5],[70,89,6],[44,81.5,7],[46,118.5,8]]){planter(x,z,1.3,1.3,0.45);bush(x,z,F+0.45,1.2,s);}
+for(const [x,z,s] of [[17,84,11],[73,116,12],[17,112,13],[73,88,14]]){planterY(MID,x,z,1.4,1.4,0.5);palm(x,z,3.4,MID+0.5,s);}
+// ---------------- cameras, barrels, crates, scientists ----------------
+for(const [x,y,z,yw] of [[15.3,CE-1,75,Math.PI/2],[15.3,CE-1,125,Math.PI/2],[74.7,CE-1,75,-Math.PI/2],[74.7,CE-1,125,-Math.PI/2],[45,CE-1,70.8,0],[45,CE-1,129.2,Math.PI]])mkCam(x,y,z,yw);
+for(const [x,z,y] of [[73,78.5,F],[71.8,79.2,F],[17,121.5,F],[18.2,120.8,F],[20.5,80.5,F],[69.5,119.5,F],[20.5,96,MID],[69.5,104,MID],[21.5,108,TP],[68.5,92,TP]])barrel(x,z,y);
+for(const [x,z,w,d,h] of [[27.5,93,1.4,1.4,1.2],[62.5,107,1.4,1.4,1.2],[36,116,1.2,1.2,1.0],[54,84,1.2,1.2,1.0],[22,102,1.0,1.0,0.9],[68,98,1.0,1.0,0.9]]){box(x-w/2,x+w/2,F,F+h,z-d/2,z+d/2,'#6f6850',{sub:1.25});K(x-w/2,x+w/2,F,F+h,z-d/2,z+d/2);}
+scientist(31,83,F,[[31,83]],0,'#c99a7a','#2a2420');scientist(59,117,F,[[59,117]],0,'#d9aa88','#6a4a2a');
+scientist(28,107.5,F,[[28,107.5],[62,107.5]],1.0,'#8a5a3a','#16181a');scientist(62,92.5,F,[[62,92.5],[28,92.5]],0.95,'#c99a7a','#4a3a2a');
+scientist(26,100,MID,[[26,100],[64,100]],1.0,'#d9aa88','#16181a');scientist(18,100,MID,[[18,100]],0,'#c99a7a','#a0a0a0');scientist(72,100,MID,[[72,100]],0,'#8a5a3a','#2a2420');
 // ---- meshes
-const bi=new THREE.BufferGeometry();bi.setAttribute('position',new THREE.BufferAttribute(new Float32Array(INT.P),3));bi.setAttribute('color',new THREE.BufferAttribute(new Float32Array(INT.C),3));
-const im=new THREE.Mesh(bi,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide}));im.frustumCulled=false;scene.add(im);MAP.rayMeshes.push(im);MAP.camBlockers.push(im);
+const bi=new THREE.BufferGeometry();bi.setAttribute('position',new THREE.BufferAttribute(new Float32Array(INT.P),3));bi.setAttribute('color',new THREE.BufferAttribute(new Float32Array(INT.C),3));bi.setAttribute('dyn',new THREE.BufferAttribute(new Float32Array(INT.D),3));
+const UA={value:new THREE.Color(0,0,0)},UB={value:new THREE.Color(0,0,0)},UC={value:new THREE.Color(0,0,0)};
+const imat=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});
+imat.onBeforeCompile=sh=>{sh.uniforms.uA=UA;sh.uniforms.uB=UB;sh.uniforms.uC=UC;
+  sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute vec3 dyn;\nuniform vec3 uA;\nuniform vec3 uB;\nuniform vec3 uC;').replace('#include <color_vertex>','#include <color_vertex>\n#ifdef USE_COLOR\nvColor.rgb+=uA*dyn.x+uB*dyn.y+uC*dyn.z;\n#endif');};
+const im=new THREE.Mesh(bi,imat);im.frustumCulled=false;scene.add(im);MAP.rayMeshes.push(im);MAP.camBlockers.push(im);
 const be=new THREE.BufferGeometry();be.setAttribute('position',new THREE.BufferAttribute(new Float32Array(EXT.P),3));be.setAttribute('color',new THREE.BufferAttribute(new Float32Array(EXT.C),3));be.computeVertexNormals();
 const em=new THREE.Mesh(be,envMat);em.castShadow=true;em.receiveShadow=true;scene.add(em);MAP.rayMeshes.push(em);MAP.camBlockers.push(em);
+const ledM=[];for(const A of [LED,LED2]){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(A.P),3));g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(A.C),3));
+  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,toneMapped:false}));m.frustumCulled=false;scene.add(m);ledM.push(m);}
 const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(WATER.P),3));wg.setAttribute('color',new THREE.BufferAttribute(new Float32Array(WATER.C),3));
 const wmat=new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:0.8,side:THREE.DoubleSide,depthWrite:false}),wm=new THREE.Mesh(wg,wmat);wm.frustumCulled=false;scene.add(wm);
 // ---- lights (always present; dimmed to nothing when you are far away so the shader never changes)
-const L1=new THREE.PointLight(0x4fd8e8,0,26,2),L2=new THREE.PointLight(0xffe0b0,0,28,2),L3=new THREE.PointLight(0xff3b30,0,18,2),L4=new THREE.PointLight(0xdce8ff,0,34,2);
-L1.position.set(CX,F+1.2,102);L2.position.set(52,F+3.2,106);L3.position.set(40,B+2.2,87.5);L4.position.set(30,CE-1.5,100);scene.add(L1,L2,L3,L4);
+const L1=new THREE.PointLight(0x4fd8e8,0,40,2),L2=new THREE.PointLight(0xffe0b0,0,34,2),L3=new THREE.PointLight(0xff40d0,0,34,2),L4=new THREE.PointLight(0xff3b30,0,30,2);
+L1.position.set(CX,F+3,100);L2.position.set(30,MID+3,90);L3.position.set(60,MID+3,110);L4.position.set(20.5,TP+2,100);scene.add(L1,L2,L3,L4);
 drawPad();let acc=9,T=0,cc=0;
 // ---- effects and events
 function glassBreak(i,from){const g=GLASS[i];if(!g||g.dead)return;g.dead=true;g.c.on=false;scene.remove(g.m);const k=MAP.rayMeshes.indexOf(g.m);if(k>=0)MAP.rayMeshes.splice(k,1);
@@ -5727,7 +5714,6 @@ function barrelBoom(i,delay){const b=BAR[i];if(!b||b.dead||b.t>=0)return;b.t=del
 function barrelGo(b){b.dead=true;b.c.on=false;scene.remove(b.m);const k=MAP.rayMeshes.indexOf(b.m);if(k>=0)MAP.rayMeshes.splice(k,1);const p=new THREE.Vector3(b.x,b.y,b.z);BL.t=0;BLL.position.copy(p).y+=1.0;
   try{emit(gFire,matFire,p,V(0,1,0),0.45,{s:0.6,grow:4});emit(gFire,matFire,p,V(0,2,0),0.3,{s:0.35,grow:3});for(let n=0;n<12;n++){const a=Math.random()*Math.PI*2;emit(gPuff,n%3?matSmoke:matDust,p,V(Math.cos(a)*3,1.2+Math.random()*3.5,Math.sin(a)*3),2.0,{s:0.3,grow:1.5,drag:1.6});}for(let n=0;n<8;n++)emit(gSpark,matFire,p,rv(12).add(V(0,5,0)),0.5,{s:1.0,grav:9});}catch(e){}
   try{boomAt(p);}catch(e){}try{const d=camera.position.distanceTo(p);shake=Math.max(shake,clamp((30-d)/30,0,1));}catch(e){}
-  box(b.x-0.5,b.x+0.5,b.m.position.y,b.m.position.y+0.012,b.z-0.5,b.z+0.5,'#0b0b0b',{sub:9,skip:'D'});   // scorch (added to the lit mesh next rebuild; skipped silently)
   blast(p,5.5,70);}
 function blast(p,Rr,dmgMax){
   for(const g of GLASS)if(!g.dead&&Math.hypot(g.x-p.x,g.y-p.y,g.z-p.z)<Rr+1.5)glassBreak(GLASS.indexOf(g),null);
@@ -5738,8 +5724,12 @@ function blast(p,Rr,dmgMax){
     if(live&&d<Rr){const dm=dmgMax*Math.pow(1-d/Rr,0.8);MPM.hp-=dm;try{flashHit();edgeFlash();dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,dm,'#ff3a3a');}catch(e){}toast('Caught in a barrel blast · -'+Math.round(dm));if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed by an exploding barrel');}}}}
 function hit(h){const u=h.object&&h.object.userData;if(!u||!u.bk)return;
   if(u.bk==='glass')glassBreak(u.i,h.point);else if(u.bk==='barrel')barrelBoom(u.i,0);else if(u.bk==='sci')sciKill(u.i,h.point);}
-function anim(dt,pos){const d=Math.hypot(pos.x-CX,pos.z-CZ),near=d<85&&pos.y<R+4;L1.intensity=near?1.4:0;L2.intensity=near?1.0:0;L3.intensity=near?(1.3+0.5*Math.sin(T*4)):0;L4.intensity=near?0.8:0;
-  for(const m of texMesh)m.visible=near;wm.visible=near;if(!near)return;T+=dt;acc+=dt;
+function anim(dt,pos){const d=Math.hypot(pos.x-CX,pos.z-CZ),near=d<95&&pos.y<R+4;L1.intensity=near?2.2:0;L2.intensity=near?1.6:0;L3.intensity=near?1.6:0;L4.intensity=near?(1.4+1.2*Math.sin(T*3)):0;
+  for(const m of texMesh)m.visible=near;wm.visible=near;for(const m of ledM)m.visible=near;if(!near)return;T+=dt;acc+=dt;
+  // cool dynamic lighting: slow colour cycle over the pool and floor, the two C4 stations pulse red/amber in turns, LED strips run through the spectrum
+  const h=(T*0.035)%1;UA.value.setHSL(h,0.8,0.12);const p1=0.5+0.5*Math.sin(T*2.6),p2=0.5-0.5*Math.sin(T*2.6);UB.value.setRGB(0.4*p1,0.06*p1,0.05*p1);UC.value.setRGB(0.4*p2,0.06*p2,0.05*p2);
+  ledM[0].material.color.setHSL((h+0.5)%1,0.9,0.55);ledM[1].material.color.setHSL(h,0.9,0.55);
+  L1.color.setHSL(h,0.8,0.55);L2.position.set(45+Math.cos(T*0.35)*22,MID+3,100+Math.sin(T*0.35)*14);L3.position.set(45-Math.cos(T*0.35)*22,MID+3,100-Math.sin(T*0.35)*14);L2.color.setHSL((h+0.12)%1,0.8,0.6);L3.color.setHSL((h+0.62)%1,0.8,0.6);L4.position.set(p1>p2?20.5:69.5,TP+2,100);
   wmat.color.setRGB(0.92+0.08*Math.sin(T*1.7),0.95+0.05*Math.sin(T*2.3+1),1);
   for(const b of BAR)if(!b.dead&&b.t>=0){b.t-=dt;if(b.t<=0)barrelGo(b);}
   for(const c of CAMS){c.rotation.y=c.userData.yaw+Math.sin(T*0.5+c.position.x)*0.55;c.userData.led.visible=(Math.floor(T*1.5)&1)===0;}
@@ -5752,7 +5742,7 @@ function anim(dt,pos){const d=Math.hypot(pos.x-CX,pos.z-CZ),near=d<85&&pos.y<R+4
   if(acc<0.22)return;acc=0;drawMap(T);drawRadar(T);drawStat(T);drawLaunch(T);drawCon(cc%3,T);cc++;if(cc%2===0)drawCCTV(T);}
 drawMap(0);drawRadar(0);drawStat(0);drawLaunch(0);drawCCTV(0);drawCon(0,0);drawCon(1,0);drawCon(2,0);
 for(const m of monitors)screen(CON[m[6]%3],m[0],m[1],m[2],m[3],m[4],m[5]);
-return {anim,hit,blast,F,R,CE,B};})();}catch(e){BKM=null;try{console.error('control centre build failed',e);}catch(_){}}
+return {anim,hit,blast,F,R,CE,MID,TP};})();}catch(e){BKM=null;try{console.error('control centre build failed',e);}catch(_){}}
 function bunkerAnim(dt){try{if(BKM)BKM.anim(dt,camera.position);}catch(e){}}
 function bkHit(h){try{if(BKM)BKM.hit(h);}catch(e){}}
 function bkBlast(p,R){try{if(BKM)BKM.blast(p,R,0);}catch(e){}}
