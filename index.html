@@ -108,7 +108,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <button role="tab" id="tabAud" aria-selected="false" aria-controls="paneAud">Audio</button>
     <button role="tab" id="tabMp" aria-selected="false" aria-controls="paneMp">Multiplayer</button>
   </div>
-  <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div><p class="sec" style="margin-top:14px">Pickups</p><table class="foodT" style="border-collapse:collapse;font-size:13px;margin-top:6px"><tr><td style="padding:2px 18px 2px 0">Magic Mushrooms</td><td>+2% stamina per cluster</td></tr><tr><td style="padding:2px 18px 2px 0">Raw meat</td><td>gives limited health, cooked meat gives full health</td></tr><tr><td style="padding:2px 18px 2px 0">7.62 ammo box</td><td>spare rifle rounds (how many: Gameplay tab)</td></tr><tr><td style="padding:2px 18px 2px 0">AT4 launcher (bright pink glow)</td><td>shoulder-fired anti-armour rocket, comes loaded · X switches to it</td></tr><tr><td style="padding:2px 18px 2px 0">AT4 rounds (pale pink glow)</td><td>reload the AT4 (R)</td></tr><tr><td style="padding:2px 18px 2px 0">Wood, Tech Chips</td><td>for later</td></tr></table><p class="note">Stamina powers a double-speed boost: double-tap W and keep holding it. The longer you hold, the more it drains. Health starts at 100% and cooked food will raise it up to 200%.</p></div>
+  <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div><p class="sec" style="margin-top:14px">Pickups</p><table class="foodT" style="border-collapse:collapse;font-size:13px;margin-top:6px"><tr><td style="padding:2px 18px 2px 0">Magic Mushrooms</td><td>+2% stamina per cluster</td></tr><tr><td style="padding:2px 18px 2px 0">Raw meat</td><td>gives limited health, cooked meat gives full health</td></tr><tr><td style="padding:2px 18px 2px 0">7.62 ammo box</td><td>spare rifle rounds (how many: Gameplay tab)</td></tr><tr><td style="padding:2px 18px 2px 0">AT4 launcher (bright pink glow)</td><td>shoulder-fired anti-armour rocket, comes loaded · X switches to it</td></tr><tr><td style="padding:2px 18px 2px 0">AT4 rounds (pale pink glow)</td><td>reload the AT4 (R)</td></tr><tr><td style="padding:2px 18px 2px 0">Wood, UGV</td><td>for later</td></tr></table><p class="note">Stamina powers a double-speed boost: double-tap W and keep holding it. The longer you hold, the more it drains. Health starts at 100% and cooked food will raise it up to 200%.</p></div>
   <div id="paneGfx" role="tabpanel" aria-labelledby="tabGfx" hidden>
     <div class="opts">
       <label class="opt"><input type="checkbox" id="optFps" checked><span><b>Show FPS</b><small>Frame rate and frame time, top left.</small></span></label>
@@ -4077,7 +4077,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=392;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=399;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4112,7 +4112,7 @@ const genMs=Math.round(performance.now()-T0);
 $('deployBtn').disabled=false;$('deployBtn').textContent='Deploy';
 $('stats').textContent=nTrees.toLocaleString()+' trees · '+nPlants.toLocaleString()+' shrubs and ferns · '+ROCKS.length+' rocks · generated in '+(genMs/1000).toFixed(1)+' s';
 
-/* ================= resources: Magic Mushrooms, wood, 7.62 ammo boxes, RPG rounds and Tech Chips =================
+/* ================= resources: Magic Mushrooms, wood, 7.62 ammo boxes, RPG rounds and UGV =================
    Nodes are placed from a position hash only (no random numbers), so both players get exactly the same ones.
    Only "taken" events cross the network. Five instanced meshes, no shadows: a few hundred triangles each. */
 const RES_T=[
@@ -4122,11 +4122,11 @@ const RES_T=[
   {k:'at4',     label:'AT4 launcher', cell:31, p:0.3, amt:[1,1], n:0},
   {k:'radio',   label:'Radio',        cell:41, p:0.3, amt:[1,1], n:12},
   {k:'ar15',    label:'AR-15 rifle',  cell:31, p:0.3, amt:[1,1], n:0},
-  {k:'scrap',   label:'Tech Chips',     cell:17, p:0.05, amt:[1,2], n:0},
+  {k:'scrap',   label:'UGV',     cell:17, p:0.05, amt:[1,2], n:0},
   {k:'r762',    label:'7.62 rounds',  cell:13, p:0.25, amt:[1,1], n:300},
   {k:'rifle',   label:'Rifle',        cell:31, p:0.3, amt:[1,1], n:0}];   // weapons (AR-15, AT4, rifle) are placed by hand: two of each within 100 m of every capture point
 const INV={radio:0,berries:0,mushroom:0,at4r:0,scrap:0,meat:0,hide:0};
-const INV_LABEL={radio:'radios',berries:'berries',mushroom:'Magic Mushrooms',at4r:'AT4 rounds',scrap:'Tech Chips',meat:'meat',hide:'hide'};
+const INV_LABEL={radio:'radios',berries:'berries',mushroom:'Magic Mushrooms',at4r:'AT4 rounds',scrap:'UGV',meat:'meat',hide:'hide'};
 const RES_GEO={
   r762:build([[B(0.3,0.17,0.14),'#4e5934',[0,0.085,0]],[B(0.312,0.032,0.152),'#5c683f',[0,0.186,0]],[B(0.13,0.018,0.022),'#2c3120',[0,0.212,0]],[B(0.03,0.06,0.03),'#3a4228',[0.16,0.13,0]],
     [B(0.17,0.035,0.004),'#d9c24a',[0,0.1,0.071]],[B(0.06,0.02,0.004),'#d9c24a',[-0.09,0.05,0.071]],
@@ -4161,7 +4161,7 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
   RES_NODES.push({t,ti,x,y:h,z,ry:hsh(salt+11,salt+29)*PI*2,s:(1.25+hsh(salt+5,salt+7)*0.5)*(t==='berries'?0.6:1),got:false,a:hsh(salt+1,salt+2)});
   const n=RES_NODES.length-1,key=Math.floor(x/8)+','+Math.floor(z/8);let L=RES_CELLS.get(key);if(!L){L=[];RES_CELLS.set(key,L);}L.push(n);return n;}
 (function resGen(){
-  // a few at each starting point so the first minute has something to do, and Tech Chips around the hut
+  // a few at each starting point so the first minute has something to do, and UGV around the hut
   const near=(c,list)=>list.forEach(([t,a,d],i)=>{for(let k=0;k<12;k++){const ang=a+k*0.7+hsh(i,k+Math.round(c.x))*0.6,r=d+k*2.2,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
       if(resOK(x,z,t)){resAdd(t,x,z,i*53+k*7+Math.round(c.x+c.z));break;}}});
   const starts=[['r762',1.2,18],['r762',2.4,12],['mushroom',3.6,22],['mushroom',4.4,16],['at4r',0.6,9],['at4r',3.0,11],['radio',2.0,7]];
@@ -4170,7 +4170,7 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
   {const pts=[SEC_HOME.e,TWPOS,TWPOS4,SILO_POS,TWPOS3,TWPOS2,SEC_HOME.w],placed=[];
    pts.forEach((c,si)=>['ar15','at4','rifle'].forEach((t,ti)=>{for(let k=0;k<2;k++){for(let a=0;a<120;a++){const ang=hsh(si*17+ti*5+k*3,a+3)*PI*2,r=(si===6&&k===0)?10+hsh(si*7+ti*11+k,a*3+1)*26:16+hsh(si*7+ti*11+k,a*3+1)*80,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
         if(!resOK(x,z,t)||placed.some(q=>Math.hypot(q[0]-x,q[1]-z)<7))continue;placed.push([x,z]);resAdd(t,x,z,si*131+ti*37+k*11+a);break;}}}));window._wpnPlaced=placed.length;}
-  // Tech Chips: 20, spread over the seven capture points, each somewhere random within 150 m of its point and well apart from the others
+  // UGV: 20, spread over the seven capture points, each somewhere random within 150 m of its point and well apart from the others
   {const pts=[SEC_HOME.e,TWPOS,TWPOS4,SILO_POS,TWPOS3,TWPOS2,SEC_HOME.w],put=[];
    for(let k=0;k<20;k++){const c=pts[k%7];for(let a=0;a<200;a++){const ang=hsh(k*13+5,a+11)*PI*2,r=20+Math.sqrt(hsh(k*7+3,a*5+2))*130,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
      if(!resOK(x,z,'scrap')||put.some(q=>Math.hypot(q[0]-x,q[1]-z)<30))continue;put.push([x,z]);resAdd('scrap',x,z,k*97+a+4001);break;}}window._chipPlaced=put.length;}
@@ -4461,7 +4461,7 @@ ${sp([['Damage / hit',GAME.uDmg+' hp'],['Rate of fire',GAME.uRpm+' rpm'],['Burst
 <tr><td>Brown bear</td><td>${num('hp.bear',DMG.hp.bear)}</td><td>rifle, AT4 blast · default is three times the stag</td></tr>
 <tr><td>Buzzard</td><td>${num('hp.buzzard',DMG.hp.buzzard)}</td><td>rifle</td></tr>
 <tr><td>Termit UGV</td><td>${GAME.uHp}</td><td>rifle (sensors, optic, hull), AT4</td></tr></table>
-<p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Magic Mushrooms, ammo boxes, rounds, Tech Chips</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>
+<p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Magic Mushrooms, ammo boxes, rounds, UGV</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>
 <button type="button" id="dmgReset" class="btn">Reset weapons to defaults</button>`;
     pn.querySelectorAll('input[data-p]').forEach(i=>i.oninput=()=>{const v=parseFloat(i.value);if(!(v>=0))return;const ks=i.dataset.p.split('.');let o=DMG;for(let j=0;j<ks.length-1;j++)o=o[ks[j]];o[ks[ks.length-1]]=v;dmgSave();});
     pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;if(k==='bDrop'||k==='bV0'||k==='bDrag')balApply();if(k==='slotW'||k==='slotG')try{slotFit();}catch(e){}i.nextElementSibling.textContent=v.toFixed(+i.dataset.dp);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}});
