@@ -4077,7 +4077,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=403;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=404;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5558,6 +5558,7 @@ const SEC_DEF=[
   {k:'T2',n:'Tower 2',              x:TWPOS2.x,z:TWPOS2.z,r:42,adj:[3,6],dp:3,fo:8, nm:'TOWER 2'},
   {k:'W', n:'West home',            x:SEC_HOME.w.x,z:SEC_HOME.w.z,r:40,adj:[4,5],dp:4,fo:8, nm:'WEST HOME'}];
 const SECT={s:SEC_DEF.map(()=>({own:0,cap:0,by:0})),launch:0,tk:[30,30],dh:1,dg:1,deadT:-1,prevOwn:null,rsp:-1,warn:0};
+const FLAG_COL={0:'#d8d8d0',1:'#0a3cc0',2:'#b00d18'};   // the cloth flags: deep blue and deep red
 const SEC_COL={0:'#d8d8d0',1:'#3d9bff',2:'#ff5a4a'};   // relative: 0 neutral · 1 mine · 2 theirs
 function secTeam(){if(!MPM.on||!NT.room||(NT.M.r|0)<1)return 1;const odd=NT.M.r%2===1;return MPM.guest?(odd?2:1):(odd?1:2);}   // 1 = east, 2 = west; the host starts east on odd rounds
 function secHostTeam(){return (NT.M.r%2===1)?1:2;}
@@ -5640,7 +5641,7 @@ function secWorldStep(dt){const t=performance.now()/1000,cp=camera.position;SEC_
     // the flag sits at the foot of the pole while the sector is neutral and climbs with the capture; an owned sector flies its owner's flag at the top, which sinks as the other side captures
     let tgt,ck;if(s.own===0){tgt=s.cap>0?s.cap:0;ck=s.cap>0?relBy:0;}else{tgt=s.cap>0?1-s.cap:1;ck=rel;}
     w.h+=(tgt-w.h)*Math.min(1,dt*(tgt>w.h?1.6:2.5));
-    const key=rel*10+ck;if(w.key!==key){w.key=key;_sc.set(SEC_COL[rel]);w.ring.material.color.copy(_sc);_sc.set(SEC_COL[ck]);w.fl.material.color.copy(_sc);w.fl.material.emissive.copy(_sc).multiplyScalar(0.3);}
+    const key=rel*10+ck;if(w.key!==key){w.key=key;_sc.set(SEC_COL[rel]);w.ring.material.color.copy(_sc);_sc.set(FLAG_COL[ck]);w.fl.material.color.copy(_sc);w.fl.material.emissive.copy(_sc).multiplyScalar(0.3);}
     w.fl.position.y=0.78+w.h*(6.25-0.78);
     if(Math.hypot(d.x+d.fo-cp.x,d.z-cp.z)<600){   // ripple in the wind: a travelling wave that grows from the pole to the free edge
       const g=w.fl.geometry,pa=g.attributes.position,p0=w.fl.userData.p0,wv=t*2.6+w.ph;
@@ -5962,7 +5963,7 @@ function ugvPlMake(team){const u=makeUgv(0,0);u.i=0;u.pl=team;u.gone=1;u.dead=1;
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,1.1,5),new THREE.MeshBasicMaterial({color:0x222222}));pole.position.set(-0.5,2.25,-0.9);
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(0.55,0.32),mat);fl.position.set(-0.5+0.28,2.55,-0.9);fl.rotation.y=PI/2;
   u.root.add(pole,fl);u.flagMat=mat;UGVS.push(u);return u;}
-function ugvFlag(u){u.flagMat.color.setHex(secRel(u.pl)===1?0x3d9bff:0xff4a3a);}
+function ugvFlag(u){u.flagMat.color.setHex(secRel(u.pl)===1?0x0a3cc0:0xb00d18);}
 function ugvPlRevive(u){u.gone=0;u.dead=0;u.deadT=0;u.hp=GAME.uHp;u.tgt=null;u.mem=0;u.blind=0;u.boost=0;u.burstN=0;u.pauseT=0;u.fireT=0;u.smT=0;u.spd=0;u.ty=0;u.tp=0;u.st='patrol';u.root.visible=true;
   u.meshes.forEach(m=>{m.material=UGV_MAT;});u.root.traverse(o=>{if(o.material===UGV_LENS)o.visible=true;});}
 function ugvPlGone(u){u.gone=1;u.dead=1;u.tgt=null;u.cmd=null;u.root.visible=false;}
