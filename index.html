@@ -97,7 +97,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 <div id="miniW"><canvas id="miniCv" width="400" height="400"></canvas><div id="miniT"></div></div>
 <div id="perf" class="chip" hidden></div>
 <div id="sndDbg" class="chip" hidden></div>
-<div id="mapPanel" hidden><div class="chip"><div id="mapWrap"><canvas id="mapCv" width="1260" height="1260"></canvas></div><p id="mapGrid" style="font:600 14px var(--f-mono);margin:6px 0 2px"></p><p>1 km playable square · grid 100 m · north up · P1 / P2 spawns · click to teleport (development) · scroll to zoom · drag to pan · right-click: waypoint · right-click your UGV to select it, then right-click its destination</p></div></div>
+<div id="mapPanel" hidden><div class="chip"><div id="mapWrap"><canvas id="mapCv" width="1260" height="1260"></canvas></div><p id="mapGrid" style="font:600 14px var(--f-mono);margin:6px 0 2px"></p><p>1 km playable square · grid 100 m · north up · P1 / P2 spawns · click to teleport (development) · scroll to zoom · drag to pan · right-click your UGV to select it, then right-click its destination</p></div></div>
 <div id="overlay"><div class="card">
   <h1 aria-label="FOrest Sniper">F<svg class="scopeO" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="33" fill="none" stroke="currentColor" stroke-width="8"/><g stroke="currentColor" stroke-width="5" stroke-linecap="butt"><line x1="50" y1="0" x2="50" y2="38"/><line x1="50" y1="62" x2="50" y2="100"/><line x1="0" y1="50" x2="38" y2="50"/><line x1="62" y1="50" x2="100" y2="50"/></g><circle cx="50" cy="50" r="4" fill="#d4552e"/></svg>rest Sniper</h1>
   <p class="sub">2 km of low-poly spruce and beech forest, granite tors, a mountain stream and a lake under the Alps. Only the centre 1 km square is playable.</p>
@@ -3823,8 +3823,7 @@ mapCv.addEventListener('contextmenu',e=>{e.preventDefault();if(!mapOpen)return;c
   const x=clamp(-FE+(e.clientX-r.left)/r.width*FE*2,-PLAY,PLAY),z=clamp(-FE+(e.clientY-r.top)/r.height*FE*2,-PLAY,PLAY);
   try{const hu=ugvMapHit(e);if(hu){UGSEL.sel=!UGSEL.sel;toast(UGSEL.sel?'UGV selected · right-click the map to send it there':'UGV deselected');return;}
     if(UGSEL.sel){ugvMapOrder(x,z);UGSEL.sel=false;return;}}catch(err){}
-  if(WPT.on&&Math.hypot(x-WPT.x,z-WPT.z)<14*FE*2/r.width){WPT.on=false;toast('Waypoint cleared');return;}
-  WPT.on=true;WPT.x=x;WPT.z=z;toast('Waypoint set · '+Math.round(x)+' E  '+Math.round(-z)+' N · '+Math.round(wptDist())+' m');});
+  });   // right-click no longer drops a personal waypoint: it only selects your UGV and sends it
 function drawMap(){if(!mapBase)buildMap();const N=MAPL;mctx.setTransform(1,0,0,1,0,0);mctx.putImageData(mapBase,0,0);mctx.setTransform(mapCv.width/MAPL,0,0,mapCv.width/MAPL,0,0);const S=v=>(v+FE)/(FE*2)*N;
   if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));if($('optDeerMap').checked)BEARS.forEach(b=>drawBearMark(mctx,S(b.x),S(b.z),b,0.9,0));if($('optDeerMap').checked&&typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mctx,S(u.x),S(u.z),u,0.9));
   try{secDrawMap(mctx,S,N);}catch(e){}
@@ -4093,7 +4092,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=406;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=408;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5586,7 +5585,7 @@ function secArmed(team){const n=SECT.s.reduce((a,s)=>a+(s.own===team?1:0),0);ret
 function secAttackable(i,team){return i!==0&&i!==6&&SECT.s[i].own!==team;}   // any sector can be attacked at any time (no capture order)
 function secPlayers(){const out=[],t=secTeam();out.push({team:t,x:player.pos.x,z:player.pos.z,al:player.alive&&MPM.hp>0});
   if(MPM.on&&NT.opp&&RPS.pos&&RPS.r===NT.M.r)out.push({team:3-t,x:RPS.pos.x,z:RPS.pos.z,al:!!RPS.al});
-  for(const u of UGVS)if(u.pl&&!u.dead&&!u.gone)out.push({team:u.pl,x:u.x,z:u.z,al:true,ugv:true});   // team UGVs capture too
+  for(const u of UGVS)if(u.pl&&!u.dead&&!u.gone)out.push({team:u.pl,x:u.x,z:u.z,al:!(u.air>0),ugv:true});   // team UGVs capture too
   return out;}
 // the host (or single player) runs the capture
 function secSim(dt){const P=secPlayers();
@@ -5820,9 +5819,9 @@ function ugvReset(){UGVS.forEach(u=>{if(u.pl)ugvPlGone(u);else ugvRespawn(u);});
 // sit the hull on the ground: pitch from the track ends, roll from the two sides, smoothed so it rocks rather than snaps
 function ugvPlace(u,dt){const s=Math.sin(u.yaw),c=Math.cos(u.yaw),F=1.05,W=0.62;
   const hF=groundH(u.x+s*F,u.z+c*F),hB=groundH(u.x-s*F,u.z-c*F),hR=groundH(u.x+c*W,u.z-s*W),hL=groundH(u.x-c*W,u.z+s*W),hC=groundH(u.x,u.z);
-  const y=Math.max(hC,(hF+hB+hR+hL)/4),k=Math.min(1,dt*6);u.y=u.y?u.y+(y-u.y)*Math.min(1,dt*10):y;
+  const y=Math.max(hC,(hF+hB+hR+hL)/4)+(u.air||0),k=Math.min(1,dt*6);u.y=u.y?u.y+(y-u.y)*Math.min(1,dt*10):y;
   u.pit+=(-Math.atan2(hF-hB,F*2)-u.pit)*k;u.rol+=(Math.atan2(hR-hL,W*2)-u.rol)*k;
-  u.root.position.set(u.x,u.y-0.02,u.z);u.root.rotation.set(u.pit,u.yaw,u.rol);u.yawG.rotation.y=u.ty;u.pitG.rotation.x=-u.tp;u.root.updateMatrixWorld(true);}
+  const sw=u.air>0?performance.now():0;u.root.position.set(u.x,u.y-0.02,u.z);u.root.rotation.set(u.pit+(sw?0.06*Math.sin(sw/700+u.hx):0),u.yaw,u.rol+(sw?0.05*Math.sin(sw/900):0));u.yawG.rotation.y=u.ty;u.pitG.rotation.x=-u.tp;u.root.updateMatrixWorld(true);}
 // ---- people it can see
 function ugvHumans(){const L=[];try{if(player.alive&&MPM.hp>0)L.push({x:player.pos.x,y:player.pos.y,z:player.pos.z,opp:false,st:player.stance,sp:Math.hypot(player.vel.x,player.vel.z),vx:player.vel.x,vz:player.vel.z});}catch(e){}
   try{if(MPM.on&&NT.opp&&RPS.al&&RPS.pos)L.push({x:RPS.pos.x,y:RPS.pos.y,z:RPS.pos.z,opp:true,st:RPS.stn,sp:RPS.sp||0,vx:0,vz:0});}catch(e){}
@@ -5909,8 +5908,8 @@ function ugvGuest(u,dt){if(u.dead)u.deadT+=dt;const n=u.net;if(!n)return;const a
   if(Math.hypot(tx-u.x,tz-u.z)>10){u.x=tx;u.z=tz;u.yaw=n.yaw;}else{const k=Math.min(1,dt*8);const ox=u.x,oz=u.z;u.x+=(tx-u.x)*k;u.z+=(tz-u.z)*k;u.wd+=Math.hypot(u.x-ox,u.z-oz)*Math.sign(n.spd||1);u.yaw+=wrapA(n.yaw-u.yaw)*k;}
   const k2=Math.min(1,dt*10);const oty=u.ty;u.ty+=wrapA(n.ty-u.ty)*k2;u.tRate=Math.abs(wrapA(u.ty-oty))/Math.max(dt,1e-3);u.tp+=(n.tp-u.tp)*k2;u.spd=n.spd;
   if(n.st!==u.st&&n.st==='alert')ugvBeep(u);u.st=n.st;u.hp=n.hp;if(n.dead&&!u.dead)ugvWreck(u,false);else if(!n.dead&&u.dead)ugvRespawn(u);}
-function ugvNetList(){return UGVS.map(u=>[nr1(u.x),nr1(u.z),nr2(wrapA(u.yaw)),nr2(u.ty),nr2(u.tp),Math.max(0,UST.indexOf(u.st)),Math.round(u.hp),nr1(u.spd),u.gone?2:u.dead?1:0,u.pl|0]);}
-function ugvNetApply(arr){if(!Array.isArray(arr))return;const now=performance.now();arr.forEach((a,i)=>{const u=UGVS[i];if(u)u.net={x:+a[0],z:+a[1],yaw:+a[2],ty:+a[3],tp:+a[4],st:UST[a[5]]||'patrol',hp:+a[6],spd:+a[7]||0,dead:!!a[8],gone:a[8]===2,at:now};});}
+function ugvNetList(){return UGVS.map(u=>[nr1(u.x),nr1(u.z),nr2(wrapA(u.yaw)),nr2(u.ty),nr2(u.tp),Math.max(0,UST.indexOf(u.st)),Math.round(u.hp),nr1(u.spd),u.gone?2:u.dead?1:0,u.pl|0,nr1(u.air||0)]);}
+function ugvNetApply(arr){if(!Array.isArray(arr))return;const now=performance.now();arr.forEach((a,i)=>{const u=UGVS[i];if(u)u.net={x:+a[0],z:+a[1],yaw:+a[2],ty:+a[3],tp:+a[4],st:UST[a[5]]||'patrol',hp:+a[6],spd:+a[7]||0,dead:!!a[8],gone:a[8]===2,air:+a[10]||0,at:now};});}
 // ---- shooting it
 const _uRay=new THREE.Raycaster();
 function rayUgv(o,dir,len,noRem){let best=null;if(noRem)return null;   // the UGV's own rounds and other players' tracers never hit it
@@ -5960,9 +5959,9 @@ function ugvStep(dtO){const now=performance.now();const dt=dtO!=null?dtO:Math.mi
   if(nAI())ugvClear();   // the AI patrol robots are removed: only team UGVs (the gadget) exist
   for(const u of UGVS){if(u.pl&&u.gone){u.root.visible=false;if(gst)ugvGuest(u,dt);continue;}
     if(gst)ugvGuest(u,dt);else if(playing||dtO!=null)ugvHost(u,dt);
-    ugvPlace(u,dt);ugvWheels(u);ugvFx(u,dt);try{ugvAudio(u,dt);}catch(e){}try{ugvPush(u);}catch(e){}if(u.pl)try{ugvFlag(u);}catch(e){}}}
+    ugvPlace(u,dt);ugvWheels(u);ugvFx(u,dt);try{ugvAudio(u,dt);}catch(e){}try{ugvPush(u);}catch(e){}if(u.pl){try{ugvFlag(u);}catch(e){}try{ugvAir(u,dt);}catch(e){}}}}
 ugvHost=(f=>function(u,dt){return ugvW(u,()=>f(u,dt));})(ugvHost);
-ugvGuest=(f=>function(u,dt){if(u.pl&&u.net&&u.net.gone){if(!u.gone)ugvPlGone(u);return;}if(u.pl&&u.gone){ugvPlRevive(u);u.dead=0;}return ugvW(u,()=>f(u,dt));})(ugvGuest);
+ugvGuest=(f=>function(u,dt){if(u.pl&&u.net&&u.net.gone){if(!u.gone)ugvPlGone(u);return;}if(u.pl&&u.gone){ugvPlRevive(u);u.dead=0;}if(u.pl&&u.net)u.air=u.net.air||0;return ugvW(u,()=>f(u,dt));})(ugvGuest);
 hitUgv=(f=>function(u){const a=arguments;return ugvW(u,()=>f.apply(this,a));})(hitUgv);
 netUgvHit=(f=>function(u){const a=arguments;return ugvW(u,()=>f.apply(this,a));})(netUgvHit);
 ugvRespawn=(f=>function(u){return ugvW(u,()=>f(u));})(ugvRespawn);
@@ -5982,22 +5981,21 @@ function ugvPlMake(team){const u=makeUgv(0,0);u.i=0;u.pl=team;u.gone=1;u.dead=1;
 function ugvFlag(u){u.flagMat.color.setHex(secRel(u.pl)===1?0x0a3cc0:0xb00d18);}
 function ugvPlRevive(u){u.gone=0;u.dead=0;u.deadT=0;u.hp=GAME.uHp;u.tgt=null;u.mem=0;u.blind=0;u.boost=0;u.burstN=0;u.pauseT=0;u.fireT=0;u.smT=0;u.spd=0;u.ty=0;u.tp=0;u.st='patrol';u.root.visible=true;
   u.meshes.forEach(m=>{m.material=UGV_MAT;});u.root.traverse(o=>{if(o.material===UGV_LENS)o.visible=true;});}
-function ugvPlGone(u){u.gone=1;u.dead=1;u.tgt=null;u.cmd=null;u.root.visible=false;}
+function ugvPlGone(u){try{if(u.vo)u.vo.out.gain.setTargetAtTime(0,AC.currentTime,0.05);}catch(e){}u.air=0;if(u.cv)u.cv.visible=false;u.gone=1;u.dead=1;u.tgt=null;u.cmd=null;u.root.visible=false;}
 function ugvPlSpawn(team,x,z,ya){let u=UGVS.find(q=>q.pl===team);if(!u)u=ugvPlMake(team);else if(!u.dead&&!u.gone)return u;
-  Object.assign(u,{x,z,hx:x,hz:z,tx:x,tz:z,yaw:ya,y:0,pit:0,rol:0});u.cmd=null;u.home={x,z};u.hold=0;u.pw=null;u.pwPause=0;ugvPlRevive(u);ugvPlace(u,1);return u;}
+  Object.assign(u,{x,z,hx:x,hz:z,tx:x,tz:z,yaw:ya,y:0,pit:0,rol:0});u.cmd=null;u.home={x,z};u.hold=0;u.pw=null;u.pwPause=0;u.air=70;ugvPlRevive(u);ugvPlace(u,1);return u;}
 function ugvMine(){const t=secTeam();for(const u of UGVS)if(u.pl===t&&!u.dead&&!u.gone)return u;return null;}
 function ugvTxt(it){if(!it.used)return 'ready';const u=ugvMine();if(u)return u.st==='engage'?'firing':Math.abs(u.spd)>0.3?'moving':'holding';return performance.now()-(it.t0||0)<5000?'deploying':'destroyed';}
 function ugvDeploy(gi){const it=SLOT.g[gi];if(!it||it.k!=='ugv'||!playing||!player.alive)return;
   if(it.used){toast('Your UGV is already out · right-click the map to send it somewhere');return;}
   if(MPM.on&&NT.M.ph!=='live'){toast('Deploy the UGV once the round is live');return;}
   if(ugvMine()){toast('Your team already has a UGV out');return;}
-  let sp=null;for(const r of [5,7,9,4,12]){for(const k of [0,0.5,-0.5,1,-1,1.6,-1.6]){const x=player.pos.x-Math.sin(camYaw+k)*r,z=player.pos.z-Math.cos(camYaw+k)*r;
-    if(!ugvBlocked(x,z)&&!ugvBlocked(x+2,z)&&!ugvBlocked(x-2,z)&&Math.abs(groundH(x,z)-player.pos.y)<2.5){sp={x,z};break;}}if(sp)break;}
-  if(!sp){toast('No room for a UGV here · move to open ground');return;}
+  const sp=ugvLandSpot();
+  if(!sp){toast('No clear ground near here for a UGV drop · move to open ground');return;}
   const ya=wrapA(camYaw+PI);it.used=true;it.t0=performance.now();PUG.cmd=null;
   if(MPM.on&&MPM.guest){try{NT.room.emit('pug',{c:'spawn',x:nr1(sp.x),z:nr1(sp.z),ya:nr2(ya)}).catch(()=>{});}catch(e){}}
   else ugvPlSpawn(secTeam(),sp.x,sp.z,ya);
-  try{sfx.click();}catch(e){}toast('UGV deployed · open the map (P), right-click it, then right-click a destination');try{EQB.ui(true);}catch(e){}}
+  try{sfx.click();}catch(e){}toast('UGV dropping by parachute '+Math.round(Math.hypot(sp.x-player.pos.x,sp.z-player.pos.z))+' m away · open the map (P), right-click it, then right-click a destination');try{EQB.ui(true);}catch(e){}}
 // ---- route planning: A* over a 3 m grid (trees, rocks, water, steep ground and the silo count as blocked), then the corners are cut with line-of-sight checks
 const UGP={cs:3,R:160,cache:new Map(),G:null,P:null,ST:null,stamp:0};
 function ugpBlk(i,j){const k=(i+400)*1000+(j+400);let v=UGP.cache.get(k);if(v===undefined){v=ugvBlocked(i*UGP.cs,j*UGP.cs)?1:0;UGP.cache.set(k,v);}return v;}
@@ -6035,6 +6033,7 @@ function ugvNetCmd(d){if(!MPM.on||MPM.guest)return;const gt=3-secTeam();
   else if(d.c==='go'){const x=+d.x,z=+d.z;if(!isFinite(x+z))return;const u=UGVS.find(q=>q.pl===gt&&!q.dead&&!q.gone);if(u)ugvOrder(u,x,z);}}
 // the brain of a team UGV (host): look for the other side, stop and fire when one is in range, otherwise drive to the order
 function ugvHostP(u,dt){if(u.gone)return;if(u.dead){u.deadT+=dt;return;}
+  if(u.air>0){u.air=Math.max(0,u.air-7*dt);u.tgt=null;return;}   // still under the parachute
   u.blind=Math.max(0,u.blind-dt);u.boost=Math.max(0,u.boost-dt);u.losT-=dt;
   let live=true;try{if(MPM.on&&NT.M.ph!=='live')live=false;}catch(e){}
   if(u.losT<=0){u.losT=0.2;const T0=live?ugvLook(u):null;if(T0){if(!u.tgt)u.shots=0;u.tgt=T0;u.mem=3;}else if(u.tgt){u.mem-=0.2;if(u.mem<=0)u.tgt=null;}}
@@ -6066,6 +6065,44 @@ function ugvHostP(u,dt){if(u.gone)return;if(u.dead){u.deadT+=dt;return;}
   try{const u=ugvMine();if(!u||!(UGSEL.hov||UGSEL.sel))return;const wr=mapCv.getBoundingClientRect(),K=mapCv.width/MAPL,S=v=>(v+FE)/(FE*2)*MAPL,rr=15*MAPL/wr.width,pu=0.5+0.5*Math.sin(performance.now()/180);
     mctx.setTransform(K,0,0,K,0,0);mctx.save();mctx.lineWidth=2.4*MAPL/wr.width*1.4;mctx.strokeStyle=UGSEL.sel?'#ffd34d':'#ffffff';mctx.globalAlpha=UGSEL.sel?0.6+0.4*pu:1;mctx.beginPath();mctx.arc(S(u.x),S(u.z),rr*(UGSEL.sel?1+0.15*pu:1),0,PI*2);mctx.stroke();
     mctx.font=(11*MAPL/wr.width)+'px sans-serif';mctx.fillStyle=UGSEL.sel?'#ffd34d':'#ffffff';mctx.textAlign='center';mctx.fillText(UGSEL.sel?'UGV · right-click a destination':'UGV · right-click to select',S(u.x),S(u.z)-rr-4*MAPL/wr.width);mctx.restore();mctx.setTransform(1,0,0,1,0,0);}catch(e){}};}
+// a clear landing area near you: 12 m square with no trunks, rocks, water or steep ground, preferably ahead of you
+function ugvLandSpot(){const P=player.pos,f0=camYaw+PI;let best=null,bc=-1;
+  for(const r of [30,24,38,46,56,66])for(const off of [0,0.4,-0.4,0.8,-0.8,1.3,-1.3,1.9,-1.9,2.5,-2.5,PI]){const ph=f0+off,x=P.x+Math.sin(ph)*r,z=P.z+Math.cos(ph)*r;
+    if(Math.abs(x)>455||Math.abs(z)>455||Math.abs(groundH(x,z)-P.y)>14)continue;
+    let n=0;for(let dx=-6;dx<=6;dx+=3)for(let dz=-6;dz<=6;dz+=3)if(!ugvBlocked(x+dx,z+dz))n++;
+    if(n===25)return {x,z};if(n>bc){bc=n;best={x,z};}}
+  return bc>=21?best:null;}
+// the canopy while it is in the air, collapsing when it lands (a dust puff and a thump)
+function ugvAir(u,dt){if(!u.cv){const c=CHM.clone();u.cv=c.grp;u.root.add(u.cv);u.cv.scale.setScalar(1.7);u.cv.visible=false;}
+  const cv=u.cv;
+  if(u.air>0){u.wasAir=1;u.cT=0;cv.visible=true;cv.scale.set(1.7,1.7,1.7);cv.position.set(0,1.5+5*1.7,0);}
+  else if(u.wasAir){u.wasAir=0;u.cT=1.6;try{const p=V(u.x,u.y+0.3,u.z);for(let i=0;i<10;i++){const a=Math.random()*PI*2;emit(gPuff,matSmoke,p,V(Math.cos(a)*2.2,0.8+Math.random()*1.2,Math.sin(a)*2.2),1.6,{s:0.5,grow:1.8,drag:1.6});}
+      const c=sp3(u.x,u.y,u.z,350);if(c){tn(c,c.t0,95,34,0.35,0.7,'sine');nz(c,c.t0,0.3,280,0.7,0.6,'lowpass');}}catch(e){}}
+  if(u.cT>0){u.cT-=dt;const k=Math.max(0,u.cT/1.6);cv.visible=k>0;cv.scale.set(1.7,1.7*(0.12+0.88*k),1.7);cv.position.set(0,1.5+5*1.7*k,0.4*(1-k));}}
+// the electric drive: a motor hum and a thin controller whine that rise with speed, a low rumble, track clatter at link rate and a turret servo; one continuous voice per UGV
+function ugvVoice(u,dt){if(!AC||!soundOn||!noiseBuf)return;const cp=camera.position,dd=Math.hypot(u.x-cp.x,u.z-cp.z);let V_=u.vo;
+  if(!V_){if(dd>230||u.dead||u.gone||u.air>0)return;
+    const out=AC.createGain();out.gain.value=0;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3800;
+    const pn=AC.createPanner();pn.panningModel='HRTF';pn.distanceModel='inverse';pn.refDistance=14;pn.rolloffFactor=1.25;pn.maxDistance=20000;out.connect(lp);lp.connect(pn);pn.connect(AC.destination);
+    const osc=(type,g0,flt)=>{const o=AC.createOscillator();o.type=type;const g=AC.createGain();g.gain.value=g0;if(flt){const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=flt;o.connect(f);f.connect(g);}else o.connect(g);g.connect(out);o.start();return {o,g};};
+    const hum=osc('sawtooth',0,900),whine=osc('triangle',0,0),thin=osc('sine',0,0),servo=osc('sawtooth',0,1800);
+    const nzs=(f,q,type)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;s.loopStart=Math.random();const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain();g.gain.value=0;s.connect(fl);fl.connect(g);g.connect(out);s.start();return {s,g,fl};};
+    const rum=nzs(150,0.7,'lowpass'),clat=nzs(1250,1.1,'bandpass');
+    const lfo=AC.createOscillator();lfo.type='square';lfo.frequency.value=3;const lg=AC.createGain();lg.gain.value=0;lfo.connect(lg);lg.connect(clat.g.gain);lfo.start();
+    V_=u.vo={out,pn,hum,whine,thin,servo,rum,clat,lfo,lg};}
+  const t=AC.currentTime,sm=(prm,v,k)=>prm.setTargetAtTime(v,t,k||0.12);
+  const v=Math.abs(u.spd||0),sv=Math.min(1,(u.tRate||0)/0.6),live=!u.dead&&!u.gone&&!(u.air>0)&&dd<260;
+  const run=live?Math.min(1,v/1.2):0,fq=1+0.0*run;
+  sm(V_.out.gain,live?0.9:0,0.15);
+  if(V_.pn.positionX){V_.pn.positionX.value=u.x;V_.pn.positionY.value=u.y+0.8;V_.pn.positionZ.value=u.z;}else V_.pn.setPosition(u.x,u.y+0.8,u.z);
+  sm(V_.hum.o.frequency,62+v*30);sm(V_.hum.g.gain,0.10*run+0.015*(live?1:0));            // motor hum under load
+  sm(V_.whine.o.frequency,310+v*150);sm(V_.whine.g.gain,0.035*run);                      // inverter whine
+  sm(V_.thin.o.frequency,2400+v*420);sm(V_.thin.g.gain,0.006*run);
+  sm(V_.servo.o.frequency,420+(u.tRate||0)*160);sm(V_.servo.g.gain,live?0.02*sv:0);       // turret traverse
+  sm(V_.rum.g.gain,live?0.16*run:0);sm(V_.rum.fl.frequency,120+v*28);
+  sm(V_.clat.g.gain,live?0.05*run:0);sm(V_.lfo.frequency,Math.max(1,v*3.4));sm(V_.lg.gain,live?0.045*run:0);   // track links
+}
+ugvAudio=(f=>function(u,dt){if(u.pl)return ugvVoice(u,dt);return f(u,dt);})(ugvAudio);
 // map / minimap marker: a little utan hull pointing the way it drives, the gun showing where the turret looks; a grey cross when destroyed
 function drawUgvMark(c,x,y,u,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWidth=2;
   if(u.dead){c.strokeStyle='#9a9a94';c.beginPath();c.moveTo(-6,-6);c.lineTo(6,6);c.moveTo(6,-6);c.lineTo(-6,6);c.stroke();c.restore();return;}
