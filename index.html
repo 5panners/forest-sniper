@@ -32,7 +32,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-ui);o
 #mapPanel{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none;padding:46px 0 96px;box-sizing:border-box}   /* leaves the compass above and the hotbar below clear */
 #mapPanel .chip{padding:10px;pointer-events:none}
 #mapPanel .chip canvas{pointer-events:auto;cursor:crosshair}
-#mapCv{display:block;width:min(calc(100vw - 32px),calc(100vh - 46px - 96px - 58px));height:min(calc(100vw - 32px),calc(100vh - 46px - 96px - 58px));border-radius:4px}
+#mapWrap{overflow:hidden;border-radius:4px;line-height:0}#mapCv{display:block;transform-origin:0 0;will-change:transform;width:min(calc(100vw - 32px),calc(100vh - 46px - 96px - 58px));height:min(calc(100vw - 32px),calc(100vh - 46px - 96px - 58px));border-radius:4px}
 #mapPanel p{margin:6px 2px 0;font:12px var(--f-mono);color:var(--muted)}
 #mapPanel p:last-child{display:none}
 #overlay{position:fixed;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));
@@ -97,7 +97,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 <div id="miniW"><canvas id="miniCv" width="400" height="400"></canvas><div id="miniT"></div></div>
 <div id="perf" class="chip" hidden></div>
 <div id="sndDbg" class="chip" hidden></div>
-<div id="mapPanel" hidden><div class="chip"><canvas id="mapCv" width="840" height="840"></canvas><p id="mapGrid" style="font:600 14px var(--f-mono);margin:6px 0 2px"></p><p>1 km playable square · grid 100 m · north up · P1 / P2 spawns · click to teleport (development)</p></div></div>
+<div id="mapPanel" hidden><div class="chip"><div id="mapWrap"><canvas id="mapCv" width="1260" height="1260"></canvas></div><p id="mapGrid" style="font:600 14px var(--f-mono);margin:6px 0 2px"></p><p>1 km playable square · grid 100 m · north up · P1 / P2 spawns · click to teleport (development) · scroll to zoom · drag to pan · right-click: waypoint and UGV order</p></div></div>
 <div id="overlay"><div class="card">
   <h1 aria-label="FOrest Sniper">F<svg class="scopeO" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="33" fill="none" stroke="currentColor" stroke-width="8"/><g stroke="currentColor" stroke-width="5" stroke-linecap="butt"><line x1="50" y1="0" x2="50" y2="38"/><line x1="50" y1="62" x2="50" y2="100"/><line x1="0" y1="50" x2="38" y2="50"/><line x1="62" y1="50" x2="100" y2="50"/></g><circle cx="50" cy="50" r="4" fill="#d4552e"/></svg>rest Sniper</h1>
   <p class="sub">2 km of low-poly spruce and beech forest, granite tors, a mountain stream and a lake under the Alps. Only the centre 1 km square is playable.</p>
@@ -3800,6 +3800,15 @@ mapCv.addEventListener('click',e=>{if(!mapOpen)return;const r=mapCv.getBoundingC
   const x=clamp(-FE+(e.clientX-r.left)/r.width*FE*2,-PLAY+2,PLAY-2),z=clamp(-FE+(e.clientY-r.top)/r.height*FE*2,-PLAY+2,PLAY-2);
   const pl=player;pl.vel.set(0,0,0);pl.slide=null;pl.stance='stand';pl.pos.set(x,supportAt(x,z,1e4,PRAD*0.7)+0.05,z);pl.grounded=true;pl.fallV=0;
   camPivot.copy(pl.pos).add(V(0,1.68,0));toast('Teleported · '+Math.round(x)+' E  '+Math.round(-z)+' N');setMap(false);e.stopPropagation();});
+// ---- zoom the full map with the scroll wheel (towards the pointer), drag to pan
+const MZ={k:1,x:0,y:0,drag:null,moved:false};
+function mzApply(){const w=mapCv.clientWidth||1;MZ.k=clamp(MZ.k,1,8);MZ.x=clamp(MZ.x,w*(1-MZ.k),0);MZ.y=clamp(MZ.y,w*(1-MZ.k),0);mapCv.style.transform=MZ.k===1?'':'translate('+MZ.x+'px,'+MZ.y+'px) scale('+MZ.k+')';}
+mapCv.addEventListener('wheel',e=>{if(!mapOpen)return;e.preventDefault();const wr=mapCv.parentNode.getBoundingClientRect(),px=e.clientX-wr.left,py=e.clientY-wr.top,k0=MZ.k,k1=clamp(k0*Math.exp(-e.deltaY*0.0016),1,8);
+  MZ.x=px-(px-MZ.x)*k1/k0;MZ.y=py-(py-MZ.y)*k1/k0;MZ.k=k1;mzApply();},{passive:false});
+mapCv.addEventListener('mousedown',e=>{if(!mapOpen||e.button!==0)return;MZ.drag={x:e.clientX,y:e.clientY,ox:MZ.x,oy:MZ.y};MZ.moved=false;});
+addEventListener('mousemove',e=>{const d=MZ.drag;if(!d)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;if(!MZ.moved&&Math.hypot(dx,dy)<5)return;MZ.moved=true;if(MZ.k>1){MZ.x=d.ox+dx;MZ.y=d.oy+dy;mzApply();}});
+addEventListener('mouseup',()=>{MZ.drag=null;});
+mapCv.addEventListener('click',e=>{if(MZ.moved){MZ.moved=false;e.stopImmediatePropagation();e.stopPropagation();}},true);   // a drag is not a teleport click
 // ---- personal waypoint: right-click the map to drop it (one at a time, only on your own screen; right-click it again to clear it)
 const WPT={on:false,x:0,z:0};
 function wptDist(){return Math.hypot(WPT.x-player.pos.x,WPT.z-player.pos.z);}
@@ -4077,7 +4086,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=404;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=405;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
