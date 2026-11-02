@@ -3579,7 +3579,8 @@ function stepBullets1(dt){
         if(h.ugv){ugvSparks(h.point,h.normal);(MPM.guest?netUgvHit(h.ugv,h.sub,dist):hitUgv(h.ugv,h.sub,dist,false));}
         if(h.bear){if(h.sub==='head')headDing();else hitThud();(MPM.guest?netBearHit(h.bear,h.sub,dist):hitBear(h.bear,h.sub,dist));}
         if(h.bird){hitThud();if(MPM.guest)netBirdHit(h.bird,dist);else hitBird(h.bird,dist);}
-        if(h.deer){if(h.sub==='head')headDing();else hitThud();if(MPM.guest)netDeerHit(h.deer,h.sub,h.leg,dist);else{hitDeer(h.deer,h.sub,dist);if(h.sub==='leg')legHit(h.deer,h.leg);}}}finally{DMG.w.rifle=_W;HITW='rifle';}}}
+        if(h.deer){if(h.sub==='head')headDing();else hitThud();if(MPM.guest)netDeerHit(h.deer,h.sub,h.leg,dist);else{hitDeer(h.deer,h.sub,dist);if(h.sub==='leg')legHit(h.deer,h.leg);}}}finally{DMG.w.rifle=_W;HITW='rifle';}}
+        else if(b.ugv&&b.tm&&h.deer&&!MPM.guest){hitFrom=b.o;MPM.mute=true;try{hitDeer(h.deer,h.sub,dist);if(h.sub==='leg')legHit(h.deer,h.leg);}finally{MPM.mute=false;hitFrom=null;}}}   // a team UGV's rounds hurt deer (host)
       if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}
     b.p.addScaledVector(_bd,len);b.t+=dt;if(b.rem)netCrack(b);
     if(b.tr){const L=Math.min(b.p.distanceTo(b.o),14);_bp.copy(b.p).addScaledVector(_bd,-L);b.tr.position.copy(_bp);const w=0.02+b.p.distanceTo(b.o)*0.0004;b.tr.scale.set(w,w,Math.max(0.01,L));b.tr.lookAt(b.p);}
@@ -4096,7 +4097,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=410;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=411;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5829,8 +5830,11 @@ function ugvPlace(u,dt){const s=Math.sin(u.yaw),c=Math.cos(u.yaw),F=1.05,W=0.62;
 // ---- people it can see
 function ugvHumans(){const L=[];try{if(player.alive&&MPM.hp>0)L.push({x:player.pos.x,y:player.pos.y,z:player.pos.z,opp:false,st:player.stance,sp:Math.hypot(player.vel.x,player.vel.z),vx:player.vel.x,vz:player.vel.z});}catch(e){}
   try{if(MPM.on&&NT.opp&&RPS.al&&RPS.pos)L.push({x:RPS.pos.x,y:RPS.pos.y,z:RPS.pos.z,opp:true,st:RPS.stn,sp:RPS.sp||0,vx:0,vz:0});}catch(e){}
-  {const cu=UGV.cur;if(cu&&cu.pl){const mt=secTeam();return L.filter(h=>(h.opp?3-mt:mt)!==cu.pl);}}   // a team UGV only sees the other side
+  {const cu=UGV.cur;if(cu&&cu.pl){const mt=secTeam();const R=L.filter(h=>(h.opp?3-mt:mt)!==cu.pl);   // a team UGV only sees the other side
+    if(UGV_DEER)for(const d of DEER)if(d.st!=='dead'&&d.st!=='dying')R.push({x:d.x,y:d.y,z:d.z,opp:null,deer:d,st:'crouch',sp:d.spd||0,vx:0,vz:0});   // testing: it hunts deer too
+    return R;}}
   return L;}
+const UGV_DEER=true;   // for testing, the team UGV also shoots deer (set false to remove)
 const ugvChestY=h=>h.y+(h.st==='prone'?0.3:h.st==='crouch'?0.95:1.35);
 const _uo=new THREE.Vector3(),_ud=new THREE.Vector3(),_ua=new THREE.Vector3();
 function ugvEye(u){return u.pitG.localToWorld(_uo.set(0.17,0.06,0.25));}
@@ -5839,7 +5843,7 @@ function ugvSees(u,h){const o=ugvEye(u).clone();_ud.set(h.x-o.x,ugvChestY(h)-o.y
 function ugvRangeFor(u,h){return GAME.uSee*(h.st==='prone'?0.45:h.st==='crouch'?0.7:1)*(h.sp>4?1.15:h.sp<0.3?0.85:1)*(u.blind>0?0.25:1)*(u.boost>0?1.6:1);}
 function ugvLook(u){try{if(MPM.on&&NT.M.ph!=='live')return null;}catch(e){}let best=null,bd=1e9;
   for(const h of ugvHumans()){const d=Math.hypot(h.x-u.x,h.z-u.z);if(d>ugvRangeFor(u,h)||d>=bd)continue;if(!ugvSees(u,h))continue;best=h;bd=d;}return best;}
-function ugvFresh(T){const L=ugvHumans();for(const h of L)if(h.opp===T.opp)return h;return null;}
+function ugvFresh(T){const L=ugvHumans();if(T.deer)return L.find(h=>h.deer===T.deer)||null;for(const h of L)if(h.opp===T.opp)return h;return null;}
 // ---- driving: tracked, so it pivots on the spot when the heading is far off; steers round trunks and rocks
 function ugvDrive(u,tx,tz,want,dt){const h=ugvHome(),lr=u.pl?0:Math.hypot(tx-h.x,tz-h.z);if(lr>GAME.uLeash){const k=GAME.uLeash/lr;tx=h.x+(tx-h.x)*k;tz=h.z+(tz-h.z)*k;}
   const d=Math.hypot(tx-u.x,tz-u.z);if(d<2.5)want=0;
