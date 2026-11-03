@@ -3376,7 +3376,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=424;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=425;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5114,7 +5114,9 @@ function makeUgv(hx,hz){
   scene.add(root);return u;}
 function ugvSilo(){return (typeof SILO_SITES!=='undefined'&&SILO_SITES[0])||SILO_POS;}
 function ugvHome(u){u=u||UGV.cur;if(u&&u.i!=null){const c=ugcGet(u.i);return {x:clamp(+c.uGE||0,-465,465),z:-clamp(+c.uGN||0,-465,465)};}return ugvSilo();}   // a UGV patrols round its own grid reference
-function ugvBlocked(x,z){if(Math.abs(x)>470||Math.abs(z)>470)return true;try{if(lakeE(x,z)<1.1)return true;}catch(e){}   // streams can be forded; the lake cannottry{if(slopeAt(x,z)>0.8)return true;}catch(e){}
+let DR_X=false;   // while the droid thinks, steep stream banks do not block it: it can cross streams
+function nearStream(x,z){const q=polyNear(STREAM,x,z,14);return q.i>=0&&q.d<8;}
+function ugvBlocked(x,z){if(Math.abs(x)>470||Math.abs(z)>470)return true;try{if(lakeE(x,z)<1.1)return true;}catch(e){}   // streams can be forded; the lake cannottry{if(slopeAt(x,z)>0.8&&!(DR_X&&nearStream(x,z)))return true;}catch(e){}
   const h=ugvSilo();if(Math.hypot(x-h.x,z-h.z)<8)return true;
   for(const p of pillarsNear(x,z)){if(Math.hypot(p.x-x,p.z-z)<p.r+1.25)return true;}return false;}
 function ugvWaypoint(u){const h=ugvHome();for(let k=0;k<40;k++){const a=Math.random()*Math.PI*2,r=14+Math.random()*Math.max(4,GAME.uPatrol-14);const x=h.x+Math.sin(a)*r,z=h.z+Math.cos(a)*r;if(!ugvBlocked(x,z)){u.tx=x;u.tz=z;return;}}u.tx=u.hx;u.tz=u.hz;}
@@ -5310,7 +5312,7 @@ function ugvDeploy(gi){const it=SLOT.g[gi];if(!it||it.k!=='ugv'||!playing||!play
   try{sfx.click();}catch(e){}toast('UGV dropping by parachute, it will follow you until ordered · '+Math.round(Math.hypot(sp.x-player.pos.x,sp.z-player.pos.z))+' m away · open the map (P), right-click it, then right-click a destination');try{EQB.ui(true);}catch(e){}}
 // ---- route planning: A* over a 3 m grid (trees, rocks, water, steep ground and the silo count as blocked), then the corners are cut with line-of-sight checks
 const UGP={cs:3,R:160,cache:new Map(),G:null,P:null,ST:null,stamp:0};
-function ugpBlk(i,j){const k=(i+400)*1000+(j+400);let v=UGP.cache.get(k);if(v===undefined){v=ugvBlocked(i*UGP.cs,j*UGP.cs)?1:0;UGP.cache.set(k,v);}return v;}
+function ugpBlk(i,j){const k=(i+400)*1000+(j+400);const CC=DR_X?(UGP.c2||(UGP.c2=new Map())):UGP.cache;let v=CC.get(k);if(v===undefined){v=ugvBlocked(i*UGP.cs,j*UGP.cs)?1:0;CC.set(k,v);}return v;}
 function ugpLos(ax,az,bx,bz){const d=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.ceil(d/1.5));for(let k=1;k<=n;k++){const t=k/n;if(ugvBlocked(ax+(bx-ax)*t,az+(bz-az)*t))return false;}return true;}
 function ugvPlan(sx,sz,tx,tz){const cs=UGP.cs,R=UGP.R,N=2*R+1;
   if(!UGP.G){UGP.G=new Float32Array(N*N);UGP.P=new Int32Array(N*N);UGP.ST=new Uint32Array(N*N);}
@@ -5743,7 +5745,8 @@ function droidLook(m){const D=m.D;const eye=new THREE.Vector3(D.x,groundH(D.x,D.
   for(const d of DEER){if(d.st==='dead'||d.st==='dying')continue;const dd=Math.hypot(d.x-D.x,d.z-D.z);if(dd>140||dd>=bd)continue;
     const dir=new THREE.Vector3(d.x-eye.x,d.y+0.9-eye.y,d.z-eye.z),L=dir.length();dir.multiplyScalar(1/L);const r=castRay(eye,dir,Math.max(0.5,L-1),true);if(r)continue;best=d;bd=dd;}
   return best;}
-function droidStep(){
+function droidStep(){DR_X=true;try{droidStep1();}finally{DR_X=false;}}
+function droidStep1(){
   const dt=Math.min(0.1,(performance.now()-(DR.lt||performance.now()))/1000);DR.lt=performance.now();
   try{if(MPM&&MPM.on){if(DR.m)DR.m.root.visible=false;return;}}catch(e){}
   if(!playing)return;
