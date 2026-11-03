@@ -1048,13 +1048,13 @@ function applyPose(p){
   // magazine in hand during reload
   if(p.mag>0.5){J.lHand.getWorldPosition(tv[0]);tv[0].y-=0.02;gun.worldToLocal(tv[0]);mag.position.copy(tv[0]).add(V(0,0.04,0));}
   let scF=false;try{scF=scoped;}catch(e){}
-  flashGrp.visible=p.flash>0.5; flashLight.intensity=p.flash>0.5?3:0;
+  flashGrp.visible=p.flash>0.5; flashLight.intensity=p.flash>0.5?3:0;if(flashLight.parent!==scene)scene.add(flashLight);
   if(flashGrp.visible){fs.rotation.z=Math.random()*PI;flashGrp.scale.setScalar(1.6+Math.random()*0.7);}
   // scoped: the rifle is hidden, so the flame is drawn as a screen burst and the light hangs just ahead of the camera
   const scEl=scFlameEl||(scFlameEl=document.getElementById('scFlame'));
   if(scEl){const on=scF&&p.flash>0.5;if(on&&!scEl.classList.contains('on'))scEl.style.setProperty('--r',(Math.random()*30-15)+'deg'),scEl.style.setProperty('--s',(0.85+Math.random()*0.4).toFixed(2));scEl.classList.toggle('on',on);}
   if(scF&&p.flash>0.5){if(flashLight.parent!==scene)scene.add(flashLight);camera.getWorldDirection(tv[0]);flashLight.position.copy(camera.position).addScaledVector(tv[0],2.2);}
-  else if(flashLight.parent!==flashGrp){flashGrp.add(flashLight);flashLight.position.set(0,0,0);}
+  else{flashGrp.getWorldPosition(flashLight.position);}
 }
 
 
@@ -2645,7 +2645,7 @@ function placeP2Stag(){if(P2M)return;P2_SPAWN.y=groundH(P2_SPAWN.x,P2_SPAWN.z);
   const keep={p:marine.position.clone(),r:marine.rotation.y};
   applyPose(cpose('Idle',0));marine.updateMatrixWorld(true);            // snapshot of the idle pose
   const g=marine.clone(true);
-  {const A=[],B=[];marine.traverse(o=>A.push(o));g.traverse(o=>B.push(o));P2PAIRS.length=0;for(let i=1;i<A.length;i++){const q=A[i];if(q.isLineSegments||(q.userData&&q.userData.zone))continue;P2PAIRS.push([q,B[i]]);}}
+  {const A=[],B=[];marine.traverse(o=>A.push(o));g.traverse(o=>B.push(o));P2PAIRS.length=0;for(let i=1;i<A.length;i++){const q=A[i];if(q.isLineSegments||(q.userData&&q.userData.zone))continue;P2PAIRS.push([q,B[i]]);}try{for(const [s,t] of P2PAIRS)if(s===flashLight){scene.add(t);t.intensity=0;}}catch(e){}}
   // recolour: jacket -> solid green, trousers -> camo, hat -> grey cap colours
   const lin=h=>{const c=new THREE.Color(h);c.convertSRGBToLinear();return c;};
   const CAMOC=CAMO[camoKey].cols.map(lin),CWT=CAMO[camoKey].w;
@@ -3374,7 +3374,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=440;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=441;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3582,7 +3582,7 @@ function applyLook(i){lookI=Math.max(0,Math.min(3,i|0));const seen=new Set();
     m.defines=m.defines||{};if(lookI)m.defines.GSTYLE=lookI;else delete m.defines.GSTYLE;m.needsUpdate=true;}});
   try{localStorage.setItem('fsMist2',String(lookI));}catch(e){}}
 (function(){const el=document.getElementById('optMist');if(!el)return;let v=1;try{const q=localStorage.getItem('fsMist2');if(q!=null)v=+q||0;}catch(e){}el.value=String(v);el.onchange=()=>applyLook(+el.value);})();
-function lookStep(){const T=(f)=>{try{f();}catch(e){if(!window._lsErr){window._lsErr=1;console.warn('lookStep',e);}}};T(vitalsStep);T(edgeStep);T(()=>{if(!_dmgApplied)dmgApply();});T(leadGlowStep);T(animalGlowStep);T(()=>{if(typeof siloStep==='function')siloStep();});T(()=>{if(typeof ugvStep==='function')ugvStep();});T(()=>{if(typeof droidStep==='function')droidStep();});T(()=>{const now=performance.now(),dt=Math.min(0.1,(now-(WPN.lt||now))/1000);WPN.lt=now;at4Step(dt);});T(dmgNumStep);T(eqStep);T(owlStep);T(()=>{const now=performance.now(),dt=Math.min(0.1,(now-(lookStep.bt||now))/1000);lookStep.bt=now;bearStep(dt);});if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
+function lookStep(){const T=(f)=>{try{f();}catch(e){if(!window._lsErr){window._lsErr=1;console.warn('lookStep',e);}}};T(vitalsStep);T(edgeStep);T(()=>{if(!_dmgApplied)dmgApply();});T(leadGlowStep);T(animalGlowStep);T(()=>{if(typeof siloStep==='function')siloStep();});T(()=>{if(typeof ugvStep==='function')ugvStep();});T(()=>{if(typeof droidStep==='function')droidStep();});T(()=>{if(typeof warmFx==='function')warmFx();});T(()=>{const now=performance.now(),dt=Math.min(0.1,(now-(WPN.lt||now))/1000);WPN.lt=now;at4Step(dt);});T(dmgNumStep);T(eqStep);T(owlStep);T(()=>{const now=performance.now(),dt=Math.min(0.1,(now-(lookStep.bt||now))/1000);lookStep.bt=now;bearStep(dt);});if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
 window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial){c++;if(m.defines&&m.defines.GSTYLE)d++;}});return {sh:true,std:c,withDef:d,keys:renderer.info.programs.map(p=>p.cacheKey.includes('GSTYLE')).join(','),lookI};};
 
 // ---- edge glow on every collectible: a slightly enlarged back-face shell per node, additive, pulsing on a 3 s cycle, one colour per resource type
@@ -5847,6 +5847,18 @@ function droidStep1(dt,nD){
 }
 resReset=(f=>function(){f.apply(this,arguments);try{for(const q of DRS)q.tele=true;}catch(e){}})(resReset);
 
+// ---- first-shot stutter: compile every effect material and settle the light count once, before the first shot
+const WARM={done:false};
+function warmFx(){if(WARM.done||!playing)return;try{if(!SILO.built)return;}catch(e){}try{if(!(MPM&&MPM.on)&&!(DRS[0]&&DRS[0].m))return;}catch(e){}
+  WARM.done=true;const tmp=[];
+  try{if(flashLight.parent!==scene)scene.add(flashLight);if(!DRL.parent)scene.add(DRL);}catch(e){}
+  const mats=[matSmoke,matDust,matBlood,matChip,matSplash,matSpark,matFire,matTracer,MARK_M.dirt,MARK_M.wood,MARK_M.rock];
+  for(const mt of mats){if(!mt)continue;const g=(mt===matTracer)?gTracer:(mt===matSpark?gSpark:(mt===matFire?gFire:(mt.opacity!==undefined&&MARK_M.dirt===mt||MARK_M.wood===mt||MARK_M.rock===mt?MARK_G:gPuff)));const m=new THREE.Mesh(g,mt);m.position.set(0,-9000,0);m.frustumCulled=false;scene.add(m);tmp.push(m);}
+  try{const l=new THREE.Line(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3)),new THREE.LineBasicMaterial({color:0xff1408,transparent:true,opacity:0.95,depthWrite:false,fog:false}));l.frustumCulled=false;l.position.y=-9000;scene.add(l);tmp.push(l);
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xff5030,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));sp.position.y=-9000;scene.add(sp);tmp.push(sp);
+    const bm=new THREE.Mesh(brassG,envMat);bm.position.y=-9000;scene.add(bm);tmp.push(bm);}catch(e){}
+  try{renderer.compile(scene,camera);}catch(e){console.warn('warmFx',e);}
+  for(const m of tmp)scene.remove(m);}
 window.SNIPER_UGV={ugc:UGC,get:ugcGet,G:GAME,list:()=>UGVS,step:ugvStep,hit:hitUgv,ray:rayUgv,reset:ugvReset,look:ugvLook,place:ugvPlace,build:ugvBuildAll,gh:groundH};
 
 
@@ -6169,7 +6181,7 @@ function applyRemote(dt){const B=RPS.buf;if(!B.length||!P2M)return;const rt=perf
     try{poseBolt();applyPose(pose);}catch(e){}boltT=sv;
     for(const [s,t] of P2PAIRS){t.position.copy(s.position);t.quaternion.copy(s.quaternion);t.scale.copy(s.scale);if(P2VIS.has(s))t.visible=s.visible;if(s.isLight)t.intensity=s.intensity;}try{at4P2Vis((u<0.5?a:b).w===1);}catch(e){}}
   if(RFL>0){RFL-=dt;if(!P2FL.g)for(const [s,t] of P2PAIRS){if(s===flashGrp)P2FL.g=t;else if(s===flashLight)P2FL.l=t;}   // the opponent's muzzle flash and the light it throws, driven by the shot event so none are missed between state packets
-    if(P2FL.g){P2FL.g.visible=true;P2FL.g.scale.setScalar(1.6+Math.random()*0.7);}if(P2FL.l)P2FL.l.intensity=3*PL_K;}
+    if(P2FL.g){P2FL.g.visible=true;P2FL.g.scale.setScalar(1.6+Math.random()*0.7);}if(P2FL.l){if(P2FL.l.parent!==scene)scene.add(P2FL.l);if(P2FL.g)P2FL.g.getWorldPosition(P2FL.l.position);P2FL.l.intensity=3*PL_K;}}
   try{liftRemote(a,b,u);}catch(e){}
   P2M.position.copy(RPS.pos);P2M.rotation.y=yaw;P2M.visible=true;P2M.updateMatrixWorld(true);RPS.vis=true;
   try{chuteRemote(a,b,dt);}catch(e){}
