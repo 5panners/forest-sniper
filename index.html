@@ -3374,7 +3374,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=435;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=437;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4781,7 +4781,7 @@ function siloPose(){const S=SILO;
   S.hatch.position.x=S.x+S.hx*S.K;S.hatch.updateMatrixWorld(true);S.hcol.min.x=S.x+(S.hx-2.7)*S.K;S.hcol.max.x=S.x+(S.hx+2.7)*S.K;S.blk.on=S.hx>0.4;
   if(S.st==='idle'||S.st==='count'){S.mis.position.set(S.x,S.y0-19.4*S.K,S.z);S.mis.quaternion.identity();}}
 // ---- sounds: klaxon at the pad, the hatch grinding back, and the launch roar
-function siloKlaxon(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,700);if(!c)return;for(let i=0;i<14;i++)tn(c,c.t0+i*0.5,i%2?520:700,0,0.42,0.32*GAME.siloVol*GAME.siloVK,'square');}
+function siloKlaxon(){}   // the two-tone warning klaxon (bing-bong) was removed
 function siloGrind(){const c=sp3(SILO.x,SILO.y0+1,SILO.z,500);if(!c)return;nz(c,c.t0,5,160,0.8,1.2*GAME.siloVol*GAME.siloVG,'lowpass');nz(c,c.t0,5,900,5,0.18*GAME.siloVol*GAME.siloVG);}
 function siloRoar(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,6000);if(!c)return;const V=GAME.siloVol*GAME.siloVR,L=Math.min(2.4,1/Math.max(0.42,GAME.siloAcc));nz(c,c.t0,4,420,0.6,1.1*V);nz(c,c.t0+0.05,1.8,2200,0.5,0.6*V);}
 
@@ -5752,12 +5752,13 @@ function droidGunSnd(o){const c=sp3(o.x,o.y,o.z,1200);if(!c)return;const fd=Math
   if(SND.rifle){const s=AC.createBufferSource();s.buffer=SND.rifle;s.playbackRate.value=1.0+Math.random()*0.1;const g=AC.createGain();g.gain.value=1.5*vg*GAME.rDGun*fd;s.connect(g);g.connect(c.inp);s.start(c.t0);}else nz(c,c.t0,0.15,1800,0.8,1.6*vg*GAME.rDGun*fd);}
 function droidRound(o,dir,tr){const b={tm:secTeam(),p:o.clone(),o:o.clone(),v:dir.clone().multiplyScalar(V0*0.92),t:0,tr:getP(gTracer,matTracer),rem:true,ugv:true,ud:GAME.uDmg};bullets.push(b);if(tr)try{mkStreak(b);}catch(e){}
   droidGunSnd(o);try{farFlash(o);}catch(e){}try{disturb(o.x,o.z,110,380,true);}catch(e){}}
+const DRL=new THREE.PointLight(0xffb347,0,30,2);DRL.t=0;   // muzzle-flash light, same colour and strength as the player's AR-15; one shared light, moved to whichever gun fired last
 const _dm=new THREE.Vector3(),_dq=new THREE.Quaternion(),_dv=new THREE.Vector3();
 function droidMuzzle(g){return g.gun.localToWorld(_dm.set(0,0.005,0.95)).clone();}
 function droidShot(g){const T=DR.tg;if(!T||!DR.m)return;DR.m.root.updateMatrixWorld(true);const o=droidMuzzle(g),d=Math.hypot(T.x-o.x,T.z-o.z),tf=d/(V0*0.92);
   const tgt=new THREE.Vector3(T.x,T.y+0.95+0.5*GBUL*tf*tf*1.1,T.z),dir=tgt.sub(o).normalize();
   const sd=GAME.dSpread/1000*(1+Math.min(2,Math.abs(DR.m.D.v)*0.3)),gs=()=>(Math.random()+Math.random()+Math.random()-1.5)*1.15,s1=new THREE.Vector3(dir.z,0,-dir.x).normalize(),s2=new THREE.Vector3().crossVectors(dir,s1);
-  dir.addScaledVector(s1,gs()*sd).addScaledVector(s2,gs()*sd).normalize();DR.shots++;droidRound(o,dir,DR.shots%3===1);}
+  dir.addScaledVector(s1,gs()*sd).addScaledVector(s2,gs()*sd).normalize();DR.shots++;droidRound(o,dir,DR.shots%3===1);DRL.position.copy(o);DRL.intensity=3;DRL.t=0.06;}
 function droidSpot(){const p=player.pos;for(let k=0;k<40;k++){const a=Math.random()*PI*2,r=3+k*0.25;const x=p.x+Math.sin(a)*r,z=p.z+Math.cos(a)*r;if(!ugvBlocked(x,z))return {x,z};}return {x:p.x+3,z:p.z};}
 function droidLook(m){const D=m.D;const eye=new THREE.Vector3(D.x,groundH(D.x,D.z)+1.5,D.z);let best=null,bd=1e9;
   if(!GAME.dHunt)return null;
@@ -5770,6 +5771,7 @@ function droidStepAll(){
   try{if(MPM&&MPM.on){for(const q of DRS)if(q.m)q.m.root.visible=false;return;}}catch(e){}
   if(!playing)return;
   const n=GAME.dOn?Math.max(0,Math.min(4,Math.round(GAME.dCnt==null?1:GAME.dCnt))):0;
+  if(!DRL.parent)scene.add(DRL);DRL.t-=dt;if(DRL.t<=0)DRL.intensity=0;
   for(let i=0;i<DRS.length||i<n;i++){const q=DRS[i]||(DRS[i]=mkDR());q.i=i;if(i>=n){if(q.m)q.m.root.visible=false;continue;}DR=q;droidStep1(dt,n);}}
 // everything a droid must not drive into besides trees, rocks, water and steep ground: the UGVs and the other droids
 function droidDyn(self){DR_DYN=[];for(const u of UGVS)if(!u.gone)DR_DYN.push({x:u.x,z:u.z,r:2.8});for(const q of DRS)if(q!==self&&q.m&&q.m.root.visible)DR_DYN.push({x:q.m.D.x,z:q.m.D.z,r:2.2});}
