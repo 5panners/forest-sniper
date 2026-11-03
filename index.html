@@ -1887,7 +1887,7 @@ function canFit(h,px,pz){const x=px==null?player.pos.x:px,z=pz==null?player.pos.
   for(const p of pillarsNear(x,z)){if(p.y1<=y+0.05||p.y0>=y+h)continue;if(Math.hypot(x-p.x,z-p.z)<p.r+PRAD*0.9)return false;}return true;}
 
 // camera state
-let camYaw=0, camPitch=-0.08, viewFP=false, shake=0, camDist=3.4, tankDist=11;
+let camYaw=0, camPitch=-0.08, viewFP=true, shake=0, camDist=3.4, tankDist=11;
 const camPivot=V(0,1.6,-8), camSh=V(0,0,0);
 const input={lmb:false,rmb:false};
 const keys={};const _cc=new THREE.Vector3();
@@ -3289,7 +3289,7 @@ function resetGame(){
   for(const k of MARKS){if(k.m.parent)k.m.parent.remove(k.m);}MARKS.length=0;
   stats.shots=0;stats.last=null;roundNo=0;WPT.on=false;
   input.lmb=input.rmb=false;if(player.action)player.action=null;
-  respawn();player.slide=null;player.mantle=null;boltT=-1;scopeKick=0;breath=6;breathLock=0;setZero(100);zoomI=0;viewFP=false;
+  respawn();player.slide=null;player.mantle=null;boltT=-1;scopeKick=0;breath=6;breathLock=0;setZero(100);zoomI=0;viewFP=true;
   camPivot.copy(player.pos).add(V(0,1.68,0));
   for(const d of DEER.slice())removeDeer(d);setDeerCounts(+$('envM').value,+$('envF').value);
   setBuzzards(+$('envB').value);
@@ -3379,7 +3379,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=474;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=475;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
