@@ -153,7 +153,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <p class="note">100% is the recording at its original level. Press M in game to mute everything.</p>
   </div>
   <div id="paneMp" role="tabpanel" aria-labelledby="tabMp" hidden><div id="mpBox"><b>1v1 match</b><button id="mpStart" type="button" hidden>Start match</button><button id="mpLeave" type="button" hidden>Leave</button><button id="mpDHost" type="button">Host match</button><button id="mpDJoin" type="button">Join match</button><textarea id="mpDx" rows="6" style="min-height:8em;resize:vertical" hidden spellcheck="false" aria-label="Connection code"></textarea><button id="mpDgo" type="button" hidden>Connect</button><div id="mpStat" class="note">Host a match and send the code to your opponent. They paste it and press Join match, then send you their reply code to paste back and Connect. One life per round, first to 3 rounds; 5 rounds loaded plus 15 spare.</div></div><label class="opt"><input type="checkbox" id="optNet" checked><span><b>Show network stats</b><small>While connected: round-trip time, connection path, data rates, lost packets, buffering and wildlife sync, top left.</small></span></label></div>
-  <button id="deployBtn" disabled>Generating forest…</button><button id="resetBtn" type="button">Reset game</button>
+  <button id="deployBtn" disabled>Generating forest…</button>
   <div class="note" id="stats"></div>
 </div></div>
 
@@ -3279,21 +3279,8 @@ $('envB').value=4;$('envB').oninput=()=>{setBuzzards(+$('envB').value);envUI();}
 $('envM').oninput=envApply;$('envF').oninput=envApply;
 envApply();setBuzzards(+$('envB').value);
 
-/* ---------------- reset game ---------------- */
-function resetGame(){
-  for(const b of bullets){if(b.tr)relP(b.tr);}bullets.length=0;
-  for(const k of MARKS){if(k.m.parent)k.m.parent.remove(k.m);}MARKS.length=0;
-  stats.shots=0;stats.last=null;roundNo=0;WPT.on=false;
-  input.lmb=input.rmb=false;if(player.action)player.action=null;
-  respawn();player.slide=null;player.mantle=null;boltT=-1;scopeKick=0;breath=6;breathLock=0;setZero(100);zoomI=0;viewFP=true;
-  camPivot.copy(player.pos).add(V(0,1.68,0));
-  for(const d of DEER.slice())removeDeer(d);setDeerCounts(+$('envM').value,+$('envF').value);
-  setBuzzards(+$('envB').value);
-  resReset();toast('Game reset');}
-let resetArm=0;
-$('resetBtn').onclick=()=>{const b=$('resetBtn');if(MPM.on)return;
-  if(!resetArm){resetArm=setTimeout(()=>{resetArm=0;b.textContent='Reset game';},3000);b.textContent='Click again to confirm';return;}
-  clearTimeout(resetArm);resetArm=0;resetGame();b.textContent='Game reset ✓';setTimeout(()=>{b.textContent='Reset game';},1800);};
+
+
 
 /* ---------------- day and night ---------------- */
 // keyframes by sun elevation (degrees). top/wat in sRGB (converted), hor/fog raw like the original fog colour
@@ -3375,7 +3362,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=478;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=479;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6142,8 +6129,7 @@ async function dxFinish(){if(!DX||DX.role!=='h')return;
 function mpStat(s){const e=$('mpStat');if(e)e.textContent=s;}
 function mpUI(){const on=!!NT.room,host=NT.role==='h',ph=NT.M.ph;
   $('mpDHost').hidden=on;$('mpDJoin').hidden=on;if(on){$('mpDx').hidden=true;$('mpDgo').hidden=true;}$('mpLeave').hidden=!on;
-  $('mpStart').hidden=!(on&&host);$('mpStart').disabled=!(NT.opp&&(ph==='wait'||ph==='over'));$('mpStart').textContent=ph==='over'?'Rematch':'Start match';
-  $('resetBtn').disabled=on;}
+  $('mpStart').hidden=!(on&&host);$('mpStart').disabled=!(NT.opp&&(ph==='wait'||ph==='over'));$('mpStart').textContent=ph==='over'?'Rematch':'Start match';}
 function mpAttach(room,kind,role,code,why){
   Object.assign(NT,{room,kind,code,role,opp:null,oppSeen:0,wasOpp:false,myR:0,rosterV:-1,rost:null,M:{ph:'wait',r:0,sc:[0,0],left:0,lw:''}});
   NT.pend.clear();NT.seen.clear();RPS.buf=[];RPS.off=null;RPS.lastT=0;RPS.vis=false;RPS.al=false;
@@ -6443,7 +6429,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&NT.room&&
 
 ;setInterval(()=>{const b=document.getElementById('mpDx');if(b&&!b.hidden&&b.scrollHeight>b.clientHeight+2)b.style.height=(b.scrollHeight+6)+'px';},400);
 
-window.SNIPER={mp:{start:mpStart,fanfare:playFanfare,goodbye:playGoodbye,leave:mpLeave,NT,RPS,MPM,P2RHB,P2PAIRS,packPose,getDeerVer:()=>deerVer,getYaw:()=>player.yaw,getDeer:()=>DEER,getAim:()=>aimPtTP?aimPtTP.toArray():null,getCam:()=>{const d=new THREE.Vector3();camera.getWorldDirection(d);return [camera.position.toArray(),d.toArray(),scoped]}},deerSample,getDCGCD:()=>dcGCD,getP2:()=>P2M,getBoltT:()=>boltT,P1_SPAWN,P2_SPAWN,getFALL:()=>FALL,STREAM,BED,CW,getSE:()=>STREAM_END,hFull,lakeE,LOWR,hitBird,getAmb:()=>amb,SND,playSample,initAudio,getAC:()=>AC,DAY,stepDay,meadowK,resetGame,BZ,BGRP,setBuzzards,STAIRS,TORTOPS,rockTopAt,DEER,MARKS,ROCKS,PGRID,setDeerCounts,disturb,miniZoom,keysDown:keys,player,marine,J,MAP,SEAT_INFO,SUMMIT,LW,chunks,stats,keys,input,camera,scene,renderer,castRay,groundH,setZero,
+window.SNIPER={mp:{start:mpStart,fanfare:playFanfare,goodbye:playGoodbye,leave:mpLeave,NT,RPS,MPM,P2RHB,P2PAIRS,packPose,getDeerVer:()=>deerVer,getYaw:()=>player.yaw,getDeer:()=>DEER,getAim:()=>aimPtTP?aimPtTP.toArray():null,getCam:()=>{const d=new THREE.Vector3();camera.getWorldDirection(d);return [camera.position.toArray(),d.toArray(),scoped]}},deerSample,getDCGCD:()=>dcGCD,getP2:()=>P2M,getBoltT:()=>boltT,P1_SPAWN,P2_SPAWN,getFALL:()=>FALL,STREAM,BED,CW,getSE:()=>STREAM_END,hFull,lakeE,LOWR,hitBird,getAmb:()=>amb,SND,playSample,initAudio,getAC:()=>AC,DAY,stepDay,meadowK,BZ,BGRP,setBuzzards,STAIRS,TORTOPS,rockTopAt,DEER,MARKS,ROCKS,PGRID,setDeerCounts,disturb,miniZoom,keysDown:keys,player,marine,J,MAP,SEAT_INFO,SUMMIT,LW,chunks,stats,keys,input,camera,scene,renderer,castRay,groundH,setZero,
   set(o){if(o.yaw!=null)camYaw=o.yaw;if(o.pitch!=null)camPitch=o.pitch;if(o.pos)player.pos.set(o.pos[0],o.pos[1],o.pos[2]);if(o.fp!=null)viewFP=o.fp;if(o.zoom!=null)zoomI=o.zoom;},
   play(){setPlaying(true);fallback=true;}, pause(v){paused=v;}, lod(){updateLOD();}, tick(dt){update(dt);renderer.render(scene,camera);}, step(dt){update(dt);}, info(){return {genMs,nTrees,nPlants,rocks:ROCKS.length,inst:instCount,LW,tris:renderer.info.render.triangles,calls:renderer.info.render.calls};}};
 }
