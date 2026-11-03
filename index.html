@@ -1968,7 +1968,7 @@ function updatePlayer(dt,time){
   // speed
   let spd=0;
   if(!(A_&&A_.lock)&&pl.alive){
-    if(pl.stance==='prone')spd=0.8;else if(pl.stance==='crouch')spd=1.7;else if(aimHeld)spd=2.1;else if(isSprint)spd=6.4;else spd=4.2;if(boostOn)spd*=GAME.stMult;
+    if(pl.stance==='prone')spd=0.8;else if(pl.stance==='crouch')spd=1.7;else if(aimHeld)spd=2.1;else if(isSprint)spd=6.4;else spd=4.2;if(boostOn)spd*=GAME.stMult;spd*=1.2;   // build 451: all on-foot speeds +20%
     if(act&&act.name==='land')spd*=0.5;
   }
   const depth=waterLevelAt(pl.pos.x,pl.pos.z)-pl.pos.y; pl.wading=depth>0?depth:0;
@@ -3380,7 +3380,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=450;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=451;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
