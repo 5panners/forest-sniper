@@ -2146,7 +2146,7 @@ function damagePlayer(zone,base){const mult=zone==='head'?DM.headMult:zone==='li
   toast((zone==='head'?'HEADSHOT':zone==='limb'?'Limb hit':'Body hit')+' · '+Math.round(dmg)+' hp');flashHit();return dmg;}
 function showHB(on){playerHB.forEach(m=>m.userData.edge.visible=on);}
 // ================= AT4: shoulder-fired light anti-armour weapon =================
-// Picked up as a launcher (pink glow) that comes with one round loaded; AT4 rounds (pale pink glow) reload it. X switches rifle / AT4.
+// Picked up as a launcher (pink glow) that comes with one round loaded; AT4 rounds (pale pink glow) reload it. Slot keys switch rifle / AT4.
 // The rocket is a real projectile with a smoke trail; it bursts on whatever it hits. Every client flies every rocket:
 // each player takes their own blast damage, and the host applies it to the UGV and the animals.
 const WPN={cur:'rifle',has:false,ld:0,rl:-1,cool:0};
@@ -3175,7 +3175,6 @@ addEventListener('keydown',e=>{
     case 'KeyZ': if(busy||!pl.grounded)break; if(pl.stance==='prone'){if(canFit(HEIGHT.stand))startAction('proneUp');else toast('No headroom');}else{pl.reloadT=-1;startAction('proneDown');} break;
     case 'Space': if(busy)break; if(chuteKey())break; if(pl.slide){endSlide();if(pl.stance==='stand'&&pl.grounded){pl.vel.y=5.6*(BOOST.on?(GAME.bJump||1.4):1);pl.grounded=false;}break;} if(pl.stance==='prone'){if(canFit(HEIGHT.stand))startAction('proneUp');else toast('No headroom');}else if(pl.grounded){if(pl.stance==='crouch'){if(!canFit(HEIGHT.stand))break;pl.stance='stand';}pl.vel.y=5.6*(BOOST.on?(GAME.bJump||1.4):1);pl.grounded=false;} break;
     case 'KeyR': if(WPN.cur==='at4')at4Reload();else if(WPN.cur==='rifle'||WPN.cur==='ar15')startReload(); break;
-    case 'KeyX': at4Switch(); break;
     case 'KeyG': if(busy||pl.stance==='prone'||pl.nadeCD>0||!pl.grounded)break; pl.reloadT=-1; if(pl.stance==='crouch'&&canFit(HEIGHT.stand))pl.stance='stand'; if(pl.stance==='stand')startAction('throw'); break;
     case 'KeyT': if(busy||pl.stance!=='stand'||!pl.grounded)break; startAction('salute'); break;
     case 'KeyK': if(busy)break; if(pl.stance!=='stand'){pl.stance='stand';snapLayer('idle');} pl.alive=false; startAction('death'); break;
@@ -3184,7 +3183,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;});
 
-const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4/5×','Wheel'],['Parachute','Space'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Mute','M']];
+const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4/5×','Wheel'],['Parachute','Space'],['Weapon slots','1 · 2'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Mute','M']];
 $('keyList').innerHTML=KEYS.map(k=>`<div><kbd>${k[1]}</kbd><span>${k[0]}</span></div>`).join('');
 
 /* ---------------- menu tabs + graphics options ---------------- */
@@ -3381,7 +3380,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=470;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=471;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3743,7 +3742,7 @@ ${dt('Damage to players','p',[['head','Head'],['torso','Torso'],['limb','Limbs']
 ${dt('Damage to deer','d',[['head','Head'],['neck','Neck'],['vitals','Heart / lungs'],['gut','Gut'],['leg','Leg']],'ar15')}
 ${dt('Damage to a bear (also the drone and the UGV body)','k',[['head','Head'],['body','Body'],['leg','Leg']],'ar15')}
 <p class="tn">Uses the same 7.62 boxes as the bolt rifle; each rifle keeps the rounds in its own magazine. A second AR-15 pickup adds a magazine's worth of rounds. Crouch or go prone to tighten the spread.</p></section>
-<section class="wc"><div class="wh">${IC.at4}<div><h3>AT4</h3><p>Shoulder-mounted light anti-armour weapon · single shot</p></div><span class="key">X switch · LMB fire · R load</span></div>
+<section class="wc"><div class="wh">${IC.at4}<div><h3>AT4</h3><p>Shoulder-mounted light anti-armour weapon · single shot</p></div><span class="key">1 / 2 switch · LMB fire · R load</span></div>
 ${sp([['Rocket speed',GAME.at4Spd+' m/s'],['Blast radius',GAME.at4R+' m'],['Person, centre',GAME.at4Dmg+' hp'],['UGV, direct',GAME.at4Ugv+' hp'],['Reload',GAME.at4Reload+' s'],['Bears','2× person damage']])}
 <h4>Pickups</h4>${sl('pkAt4','AT4 rounds per round pickup',1,10,1,0)}
 <h4>Rocket and blast</h4>${sl('at4Spd','Rocket speed (m/s)',60,300,10,0)}${sl('at4R','Blast radius (m)',2,15,0.5,1)}${sl('at4Drop','Rocket drop (1 = full gravity)',0,1,0.05,2)}${sl('at4Reload','Reload time (s)',0.5,8,0.5,1)}
