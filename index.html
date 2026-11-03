@@ -3000,7 +3000,7 @@ function updateCamera(dt){
     if(scoped&&!_wasScoped&&aimPtTP&&!viewFP){const dx=aimPtTP.x-_eye.x,dy=aimPtTP.y-_eye.y,dz=aimPtTP.z-_eye.z,hz=Math.hypot(dx,dz);   // entering the scope: look at the point the third-person crosshair was on
       if(hz>6){camYaw=Math.atan2(dx,dz);camPitch=clamp(Math.atan2(dy,hz),-1.25,1.05);_dir.set(Math.sin(camYaw)*Math.cos(camPitch),Math.sin(camPitch),Math.cos(camYaw)*Math.cos(camPitch));}}
     camera.position.copy(_eye);J.head.visible=false;marine.visible=!scoped;
-    if(scoped)fov=62/ZOOMS[zoomI];
+    if(scoped)fov=62/(ZOOMS[zoomI]*(WPN.cur==='rifle'?1:1.3));
   } else {
     J.head.visible=true;marine.visible=true;
     const h=(pl.stance==='prone'?0.8:(pl.stance==='crouch'?1.3:1.72))+0.3-0.6*pl.slideW;
@@ -3143,7 +3143,7 @@ cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('mousedown',e=>{if(!playing)return;if(!locked&&(!fallback||everLocked))requestLock();if(e.button===0)input.lmb=true;if(e.button===2)input.rmb=!input.rmb;});
 addEventListener('mouseup',e=>{if(e.button===0)input.lmb=false;});
 addEventListener('mousemove',e=>{if(!playing)return;if(!(locked||(fallback&&(input.lmb||input.rmb||e.buttons))))return;
-  const k=0.0022*sens*(scoped?1.3/ZOOMS[zoomI]:(input.rmb?0.6:1));camYaw-=e.movementX*k;camPitch=clamp(camPitch-e.movementY*k,-1.25,1.05);});
+  const k=0.0022*sens*(scoped?1.3/(ZOOMS[zoomI]*(WPN.cur==='rifle'?1:1.3)):(input.rmb?0.6:1));camYaw-=e.movementX*k;camPitch=clamp(camPitch-e.movementY*k,-1.25,1.05);});
 cv.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();if(scoped){zoomI=clamp(zoomI+(e.deltaY<0?1:-1),0,ZOOMS.length-1);}else camDist=clamp(camDist+Math.sign(e.deltaY)*0.4,2,7);},{passive:false});
 let hbShown=false;
 function setHB(on){hbShown=on;showHB(on);showDeerHB(on);P2HB.forEach(e=>e.visible=on);const c=$('optHB');if(c)c.checked=on;}
@@ -3380,7 +3380,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=453;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=454;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
