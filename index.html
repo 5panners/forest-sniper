@@ -3206,11 +3206,14 @@ kbRebuild();
 function kbSet(id,code){const old=kbCode(id);if(code===old)return;
   for(const o in kbDef)if(o!==id&&kbCode(o)===code){KB.user[o]=old;if(old===kbDef[o])delete KB.user[o];}   // that key was taken: the other action gets this one's old key
   if(code===kbDef[id])delete KB.user[id];else KB.user[id]=code;kbSave();}
+try{const v=parseFloat(localStorage.getItem('fsSens'));if(v>0)sens=Math.max(0.1,Math.min(3,v));}catch(e){}
 function kbDraw(){const el=$('keyList');el.className='kbl';
   let h='<p class="note" style="margin:0 0 6px">Click a key, then press the new one. Esc cancels; Backspace puts the original key back. Changes save in this browser.</p>';
+  h+='<p class="sec" style="margin-top:6px">Mouse</p><div class="kr"><span>Mouse sensitivity (scoped aim slows automatically)</span><span class="sn"><input type="range" id="mSens" min="10" max="300" step="5" value="'+Math.round(sens*100)+'"><output id="mSensV">'+Math.round(sens*100)+'%</output></span></div>';
   KB_ACT.forEach(g=>{h+='<p class="sec" style="margin-top:12px">'+g[0]+'</p>';g[1].forEach(r=>{const c=kbCode(r[0]);h+='<div class="kr"><span>'+r[1]+'</span><button type="button" class="kbtn'+(c!==r[2]?' chg':'')+'" data-id="'+r[0]+'">'+kbName(c)+'</button></div>';});});
   h+='<p class="sec" style="margin-top:12px">Fixed controls</p>'+KB_FIXED.map(k=>'<div class="kr"><span>'+k[0]+'</span><kbd>'+k[1]+'</kbd></div>').join('');
   el.innerHTML=h;
+  {const sl=el.querySelector('#mSens');sl.oninput=()=>{sens=sl.value/100;el.querySelector('#mSensV').textContent=sl.value+'%';try{localStorage.setItem('fsSens',String(sens));}catch(e){}};}
   el.querySelectorAll('.kbtn').forEach(b=>b.onclick=()=>{kbStop();KB.listen=b.dataset.id;b.textContent='press a key…';b.classList.add('on');});}
 function kbStop(){KB.listen=null;}
 addEventListener('keydown',e=>{if(!KB.listen)return;e.preventDefault();e.stopImmediatePropagation();const id=KB.listen;
@@ -3218,7 +3221,7 @@ addEventListener('keydown',e=>{if(!KB.listen)return;e.preventDefault();e.stopImm
   if(e.code==='Backspace'||e.code==='Delete'){KB.listen=null;kbSet(id,kbDef[id]);kbDraw();return;}
   if(/^(Shift|Control|Alt|Meta|Tab|CapsLock|ContextMenu)/.test(e.code))return;
   KB.listen=null;kbSet(id,e.code);kbDraw();},true);
-{const st=document.createElement('style');st.textContent='.kbl{display:block!important}.kbl .kr{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.05)}.kbl .kr span{min-width:0}.kbtn{font:12px var(--f-mono);min-width:64px;background:#252c1d;border:1px solid #435034;border-radius:4px;padding:2px 8px;color:var(--amber);cursor:pointer;flex:none}.kbtn:hover{border-color:var(--amber)}.kbtn.chg{background:#34401f;border-color:#7d9a4a}.kbtn.on{outline:2px solid var(--amber);color:#fff}.kbl kbd{min-width:64px}';document.head.appendChild(st);}
+{const st=document.createElement('style');st.textContent='.kbl{display:block!important}.kbl .kr{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.05)}.kbl .kr span{min-width:0}.kbtn{font:12px var(--f-mono);min-width:64px;background:#252c1d;border:1px solid #435034;border-radius:4px;padding:2px 8px;color:var(--amber);cursor:pointer;flex:none}.kbl .sn{display:flex;align-items:center;gap:10px;flex:none}.kbl .sn input{width:170px}.kbl .sn output{font:12px var(--f-mono);min-width:42px;text-align:right}.kbtn:hover{border-color:var(--amber)}.kbtn.chg{background:#34401f;border-color:#7d9a4a}.kbtn.on{outline:2px solid var(--amber);color:#fff}.kbl kbd{min-width:64px}';document.head.appendChild(st);}
 kbDraw();
 
 /* ---------------- menu tabs + graphics options ---------------- */
@@ -3402,7 +3405,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=491;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=492;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6467,7 +6470,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&NT.room&&
 
 ;setInterval(()=>{const b=document.getElementById('mpDx');if(b&&!b.hidden&&b.scrollHeight>b.clientHeight+2)b.style.height=(b.scrollHeight+6)+'px';},400);
 
-{const b=$('cfgBtn');b.onclick=()=>{const o={};for(const k of['fsGame','fsDgc','fsDmg','fsUgc','sniperTime','sniperGfx2','sniperAudio','fsPick','fsKeys']){try{const v=localStorage.getItem(k);if(v!=null)o[k]=v;}catch(e){}}
+{const b=$('cfgBtn');b.onclick=()=>{const o={};for(const k of['fsGame','fsDgc','fsDmg','fsUgc','sniperTime','sniperGfx2','sniperAudio','fsPick','fsKeys','fsSens']){try{const v=localStorage.getItem(k);if(v!=null)o[k]=v;}catch(e){}}
   const t=JSON.stringify(o);const done=()=>{b.textContent='Copied ✓';setTimeout(()=>{b.textContent='Copy settings';},2000);};
   const fb=()=>{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;left:10%;top:30%;width:80%;height:30%;z-index:99';document.body.appendChild(a);a.select();try{document.execCommand('copy');done();}catch(e){}a.onblur=()=>a.remove();};
   try{navigator.clipboard.writeText(t).then(done,fb);}catch(e){fb();}};}
