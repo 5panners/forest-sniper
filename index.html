@@ -3376,7 +3376,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=426;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=428;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3775,7 +3775,7 @@ ${sp([['Damage / hit',GAME.uDmg+' hp'],['Rate of fire',GAME.uRpm+' rpm'],['Burst
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:2,slotG:2,uavDur:60,uavR:300,uavAlt:70,uavSpd:40,uavHp:140,uavVol:1,siloAcc:0.45,siloEvery:120,siloShake:1,siloVol:2,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:4,bWalk:1.5,bRear:14,bAtk:1,bTrig:2,bFight:60,bChance:60,bSense:80,bChSpd:8,bReach:2.8,bDmg:30,bRate:1.6,bChase:25,bCool:60,fallOn:1,fallSafe:4,fallDmg:10,paraH:70,rUGun:1,rUMot:1,rUBeep:1,rDGun:1,rDVoi:1};
+const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:2,slotG:2,uavDur:60,uavR:300,uavAlt:70,uavSpd:40,uavHp:140,uavVol:1,siloAcc:0.45,siloEvery:120,siloShake:1,siloVol:2,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:4,bWalk:1.5,bRear:14,bAtk:1,bTrig:2,bFight:60,bChance:60,bSense:80,bChSpd:8,bReach:2.8,bDmg:30,bRate:1.6,bChase:25,bCool:60,fallOn:1,fallSafe:4,fallDmg:10,paraH:70,dCnt:1,rUGun:1,rUMot:1,rUBeep:1,rDGun:1,rDVoi:1};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 try{if(!localStorage.getItem('fsSiloV2')){GAME.siloVol=2;localStorage.setItem('fsSiloV2','1');}}catch(e){}
 function balApply(){V0=GAME.bV0;DRAG=GAME.bDrag;GBUL=9.81*GAME.bDrop;try{setZero(zeroM);}catch(e){}}balApply();
@@ -3792,7 +3792,7 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
     ['sec','Butchering animals'],['bMeat','Health per meat from a butchered animal (%)',0,10,0.5,1],['bInst','Health instantly (1) or over time (0)',0,1,1,0],
     ['sec','Falling'],['fallOn','Fall damage (1 = on, 0 = off)',0,1,1,0],['fallSafe','Safe drop height (m)',1,30,0.5,1],['fallDmg','Damage per metre above that (hp)',1,50,1,0],
     ['sec','Parachute'],['paraH','Spawn height above home base (m)',10,300,5,0],
-    ['sec','Robot volumes (UGV and GD01)'],['rUGun','UGV gunfire',0,3,0.05,2],['rUMot','UGV motor, tracks and turret',0,3,0.05,2],['rUBeep','UGV alert beep',0,3,0.05,2],['rDGun','GD01 gunfire',0,3,0.05,2],['rDVoi','GD01 voice (beeps)',0,3,0.05,2],
+    ['sec','GD01 droids'],['dCnt','Number of GD01 droids',0,4,1,0],['sec','Robot volumes (UGV and GD01)'],['rUGun','UGV gunfire',0,3,0.05,2],['rUMot','UGV motor, tracks and turret',0,3,0.05,2],['rUBeep','UGV alert beep',0,3,0.05,2],['rDGun','GD01 gunfire',0,3,0.05,2],['rDVoi','GD01 voice (beeps)',0,3,0.05,2],
     ];
   const build=()=>{pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. In a match the host’s pickup amounts apply to both players.</p>'+ROWS.map(r=>r[0]==='sec'?`<p class="sec" style="margin-top:12px">${r[1]}</p>`:`<div class="gr"><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${GAME[r[0]]}" data-k="${r[0]}"><output>${(+GAME[r[0]]).toFixed(r[5])}</output></div>`).join('')+'<button type="button" class="btn" id="gmReset">Reset to defaults</button>';
     pn.querySelectorAll('input').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.step<1?2:0);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}
@@ -5115,11 +5115,12 @@ function makeUgv(hx,hz){
   scene.add(root);return u;}
 function ugvSilo(){return (typeof SILO_SITES!=='undefined'&&SILO_SITES[0])||SILO_POS;}
 function ugvHome(u){u=u||UGV.cur;if(u&&u.i!=null){const c=ugcGet(u.i);return {x:clamp(+c.uGE||0,-465,465),z:-clamp(+c.uGN||0,-465,465)};}return ugvSilo();}   // a UGV patrols round its own grid reference
-let DR_X=false;   // while the droid thinks, steep stream banks do not block it: it can cross streams
+let DR_X=false,DR_DYN=[],DR_DYNON=true;
+function drDyn(x,z){for(const o of DR_DYN)if(Math.hypot(o.x-x,o.z-z)<o.r)return true;return false;}   // while the droid thinks, steep stream banks do not block it: it can cross streams
 function nearStream(x,z){const q=polyNear(STREAM,x,z,14);return q.i>=0&&q.d<8;}
 function ugvBlocked(x,z){if(Math.abs(x)>470||Math.abs(z)>470)return true;try{if(lakeE(x,z)<1.1)return true;}catch(e){}   // streams can be forded; the lake cannottry{if(slopeAt(x,z)>0.8&&!(DR_X&&nearStream(x,z)))return true;}catch(e){}
   const h=ugvSilo();if(Math.hypot(x-h.x,z-h.z)<8)return true;
-  for(const p of pillarsNear(x,z)){if(Math.hypot(p.x-x,p.z-z)<p.r+1.25)return true;}return false;}
+  for(const p of pillarsNear(x,z)){if(Math.hypot(p.x-x,p.z-z)<p.r+1.25)return true;}return DR_X&&DR_DYNON&&drDyn(x,z);}
 function ugvWaypoint(u){const h=ugvHome();for(let k=0;k<40;k++){const a=Math.random()*Math.PI*2,r=14+Math.random()*Math.max(4,GAME.uPatrol-14);const x=h.x+Math.sin(a)*r,z=h.z+Math.cos(a)*r;if(!ugvBlocked(x,z)){u.tx=x;u.tz=z;return;}}u.tx=u.hx;u.tz=u.hz;}
 function ugvSpawnSpot(u){const h=ugvHome(u);for(let r=16;r<60;r+=3)for(let k=0;k<16;k++){const a=k/16*Math.PI*2+r,x=h.x+Math.sin(a)*r,z=h.z+Math.cos(a)*r;if(!ugvBlocked(x,z)&&!ugvBlocked(x+2,z)&&!ugvBlocked(x-2,z))return {x,z,a};}return {x:h.x+18,z:h.z,a:0};}
 function ugvBuildOne(i){const s=ugvSpawnSpot({i});const u=makeUgv(s.x,s.z);u.i=i;u.hp=ugcGet(i).uHp;u.yaw=s.a;UGVS.push(u);ugvW(u,()=>ugvWaypoint(u));ugvPlace(u,1);return u;}
@@ -5313,7 +5314,7 @@ function ugvDeploy(gi){const it=SLOT.g[gi];if(!it||it.k!=='ugv'||!playing||!play
   try{sfx.click();}catch(e){}toast('UGV dropping by parachute, it will follow you until ordered · '+Math.round(Math.hypot(sp.x-player.pos.x,sp.z-player.pos.z))+' m away · open the map (P), right-click it, then right-click a destination');try{EQB.ui(true);}catch(e){}}
 // ---- route planning: A* over a 3 m grid (trees, rocks, water, steep ground and the silo count as blocked), then the corners are cut with line-of-sight checks
 const UGP={cs:3,R:160,cache:new Map(),G:null,P:null,ST:null,stamp:0};
-function ugpBlk(i,j){const k=(i+400)*1000+(j+400);const CC=DR_X?(UGP.c2||(UGP.c2=new Map())):UGP.cache;let v=CC.get(k);if(v===undefined){v=ugvBlocked(i*UGP.cs,j*UGP.cs)?1:0;CC.set(k,v);}return v;}
+function ugpBlk(i,j){const k=(i+400)*1000+(j+400);const CC=DR_X?(UGP.c2||(UGP.c2=new Map())):UGP.cache;let v=CC.get(k);if(v===undefined){DR_DYNON=false;try{v=ugvBlocked(i*UGP.cs,j*UGP.cs)?1:0;}finally{DR_DYNON=true;}CC.set(k,v);}return (v||(DR_X&&DR_DYN.length&&drDyn(i*UGP.cs,j*UGP.cs)))?1:0;}
 function ugpLos(ax,az,bx,bz){const d=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.ceil(d/1.5));for(let k=1;k<=n;k++){const t=k/n;if(ugvBlocked(ax+(bx-ax)*t,az+(bz-az)*t))return false;}return true;}
 function ugvPlan(sx,sz,tx,tz){const cs=UGP.cs,R=UGP.R,N=2*R+1;
   if(!UGP.G){UGP.G=new Float32Array(N*N);UGP.P=new Int32Array(N*N);UGP.ST=new Uint32Array(N*N);}
@@ -5722,16 +5723,16 @@ return {root,hull,D,GUNS,POD,BELT,stepSim,setMood,jump,MOODS};
 // ================= Droid Gunner: a one-wheeled buddy that spawns with you, follows you about, and shoots deer it can see (solo only for now) =================
 // The model, suspension and sim come from the standalone viewer (droid.html). The brain below is a cut-down version of the team UGV's: tag along, stop and fire at what it sees.
 const DROID_HUNT=true;   // for testing, like the UGV: it shoots deer (set false to make it a pure companion)
-const DR={m:null,tele:true,lt:0,tg:null,tgDeer:null,mem:0,losT:0,burst:0,pause:0,idleT:0,talkT:8,fw:0,fT:0,path:null,pi:0,skT:0,skX:0,skZ:0,stuck:0,shots:0,sad:false,slP:0,slR:0,px:0,pz:0,still:0};
+const mkDR=()=>({m:null,tele:true,lt:0,tg:null,tgDeer:null,mem:0,losT:0,burst:0,pause:0,idleT:0,talkT:8,fw:0,fT:0,path:null,pi:0,skT:0,skX:0,skZ:0,stuck:0,shots:0,sad:false,slP:0,slR:0,px:0,pz:0,still:0});const DRS=[];let DR=mkDR();DRS.push(DR);
 const DR_WORDS={hi:{mood:'hi',seq:[[620,980,110,'triangle'],[1180,900,150,'triangle'],[760,1250,140,'sine']]},yes:{mood:'yes',seq:[[520,640,90,'square',0.5],[700,1200,170,'triangle']]},
  no:{mood:'no',seq:[[420,260,190,'sawtooth',0.5],[300,170,260,'sawtooth',0.5]]},excited:{mood:'excited',seq:[[600,800,60,'square',0.4],[800,1000,60,'square',0.4],[1000,1300,60,'square',0.4],[1300,1700,60,'square',0.4],[1500,2000,120,'triangle'],[1900,1500,60,'triangle'],[1600,2100,260,'triangle']]},
  alert:{mood:'alert',seq:[[900,880,120,'sawtooth',0.5],[600,590,120,'sawtooth',0.5],[900,880,120,'sawtooth',0.5],[600,590,160,'sawtooth',0.5]]},sad:{mood:'sad',seq:[[620,540,160,'sine'],[540,300,520,'sine'],[290,190,420,'sine']]},
  curious:{mood:'curious',seq:[[380,420,110,'triangle'],[420,980,300,'sine']]},thanks:{mood:'yes',seq:[[900,700,110,'triangle'],[700,1000,200,'sine']]}};
 function droidSay(w){const m=DR.m,W=DR_WORDS[w];if(!m||!W)return;m.setMood(W.mood,0.9+W.seq.length*0.18);
-  try{const c=sp3(m.D.x,m.D.y!=null?m.D.y:m.D.wy+1.2,m.D.z,160);if(!c)return;let t=c.t0;const pm=0.96+Math.random()*0.08,vg=(typeof VOLS!=='undefined'?VOLS.gun:1);
-    for(const [f0,f1,ms,wave,g] of W.seq){const len=ms/1000;tn(c,t,f0*pm,Math.max(40,f1*pm),len,0.2*GAME.rDVoi*(g==null?1:g),wave);t+=len*0.92;}}catch(e){}}
-function droidGunSnd(o){const c=sp3(o.x,o.y,o.z,2500);if(!c)return;const vg=(typeof VOLS!=='undefined'?VOLS.gun:1);
-  if(SND.rifle){const s=AC.createBufferSource();s.buffer=SND.rifle;s.playbackRate.value=1.0+Math.random()*0.1;const g=AC.createGain();g.gain.value=1.5*vg*GAME.rDGun;s.connect(g);g.connect(c.inp);s.start(c.t0);}else nz(c,c.t0,0.15,1800,0.8,1.6*vg*GAME.rDGun);}
+  try{const c=sp3(m.D.x,m.D.y!=null?m.D.y:m.D.wy+1.2,m.D.z,120);if(!c)return;const fd=Math.pow(Math.max(0,1-c.dist/120),1.5);let t=c.t0;const pm=0.96+Math.random()*0.08,vg=(typeof VOLS!=='undefined'?VOLS.gun:1);
+    for(const [f0,f1,ms,wave,g] of W.seq){const len=ms/1000;tn(c,t,f0*pm,Math.max(40,f1*pm),len,0.2*GAME.rDVoi*fd*(g==null?1:g),wave);t+=len*0.92;}}catch(e){}}
+function droidGunSnd(o){const c=sp3(o.x,o.y,o.z,1200);if(!c)return;const fd=Math.pow(Math.max(0,1-c.dist/1200),1.5);const vg=(typeof VOLS!=='undefined'?VOLS.gun:1);
+  if(SND.rifle){const s=AC.createBufferSource();s.buffer=SND.rifle;s.playbackRate.value=1.0+Math.random()*0.1;const g=AC.createGain();g.gain.value=1.5*vg*GAME.rDGun*fd;s.connect(g);g.connect(c.inp);s.start(c.t0);}else nz(c,c.t0,0.15,1800,0.8,1.6*vg*GAME.rDGun*fd);}
 function droidRound(o,dir,tr){const b={tm:secTeam(),p:o.clone(),o:o.clone(),v:dir.clone().multiplyScalar(V0*0.92),t:0,tr:getP(gTracer,matTracer),rem:true,ugv:true,ud:GAME.uDmg};bullets.push(b);if(tr)try{mkStreak(b);}catch(e){}
   droidGunSnd(o);try{farFlash(o);}catch(e){}try{disturb(o.x,o.z,110,380,true);}catch(e){}}
 const _dm=new THREE.Vector3(),_dq=new THREE.Quaternion(),_dv=new THREE.Vector3();
@@ -5746,16 +5747,21 @@ function droidLook(m){const D=m.D;const eye=new THREE.Vector3(D.x,groundH(D.x,D.
   for(const d of DEER){if(d.st==='dead'||d.st==='dying')continue;const dd=Math.hypot(d.x-D.x,d.z-D.z);if(dd>140||dd>=bd)continue;
     const dir=new THREE.Vector3(d.x-eye.x,d.y+0.9-eye.y,d.z-eye.z),L=dir.length();dir.multiplyScalar(1/L);const r=castRay(eye,dir,Math.max(0.5,L-1),true);if(r)continue;best=d;bd=dd;}
   return best;}
-function droidStep(){DR_X=true;try{droidStep1();}finally{DR_X=false;}}
-function droidStep1(){
-  const dt=Math.min(0.1,(performance.now()-(DR.lt||performance.now()))/1000);DR.lt=performance.now();
-  try{if(MPM&&MPM.on){if(DR.m)DR.m.root.visible=false;return;}}catch(e){}
+function droidStep(){DR_X=true;try{droidStepAll();}finally{DR_X=false;}}
+function droidStepAll(){
+  const dt=Math.min(0.1,(performance.now()-(DRS.lt||performance.now()))/1000);DRS.lt=performance.now();
+  try{if(MPM&&MPM.on){for(const q of DRS)if(q.m)q.m.root.visible=false;return;}}catch(e){}
   if(!playing)return;
+  const n=Math.max(0,Math.min(4,Math.round(GAME.dCnt==null?1:GAME.dCnt)));
+  for(let i=0;i<DRS.length||i<n;i++){const q=DRS[i]||(DRS[i]=mkDR());q.i=i;if(i>=n){if(q.m)q.m.root.visible=false;continue;}DR=q;droidStep1(dt,n);}}
+// everything a droid must not drive into besides trees, rocks, water and steep ground: the UGVs and the other droids
+function droidDyn(self){DR_DYN=[];for(const u of UGVS)if(!u.gone)DR_DYN.push({x:u.x,z:u.z,r:2.8});for(const q of DRS)if(q!==self&&q.m&&q.m.root.visible)DR_DYN.push({x:q.m.D.x,z:q.m.D.z,r:2.2});}
+function droidStep1(dt,nD){
   if(!DR.m){DR.m=makeDroidGD(THREE,groundH,{shot:droidShot});scene.add(DR.m.root);DR.tele=true;}
-  const m=DR.m,D=m.D,p=player.pos;m.root.visible=true;
-  if(DR.tele||Math.hypot(p.x-D.x,p.z-D.z)>90){DR.tele=false;const s=droidSpot();D.x=s.x;D.z=s.z;D.yaw=Math.atan2(p.x-s.x,p.z-s.z);D.v=D.vT=0;D.yawRate=0;D.hJ=0;DR.tg=null;DR.tgDeer=null;DR.path=null;DR.sad=false;m.stepSim(0.016);setTimeout(()=>droidSay('hi'),400);}
+  const m=DR.m,D=m.D,p=player.pos;m.root.visible=true;droidDyn(DR);
+  if(DR.tele||Math.hypot(p.x-D.x,p.z-D.z)>90){DR.tele=false;const s=droidSpot();D.x=s.x;D.z=s.z;D.yaw=Math.atan2(p.x-s.x,p.z-s.z);D.v=D.vT=0;D.yawRate=0;D.hJ=0;DR.tg=null;DR.tgDeer=null;DR.path=null;DR.sad=false;DR.stuck=0;DR.rev=0;m.stepSim(0.016);if(DR.i===0)setTimeout(()=>droidSay('hi'),400);}
   // the player died: it sulks and stays put
-  if(!player.alive){if(!DR.sad){DR.sad=true;droidSay('sad');}D.vT=0;D.yawT=0;D.fire=false;m.stepSim(dt);return;}else DR.sad=false;
+  if(!player.alive){if(!DR.sad){DR.sad=true;if(DR.i===0)droidSay('sad');}D.vT=0;D.yawT=0;D.fire=false;m.stepSim(dt);return;}else DR.sad=false;
   const live=!(MPM.on&&NT.M.ph!=='live');
   // ---- eyes: look for a deer a few times a second, keep it in mind for a moment after it hides
   DR.losT-=dt;if(DR.losT<=0){DR.losT=0.25;const T=live?droidLook(m):null;
@@ -5763,31 +5769,37 @@ function droidStep1(){
   if(DR.tgDeer&&(DR.tgDeer.st==='dead'||DR.tgDeer.st==='dying')){DR.tgDeer=null;droidSay(Math.random()<0.6?'excited':'yes');}
   DR.tg=DR.tgDeer?{x:DR.tgDeer.x,y:DR.tgDeer.y,z:DR.tgDeer.z}:null;
   // ---- movement: tag along with the player (A* route when far, straight when near); stand and shoot when it has a target
-  const ox=D.x,oz=D.z;let want=0,tx=p.x,tz=p.z,turnCap=1.8;const dp=Math.hypot(p.x-D.x,p.z-D.z);
+  const ox=D.x,oz=D.z;let want=0,tx=p.x,tz=p.z;
+  // each droid keeps its own spot beside the player so several of them do not pile up
+  if(nD>1){const a=DR.i/nD*PI*2+0.6;tx=p.x+Math.sin(a)*5;tz=p.z+Math.cos(a)*5;}
+  const dp=Math.hypot(tx-D.x,tz-D.z),dpl=Math.hypot(p.x-D.x,p.z-D.z);
   if(DR.tg){const rel=wrapA(Math.atan2(DR.tg.x-D.x,DR.tg.z-D.z)-D.yaw);D.yawT=clamp(rel*3,-2.2,2.2);D.vT=0;
     const on=Math.abs(rel)<0.45&&live;
     if(DR.pause>0){DR.pause-=dt;D.fire=false;}
     else if(on){D.fire=true;DR.burst+=dt;if(DR.burst>0.65){DR.burst=0;DR.pause=0.5+Math.random()*0.5;D.fire=false;}}
     else D.fire=false;}
   else{D.fire=false;DR.burst=0;
-    if(dp>12||(DR.fw&&dp>6)){DR.fw=1;DR.fT-=dt;
-      if(dp>16){if(!DR.path||DR.fT<=0){DR.fT=3;const r=ugvPlan(D.x,D.z,p.x,p.z);DR.path=r.path;DR.pi=0;}
+    if(dp>(nD>1?7:12)||(DR.fw&&dp>(nD>1?3:6))){DR.fw=1;DR.fT-=dt;
+      if(dp>14||DR.stuck>0){if(!DR.path||DR.fT<=0){DR.fT=DR.stuck>0?1.5:3;const r=ugvPlan(D.x,D.z,tx,tz);DR.path=r.path;DR.pi=0;}
         let w=DR.path&&DR.path[DR.pi];if(w&&DR.pi<DR.path.length-1&&Math.hypot(w.x-D.x,w.z-D.z)<4.5){DR.pi++;w=DR.path[DR.pi];}if(w){tx=w.x;tz=w.z;}}
-      want=Math.min(6.5,2+(dp-6)*0.45);}
+      want=Math.min(6.5,2+(dp-4)*0.45);}
     else{DR.fw=0;DR.path=null;want=0;}
-    if(want>0){let turn=wrapA(Math.atan2(tx-D.x,tz-D.z)-D.yaw);
-      const pr=a=>ugvBlocked(D.x+Math.sin(D.yaw+a)*3,D.z+Math.cos(D.yaw+a)*3);
-      if(pr(0)||ugvBlocked(D.x+Math.sin(D.yaw)*1.6,D.z+Math.cos(D.yaw)*1.6)){const l=pr(0.7),r=pr(-0.7);turn+=!l?1.2:!r?-1.2:(DR.sk||(DR.sk=Math.random()<0.5?1:-1))*1.8;}else DR.sk=0;
-      D.yawT=clamp(turn*2.5,-turnCap,turnCap);D.vT=want*Math.max(0,Math.cos(Math.min(Math.PI/2,Math.abs(turn)*1.3)));}
+    if(DR.rev>0){DR.rev-=dt;D.vT=-1.5;D.yawT=(DR.rs||1)*1.2;want=0;}   // backing off an obstacle
+    else if(want>0){let turn=wrapA(Math.atan2(tx-D.x,tz-D.z)-D.yaw);
+      // look ahead along the heading it would take: if that is blocked, take the nearest clear heading either side
+      const clear=a=>{for(const d of [1.6,3.2,5]){if(ugvBlocked(D.x+Math.sin(D.yaw+a)*d,D.z+Math.cos(D.yaw+a)*d))return false;}return true;};
+      if(!clear(turn)){const sg=turn>=0?1:-1;let f=null;for(const a of [0.35,0.7,1.1,1.6,2.2]){if(clear(sg*a)){f=sg*a;break;}if(clear(-sg*a)){f=-sg*a;break;}}
+        if(f==null){DR.rev=1.2;DR.rs=Math.random()<0.5?1:-1;want=0;}else{turn=f;want*=0.55;}}
+      D.yawT=clamp(turn*2.5,-1.8,1.8);D.vT=want*Math.max(0,Math.cos(Math.min(Math.PI/2,Math.abs(turn)*1.3)));}
     else{D.vT=0;D.yawT=0;}}
   D.vis=true;m.stepSim(dt);
-  // hit a tree, rock, the lake or steep ground: stop dead and back off
+  // never into something solid: stop and keep its place (no jumping about); other robots and droids are pushed clear of smoothly
   if(ugvBlocked(D.x,D.z)&&!ugvBlocked(ox,oz)){D.x=ox;D.z=oz;D.v=0;}
+  for(const o of DR_DYN){const dx=D.x-o.x,dz=D.z-o.z,dd=Math.hypot(dx,dz);if(dd<o.r&&dd>1e-3){const k=Math.min(0.35,(o.r-dd)*0.5);D.x+=dx/dd*k;D.z+=dz/dd*k;D.v*=0.9;}}
   // keep the player out of the wheel
   {const dx=p.x-D.x,dz=p.z-D.z,dd=Math.hypot(dx,dz);if(dd<1.0&&dd>1e-3&&p.y<groundH(D.x,D.z)+1.6){const k=1.0/dd;p.x=D.x+dx*k;p.z=D.z+dz*k;}}
-  // stuck for 3 s while it wants to go: hop, and plan again
-  DR.skT+=dt;if(DR.skT>=3){const mv=Math.hypot(D.x-DR.skX,D.z-DR.skZ);DR.skX=D.x;DR.skZ=D.z;DR.skT=0;if(want>1&&mv<1.2){DR.stuck++;DR.path=null;m.jump(1);if(DR.stuck===2)droidSay('no');
-      if(DR.stuck>=3){DR.stuck=0;const s=droidSpot();D.x=s.x;D.z=s.z;}}else DR.stuck=0;}
+  // stuck for 3 s while it wants to go: plan a fresh route, then back off and hop; it never jumps to a new spot
+  DR.skT+=dt;if(DR.skT>=3){const mv=Math.hypot(D.x-DR.skX,D.z-DR.skZ);DR.skX=D.x;DR.skZ=D.z;DR.skT=0;if(want>1&&mv<1.2){DR.stuck++;DR.path=null;DR.fT=0;if(DR.stuck>=2){DR.rev=1.4;DR.rs=Math.random()<0.5?1:-1;m.jump(1);}if(DR.stuck===3)droidSay('no');}else DR.stuck=0;}
   // ---- follow the ground: pitch with the slope under the heading, roll across it
   {const s=Math.sin(D.yaw),c=Math.cos(D.yaw),F=0.8,W=0.6,hF=groundH(D.x+s*F,D.z+c*F),hB=groundH(D.x-s*F,D.z-c*F),hR=groundH(D.x+c*W,D.z-s*W),hL=groundH(D.x-c*W,D.z+s*W);
     const k=Math.min(1,dt*6);DR.slP+=(-Math.atan2(hF-hB,F*2)-DR.slP)*k;DR.slR+=(Math.atan2(hR-hL,W*2)-DR.slR)*k;D.slP=DR.slP;D.slR=DR.slR;}
@@ -5799,9 +5811,9 @@ function droidStep1(){
   else for(const g of m.GUNS){g.pivot.rotation.x*=Math.max(0,1-dt*6);g.pivot.rotation.y*=Math.max(0,1-dt*6);}
   // ---- personality: bored when you stand about, pleased when you come back
   const mv=Math.hypot(p.x-DR.px,p.z-DR.pz);DR.px=p.x;DR.pz=p.z;DR.still=mv<0.02?DR.still+dt:0;
-  DR.talkT-=dt;if(DR.talkT<=0&&!DR.tg){DR.talkT=10+Math.random()*14;if(DR.still>8)droidSay(Math.random()<0.5?'curious':'hi');else if(Math.random()<0.25)droidSay(Math.random()<0.5?'yes':'curious');}
+  DR.talkT-=dt;if(DR.talkT<=0&&!DR.tg&&DR.i===0){DR.talkT=10+Math.random()*14;if(DR.still>8)droidSay(Math.random()<0.5?'curious':'hi');else if(Math.random()<0.25)droidSay(Math.random()<0.5?'yes':'curious');}
 }
-resReset=(f=>function(){f.apply(this,arguments);try{DR.tele=true;}catch(e){}})(resReset);
+resReset=(f=>function(){f.apply(this,arguments);try{for(const q of DRS)q.tele=true;}catch(e){}})(resReset);
 
 window.SNIPER_UGV={ugc:UGC,get:ugcGet,G:GAME,list:()=>UGVS,step:ugvStep,hit:hitUgv,ray:rayUgv,reset:ugvReset,look:ugvLook,place:ugvPlace,build:ugvBuildAll,gh:groundH};
 
