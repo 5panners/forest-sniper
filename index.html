@@ -3376,7 +3376,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=420;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=421;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3584,7 +3584,7 @@ function applyLook(i){lookI=Math.max(0,Math.min(3,i|0));const seen=new Set();
     m.defines=m.defines||{};if(lookI)m.defines.GSTYLE=lookI;else delete m.defines.GSTYLE;m.needsUpdate=true;}});
   try{localStorage.setItem('fsMist2',String(lookI));}catch(e){}}
 (function(){const el=document.getElementById('optMist');if(!el)return;let v=1;try{const q=localStorage.getItem('fsMist2');if(q!=null)v=+q||0;}catch(e){}el.value=String(v);el.onchange=()=>applyLook(+el.value);})();
-function lookStep(){const T=(f)=>{try{f();}catch(e){if(!window._lsErr){window._lsErr=1;console.warn('lookStep',e);}}};T(vitalsStep);T(edgeStep);T(()=>{if(!_dmgApplied)dmgApply();});T(leadGlowStep);T(animalGlowStep);T(()=>{if(typeof siloStep==='function')siloStep();});T(()=>{if(typeof ugvStep==='function')ugvStep();});T(()=>{const now=performance.now(),dt=Math.min(0.1,(now-(WPN.lt||now))/1000);WPN.lt=now;at4Step(dt);});T(dmgNumStep);T(eqStep);T(owlStep);T(()=>{const now=performance.now(),dt=Math.min(0.1,(now-(lookStep.bt||now))/1000);lookStep.bt=now;bearStep(dt);});if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
+function lookStep(){const T=(f)=>{try{f();}catch(e){if(!window._lsErr){window._lsErr=1;console.warn('lookStep',e);}}};T(vitalsStep);T(edgeStep);T(()=>{if(!_dmgApplied)dmgApply();});T(leadGlowStep);T(animalGlowStep);T(()=>{if(typeof siloStep==='function')siloStep();});T(()=>{if(typeof ugvStep==='function')ugvStep();});T(()=>{if(typeof droidStep==='function')droidStep();});T(()=>{const now=performance.now(),dt=Math.min(0.1,(now-(WPN.lt||now))/1000);WPN.lt=now;at4Step(dt);});T(dmgNumStep);T(eqStep);T(owlStep);T(()=>{const now=performance.now(),dt=Math.min(0.1,(now-(lookStep.bt||now))/1000);lookStep.bt=now;bearStep(dt);});if(lookInit>=0&&++lookInit>240){lookInit=-1;const el=document.getElementById('optMist');const v=el?+el.value:0;if(v)applyLook(v);}}
 window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial){c++;if(m.defines&&m.defines.GSTYLE)d++;}});return {sh:true,std:c,withDef:d,keys:renderer.info.programs.map(p=>p.cacheKey.includes('GSTYLE')).join(','),lookI};};
 
 // ---- edge glow on every collectible: a slightly enlarged back-face shell per node, additive, pulsing on a 3 s cycle, one colour per resource type
@@ -5472,6 +5472,331 @@ function drawUgvMark(c,x,y,u,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWid
   tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};
   tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
 })();
+function makeDroidGD(T,gh,H){
+const M=(c,o)=>new T.MeshStandardMaterial(Object.assign({color:c,flatShading:true,roughness:0.72,metalness:0.18},o||{}));
+const MAT={olive:M(0x5c6a3e),olive2:M(0x4a5632),tan:M(0x9c8a5c),dark:M(0x2a2d2e,{metalness:0.35}),steel:M(0x6b7174,{metalness:0.5,roughness:0.5}),tire:M(0x1d1d1c,{roughness:0.95,metalness:0}),
+ red:M(0xb23a2a),orange:M(0xc8621e),brass:M(0xc9a23a,{metalness:0.7,roughness:0.35}),copper:M(0x8a4a2a,{metalness:0.6}),white:M(0xe8ece6),glassD:M(0x10161a,{metalness:0.6,roughness:0.25}),rubber:M(0x262626,{roughness:1,metalness:0})};
+const add=(p,g,m,x,y,z)=>{const o=new T.Mesh(g,m);o.position.set(x||0,y||0,z||0);o.castShadow=true;o.receiveShadow=true;p.add(o);return o;};
+const box=(p,w,h,d,m,x,y,z)=>add(p,new T.BoxGeometry(w,h,d),m,x,y,z);
+const cyl=(p,rt,rb,h,seg,m,x,y,z)=>add(p,new T.CylinderGeometry(rt,rb,h,seg),m,x,y,z);
+// chamfered / rounded box: a rounded-rectangle outline extruded with a small bevel, kept low-poly so it still reads flat-shaded
+function rbox(p,w,h,d,m,x,y,z,r,bv){r=Math.min(r==null?0.06:r,w*0.45,h*0.45);bv=Math.min(bv==null?0.03:bv,d*0.3);const sh=new T.Shape(),hw=w/2-bv,hh=h/2-bv,rr=Math.max(0.005,r-bv);
+  sh.moveTo(-hw+rr,-hh);sh.lineTo(hw-rr,-hh);sh.quadraticCurveTo(hw,-hh,hw,-hh+rr);sh.lineTo(hw,hh-rr);sh.quadraticCurveTo(hw,hh,hw-rr,hh);sh.lineTo(-hw+rr,hh);sh.quadraticCurveTo(-hw,hh,-hw,hh-rr);sh.lineTo(-hw,-hh+rr);sh.quadraticCurveTo(-hw,-hh,-hw+rr,-hh);
+  const g=new T.ExtrudeGeometry(sh,{depth:d-2*bv,bevelEnabled:true,bevelThickness:bv,bevelSize:bv,bevelSegments:1,curveSegments:2});g.translate(0,0,-(d-2*bv)/2);return add(p,g,m,x,y,z);}
+
+/* ---------------- camo body paint: seamless blotch pattern drawn once on a canvas, used by both olive body materials ---------------- */
+{const cv=document.createElement('canvas');cv.width=cv.height=512;const c=cv.getContext('2d');c.fillStyle='#5a6a3c';c.fillRect(0,0,512,512);
+  let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  const blob=(cx,cy,r,col)=>{c.fillStyle=col;const n=8+Math.floor(rnd()*4);const pts=[];for(let i=0;i<n;i++){const a=i/n*Math.PI*2,rr=r*(0.6+rnd()*0.7);pts.push([Math.cos(a)*rr*(1+0.5*rnd()),Math.sin(a)*rr*(0.7+0.3*rnd())]);}
+    for(const dx of [-512,0,512])for(const dy of [-512,0,512]){c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(cx+dx+x,cy+dy+y):c.moveTo(cx+dx+x,cy+dy+y));c.closePath();c.fill();}};
+  for(const [col,n,rm] of [['#9c8a5c',16,70],['#4a3a28',14,60],['#35421f',18,56],['#7c8a4a',10,46]])for(let i=0;i<n;i++)blob(rnd()*512,rnd()*512,rm*(0.6+rnd()*0.8),col);
+  const tex=new T.CanvasTexture(cv);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(0.85,0.85);tex.anisotropy=4;
+  MAT.olive.map=tex;MAT.olive.color.set(0xffffff);MAT.olive.needsUpdate=true;
+  MAT.olive2.map=tex;MAT.olive2.color.set(0xbfc4b6);MAT.olive2.needsUpdate=true;}
+
+/* ---------------- the droid ---------------- */
+const R=0.6,WW=0.5;               // wheel radius / width
+const root=new T.Group();root.rotation.order='YXZ';
+const wheelAsm=new T.Group();root.add(wheelAsm);            // pivots about the ground contact point so it can lean in turns
+const axle=new T.Group();axle.position.y=R;wheelAsm.add(axle);
+const wheel=new T.Group();axle.add(wheel);
+{ // fat knobby tyre: round-shouldered, with staggered chunky lugs so the roll reads clearly
+  add(wheel,new T.CylinderGeometry(R,R,WW*0.84,22).rotateZ(Math.PI/2),MAT.tire);
+  for(const s of [-1,1])add(wheel,new T.CylinderGeometry(R*0.94,R*0.94,WW*0.18,22).rotateZ(Math.PI/2),MAT.tire,s*WW*0.41,0,0);   // shoulders
+  for(let i=0;i<18;i++){for(const s of [-1,1]){const a=(i+(s>0?0.5:0))/18*Math.PI*2;const lg=new T.Group();lg.position.set(s*WW*0.245,Math.sin(a)*(R+0.016),Math.cos(a)*(R+0.016));lg.rotation.x=-a;wheel.add(lg);const l=box(lg,WW*0.4,0.065,0.12,MAT.rubber,0,0,0);l.rotation.y=-s*0.45;}}   // herringbone (V) tread like the schematic
+  for(const s of [-1,1]){const rim=cyl(wheel,R*0.5,R*0.5,0.03,14,MAT.steel,s*(WW/2+0.0),0,0);rim.rotation.z=Math.PI/2;
+    for(let i=0;i<5;i++){const a=i/5*Math.PI*2;const sp=box(wheel,0.03,0.07,R*0.38,MAT.dark,s*(WW/2+0.014),Math.sin(a)*R*0.27,Math.cos(a)*R*0.27);sp.rotation.x=-a+Math.PI/2;}
+    const hub=cyl(wheel,0.1,0.1,0.06,8,MAT.orange,s*(WW/2+0.03),0,0);hub.rotation.z=Math.PI/2;
+    box(wheel,0.03,0.08,0.08,MAT.orange,s*(WW/2+0.018),0,R*0.36);}    // marker lug on the hub so the spin reads
+}
+// swing-arm fork + axle
+for(const s of [-1,1]){rbox(axle,0.08,0.8,0.28,MAT.orange,s*0.31,0.34,0,0.03,0.015);box(axle,0.1,0.12,0.12,MAT.dark,s*0.31,0,0);rbox(axle,0.09,0.2,0.2,MAT.dark,s*0.31,0.5,0,0.03,0.015);}   // heavy hydraulic suspension arms
+cyl(axle,0.04,0.04,0.74,8,MAT.dark,0,0,0).rotation.z=Math.PI/2;
+rbox(axle,0.72,0.08,0.18,MAT.steel,0,0.7,0,0.02,0.015);      // fork bridge above the tyre
+const chassis=new T.Group();root.add(chassis);                // everything that rides on the suspension (origin at axle height)
+const hull=new T.Group();hull.position.y=0.1;chassis.add(hull);   // lifted so the bigger wheel tucks up into the torso
+// lower hull + fender skirts
+rbox(hull,0.98,0.4,0.74,MAT.olive,0,0.81,0,0.17,0.06);rbox(hull,0.84,0.12,0.62,MAT.olive2,0,0.62,0,0.05,0.025);
+for(const s of [-1,1]){rbox(hull,0.06,0.5,0.6,MAT.olive2,s*0.42,0.5,0,0.05,0.012);rbox(hull,0.07,0.1,0.62,MAT.orange,s*0.425,0.26,0,0.03,0.015);}
+// chevron armour on the front, red stripe
+// stencilled "GD01" on the lower front panel, drawn as angular chamfered letters with stencil bridges (so it looks futuristic without needing a font file)
+{const cv=document.createElement('canvas');cv.width=1024;cv.height=300;const c=cv.getContext('2d');c.clearRect(0,0,1024,300);
+  const K=2.5,gx=22,glyphW=60,tot=4*glyphW+3*gx,ox=(1024-tot*K)/2,oy=(300-100*K)/2;
+  c.strokeStyle='#ff9a2a';c.lineWidth=15*K;c.lineJoin='bevel';c.lineCap='butt';
+  const P=(pts,x0,close)=>{c.beginPath();pts.forEach(([x,y],i)=>{const X=ox+(x0+x)*K,Y=oy+y*K;i?c.lineTo(X,Y):c.moveTo(X,Y);});if(close)c.closePath();c.stroke();};
+  const G=[[56,12],[16,12],[8,20],[8,80],[16,88],[56,88],[56,52],[30,52]];
+  const Dd=[[8,12],[40,12],[54,26],[54,74],[40,88],[8,88]];
+  const O0=[[16,12],[46,12],[54,20],[54,80],[46,88],[16,88],[8,80],[8,20]];
+  const I1=[[16,30],[34,12],[34,88]];
+  P(G,0);P(Dd,glyphW+gx,true);P(O0,2*(glyphW+gx),true);P(I1,3*(glyphW+gx));
+  c.beginPath();c.moveTo(ox+(3*(glyphW+gx)+14)*K,oy+88*K);c.lineTo(ox+(3*(glyphW+gx)+56)*K,oy+88*K);c.stroke();
+  c.globalCompositeOperation='destination-out';                            // stencil bridges
+  const gap=(x,y,w,h)=>c.fillRect(ox+x*K,oy+y*K,w*K,h*K);
+  gap(-2,47,24,6);gap(glyphW+gx-2,47,24,6);gap(2*(glyphW+gx)-2,47,24,6);gap(2*(glyphW+gx)+40,47,24,6);gap(glyphW+gx+30,5,6,20);gap(3*(glyphW+gx)+30,40,8,6);
+  const tex=new T.CanvasTexture(cv);tex.anisotropy=4;
+  const pl=new T.Mesh(new T.PlaneGeometry(0.72,0.72*300/1024),new T.MeshStandardMaterial({map:tex,transparent:true,alphaTest:0.4,roughness:0.9,metalness:0,side:T.FrontSide}));
+  pl.position.set(0,0.8,0.378);hull.add(pl);}
+// belly lights and status LEDs
+const LED=[];
+// big chest block, huge pauldrons, beefy arms, ammo pack on the back
+rbox(hull,0.94,0.5,0.62,MAT.olive,0,1.16,0.0,0.14,0.06);
+rbox(hull,0.6,0.26,0.05,MAT.olive2,0,1.16,0.325,0.05,0.02);for(let i=0;i<3;i++)box(hull,0.4,0.02,0.02,MAT.dark,0,1.1+i*0.06,0.355);   // chest vents
+box(hull,0.62,0.05,0.04,MAT.orange,0,1.31,0.325);                                                                                      // orange chest stripe
+const limb=(p,a,b,r,m)=>{const A=new T.Vector3(...a),B=new T.Vector3(...b),d=B.clone().sub(A),L=d.length();const c=add(p,new T.CylinderGeometry(r,r,L,9),m,0,0,0);c.position.copy(A).add(B).multiplyScalar(0.5);c.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d.normalize());return c;};
+for(const s of [-1,1]){
+  rbox(hull,0.2,0.26,0.3,MAT.olive,s*0.56,1.19,0.0,0.06,0.035);                // straight, square shoulder block flush with the chest
+  rbox(hull,0.19,0.3,0.24,MAT.olive2,s*0.63,0.95,0.0,0.06,0.035);                // short chunky upper arm
+  rbox(hull,0.04,0.2,0.2,MAT.orange,s*0.735,0.95,0.0,0.02,0.01);              // orange guard plate on the outside of the arm
+  rbox(hull,0.14,0.12,0.2,MAT.dark,s*0.63,0.76,0.02,0.04,0.025);}               // fist / wrist block under the arm
+const ammo=new T.Group();ammo.position.set(0,1.18,-0.44);hull.add(ammo);
+const AY=new T.MeshStandardMaterial({color:0xd9c24a,flatShading:true,roughness:0.8});
+rbox(ammo,0.6,0.3,0.28,MAT.olive2,0,-0.02,0,0.03,0.015);            // box body (same shape as the game's ammo boxes)
+rbox(ammo,0.624,0.06,0.304,MAT.olive,0,0.165,0,0.02,0.01);           // slightly wider lid
+box(ammo,0.26,0.035,0.045,MAT.dark,0,0.21,0);                        // carry handle
+for(const s of [-1,1])box(ammo,0.05,0.05,0.045,MAT.dark,s*0.15,0.2,0);
+for(const s of [-1,1])box(ammo,0.06,0.12,0.02,MAT.dark,s*0.2,0.06,-0.152);   // latches
+box(ammo,0.34,0.07,0.01,AY,0,-0.03,-0.146);                           // yellow stencil band
+box(ammo,0.12,0.04,0.01,AY,-0.17,-0.12,-0.146);
+// antenna with a status bulb
+cyl(hull,0.008,0.012,0.4,5,MAT.dark,-0.3,1.61,-0.22);const bulb={material:{emissiveIntensity:0,emissive:new T.Color(),color:new T.Color()}};   // no light on the antenna
+// exhaust / vents at the back
+for(let i=0;i<3;i++)box(hull,0.4,0.02,0.02,MAT.dark,0,0.72+i*0.07,-0.335);
+
+/* ---------- suspension: two coil-over shocks, drawn between the fork and the hull ---------- */
+const SHOCK=[];
+for(const s of [-1,1]){const g=new T.Group();root.add(g);const rod=cyl(g,0.014,0.014,1,6,MAT.steel,0,0.5,0),tube=cyl(g,0.026,0.026,1,8,MAT.dark,0,0.5,0);
+  const rings=[];for(let i=0;i<9;i++){const r=add(g,new T.TorusGeometry(0.04,0.0095,4,9).rotateX(Math.PI/2),MAT.red,0,0,0);rings.push(r);}
+  
+  // a separate hydraulic damper beside the coil spring: cylinder body on the hull, chrome piston rod down to the fork, gold remote reservoir with an adjuster knob
+  const dz=0.09,dTube=cyl(g,0.032,0.032,1,10,MAT.dark,0,0.5,dz),dRod=cyl(g,0.017,0.017,1,8,M(0xc8ccd0,{metalness:0.9,roughness:0.25}),0,0.5,dz);
+  const res=cyl(g,0.04,0.04,0.14,10,MAT.brass,0,0.5,dz+0.075),knob=cyl(g,0.014,0.014,0.03,6,MAT.red,0,0.5,dz+0.075),cap=cyl(g,0.036,0.036,0.02,10,MAT.dark,0,0.5,dz+0.075);
+  const bl=box(g,0.05,0.04,0.05,MAT.steel,0,0,dz),bu=box(g,0.05,0.04,0.05,MAT.steel,0,1,dz);
+  SHOCK.push({s,g,rod,tube,rings,dTube,dRod,res,knob,cap,bl,bu});}
+function shockStep(){
+  chassis.updateMatrix();wheelAsm.updateMatrix();
+  for(const k of SHOCK){const pl=new T.Vector3(k.s*0.5,0.34+R,0).applyMatrix4(wheelAsm.matrix);const pu=new T.Vector3(k.s*0.5,1.06,0).applyMatrix4(chassis.matrix);
+    // keep the lower mount on the fork; the top mount rides on the hull deck
+    const d=pu.clone().sub(pl);const L=d.length();k.g.position.copy(pl);k.g.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d.normalize());
+    k.rod.scale.y=L*0.5;k.rod.position.y=L*0.25;k.tube.scale.y=L*0.5;k.tube.position.y=L*0.75;
+    k.dTube.scale.y=L*0.5;k.dTube.position.y=L*0.75;k.dRod.scale.y=L*0.55;k.dRod.position.y=L*0.27;k.bl.position.y=0.02;k.bu.position.y=L-0.02;k.res.position.y=L*0.82;k.cap.position.y=L*0.82+0.07;k.knob.position.y=L*0.82+0.09;
+    k.rings.forEach((r,i)=>{r.position.y=L*(0.1+i*0.1);r.scale.set(1,Math.min(1.5,0.17/ (L/10)),1);});}
+  // brackets (static look) handled by shocks themselves
+}
+
+/* ---------- twin AR-15s ---------- */
+function buildAR(side){const g=new T.Group();
+  rbox(g,0.08,0.1,0.34,MAT.dark,0,0,0,0.03,0.015);rbox(g,0.082,0.07,0.26,MAT.dark,0,-0.07,-0.03,0.025,0.012);                 // upper + lower receiver
+  box(g,0.03,0.03,0.52,MAT.steel,0,0.075,0.12);                                                                                // top rail
+  cyl(g,0.05,0.05,0.34,8,MAT.steel,0,0.005,0.34).rotation.x=Math.PI/2;                                                         // round handguard
+  cyl(g,0.021,0.021,0.28,8,MAT.dark,0,0.005,0.66).rotation.x=Math.PI/2;                                                         // barrel
+  cyl(g,0.034,0.03,0.1,8,MAT.steel,0,0.005,0.86).rotation.x=Math.PI/2;                                                          // muzzle brake
+  rbox(g,0.05,0.13,0.06,MAT.dark,0,-0.15,-0.13,0.02,0.01).rotation.x=0.3;                                                       // pistol grip
+  rbox(g,0.1,0.075,0.17,MAT.steel,-side*0.088,0.0,0.03,0.02,0.012);box(g,0.04,0.05,0.07,MAT.brass,-side*0.15,0.0,0.03);        // feed tray + brass collar
+  const flash=new T.Group();flash.position.set(0,0.005,0.95);flash.visible=false;g.add(flash);
+  const fm=new T.MeshBasicMaterial({color:0xffc060,transparent:true,opacity:0.95,blending:T.AdditiveBlending,depthWrite:false});
+  const f1=new T.Mesh(new T.ConeGeometry(0.075,0.34,7,1,true).rotateX(Math.PI/2).translate(0,0,0.17),fm);flash.add(f1);
+  const f2=new T.Mesh(new T.ConeGeometry(0.03,0.22,5,1,true).rotateX(Math.PI/2).translate(0,0,0.11),new T.MeshBasicMaterial({color:0xfff6d0,transparent:true,opacity:1,blending:T.AdditiveBlending,depthWrite:false}));flash.add(f2);
+  for(let i=0;i<4;i++){const sp=new T.Mesh(new T.ConeGeometry(0.014,0.14,4,1,true).rotateX(Math.PI/2).translate(0,0,0.07),fm);sp.rotation.z=i*Math.PI/4;sp.rotation.y=(i%2?1:-1)*0.5;sp.position.z=-0.02;flash.add(sp);}   // side-blast petals
+  const fl={intensity:0};   // no real light in the game: the flash cones are enough
+  g.userData={flash,fl};return g;}
+const GUNS=[];
+for(const s of [-1,1]){const pivot=new T.Group();pivot.position.set(s*0.9,0.9,0.06);hull.add(pivot);const gun=buildAR(s);gun.position.z=-0.1;rbox(pivot,0.12,0.14,0.07,MAT.olive2,-s*0.05,0.0,0.1,0.03,0.015);pivot.add(gun);GUNS.push({s,pivot,gun,rec:0});}
+
+/* ---------- chain-fed ammo belts ---------- */
+const BELT=[];
+for(const s of [-1,1]){
+  const curve=new T.CatmullRomCurve3([new T.Vector3(s*0.22,1.24,-0.46),new T.Vector3(s*0.5,1.46,-0.3),new T.Vector3(s*0.8,1.4,-0.22),new T.Vector3(s*0.88,1.16,-0.14),new T.Vector3(s*0.82,0.92,-0.06)]);
+  const len=curve.getLength(),sp=0.036,N=Math.round(len/sp);
+  const cg=new T.CylinderGeometry(0.0125,0.0125,0.05,6).rotateZ(Math.PI/2),bg=new T.ConeGeometry(0.0115,0.045,6).rotateZ(-s*Math.PI/2).translate(s*-0.0,0,0);
+  bg.translate(0,0,0);bg.translate(-s*0.0,0,0);bg.translate(s*-0.0,0,0);
+  const casing=new T.InstancedMesh(cg,MAT.brass,N),tip=new T.InstancedMesh(new T.ConeGeometry(0.0115,0.04,6).rotateZ(Math.PI/2).translate(0.045,0,0),MAT.copper,N);
+  const link=new T.InstancedMesh(new T.BoxGeometry(0.075,0.012,0.012),MAT.steel,N);
+  casing.castShadow=tip.castShadow=true;hull.add(casing);hull.add(tip);hull.add(link);BELT.push({s,curve,len,N,casing,tip,link,feed:0});}
+const _m=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_t=new T.Vector3(),_u=new T.Vector3(0,1,0),_x=new T.Vector3(),_zv=new T.Vector3(),_yv=new T.Vector3();
+function beltStep(){for(const b of BELT){for(let i=0;i<b.N;i++){const u=((i/b.N)+b.feed)%1;b.curve.getPointAt(u,_v);b.curve.getTangentAt(u,_t);
+    _zv.copy(_t).normalize();_x.copy(_u).cross(_zv).normalize();_yv.copy(_zv).cross(_x);_m.makeBasis(_x,_yv,_zv);_m.setPosition(_v);
+    // the links hang with the casings lying across the belt: x axis across
+    const mm=_m.clone();b.casing.setMatrixAt(i,mm);b.tip.setMatrixAt(i,mm);b.link.setMatrixAt(i,mm);}
+    b.casing.instanceMatrix.needsUpdate=b.tip.instanceMatrix.needsUpdate=b.link.instanceMatrix.needsUpdate=true;}}
+
+/* ---------- the head: a small squared helmet set into the chest between the huge shoulders, with ONE big red eye ---------- */
+const POD={};
+{const neck=new T.Group();neck.position.set(0,1.38,0.08);hull.add(neck);POD.neck=neck;POD.segs=[];
+  const pod=new T.Group();pod.position.y=0.15;neck.add(pod);POD.pod=pod;
+  rbox(pod,0.5,0.36,0.4,MAT.olive,0,0,0,0.12,0.05);                                  // helmet
+  const vis=rbox(pod,0.4,0.18,0.06,MAT.glassD,0,-0.01,0.2,0.07,0.025);                // dark visor slot
+  POD.eyes=[];
+  const eg=new T.Group();eg.position.set(0,-0.01,0.245);pod.add(eg);
+  const bez=add(eg,new T.RingGeometry(0.1,0.118,18),MAT.steel,0,0,0.001);bez.castShadow=false;
+  const em=new T.MeshStandardMaterial({color:0xe01410,emissive:0xe01410,emissiveIntensity:0.75,flatShading:true,roughness:0.3});
+  const iris=add(eg,new T.CircleGeometry(0.1,18),em,0,0,0.003);iris.castShadow=false;
+  const pupilG=new T.Group();eg.add(pupilG);
+  const pupil=add(pupilG,new T.CircleGeometry(0.052,12),new T.MeshBasicMaterial({color:0x180202}),0,0,0.006);pupil.castShadow=false;
+  const gl1=add(pupilG,new T.CircleGeometry(0.02,8),new T.MeshBasicMaterial({color:0xffffff}),0.024,0.03,0.008);gl1.castShadow=false;
+  const lidM=new T.MeshStandardMaterial({color:0x10161a,flatShading:true,roughness:0.3,metalness:0.6});
+  const lidP=new T.Group();lidP.position.z=0.012;eg.add(lidP);
+  const upG=new T.Group();upG.position.y=0.122;lidP.add(upG);const up=add(upG,new T.CircleGeometry(0.122,18,Math.PI,Math.PI),lidM,0,0,0);up.castShadow=false;   // lids hang from the top / rise from the bottom edge so there is no seam
+  const loG=new T.Group();loG.position.y=-0.122;lidP.add(loG);const lo=add(loG,new T.CircleGeometry(0.122,18,0,Math.PI),lidM,0,0,0);lo.castShadow=false;
+  const blush=add(pod,new T.CircleGeometry(0.001,3),new T.MeshBasicMaterial({transparent:true,opacity:0}),0,-0.3,0.2);blush.castShadow=false;
+  POD.eyes.push({s:0,eg,iris,em,pupilG,lidP,up,lo,blush});}
+
+/* ---------------- state + animation ---------------- */
+const D={t:0,x:0,z:0,yaw:0,v:0,vT:0,yawRate:0,yawT:0,roll:0,ang:0,
+  hJ:0,vJ:0,crouch:0,air:false,s:0,sv:0,pr:0,prv:0,rl:0,rlv:0,lastY:0,lastVy:0,wy:0,wvy:0,
+  mood:'neutral',moodT:0,fire:false,fireT:0,shot:0,auto:true,keys:{},col:new T.Color(0xe01410),colT:new T.Color(0xe01410),
+  P:{ext:[0.4,0.4],lid:[0.1,0.1],tilt:[0,0],pitch:0,yawShake:0,bob:0,bobF:0,wig:0,look:0,hop:0}};
+const MOODS={
+ neutral:{ext:[0.45,0.45],lid:[0.1,0.1],tilt:[0,0],col:0xe01410,bob:0.02,bobF:1.2,look:0.5},
+ hi:     {ext:[1,1],lid:[-0.3,-0.3],tilt:[0,0],col:0x6dffb0,bob:0.1,bobF:5,wig:0.35,look:0.2},
+ yes:    {ext:[0.7,0.7],lid:[-0.1,-0.1],tilt:[0,0],col:0x5dff6a,bob:0.35,bobF:7,look:0},
+ no:     {ext:[0.4,0.4],lid:[0.8,0.8],tilt:[-0.4,0.4],col:0xff3b2e,yawShake:0.45,bobF:10,look:0},
+ excited:{ext:[1,1],lid:[-0.35,-0.35],tilt:[0,0],col:0xffd23a,bob:0.18,bobF:10,wig:0.3,hop:1,look:0.4},
+ alert:  {ext:[0.65,0.65],lid:[0.95,0.95],tilt:[-0.55,0.55],col:0xff5a1a,bob:0,look:0.1},
+ sad:    {ext:[0.05,0.05],lid:[0.75,0.75],tilt:[0.45,-0.45],col:0x4a7bff,bob:0.06,bobF:0.8,look:0},
+ curious:{ext:[0.95,0.55],lid:[-0.15,0.4],tilt:[0.0,-0.3],col:0xb67bff,bob:0.05,bobF:2,look:1}};
+const LAND=0.0;
+function setMood(n,hold){D.mood=n;D.moodT=hold||0;const m=MOODS[n];D.colT.set(m.col);
+  if(n==='excited'&&!D.air&&D.hJ<0.01)jump(0.8);if(n==='hi'||n==='yes')D.vT*=1;}
+function jump(k){if(D.air||D.crouch>0)return;D.crouch=0.2;D.jk=k||1;}
+function stepSim(dt){
+  D.t+=dt;const K=D.keys;
+    // speed and turn rate are set by the game's brain
+  const a=(D.vT-D.v)*3.2;D.v+=a*dt;D.yawRate+=(D.yawT-D.yawRate)*Math.min(1,dt*4);D.yaw+=D.yawRate*dt;
+  D.x+=Math.sin(D.yaw)*D.v*dt;D.z+=Math.cos(D.yaw)*D.v*dt;
+  // jump: crouch (suspension compresses), launch, ballistic, land
+  if(D.crouch>0){D.crouch-=dt;D.s+=(-0.1-D.s)*Math.min(1,dt*14);if(D.crouch<=0){D.vJ=4.3*Math.sqrt(D.jk||1);D.air=true;}}
+  if(D.air){D.vJ-=9.8*dt;D.hJ+=D.vJ*dt;if(D.hJ<=0&&D.vJ<0){D.hJ=0;D.air=false;D.vJ=0;D.landed=1;}}
+  const gy=gh(D.x,D.z);const wy=gy+D.hJ;D.wvy=(wy-D.wy)/Math.max(dt,1e-4);const wa=(D.wvy-D.lastVy)/Math.max(dt,1e-4);D.lastVy=D.wvy;D.wy=wy;
+  const acc=Math.max(-40,Math.min(40,wa));
+  // soft suspension: spring + damper, driven by the wheel's vertical acceleration; landing slams it into the bump stop gently
+  if(!(D.crouch>0)){const k=70,c=7.5;D.sv+=(-k*D.s-c*D.sv-acc*(D.air?0.0:1))*dt;if(D.air){D.sv+=(0.0)*dt;}D.s+=D.sv*dt;}
+  if(D.s<-0.1){D.s=-0.1;if(D.sv<0)D.sv*=-0.3;}if(D.s>0.1){D.s=0.1;if(D.sv>0)D.sv*=-0.3;}
+  if(D.air){D.s+=(0.07-D.s)*Math.min(1,dt*3);}
+  // pitch: lean back on accel, forward on braking; roll: chassis leans out of the turn while the wheel leans in
+  const pt=-a*0.022-(D.fire?0.012:0);D.prv+=(-60*(D.pr-pt)-8*D.prv)*dt;D.pr+=D.prv*dt;
+  const lat=D.v*D.yawRate,lean=Math.atan(lat/9.8)*0.9;D.roll+=(lean-D.roll)*Math.min(1,dt*6);
+  const rt=lean*0.35;D.rlv+=(-60*(D.rl-rt)-8*D.rlv)*dt;D.rl+=D.rlv*dt;
+  D.ang+=D.v/R*dt;   // no-slip rolling: angle = distance / radius
+  // mood
+  const m=MOODS[D.mood],P=D.P;const k=Math.min(1,dt*8);
+  for(let i=0;i<2;i++){P.ext[i]+=(m.ext[i]-P.ext[i])*k;P.lid[i]+=(m.lid[i]-P.lid[i])*k;P.tilt[i]+=(m.tilt[i]-P.tilt[i])*k;}
+  P.bob+=((m.bob||0)-P.bob)*k;P.bobF+=((m.bobF||1)-P.bobF)*k;P.yawShake+=((m.yawShake||0)-P.yawShake)*k;P.wig+=((m.wig||0)-P.wig)*k;P.look+=((m.look||0)-P.look)*k;
+  D.col.lerp(D.colT,Math.min(1,dt*7));
+  if(D.moodT>0){D.moodT-=dt;if(D.moodT<=0)setMood('neutral');}
+  // blink
+  D.blinkT=(D.blinkT==null?2:D.blinkT)-dt;if(D.blinkT<0&&D.mood!=='no'&&D.mood!=='alert'){D.blink=0.14;D.blinkT=2+Math.random()*3.5;}D.blink=Math.max(0,(D.blink||0)-dt);
+  // firing: alternate barrels, feed the belts, kick the hull
+  if(D.fire){D.fireT-=dt;while(D.fireT<=0){D.fireT+=1/14;const g=GUNS[D.shot++%2];if(H&&H.shot)H.shot(g);g.flashT=0.045;g.rec=0.035;D.prv-=0.35;const b=BELT[g.s<0?0:1];b.feed=(b.feed+b.curve.getLength()>0?(b.feed+0.036/b.len*2)%1:0);}}
+  for(const g of GUNS){g.flashT=Math.max(0,(g.flashT||0)-dt);const ud=g.gun.userData;ud.flash.visible=g.flashT>0;ud.fl.intensity=g.flashT>0?9:0;ud.flash.rotation.z=Math.random()*6;ud.flash.scale.setScalar(0.8+Math.random()*0.5);g.rec*=Math.pow(0.0005,dt);g.gun.position.z=-0.1-g.rec;}
+  // body motion
+  const hop=P.bob*Math.abs(Math.sin(D.t*P.bobF*2))*0.5;
+  root.position.set(D.x,gy,D.z);root.rotation.set(D.slP||0,D.yaw,D.slR||0);
+  wheelAsm.position.y=wy-gy;wheelAsm.rotation.z=-D.roll;
+  wheel.rotation.x=D.ang;
+  chassis.position.set(0,(wy-gy)+R+D.s,0);chassis.rotation.set(D.pr,0,D.rl+D.roll*0.0);
+  if(D.mood==='no')chassis.rotation.y=Math.sin(D.t*14)*0.12*Math.exp(-((D.moodElapsed||0)*0.0));else chassis.rotation.y*=0.8;
+  chassis.updateMatrix();
+  // eye pod: neck extends, pod nods / yaws / tilts, two big eyes blink and emote
+  {POD.pod.rotation.set(0,0,0);   // the head stays put: all the emoting is done by the eyes, lids and colour
+   const bl=D.blink>0?Math.sin(Math.min(1,D.blink/0.14)*Math.PI):0;let happy=(D.mood==='hi'||D.mood==='yes'||D.mood==='excited')?1:0;
+   POD.eyes.forEach((e,i)=>{const c=Math.max(0,Math.min(0.9,(P.lid[i]-0.1)*0.7));const cc=Math.min(1,c+bl*1.1);
+     e.up.scale.y=Math.min(1,cc*2);e.lo.scale.y=Math.max(0.0001,cc*2-1);e.up.visible=e.up.scale.y>0.02;e.lo.visible=cc>0.5;
+     e.lidP.rotation.z=P.tilt[i]*0.55;
+     const pop=0.9+0.35*(P.ext[i]-0.4);e.eg.scale.setScalar(Math.max(0.7,Math.min(1.25,pop+(D.mood==='excited'?0.06*Math.sin(D.t*18):0))));
+     e.em.color.copy(D.col);e.em.emissive.copy(D.col);e.em.emissiveIntensity=0.7+0.3*Math.sin(D.t*(D.mood==='excited'?22:3)+i);
+     const lx=Math.sin(D.t*1.3+i*0.6)*0.024*(0.4+P.look)+(D.mood==='curious'?0.02*Math.sin(D.t*2):0),ly=Math.cos(D.t*0.9+i)*0.014*(0.4+P.look)-(D.mood==='sad'?0.02:0)+(D.mood==='hi'?0.01:0);e.pupilG.position.set(lx,ly,0);
+     e.pupilG.scale.setScalar(D.mood==='excited'?1.25:D.mood==='alert'?0.75:D.mood==='sad'?1.15:1.0);
+     e.blush.material.opacity+=((happy?0.85:D.mood==='sad'?0.25:0)-e.blush.material.opacity)*0.15;});}
+  bulb.material.emissiveIntensity=1.0+0.8*Math.sin(D.t*4);bulb.material.emissive.copy(D.col);bulb.material.color.copy(D.col);
+  LED.forEach((l,i)=>{l.material.emissive.copy(D.col);l.material.emissiveIntensity=(0.7+0.7*Math.sin(D.t*5+i*1.3))>0.9?1.4:0.1;l.material.color.copy(D.col).multiplyScalar(0.4);});
+  if(D.vis!==false){shockStep();beltStep();}
+}
+
+root.traverse(o=>{if(o.isMesh&&o.geometry){o.geometry.computeBoundingSphere();if(o.geometry.boundingSphere.radius<0.1)o.castShadow=false;}});
+return {root,D,GUNS,POD,BELT,stepSim,setMood,jump,MOODS};
+}
+
+// ================= Droid Gunner: a one-wheeled buddy that spawns with you, follows you about, and shoots deer it can see (solo only for now) =================
+// The model, suspension and sim come from the standalone viewer (droid.html). The brain below is a cut-down version of the team UGV's: tag along, stop and fire at what it sees.
+const DROID_HUNT=true;   // for testing, like the UGV: it shoots deer (set false to make it a pure companion)
+const DR={m:null,tele:true,lt:0,tg:null,tgDeer:null,mem:0,losT:0,burst:0,pause:0,idleT:0,talkT:8,fw:0,fT:0,path:null,pi:0,skT:0,skX:0,skZ:0,stuck:0,shots:0,sad:false,slP:0,slR:0,px:0,pz:0,still:0};
+const DR_WORDS={hi:{mood:'hi',seq:[[620,980,110,'triangle'],[1180,900,150,'triangle'],[760,1250,140,'sine']]},yes:{mood:'yes',seq:[[520,640,90,'square',0.5],[700,1200,170,'triangle']]},
+ no:{mood:'no',seq:[[420,260,190,'sawtooth',0.5],[300,170,260,'sawtooth',0.5]]},excited:{mood:'excited',seq:[[600,800,60,'square',0.4],[800,1000,60,'square',0.4],[1000,1300,60,'square',0.4],[1300,1700,60,'square',0.4],[1500,2000,120,'triangle'],[1900,1500,60,'triangle'],[1600,2100,260,'triangle']]},
+ alert:{mood:'alert',seq:[[900,880,120,'sawtooth',0.5],[600,590,120,'sawtooth',0.5],[900,880,120,'sawtooth',0.5],[600,590,160,'sawtooth',0.5]]},sad:{mood:'sad',seq:[[620,540,160,'sine'],[540,300,520,'sine'],[290,190,420,'sine']]},
+ curious:{mood:'curious',seq:[[380,420,110,'triangle'],[420,980,300,'sine']]},thanks:{mood:'yes',seq:[[900,700,110,'triangle'],[700,1000,200,'sine']]}};
+function droidSay(w){const m=DR.m,W=DR_WORDS[w];if(!m||!W)return;m.setMood(W.mood,0.9+W.seq.length*0.18);
+  try{const c=sp3(m.D.x,m.D.y!=null?m.D.y:m.D.wy+1.2,m.D.z,160);if(!c)return;let t=c.t0;const pm=0.96+Math.random()*0.08,vg=(typeof VOLS!=='undefined'?VOLS.gun:1);
+    for(const [f0,f1,ms,wave,g] of W.seq){const len=ms/1000;tn(c,t,f0*pm,Math.max(40,f1*pm),len,0.2*(g==null?1:g),wave);t+=len*0.92;}}catch(e){}}
+function droidGunSnd(o){const c=sp3(o.x,o.y,o.z,2500);if(!c)return;const vg=(typeof VOLS!=='undefined'?VOLS.gun:1);
+  if(SND.rifle){const s=AC.createBufferSource();s.buffer=SND.rifle;s.playbackRate.value=1.0+Math.random()*0.1;const g=AC.createGain();g.gain.value=1.5*vg;s.connect(g);g.connect(c.inp);s.start(c.t0);}else nz(c,c.t0,0.15,1800,0.8,1.6*vg);}
+function droidRound(o,dir,tr){const b={tm:secTeam(),p:o.clone(),o:o.clone(),v:dir.clone().multiplyScalar(V0*0.92),t:0,tr:getP(gTracer,matTracer),rem:true,ugv:true,ud:GAME.uDmg};bullets.push(b);if(tr)try{mkStreak(b);}catch(e){}
+  droidGunSnd(o);try{farFlash(o);}catch(e){}try{disturb(o.x,o.z,110,380,true);}catch(e){}}
+const _dm=new THREE.Vector3();
+function droidMuzzle(g){return g.gun.localToWorld(_dm.set(0,0.005,0.95)).clone();}
+function droidShot(g){const T=DR.tg;if(!T||!DR.m)return;DR.m.root.updateMatrixWorld(true);const o=droidMuzzle(g),d=Math.hypot(T.x-o.x,T.z-o.z),tf=d/(V0*0.92);
+  const tgt=new THREE.Vector3(T.x,T.y+0.95+0.5*GBUL*tf*tf*1.1,T.z),dir=tgt.sub(o).normalize();
+  const sd=0.006*(1+Math.min(2,Math.abs(DR.m.D.v)*0.3)),gs=()=>(Math.random()+Math.random()+Math.random()-1.5)*1.15,s1=new THREE.Vector3(dir.z,0,-dir.x).normalize(),s2=new THREE.Vector3().crossVectors(dir,s1);
+  dir.addScaledVector(s1,gs()*sd).addScaledVector(s2,gs()*sd).normalize();DR.shots++;droidRound(o,dir,DR.shots%3===1);}
+function droidSpot(){const p=player.pos;for(let k=0;k<40;k++){const a=Math.random()*PI*2,r=3+k*0.25;const x=p.x+Math.sin(a)*r,z=p.z+Math.cos(a)*r;if(!ugvBlocked(x,z))return {x,z};}return {x:p.x+3,z:p.z};}
+function droidLook(m){const D=m.D;const eye=new THREE.Vector3(D.x,groundH(D.x,D.z)+1.5,D.z);let best=null,bd=1e9;
+  if(!DROID_HUNT)return null;
+  for(const d of DEER){if(d.st==='dead'||d.st==='dying')continue;const dd=Math.hypot(d.x-D.x,d.z-D.z);if(dd>140||dd>=bd)continue;
+    const dir=new THREE.Vector3(d.x-eye.x,d.y+0.9-eye.y,d.z-eye.z),L=dir.length();dir.multiplyScalar(1/L);const r=castRay(eye,dir,Math.max(0.5,L-1),true);if(r)continue;best=d;bd=dd;}
+  return best;}
+function droidStep(){
+  const dt=Math.min(0.1,(performance.now()-(DR.lt||performance.now()))/1000);DR.lt=performance.now();
+  try{if(MPM&&MPM.on){if(DR.m)DR.m.root.visible=false;return;}}catch(e){}
+  if(!playing)return;
+  if(!DR.m){DR.m=makeDroidGD(THREE,groundH,{shot:droidShot});scene.add(DR.m.root);DR.tele=true;}
+  const m=DR.m,D=m.D,p=player.pos;m.root.visible=true;
+  if(DR.tele||Math.hypot(p.x-D.x,p.z-D.z)>90){DR.tele=false;const s=droidSpot();D.x=s.x;D.z=s.z;D.yaw=Math.atan2(p.x-s.x,p.z-s.z);D.v=D.vT=0;D.yawRate=0;D.hJ=0;DR.tg=null;DR.tgDeer=null;DR.path=null;DR.sad=false;m.stepSim(0.016);setTimeout(()=>droidSay('hi'),400);}
+  // the player died: it sulks and stays put
+  if(!player.alive){if(!DR.sad){DR.sad=true;droidSay('sad');}D.vT=0;D.yawT=0;D.fire=false;m.stepSim(dt);return;}else DR.sad=false;
+  const live=!(MPM.on&&NT.M.ph!=='live');
+  // ---- eyes: look for a deer a few times a second, keep it in mind for a moment after it hides
+  DR.losT-=dt;if(DR.losT<=0){DR.losT=0.25;const T=live?droidLook(m):null;
+    if(T){if(DR.tgDeer!==T){DR.tgDeer=T;DR.burst=0;DR.pause=0.3;droidSay('alert');}DR.mem=2;}else if(DR.tgDeer){DR.mem-=0.25;if(DR.mem<=0){DR.tgDeer=null;}}}
+  if(DR.tgDeer&&(DR.tgDeer.st==='dead'||DR.tgDeer.st==='dying')){DR.tgDeer=null;droidSay(Math.random()<0.6?'excited':'yes');}
+  DR.tg=DR.tgDeer?{x:DR.tgDeer.x,y:DR.tgDeer.y,z:DR.tgDeer.z}:null;
+  // ---- movement: tag along with the player (A* route when far, straight when near); stand and shoot when it has a target
+  const ox=D.x,oz=D.z;let want=0,tx=p.x,tz=p.z,turnCap=1.8;const dp=Math.hypot(p.x-D.x,p.z-D.z);
+  if(DR.tg){const rel=wrapA(Math.atan2(DR.tg.x-D.x,DR.tg.z-D.z)-D.yaw);D.yawT=clamp(rel*3,-2.2,2.2);D.vT=0;
+    const on=Math.abs(rel)<0.14&&live;
+    if(DR.pause>0){DR.pause-=dt;D.fire=false;}
+    else if(on){D.fire=true;DR.burst+=dt;if(DR.burst>0.65){DR.burst=0;DR.pause=0.5+Math.random()*0.5;D.fire=false;}}
+    else D.fire=false;}
+  else{D.fire=false;DR.burst=0;
+    if(dp>12||(DR.fw&&dp>6)){DR.fw=1;DR.fT-=dt;
+      if(dp>16){if(!DR.path||DR.fT<=0){DR.fT=3;const r=ugvPlan(D.x,D.z,p.x,p.z);DR.path=r.path;DR.pi=0;}
+        let w=DR.path&&DR.path[DR.pi];if(w&&DR.pi<DR.path.length-1&&Math.hypot(w.x-D.x,w.z-D.z)<4.5){DR.pi++;w=DR.path[DR.pi];}if(w){tx=w.x;tz=w.z;}}
+      want=Math.min(6.5,2+(dp-6)*0.45);}
+    else{DR.fw=0;DR.path=null;want=0;}
+    if(want>0){let turn=wrapA(Math.atan2(tx-D.x,tz-D.z)-D.yaw);
+      const pr=a=>ugvBlocked(D.x+Math.sin(D.yaw+a)*3,D.z+Math.cos(D.yaw+a)*3);
+      if(pr(0)||ugvBlocked(D.x+Math.sin(D.yaw)*1.6,D.z+Math.cos(D.yaw)*1.6)){const l=pr(0.7),r=pr(-0.7);turn+=!l?1.2:!r?-1.2:(DR.sk||(DR.sk=Math.random()<0.5?1:-1))*1.8;}else DR.sk=0;
+      D.yawT=clamp(turn*2.5,-turnCap,turnCap);D.vT=want*Math.max(0,Math.cos(Math.min(Math.PI/2,Math.abs(turn)*1.3)));}
+    else{D.vT=0;D.yawT=0;}}
+  D.vis=true;m.stepSim(dt);
+  // hit a tree, rock, the lake or steep ground: stop dead and back off
+  if(ugvBlocked(D.x,D.z)&&!ugvBlocked(ox,oz)){D.x=ox;D.z=oz;D.v=0;}
+  // keep the player out of the wheel
+  {const dx=p.x-D.x,dz=p.z-D.z,dd=Math.hypot(dx,dz);if(dd<1.0&&dd>1e-3&&p.y<groundH(D.x,D.z)+1.6){const k=1.0/dd;p.x=D.x+dx*k;p.z=D.z+dz*k;}}
+  // stuck for 3 s while it wants to go: hop, and plan again
+  DR.skT+=dt;if(DR.skT>=3){const mv=Math.hypot(D.x-DR.skX,D.z-DR.skZ);DR.skX=D.x;DR.skZ=D.z;DR.skT=0;if(want>1&&mv<1.2){DR.stuck++;DR.path=null;m.jump(1);if(DR.stuck===2)droidSay('no');
+      if(DR.stuck>=3){DR.stuck=0;const s=droidSpot();D.x=s.x;D.z=s.z;}}else DR.stuck=0;}
+  // ---- follow the ground: pitch with the slope under the heading, roll across it
+  {const s=Math.sin(D.yaw),c=Math.cos(D.yaw),F=0.8,W=0.6,hF=groundH(D.x+s*F,D.z+c*F),hB=groundH(D.x-s*F,D.z-c*F),hR=groundH(D.x+c*W,D.z-s*W),hL=groundH(D.x-c*W,D.z+s*W);
+    const k=Math.min(1,dt*6);DR.slP+=(-Math.atan2(hF-hB,F*2)-DR.slP)*k;DR.slR+=(Math.atan2(hR-hL,W*2)-DR.slR)*k;D.slP=DR.slP;D.slR=DR.slR;}
+  // ---- guns swing onto the target
+  if(DR.tg){m.root.updateMatrixWorld(true);for(const g of m.GUNS){const o=droidMuzzle(g),hd=Math.hypot(DR.tg.x-o.x,DR.tg.z-o.z),el=Math.atan2(DR.tg.y+0.95-o.y,hd);const rel=wrapA(Math.atan2(DR.tg.x-o.x,DR.tg.z-o.z)-D.yaw);
+      g.pivot.rotation.x+=(clamp(-el-D.pr*0+DR.slP*0,-0.6,0.6)-g.pivot.rotation.x)*Math.min(1,dt*12);g.pivot.rotation.y+=(clamp(rel,-0.35,0.35)-g.pivot.rotation.y)*Math.min(1,dt*12);}}
+  else for(const g of m.GUNS){g.pivot.rotation.x*=Math.max(0,1-dt*6);g.pivot.rotation.y*=Math.max(0,1-dt*6);}
+  // ---- personality: bored when you stand about, pleased when you come back
+  const mv=Math.hypot(p.x-DR.px,p.z-DR.pz);DR.px=p.x;DR.pz=p.z;DR.still=mv<0.02?DR.still+dt:0;
+  DR.talkT-=dt;if(DR.talkT<=0&&!DR.tg){DR.talkT=10+Math.random()*14;if(DR.still>8)droidSay(Math.random()<0.5?'curious':'hi');else if(Math.random()<0.25)droidSay(Math.random()<0.5?'yes':'curious');}
+}
+resReset=(f=>function(){f.apply(this,arguments);try{DR.tele=true;}catch(e){}})(resReset);
+
 window.SNIPER_UGV={ugc:UGC,get:ugcGet,G:GAME,list:()=>UGVS,step:ugvStep,hit:hitUgv,ray:rayUgv,reset:ugvReset,look:ugvLook,place:ugvPlace,build:ugvBuildAll,gh:groundH};
 
 
