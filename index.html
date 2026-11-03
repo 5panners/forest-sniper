@@ -3180,7 +3180,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;});
 
-const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Parachute','Space to jump · Space again in the air to open · mouse steers, W / S speed, A / D drift'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['God mode (dev)','` backquote'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Launch the missile (at the silo console)','L'],['Shadows','O'],['Mute','M']];
+const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Parachute','Space'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['God mode (dev)','` backquote'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Launch the missile (at the silo console)','L'],['Shadows','O'],['Mute','M']];
 $('keyList').innerHTML=KEYS.map(k=>`<div><kbd>${k[1]}</kbd><span>${k[0]}</span></div>`).join('');
 
 /* ---------------- menu tabs + graphics options ---------------- */
@@ -3376,7 +3376,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=422;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=424;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5713,7 +5713,7 @@ function stepSim(dt){
 }
 
 root.traverse(o=>{if(o.isMesh&&o.geometry){o.geometry.computeBoundingSphere();if(o.geometry.boundingSphere.radius<0.1)o.castShadow=false;}});
-return {root,D,GUNS,POD,BELT,stepSim,setMood,jump,MOODS};
+return {root,hull,D,GUNS,POD,BELT,stepSim,setMood,jump,MOODS};
 }
 
 // ================= Droid Gunner: a one-wheeled buddy that spawns with you, follows you about, and shoots deer it can see (solo only for now) =================
@@ -5731,7 +5731,7 @@ function droidGunSnd(o){const c=sp3(o.x,o.y,o.z,2500);if(!c)return;const vg=(typ
   if(SND.rifle){const s=AC.createBufferSource();s.buffer=SND.rifle;s.playbackRate.value=1.0+Math.random()*0.1;const g=AC.createGain();g.gain.value=1.5*vg;s.connect(g);g.connect(c.inp);s.start(c.t0);}else nz(c,c.t0,0.15,1800,0.8,1.6*vg);}
 function droidRound(o,dir,tr){const b={tm:secTeam(),p:o.clone(),o:o.clone(),v:dir.clone().multiplyScalar(V0*0.92),t:0,tr:getP(gTracer,matTracer),rem:true,ugv:true,ud:GAME.uDmg};bullets.push(b);if(tr)try{mkStreak(b);}catch(e){}
   droidGunSnd(o);try{farFlash(o);}catch(e){}try{disturb(o.x,o.z,110,380,true);}catch(e){}}
-const _dm=new THREE.Vector3();
+const _dm=new THREE.Vector3(),_dq=new THREE.Quaternion(),_dv=new THREE.Vector3();
 function droidMuzzle(g){return g.gun.localToWorld(_dm.set(0,0.005,0.95)).clone();}
 function droidShot(g){const T=DR.tg;if(!T||!DR.m)return;DR.m.root.updateMatrixWorld(true);const o=droidMuzzle(g),d=Math.hypot(T.x-o.x,T.z-o.z),tf=d/(V0*0.92);
   const tgt=new THREE.Vector3(T.x,T.y+0.95+0.5*GBUL*tf*tf*1.1,T.z),dir=tgt.sub(o).normalize();
@@ -5761,7 +5761,7 @@ function droidStep(){
   // ---- movement: tag along with the player (A* route when far, straight when near); stand and shoot when it has a target
   const ox=D.x,oz=D.z;let want=0,tx=p.x,tz=p.z,turnCap=1.8;const dp=Math.hypot(p.x-D.x,p.z-D.z);
   if(DR.tg){const rel=wrapA(Math.atan2(DR.tg.x-D.x,DR.tg.z-D.z)-D.yaw);D.yawT=clamp(rel*3,-2.2,2.2);D.vT=0;
-    const on=Math.abs(rel)<0.14&&live;
+    const on=Math.abs(rel)<0.45&&live;
     if(DR.pause>0){DR.pause-=dt;D.fire=false;}
     else if(on){D.fire=true;DR.burst+=dt;if(DR.burst>0.65){DR.burst=0;DR.pause=0.5+Math.random()*0.5;D.fire=false;}}
     else D.fire=false;}
@@ -5788,8 +5788,10 @@ function droidStep(){
   {const s=Math.sin(D.yaw),c=Math.cos(D.yaw),F=0.8,W=0.6,hF=groundH(D.x+s*F,D.z+c*F),hB=groundH(D.x-s*F,D.z-c*F),hR=groundH(D.x+c*W,D.z-s*W),hL=groundH(D.x-c*W,D.z+s*W);
     const k=Math.min(1,dt*6);DR.slP+=(-Math.atan2(hF-hB,F*2)-DR.slP)*k;DR.slR+=(Math.atan2(hR-hL,W*2)-DR.slR)*k;D.slP=DR.slP;D.slR=DR.slR;}
   // ---- guns swing onto the target
-  if(DR.tg){m.root.updateMatrixWorld(true);for(const g of m.GUNS){const o=droidMuzzle(g),hd=Math.hypot(DR.tg.x-o.x,DR.tg.z-o.z),el=Math.atan2(DR.tg.y+0.95-o.y,hd);const rel=wrapA(Math.atan2(DR.tg.x-o.x,DR.tg.z-o.z)-D.yaw);
-      g.pivot.rotation.x+=(clamp(-el-D.pr*0+DR.slP*0,-0.6,0.6)-g.pivot.rotation.x)*Math.min(1,dt*12);g.pivot.rotation.y+=(clamp(rel,-0.35,0.35)-g.pivot.rotation.y)*Math.min(1,dt*12);}}
+  if(DR.tg){m.root.updateMatrixWorld(true);const hq=m.hull.getWorldQuaternion(_dq).invert();
+    for(const g of m.GUNS){g.pivot.rotation.order='YXZ';const o=droidMuzzle(g);const dir=_dv.set(DR.tg.x-o.x,DR.tg.y+0.95-o.y,DR.tg.z-o.z).normalize().applyQuaternion(hq);   // the target direction in the hull's own frame
+      const ty=clamp(Math.atan2(dir.x,dir.z),-1.0,1.0),tp=clamp(-Math.asin(clamp(dir.y,-1,1)),-0.9,0.9),k=Math.min(1,dt*22);
+      g.pivot.rotation.y+=(ty-g.pivot.rotation.y)*k;g.pivot.rotation.x+=(tp-g.pivot.rotation.x)*k;}}
   else for(const g of m.GUNS){g.pivot.rotation.x*=Math.max(0,1-dt*6);g.pivot.rotation.y*=Math.max(0,1-dt*6);}
   // ---- personality: bored when you stand about, pleased when you come back
   const mv=Math.hypot(p.x-DR.px,p.z-DR.pz);DR.px=p.x;DR.pz=p.z;DR.still=mv<0.02?DR.still+dt:0;
