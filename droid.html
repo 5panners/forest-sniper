@@ -91,13 +91,10 @@ rbox(hull,0.6,0.26,0.05,MAT.olive2,0,1.16,0.325,0.05,0.02);for(let i=0;i<3;i++)b
 box(hull,0.62,0.05,0.04,MAT.orange,0,1.31,0.325);                                                                                      // orange chest stripe
 const limb=(p,a,b,r,m)=>{const A=new T.Vector3(...a),B=new T.Vector3(...b),d=B.clone().sub(A),L=d.length();const c=add(p,new T.CylinderGeometry(r,r,L,9),m,0,0,0);c.position.copy(A).add(B).multiplyScalar(0.5);c.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d.normalize());return c;};
 for(const s of [-1,1]){
-  // no shoulder armour: just a round shoulder socket and a big gun-arm
-  add(hull,new T.IcosahedronGeometry(0.175,1),MAT.olive,s*0.6,1.17,0.0);
-  const ring=add(hull,new T.TorusGeometry(0.17,0.03,4,12),MAT.orange,s*0.6,1.17,0.0);ring.rotation.y=Math.PI/2;ring.position.x=s*0.6+s*0.01;
-  limb(hull,[s*0.62,1.14,0.0],[s*0.84,0.9,0.05],0.12,MAT.olive2);                                                                         // beefy upper arm
-  rbox(hull,0.2,0.24,0.26,MAT.dark,s*0.74,1.02,0.02,0.09,0.04);                                                                           // armoured bicep guard
-  add(hull,new T.IcosahedronGeometry(0.115,1),MAT.steel,s*0.84,0.9,0.05);                                                                // elbow
-  limb(hull,[s*0.84,0.9,0.05],[s*0.84,0.95,0.2],0.1,MAT.dark);}                                                                          // forearm
+  rbox(hull,0.26,0.34,0.38,MAT.olive,s*0.6,1.17,0.0,0.07,0.04);                // straight, square shoulder block flush with the chest
+  rbox(hull,0.3,0.4,0.36,MAT.olive2,s*0.71,0.86,0.0,0.07,0.04);                // short chunky upper arm
+  rbox(hull,0.07,0.3,0.3,MAT.orange,s*0.865,0.86,0.0,0.03,0.015);              // orange guard plate on the outside of the arm
+  rbox(hull,0.2,0.16,0.28,MAT.dark,s*0.71,0.62,0.02,0.05,0.03);}               // fist / wrist block under the arm
 const ammo=new T.Group();ammo.position.set(0,1.18,-0.44);hull.add(ammo);
 rbox(ammo,0.56,0.36,0.3,MAT.olive2,0,0,0,0.08,0.04);box(ammo,0.56,0.035,0.3,MAT.dark,0,0.18,0);box(ammo,0.12,0.05,0.14,MAT.tan,0,0.21,0.0);
 for(const s of [-1,1]){box(ammo,0.03,0.12,0.2,MAT.dark,s*0.285,-0.02,0);}
@@ -130,18 +127,13 @@ function shockStep(){
 
 /* ---------- twin AR-15s ---------- */
 function buildAR(side){const g=new T.Group();
-  rbox(g,0.082,0.1,0.34,MAT.dark,0,0,0,0.03,0.015);rbox(g,0.085,0.075,0.26,MAT.dark,0,-0.075,-0.03,0.025,0.012);                      // chunky upper + lower receiver
-  rbox(g,0.1,0.06,0.2,MAT.steel,0,0.075,0.0,0.02,0.012);box(g,0.03,0.03,0.58,MAT.steel,0,0.115,0.17);box(g,0.055,0.07,0.1,MAT.dark,0,0.1,-0.04);   // top rail + optic block
-  cyl(g,0.054,0.054,0.36,8,MAT.steel,0,0.005,0.35).rotation.x=Math.PI/2;                                                               // fat round handguard / barrel shroud
-  for(const a of [0,1,2,3,4,5]){const an=a/6*Math.PI*2;box(g,0.014,0.014,0.3,MAT.dark,Math.cos(an)*0.058,0.005+Math.sin(an)*0.058,0.35);}  // cooling ribs
-  cyl(g,0.022,0.022,0.3,8,MAT.dark,0,0.005,0.68).rotation.x=Math.PI/2;                                                                 // heavy barrel
-  cyl(g,0.036,0.03,0.12,8,MAT.steel,0,0.005,0.88).rotation.x=Math.PI/2;box(g,0.07,0.012,0.07,MAT.dark,0,0.005,0.86);box(g,0.012,0.07,0.07,MAT.dark,0,0.005,0.9);   // muzzle brake with ports
-  box(g,0.014,0.07,0.014,MAT.dark,0,0.08,0.62);                                                                                        // front sight
-  rbox(g,0.05,0.14,0.06,MAT.dark,0,-0.16,-0.13,0.02,0.01).rotation.x=0.3;                                                              // big pistol grip
-  rbox(g,0.06,0.07,0.1,MAT.dark,0,-0.14,0.06,0.02,0.01);                                                                               // magwell block (belt fed)
-  box(g,0.04,0.12,0.2,MAT.steel,0,-0.1,0.33);                                                                                          // under-barrel armour fin
-  rbox(g,0.1,0.075,0.17,MAT.steel,-side*0.088,0.0,0.03,0.02,0.012);box(g,0.04,0.05,0.07,MAT.brass,-side*0.15,0.0,0.03);               // feed tray + brass collar toward the ammo box
-  rbox(g,0.012,0.04,0.09,M(0x0f0f0f),side*0.042,0.015,0.06,0.01,0.004);                                                                // ejection port
+  rbox(g,0.08,0.1,0.34,MAT.dark,0,0,0,0.03,0.015);rbox(g,0.082,0.07,0.26,MAT.dark,0,-0.07,-0.03,0.025,0.012);                 // upper + lower receiver
+  box(g,0.03,0.03,0.52,MAT.steel,0,0.075,0.12);                                                                                // top rail
+  cyl(g,0.05,0.05,0.34,8,MAT.steel,0,0.005,0.34).rotation.x=Math.PI/2;                                                         // round handguard
+  cyl(g,0.021,0.021,0.28,8,MAT.dark,0,0.005,0.66).rotation.x=Math.PI/2;                                                         // barrel
+  cyl(g,0.034,0.03,0.1,8,MAT.steel,0,0.005,0.86).rotation.x=Math.PI/2;                                                          // muzzle brake
+  rbox(g,0.05,0.13,0.06,MAT.dark,0,-0.15,-0.13,0.02,0.01).rotation.x=0.3;                                                       // pistol grip
+  rbox(g,0.1,0.075,0.17,MAT.steel,-side*0.088,0.0,0.03,0.02,0.012);box(g,0.04,0.05,0.07,MAT.brass,-side*0.15,0.0,0.03);        // feed tray + brass collar
   const flash=new T.Group();flash.position.set(0,0.005,0.95);flash.visible=false;g.add(flash);
   const fm=new T.MeshBasicMaterial({color:0xffc060,transparent:true,opacity:0.95,blending:T.AdditiveBlending,depthWrite:false});
   const f1=new T.Mesh(new T.ConeGeometry(0.075,0.34,7,1,true).rotateX(Math.PI/2).translate(0,0,0.17),fm);flash.add(f1);
@@ -150,12 +142,12 @@ function buildAR(side){const g=new T.Group();
   const fl=new T.PointLight(0xffa850,0,6,2);flash.add(fl);
   g.userData={flash,fl};return g;}
 const GUNS=[];
-for(const s of [-1,1]){const pivot=new T.Group();pivot.position.set(s*0.86,0.97,0.06);hull.add(pivot);const gun=buildAR(s);gun.position.z=-0.1;rbox(pivot,0.13,0.17,0.06,MAT.olive2,0,0.0,0.12,0.04,0.02);pivot.add(gun);GUNS.push({s,pivot,gun,rec:0});}
+for(const s of [-1,1]){const pivot=new T.Group();pivot.position.set(s*1.0,0.92,0.06);hull.add(pivot);const gun=buildAR(s);gun.position.z=-0.1;rbox(pivot,0.16,0.2,0.08,MAT.olive2,-s*0.07,0.0,0.1,0.04,0.02);pivot.add(gun);GUNS.push({s,pivot,gun,rec:0});}
 
 /* ---------- chain-fed ammo belts ---------- */
 const BELT=[];
 for(const s of [-1,1]){
-  const curve=new T.CatmullRomCurve3([new T.Vector3(s*0.22,1.24,-0.46),new T.Vector3(s*0.46,1.4,-0.34),new T.Vector3(s*0.74,1.3,-0.24),new T.Vector3(s*0.8,1.1,-0.12),new T.Vector3(s*0.76,0.98,-0.02)]);
+  const curve=new T.CatmullRomCurve3([new T.Vector3(s*0.22,1.24,-0.46),new T.Vector3(s*0.5,1.46,-0.3),new T.Vector3(s*0.88,1.42,-0.22),new T.Vector3(s*0.99,1.18,-0.14),new T.Vector3(s*0.93,0.94,-0.06)]);
   const len=curve.getLength(),sp=0.036,N=Math.round(len/sp);
   const cg=new T.CylinderGeometry(0.0125,0.0125,0.05,6).rotateZ(Math.PI/2),bg=new T.ConeGeometry(0.0115,0.045,6).rotateZ(-s*Math.PI/2).translate(s*-0.0,0,0);
   bg.translate(0,0,0);bg.translate(-s*0.0,0,0);bg.translate(s*-0.0,0,0);
