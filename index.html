@@ -3376,7 +3376,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=430;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=431;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5006,6 +5006,10 @@ function secHudDraw(){try{secTkDraw();}catch(e){}const show=playing&&!mapOpen;se
   const px=player.pos.x,pz=player.pos.z;   // (the mini sector graph was removed; only the status line stays)
   // status line
   let t='',col='#f1e6c0';const mine=secTeam(),S=SILO;
+  // soft tick..tick while you are capturing a point (quickens a little as it fills)
+  try{const q=SEC_DEF.findIndex(d=>Math.hypot(px-d.x,pz-d.z)<d.r),z=q>=0?SECT.s[q]:null;
+    if(z&&z.own!==mine&&z.by===mine&&z.cap>0&&player.alive&&secAttackable(q,mine)){const now=performance.now();if(now>=(secHudDraw.tk||0)){secHudDraw.tk=now+(1000-450*z.cap);if(AC&&soundOn){tone(1250,0.035,0.05,'sine',980);}}}
+    else secHudDraw.tk=0;}catch(e){}
   if(S.built&&S.st==='count'&&MPM.on){t='MISSILE LAUNCH · '+Math.max(0,Math.ceil(SEC_CT-S.t))+' s';col='#ff7a4a';}
   else if(secArmed(mine)){t='MISSILE ARMED · L at the silo';col='#ffd24a';}
   else if(secArmed(3-mine)){t='ENEMY MISSILE ARMED · retake a sector';col='#ff7a4a';}
