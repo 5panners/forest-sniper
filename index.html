@@ -1878,7 +1878,7 @@ function startAction(name,opt){
 function endAction(){const a=player.action;if(!a)return;
   if(a.name==='proneDown'){player.stance='prone';snapLayer('prone');const f=V(Math.sin(player.yaw),0,Math.cos(player.yaw));player.pos.addScaledVector(f,0.25);}
   if(a.name==='proneUp'){if(a.opt.crouch){player.stance='crouch';snapLayer('cidle');}else{player.stance='stand';snapLayer('idle');}}
-  if(a.name==='death'){if(MPM.on)return;respawn();}   // in a match you stay down until the next round
+  if(a.name==='death'){if(MPM.on)return;try{spwStart();}catch(e){respawn();}}   // in a match you stay down until the next round
   player.action=null;}
 function snapLayer(k){for(const q in player.lw)player.lw[q]=q===k?1:0;}
 function respawn(){STAM.v=GAME.stStart/100;BOOST.on=false;VIT.lh=-1;VIT.ls=-1;VIT.lk=null;player.pos.copy(SPAWN);player.vel.set(0,0,0);player.stance='stand';snapLayer('idle');player.alive=true;MPM.hp=100;player.ammo=MAG;player.reloadT=-1;player.yaw=0;camYaw=0;camPitch=-0.05;toast('Respawned');}
@@ -3080,7 +3080,7 @@ function buildMap(){const N=mapCv.width,K=N/MAPL;const img=mctx.createImageData(
 function setMap(on){mapOpen=on;if(!on)try{UGSEL.sel=UGSEL.hov=false;mapCv.style.cursor='';}catch(e){}$('mapPanel').hidden=!on;
   if(on){input.lmb=input.rmb=false;try{if(document.pointerLockElement)document.exitPointerLock();}catch(e){}}
   else if(playing&&!fallback&&!document.pointerLockElement)requestLock();}
-mapCv.addEventListener('click',e=>{if(!mapOpen)return;const r=mapCv.getBoundingClientRect();
+mapCv.addEventListener('click',e=>{if(!mapOpen)return;try{if(spwClick(e)){e.stopPropagation();return;}}catch(err){}const r=mapCv.getBoundingClientRect();
   const mw=mapW(e),x=clamp(mw.x,-PLAY+2,PLAY-2),z=clamp(mw.z,-PLAY+2,PLAY-2);
   const pl=player;pl.vel.set(0,0,0);pl.slide=null;pl.stance='stand';pl.pos.set(x,supportAt(x,z,1e4,PRAD*0.7)+0.05,z);pl.grounded=true;pl.fallV=0;
   camPivot.copy(pl.pos).add(V(0,1.68,0));toast('Teleported · '+Math.round(x)+' E  '+Math.round(-z)+' N');setMap(false);e.stopPropagation();});
@@ -3165,7 +3165,7 @@ addEventListener('keydown',e=>{
     case 'Equal': case 'NumpadAdd': miniZoom(-1); break;
     case 'Minus': case 'NumpadSubtract': miniZoom(1); break;
     case 'KeyN': miniOn=!miniOn;miniTxt(); break;
-    case 'KeyP': case 'Tab': setMap(!mapOpen); break;
+    case 'KeyP': case 'Tab': if(typeof SPW!=='undefined'&&SPW.open)break; setMap(!mapOpen); break;
   }
   switch(e.code){
     case 'ControlLeft': case 'ControlRight': if(!busy)tryStartSlide(); break;
@@ -3378,7 +3378,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=443;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=444;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3398,7 +3398,7 @@ function update(dt){
   brgEl.textContent=hhmm(DAY.tod);
   hudL.innerHTML='<span>'+player.ammo+' loaded · '+(player.reserve|0)+' spare'+(boltT>=0?' · chambering':'')+'</span><span>grid '+Math.round(player.pos.x)+' E  '+Math.round(-player.pos.z)+' N  ·  '+Math.round(player.pos.y)+' m</span>';
   const edge=PLAY-Math.max(Math.abs(player.pos.x),Math.abs(player.pos.z));warnEl.textContent=edge<20&&!scoped?'Edge of the operating area':'';
-  if(mapOpen){drawMap();const g=$('mapGrid');if(g)g.textContent='You are at grid '+Math.round(player.pos.x)+' E  '+Math.round(-player.pos.z)+' N  ·  '+Math.round(player.pos.y)+' m';}
+  if(mapOpen){drawMap();const g=$('mapGrid');if(g)g.textContent=SPW.open?'You are down · click a sector your side holds to deploy there'+(MPM.on?' · automatic deploy in '+Math.max(0,Math.ceil(SEC_RESPAWN-SPW.t))+' s':''):'You are at grid '+Math.round(player.pos.x)+' E  '+Math.round(-player.pos.z)+' N  ·  '+Math.round(player.pos.y)+' m';}
   cmp.style.display=playing?'block':'none';if(playing)drawCompass();
   drawMini();try{secHudDraw();}catch(e){}
 }
@@ -4869,7 +4869,7 @@ resReset=(f=>function(){f.apply(this,arguments);try{siloReset();}catch(e){}})(re
 // ================= sector capture: seven sectors in two lanes (east home · Tower 1 / Tower 4 · centre silo · Tower 3 / Tower 2 · west home) =================
 // The host decides who owns what (it knows both positions); the guest just draws the state it is sent. Sides swap every round, so sectors are coloured by "mine / theirs", not by east / west.
 const TK_START=30, TK_DEATH=1, TK_BLEED=0.1;   // tickets: each death costs TK_DEATH; a side bleeds TK_BLEED/s for every sector the enemy holds beyond 3 of 7
-const SEC_CAP=35, SEC_RESPAWN=8, SEC_ARM=5, SEC_CT=30;
+const SEC_CAP=35, SEC_RESPAWN=30, SEC_ARM=5, SEC_CT=30;
 const SEC_DEF=[
   {k:'E', n:'East home',            x:SEC_HOME.e.x,x2:0,z:SEC_HOME.e.z,r:40,adj:[1,2],dp:0,fo:8, nm:'EAST HOME'},
   {k:'T1',n:'Tower 1',              x:TWPOS.x, z:TWPOS.z, r:42,adj:[0,3],dp:1,fo:8, nm:'TOWER 1'},
@@ -4917,6 +4917,19 @@ function secSpawnFor(team){const opp=(MPM.on&&NT.opp&&RPS.pos)?RPS.pos:null;let 
 function secPlace(x,z){const c=SEC_DEF[3];const yaw=Math.atan2(-(c.x-x),-(c.z-z));
   player.action=null;player.slide=null;player.mantle=null;player.pos.set(x,groundH(x,z)+0.05,z);player.vel.set(0,0,0);player.stance='stand';snapLayer('idle');player.alive=true;player.ammo=MAG;player.reloadT=-1;boltT=-1;MPM.hp=100;
   player.yaw=yaw;camYaw=yaw;camPitch=-0.05;camPivot.copy(player.pos).add(V(0,1.68,0));for(const b of bullets){if(b.tr)relP(b.tr);}bullets.length=0;try{NT.pend.clear();}catch(e){}}
+// ---- deploy screen: when you die the map opens and you click any sector your side holds to spawn there
+const SPW={solo:false,open:false,t:0,dl:2.5};   // the map opens 2.5 s after you go down
+function spwStart(){}   // (the death animation ends here; the deploy screen is already up by then)
+function spwPos(i){const d=SEC_DEF[i],team=secTeam(),home=SEC_DEF[team===1?0:6];let x=d.x,z=d.z;
+  if(i!==0&&i!==6){const dx=home.x-d.x,dz=home.z-d.z,L=Math.hypot(dx,dz)||1;x+=dx/L*(d.k==='C'?24:14);z+=dz/L*(d.k==='C'?24:14);}return {x,z};}
+function spwGo(i){const p=spwPos(i);SPW.solo=false;SPW.open=false;SPW.t=0;if(!MPM.on){try{respawn();}catch(e){}}secPlace(p.x,p.z);if(mapOpen)setMap(false);toast('Deployed at '+SEC_DEF[i].n);}
+function spwClick(e){if(!SPW.open)return false;const mw=mapW(e),t=secTeam();let best=-1,bd=1e9;
+  SEC_DEF.forEach((d,i)=>{if(SECT.s[i].own!==t)return;const dd=Math.hypot(mw.x-d.x,mw.z-d.z);if(dd<d.r+18&&dd<bd){bd=dd;best=i;}});
+  if(best>=0)spwGo(best);else toast('Click a sector your side holds to deploy');return true;}
+function spwFrame(dt){const dead=playing&&(!player.alive||MPM.hp<=0);
+  const want=MPM.on?!!(NT.room&&NT.M.ph==='live'&&dead):dead;
+  if(want){SPW.t+=dt;if(!SPW.open&&SPW.t>=SPW.dl){SPW.open=true;setMap(true);}}
+  else{if(SPW.open){SPW.open=false;if(mapOpen)setMap(false);}SPW.t=0;if(!dead)SPW.solo=false;}}
 function secRespawn(){const sp=secSpawnFor(secTeam());secPlace(sp.x,sp.z);toast('Respawned at '+SEC_DEF[sp.i].n);}
 function secNotify(){const prev=SECT.prevOwn;if(!prev){SECT.prevOwn=SECT.s.map(s=>s.own);return;}
   SECT.s.forEach((s,i)=>{if(prev[i]!==s.own){const rel=secRel(s.own);if(rel===1){toast(SEC_DEF[i].n+' captured');try{playCaptured();}catch(e){}}
@@ -4934,6 +4947,7 @@ const TK_TEST=[3,5,4,2,1,6];
 addEventListener('keydown',e=>{if(e.code!=='KeyY'||e.repeat||!playing||MPM.on)return;if(e.shiftKey){secReset();toast('Sectors and tickets reset');return;}
   const i=TK_TEST.find(k=>SECT.s[k].own!==2);if(i==null)return;SECT.s[i].own=2;SECT.s[i].cap=0;SECT.s[i].by=0;toast('Test: the enemy took '+SEC_DEF[i].n);});
 function secFrame(dt){
+  try{spwFrame(dt);}catch(e){}
   const live=MPM.on&&NT.room&&NT.M.ph==='live';
   if(!MPM.on&&playing)secTickets(dt,1,2,!player.alive,false);
   if(!MPM.on||(MPM.on&&!MPM.guest&&live)){if(!MPM.on||live)secSim(dt);}
@@ -4977,6 +4991,7 @@ function secDrawMap(c,S,N){SEC_DEF.forEach(d=>{});const sc=N/(FE*2);
     if(s.cap>0){c.strokeStyle=SEC_COL[secRel(s.by)];c.lineWidth=4;c.beginPath();c.arc(x,y,r+3,-HP,-HP+PI*2*s.cap);c.stroke();}
     c.fillStyle='#101410';c.beginPath();c.arc(x,y,9,0,PI*2);c.fill();c.strokeStyle=col;c.lineWidth=2;c.stroke();
     c.fillStyle=col;c.font='700 10px "IBM Plex Mono", monospace';c.textAlign='center';c.textBaseline='middle';c.fillText(d.k,x,y+0.5);
+    if(SPW.open&&s.own===secTeam()){const pu=0.5+0.5*Math.sin(performance.now()/220);c.strokeStyle='rgba(255,255,255,'+(0.55+0.45*pu)+')';c.lineWidth=3;c.setLineDash([6,4]);c.beginPath();c.arc(x,y,r+8+pu*3,0,PI*2);c.stroke();c.setLineDash([]);c.fillStyle='#fff';c.font='700 11px "IBM Plex Mono", monospace';c.textAlign='center';c.fillText('DEPLOY',x,y-r-12);}
     c.textBaseline='alphabetic';c.lineWidth=3;c.strokeStyle='rgba(0,0,0,0.8)';c.font='600 10px "IBM Plex Mono", monospace';c.strokeText(d.nm,x,y+r+12);c.fillStyle='#fff';c.fillText(d.nm,x,y+r+12);});
   c.restore();}
 function secDrawMini(c,p,ppm,k,th){SEC_DEF.forEach((d,i)=>{const s=SECT.s[i],col=SEC_COL[secRel(s.own)],x=(d.x-p.x)*ppm,y=(d.z-p.z)*ppm,r=d.r*ppm;
