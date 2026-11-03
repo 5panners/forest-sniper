@@ -2973,7 +2973,7 @@ function chuteRemote(a,b,dt){const f=(b.cp||a.cp),on=f&&RPS.al&&P2M&&P2M.visible
 function chuteInitialDrop(){if(CHUTE.dropped||MPM.on)return;CHUTE.dropped=true;const pl=player,x=P1_SPAWN.x,z=P1_SPAWN.z;
   pl.pos.set(x,groundH(x,z)+GAME.paraH,z);pl.vel.set(0,-3.4,0);pl.grounded=false;camYaw=Math.atan2(-x,-z);camPitch=-0.12;pl.yaw=camYaw;chuteOpen(true);}
 /* ---------------- camera: third person, first person and the scope ---------------- */
-const ZOOMS=[2,3,4]; let zoomI=0;   // magnification; field of view = 62 deg (normal view) / mag
+const ZOOMS=[2,3,4,5]; let zoomI=0;   // magnification; field of view = 62 deg (normal view) / mag
 const _cp=V(0,0,0),_dir=V(0,0,0),_eye=V(0,0,0),_rt=V(0,0,0), camRay=new THREE.Raycaster();
 let breath=6, breathLock=0, swayT=0, range=null, rangeT=0;
 let camBoom=3;
@@ -3184,7 +3184,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;});
 
-const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Parachute','Space'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Mute','M']];
+const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4/5×','Wheel'],['Parachute','Space'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Mute','M']];
 $('keyList').innerHTML=KEYS.map(k=>`<div><kbd>${k[1]}</kbd><span>${k[0]}</span></div>`).join('');
 
 /* ---------------- menu tabs + graphics options ---------------- */
@@ -3381,7 +3381,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=459;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=460;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
