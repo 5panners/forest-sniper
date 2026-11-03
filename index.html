@@ -3381,7 +3381,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=465;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=466;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4835,7 +4835,8 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
   if(!S.built){if(playing)try{siloBuild();}catch(e){console.warn('silo',e);S.built=true;S.st='broken';}return;}
   if(S.st==='broken')return;
   // test cycle (solo only): the silo launches by itself every GAME.siloEvery seconds and reloads a few seconds after each missile is gone
-  if(GAME.siloEvery>0&&!MPM.on&&playing&&player.alive){S.at=(S.at||0)+dt;if(S.st==='idle'&&S.at>=GAME.siloEvery){S.at=0;siloLaunch(true);}else if(S.st==='gone'){S.gt=(S.gt||0)+dt;if(S.gt>6){S.gt=0;siloReset();}}}
+  if(false&&GAME.siloEvery>0&&!MPM.on&&playing&&player.alive){   // auto-launch switched off for now (L still launches one for testing)
+    S.at=(S.at||0)+dt;if(S.st==='idle'&&S.at>=GAME.siloEvery){S.at=0;siloLaunch(true);}else if(S.st==='gone'){S.gt=(S.gt||0)+dt;if(S.gt>6){S.gt=0;siloReset();}}}
   // console prompt
   {const d=Math.hypot(player.pos.x-S.con.x,player.pos.z-S.con.z),tip=playing&&player.alive&&d<3?(S.st==='idle'?'Press L to launch the missile':S.st==='gone'?'Silo empty':'Launch in progress…'):'';
    if(tip!==S.ts){S.ts=tip;S.tip.textContent=tip;S.tip.hidden=!tip;}}
