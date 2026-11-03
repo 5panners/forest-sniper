@@ -102,19 +102,19 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
   <h1 aria-label="FOrest Sniper">F<svg class="scopeO" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="33" fill="none" stroke="currentColor" stroke-width="8"/><g stroke="currentColor" stroke-width="5" stroke-linecap="butt"><line x1="50" y1="0" x2="50" y2="38"/><line x1="50" y1="62" x2="50" y2="100"/><line x1="0" y1="50" x2="38" y2="50"/><line x1="62" y1="50" x2="100" y2="50"/></g><circle cx="50" cy="50" r="4" fill="#d4552e"/></svg>rest Sniper</h1>
   <p class="sub">2 km of low-poly spruce and beech forest, granite tors, a mountain stream and a lake under the Alps. Only the centre 1 km square is playable.</p>
   <div class="tabs" role="tablist">
-    <button role="tab" id="tabBrief" aria-selected="true" aria-controls="paneBrief">Briefing</button>
+    <button role="tab" id="tabBrief" aria-selected="true" aria-controls="paneBrief">Controls</button>
     <button role="tab" id="tabGfx" aria-selected="false" aria-controls="paneGfx">Graphics</button>
     <button role="tab" id="tabEnv" aria-selected="false" aria-controls="paneEnv">Environment</button>
     <button role="tab" id="tabAud" aria-selected="false" aria-controls="paneAud">Audio</button>
     <button role="tab" id="tabMp" aria-selected="false" aria-controls="paneMp">Multiplayer</button>
   </div>
-  <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div><p class="sec" style="margin-top:14px">Pickups</p><table class="foodT" style="border-collapse:collapse;font-size:13px;margin-top:6px"><tr><td style="padding:2px 18px 2px 0">Magic Mushrooms</td><td>+2% stamina per cluster</td></tr><tr><td style="padding:2px 18px 2px 0">Raw meat</td><td>gives limited health, cooked meat gives full health</td></tr><tr><td style="padding:2px 18px 2px 0">7.62 ammo box</td><td>spare rifle rounds (how many: Gameplay tab)</td></tr><tr><td style="padding:2px 18px 2px 0">AT4 launcher (bright pink glow)</td><td>shoulder-fired anti-armour rocket, comes loaded · X switches to it</td></tr><tr><td style="padding:2px 18px 2px 0">AT4 rounds (pale pink glow)</td><td>reload the AT4 (R)</td></tr><tr><td style="padding:2px 18px 2px 0">Wood, UGV</td><td>for later</td></tr></table><p class="note">Stamina powers a double-speed boost: double-tap W and keep holding it. The longer you hold, the more it drains. Health starts at 100% and cooked food will raise it up to 200%.</p></div>
+  <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div></div>
   <div id="paneGfx" role="tabpanel" aria-labelledby="tabGfx" hidden>
     <div class="opts">
       <label class="opt"><input type="checkbox" id="optFps" checked><span><b>Show FPS</b><small>Frame rate and frame time, top left.</small></span></label>
       <label class="opt"><input type="checkbox" id="optGeo" checked><span><b>Show geometry stats</b><small>Triangles and draw calls this frame, plus geometries, textures and instanced trees and plants in memory.</small></span></label>
       <label class="opt"><input type="checkbox" id="optHB"><span><b>Show hit boxes</b><small>Wireframes on the player, player 2 and the deer: red head, yellow torso, blue limbs (deer: head, neck, body and legs). Also the B key.</small></span></label>
-      <label class="opt"><input type="checkbox" id="optSh" checked><span><b>Shadows</b><small>Sun shadows near the player. Also the O key.</small></span></label>
+      <label class="opt"><input type="checkbox" id="optSh" checked><span><b>Shadows</b><small>Sun shadows near the player.</small></span></label>
       <label class="opt"><span><b>Shadow draw distance</b><small>How far from you trees and rocks cast shadows. Longer is softer and slower.</small></span><select id="optShD"><option value="30">30 m</option><option value="50">50 m</option><option value="100">100 m</option><option value="150" selected>150 m</option><option value="250">250 m</option></select></label>
       <label class="opt"><span><b>Render resolution</b><small>Lower this if the frame rate is poor.</small></span><select id="optRes"><option value="0.75">75%</option><option value="1" selected>100%</option><option value="1.5">Sharp (up to 1.5×)</option></select></label>
       <label class="opt"><span><b>Misty valley</b><small>Cool blue haze that thickens with distance and softens the colours. Costs a few percent of frame rate when on.</small></span><select id="optMist"><option value="0">Off</option><option value="1" selected>Light</option><option value="2">Medium</option><option value="3">Strong</option></select></label>
@@ -3152,7 +3152,6 @@ addEventListener('keydown',e=>{
     case 'Escape': if(fallback||(MPM.on&&!locked))setPlaying(false); break;
     case 'KeyW': wTap(); break;
     case 'KeyV': viewFP=!viewFP; break;
-    case 'Backquote': godSet(!GOD.on); break;
     case 'KeyH': DEVFACE.on=!DEVFACE.on;toast(DEVFACE.on?'Dev camera: facing the player (H again to return)':'Dev camera: normal');break;
     case 'KeyM': soundOn=!soundOn;toast(soundOn?'Sound on':'Sound muted'); break;
     case 'KeyB': setHB(!hbShown);toast(hbShown?'Hit boxes shown · red head, yellow torso, blue limbs':'Hit boxes hidden'); break;
@@ -3163,7 +3162,6 @@ addEventListener('keydown',e=>{
     case 'Minus': case 'NumpadSubtract': miniZoom(1); break;
     case 'KeyN': miniOn=!miniOn;miniTxt(); break;
     case 'KeyP': case 'Tab': setMap(!mapOpen); break;
-    case 'KeyO': setShadows(!renderer.shadowMap.enabled);toast('Shadows '+(renderer.shadowMap.enabled?'on':'off'));break;
   }
   switch(e.code){
     case 'ControlLeft': case 'ControlRight': if(!busy)tryStartSlide(); break;
@@ -3180,7 +3178,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;});
 
-const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Parachute','Space'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['God mode (dev)','` backquote'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Shadows','O'],['Mute','M']];
+const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Parachute','Space'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Mute','M']];
 $('keyList').innerHTML=KEYS.map(k=>`<div><kbd>${k[1]}</kbd><span>${k[0]}</span></div>`).join('');
 
 /* ---------------- menu tabs + graphics options ---------------- */
@@ -3376,10 +3374,10 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=433;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=434;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
-  netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
+  netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
   stepBolt(dt);stepBullets(dt);stepParts(dt);stepBrass(dt);
   stepDeer(dt);stepHerds(dt);stepBirds(dt,clockT);stepMarks(dt);if(fallFX)fallFX.step(dt);_rdt=dt;
   updateCamera(dt);updateLOD();updListener();
@@ -4325,20 +4323,6 @@ function slotStep(){if(player.arAuto>0&&--player.arAuto===0&&WPN.cur==='ar15'&&p
   if(SLOT.g.some(q=>q&&q.used&&q.k==='ugv'&&performance.now()-(q.t0||0)>5000)&&!ugvMine()){for(let j=0;j<SLOT.g.length;j++)if(SLOT.g[j]&&SLOT.g[j].used&&SLOT.g[j].k==='ugv'&&performance.now()-(SLOT.g[j].t0||0)>5000)SLOT.g[j]=null;slotSync();}
   if(DROPS.length){const o=0.15+0.6*(0.5-0.5*Math.cos(performance.now()/1000*Math.PI*2/3));for(const d of DROPS)d.gm.material.opacity=o;}}
 window.SNIPER_SLOT={G:GAME,rr:()=>resReset(),SLOT,DROPS,give:slotGive,drop:slotDrop,key:slotKey,reset:slotReset,fit:slotFit,take:dropTake,net:dropNet,get:()=>SLOT};
-
-// ================= god mode (development): invulnerable, no gravity, fly anywhere. Toggle with ` (backquote) =================
-const GOD={on:false,p:null};
-(function(){const st=document.createElement('style');st.textContent='#godChip{position:fixed;left:50%;top:calc(52px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:4;display:none;pointer-events:none;font:700 12px/1.4 "IBM Plex Mono",monospace;letter-spacing:.08em;color:#1a1408;background:#ffc93c;border-radius:8px;padding:5px 12px;box-shadow:0 4px 14px rgba(0,0,0,.4);white-space:nowrap}#godChip i{font-style:normal;font-weight:500;opacity:.75;margin-left:8px}';document.head.appendChild(st);
-  const c=document.createElement('div');c.id='godChip';c.innerHTML='GOD MODE<i>WASD fly · Space up · Ctrl down · Shift fast · ` exit</i>';document.body.appendChild(c);})();
-function godSet(on){GOD.on=on;if(on){GOD.p=player.pos.clone();player.alive=true;}$('godChip').style.display=on?'block':'none';toast(on?'God mode on · invulnerable, fly with WASD, Space / Ctrl for up / down, Shift for speed':'God mode off');if(!on){player.vel.set(0,0,0);player.fallV=0;}}
-function godStep(dt){if(!GOD.on||!playing)return;const pl=player;if(!GOD.p)GOD.p=pl.pos.clone();
-  const cy=Math.cos(camPitch),fx=Math.sin(camYaw)*cy,fy=Math.sin(camPitch),fz=Math.cos(camYaw)*cy,rx=-Math.cos(camYaw),rz=Math.sin(camYaw);
-  let mx=0,my=0,mz=0;if(keys.KeyW){mx+=fx;my+=fy;mz+=fz;}if(keys.KeyS){mx-=fx;my-=fy;mz-=fz;}if(keys.KeyD){mx+=rx;mz+=rz;}if(keys.KeyA){mx-=rx;mz-=rz;}
-  if(keys.Space)my+=1;if(keys.ControlLeft||keys.ControlRight||keys.KeyC)my-=1;
-  const L=Math.hypot(mx,my,mz);const sp=(keys.ShiftLeft||keys.ShiftRight)?160:30;if(L>0.001){GOD.p.x+=mx/L*sp*dt;GOD.p.y+=my/L*sp*dt;GOD.p.z+=mz/L*sp*dt;}
-  GOD.p.x=Math.max(-1000,Math.min(1000,GOD.p.x));GOD.p.z=Math.max(-1000,Math.min(1000,GOD.p.z));GOD.p.y=Math.max(groundH(GOD.p.x,GOD.p.z)+0.05,Math.min(900,GOD.p.y));
-  pl.pos.copy(GOD.p);pl.vel.set(0,0,0);pl.grounded=true;pl.fallV=0;pl._lx=pl.pos.x;pl._lz=pl.pos.z;pl.alive=true;MPM.hp=Math.max(MPM.hp,100);STAM.v=1;}
-{const _sa=startAction;startAction=function(n){if(GOD.on&&n==='death'){MPM.hp=Math.max(MPM.hp,100);return;}return _sa.apply(this,arguments);};}
 
 // ================= recon drone, called in on a radio: a 6.5 m span, unarmed, pusher-prop surveillance drone =================
 // Press 3 with a radio: it flies in from the map edge, circles the playable area for a minute (GAME.uavDur) showing the other
