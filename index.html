@@ -3186,7 +3186,7 @@ const KB_ACT=[
   ['Movement',[['fwd','Forward','KeyW'],['back','Back','KeyS'],['left','Strafe left','KeyA'],['right','Strafe right','KeyD'],['jump','Jump · parachute · let go of the zip line','Space'],['crouch','Crouch','KeyC'],['prone','Prone / get up (WASD crawls)','KeyZ']]],
   ['Weapons and gear',[['reload','Reload','KeyR'],['zup','Zero +50 m','KeyE'],['zdn','Zero −50 m','KeyQ'],['s1','Weapon slot 1','Digit1'],['s2','Weapon slot 2','Digit2'],['s3','Gadget slot 3 (radio: recon drone)','Digit3'],['s4','Gadget slot 4','Digit4'],['gather','Gather / pick up · zip line','KeyF'],['launch','Launch the missile (silo)','KeyL']]],
   ['Interface',[['mzin','Mini map zoom in','Equal'],['mzout','Mini map zoom out','Minus'],['mini','Mini map on / off','KeyN'],['view','1st / 3rd person','KeyV'],['mute','Mute','KeyM'],['hb','Show hit boxes','KeyB']]]];
-const KB_FIXED=[['Look','Mouse'],['Scope on / off','Right mouse'],['Fire (hold for automatic with the AR-15)','Left mouse'],['Scope zoom 2 / 3 / 4 / 5×','Wheel'],['Hold breath (scoped) · sprint','Shift'],['Boost run (uses stamina)','Double-tap forward, keep holding'],['Slide (while running)','Ctrl'],['Full map','Tab'],['Move (as well as WASD)','Arrow keys'],['Menu / release the mouse','Esc']];
+const KB_FIXED=[['Look','Mouse'],['Scope on / off','Right mouse'],['Fire (hold for automatic with the AR-15)','Left mouse'],['Scope zoom 2 / 3 / 4 / 5×','Wheel'],['Hold breath (scoped) · sprint','Shift'],['Boost run (uses stamina)','Double-tap forward, keep holding'],['Slide (while running)','Ctrl'],['Full map','Tab'],['Menu / release the mouse','Esc']];
 const KB={user:{},inj:false,listen:null,M:{}};
 try{const v=JSON.parse(localStorage.getItem('fsKeys')||'null');if(v&&typeof v==='object')for(const k in v)if(typeof v[k]==='string')KB.user[k]=v[k];}catch(e){}
 const kbDef={};KB_ACT.forEach(g=>g[1].forEach(r=>kbDef[r[0]]=r[2]));
@@ -3405,7 +3405,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=492;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=493;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
