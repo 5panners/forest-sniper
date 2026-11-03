@@ -2851,7 +2851,7 @@ function stepBullets1(dt){
     b.v.y-=GBUL*dt;b.v.multiplyScalar(Math.exp(-DRAG*dt));
     const len=b.v.length()*dt;_bd.copy(b.v).normalize();
     const h=castRay(b.p,_bd,len,b.rem);
-    if(b.dr&&droidBulletVsUgv(b,_bd,h?Math.min(len,h.dist):len)){b.end=b.p.clone();if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}
+    if((b.dr||b.ugv)&&droidBulletVsUgv(b,_bd,h?Math.min(len,h.dist):len)){b.end=b.p.clone();if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}
     if(b.ugv&&player.alive&&!(b.tm&&b.tm===secTeam())){const ph=rayPlayerZones(b.p,_bd,h?Math.min(len,h.dist):len);if(ph){ugvHurtMe(ph.zone,b.ud,b.dr,b.o);impact(ph.point,_bd.clone().negate(),'flesh');b.end=ph.point.clone();if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}}
     if(b.hostile&&player.alive){const ph=rayPlayerZones(b.p,_bd,h?Math.min(len,h.dist):len);if(ph){damagePlayer(ph.zone,b.dmg);impact(ph.point,_bd.clone().negate(),'dirt');if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}}
     if(h||b.t>4||b.p.y<-200){
@@ -3097,7 +3097,7 @@ addEventListener('mouseup',()=>{MZ.drag=null;});
 mapCv.addEventListener('click',e=>{if(MZ.moved){MZ.moved=false;e.stopImmediatePropagation();e.stopPropagation();}},true);   // a drag is not a teleport click
 // ---- the map and your UGV: it highlights when the pointer is over it; right-click it to select, then right-click a spot to send it there
 const UGSEL={hov:false,sel:false};
-function ugvMapHit(e){const u=ugvMine();if(!u)return null;const q=mapPx(u.x,u.z);return Math.hypot(e.clientX-q.x,e.clientY-q.y)<=16?u:null;}
+function ugvMapHit(e){return null;const u=ugvMine();if(!u)return null;const q=mapPx(u.x,u.z);return Math.hypot(e.clientX-q.x,e.clientY-q.y)<=16?u:null;}
 mapCv.addEventListener('mousemove',e=>{if(!mapOpen)return;let h=false;try{h=!!ugvMapHit(e);}catch(err){}UGSEL.hov=h;mapCv.style.cursor=h||UGSEL.sel?'pointer':'';});
 mapCv.addEventListener('mouseleave',()=>{UGSEL.hov=false;});
 // ---- personal waypoint: right-click the map to drop it (one at a time, only on your own screen; right-click it again to clear it)
@@ -3105,11 +3105,7 @@ const WPT={on:false,x:0,z:0};
 function wptDist(){return Math.hypot(WPT.x-player.pos.x,WPT.z-player.pos.z);}
 function wptBrg(){return ((Math.atan2(WPT.x-player.pos.x,-(WPT.z-player.pos.z))*180/PI)+360)%360;}
 function wptPin(c,x,y,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWidth=2.2;c.strokeStyle='#04202a';c.fillStyle='#35d6ff';c.beginPath();c.moveTo(0,0);c.bezierCurveTo(-9,-9,-8,-20,0,-20);c.bezierCurveTo(8,-20,9,-9,0,0);c.closePath();c.fill();c.stroke();c.fillStyle='#04202a';c.beginPath();c.arc(0,-13,3,0,PI*2);c.fill();c.restore();}
-mapCv.addEventListener('contextmenu',e=>{e.preventDefault();if(!mapOpen)return;const r=mapCv.getBoundingClientRect();
-  const mw=mapW(e),x=clamp(mw.x,-PLAY,PLAY),z=clamp(mw.z,-PLAY,PLAY);
-  try{const hu=ugvMapHit(e);if(hu){UGSEL.sel=!UGSEL.sel;toast(UGSEL.sel?'UGV selected · right-click a destination, or right-click yourself to make it follow you':'UGV deselected');return;}
-    if(UGSEL.sel){const q=mapPx(player.pos.x,player.pos.z);if(Math.hypot(e.clientX-q.x,e.clientY-q.y)<=18){ugvMapFollow();UGSEL.sel=false;return;}ugvMapOrder(x,z);UGSEL.sel=false;return;}}catch(err){}
-  });   // right-click no longer drops a personal waypoint: it only selects your UGV and sends it
+mapCv.addEventListener('contextmenu',e=>{e.preventDefault();});   // the map no longer commands your UGV: it works by itself
 function drawMap(){if(!mapBase)buildMap();const W=mapCv.width,Z=MZ.k,N=MAPL*Z;   // zoom: the terrain is drawn bigger, positions use the zoomed S, but icons and text keep their size
   if(!mapBaseCv){mapBaseCv=document.createElement('canvas');mapBaseCv.width=mapBaseCv.height=W;mapBaseCv.getContext('2d').putImageData(mapBase,0,0);}
   mctx.setTransform(1,0,0,1,0,0);mctx.imageSmoothingEnabled=true;mctx.fillStyle='#0b0f10';mctx.fillRect(0,0,W,W);mctx.drawImage(mapBaseCv,MZ.x,MZ.y,W*Z,W*Z);mctx.setTransform(W/MAPL,0,0,W/MAPL,MZ.x,MZ.y);const S=v=>(v+FE)/(FE*2)*N;
@@ -3379,7 +3375,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=475;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=477;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3766,12 +3762,11 @@ ${sp([['Damage / hit',GAME.uDmg+' hp'],['Rate of fire',GAME.uRpm+' rpm'],['Burst
 <tr><td>Brown bear</td><td>${num('hp.bear',DMG.hp.bear)}</td><td>rifle, AT4 blast · default is three times the stag</td></tr>
 <tr><td>Buzzard</td><td>${num('hp.buzzard',DMG.hp.buzzard)}</td><td>rifle</td></tr>
 <tr><td>Termit UGV</td><td>${GAME.uHp}</td><td>rifle (sensors, optic, hull), AT4</td></tr></table>
-<p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Magic Mushrooms, ammo boxes, rounds, UGV</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>
-<button type="button" id="dmgReset" class="btn">Reset weapons to defaults</button>`;
+<p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Magic Mushrooms, ammo boxes, rounds, UGV</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>`;
     pn.querySelectorAll('input[data-p]').forEach(i=>i.oninput=()=>{const v=parseFloat(i.value);if(!(v>=0))return;const ks=i.dataset.p.split('.');let o=DMG;for(let j=0;j<ks.length-1;j++)o=o[ks[j]];o[ks[ks.length-1]]=v;dmgSave();});
     pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;if(k==='bDrop'||k==='bV0'||k==='bDrag')balApply();if(k==='slotW'||k==='slotG')try{slotFit();}catch(e){}i.nextElementSibling.textContent=v.toFixed(+i.dataset.dp);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}});
     pn.querySelectorAll('input[data-k]').forEach(i=>i.addEventListener('change',()=>{const keep=pn.scrollTop;build();}));
-    pn.querySelector('#dmgReset').onclick=()=>{const f=JSON.parse(JSON.stringify(DMG_DEF));for(const k in f)DMG[k]=f[k];for(const k of['arMag','arRpm','arSpread','arRecoil','slotW','slotG','uavDur','uavR','uavAlt','uavSpd','uavHp','uavVol','at4Drop','bDrop','bV0','bDrag','pk762','pkAt4','at4Spd','at4R','at4Dmg','at4Ugv','at4Reload'])GAME[k]=GAME_DEF[k];try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}dmgSave();balApply();try{slotFit();}catch(e){}build();};};
+  };
   const ids=['Brief','Gfx','Env','Aud','Mp'];
   tb.onclick=()=>{build();ids.concat(['Game']).forEach(n=>{const t=document.getElementById('tab'+n),p=document.getElementById('pane'+n);if(t)t.setAttribute('aria-selected','false');if(p)p.hidden=true;});tb.setAttribute('aria-selected','true');pn.hidden=false;};
   const _st=showTab;showTab=function(w){_st(w);tb.setAttribute('aria-selected','false');pn.hidden=true;};
@@ -3798,10 +3793,10 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
     ['sec','UGV volumes'],['rUGun','UGV gunfire',0,3,0.05,2],['rUMot','UGV motor, tracks and turret',0,3,0.05,2],['rUBeep','UGV alert beep',0,3,0.05,2],
     ['sec','GD01 volumes'],['rDGun','GD01 gunfire',0,3,0.05,2],['rDVoi','GD01 voice (beeps)',0,3,0.05,2],
     ];
-  const build=()=>{pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. In a match the host’s pickup amounts apply to both players.</p>'+ROWS.map(r=>r[0]==='sec'?`<p class="sec" style="margin-top:12px">${r[1]}</p>`:`<div class="gr"><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${GAME[r[0]]}" data-k="${r[0]}"><output>${(+GAME[r[0]]).toFixed(r[5])}</output></div>`).join('')+'<button type="button" class="btn" id="gmReset">Reset to defaults</button>';
+  const build=()=>{pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. In a match the host’s pickup amounts apply to both players.</p>'+ROWS.map(r=>r[0]==='sec'?`<p class="sec" style="margin-top:12px">${r[1]}</p>`:`<div class="gr"><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${GAME[r[0]]}" data-k="${r[0]}"><output>${(+GAME[r[0]]).toFixed(r[5])}</output></div>`).join(''); 
     pn.querySelectorAll('input').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.step<1?2:0);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}
       if(k==='stStart'){STAM.v=v/100;}});
-    pn.querySelector('#gmReset').onclick=()=>{Object.assign(GAME,GAME_DEF);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}build();};};
+  };
   build();
   const ids=['Brief','Gfx','Env','Aud','Mp','Dmg'];
   tb.onclick=()=>{ids.forEach(n=>{const t=document.getElementById('tab'+n),p=document.getElementById('pane'+n);if(t)t.setAttribute('aria-selected','false');if(p)p.hidden=true;});tb.setAttribute('aria-selected','true');pn.hidden=false;};
@@ -3827,11 +3822,11 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
       if(r[0]==='sel')return `<div class="gr" data-atk="1"><label>${r[2]}</label><select data-k="${r[1]}">${r[3].map(o=>`<option value="${o[0]}" ${+GAME[r[1]]===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div>`;
       const atk=r[0]!=='bears'&&r[0]!=='bWalk'&&r[0]!=='bRear';
       return `<div class="gr"${atk?' data-atk="1"':''}><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${GAME[r[0]]}" data-k="${r[0]}"><output>${(+GAME[r[0]]).toFixed(r[5])}</output></div>`;}).join('')
-      +'<p class="sec" style="margin-top:18px">Wolves</p><div class="soon">Coming later: packs that hunt, flank and howl.</div><button type="button" class="btn" id="prReset">Reset predators to defaults</button>';
+      +'<p class="sec" style="margin-top:18px">Wolves</p><div class="soon">Coming later: packs that hunt, flank and howl.</div>';
     pn.querySelectorAll('input[type=range]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.step<1?(+i.step<0.1?2:1):0);save();});
     pn.querySelectorAll('input[type=checkbox]').forEach(i=>i.onchange=()=>{GAME[i.dataset.k]=i.checked?1:0;save();dim();});
     pn.querySelectorAll('select').forEach(i=>i.onchange=()=>{GAME[i.dataset.k]=+i.value;save();});
-    pn.querySelector('#prReset').onclick=()=>{KEYS.forEach(k=>{GAME[k]=GAME_DEF[k];});save();build();};dim();};
+    dim();};
   build();
   tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};
   tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
@@ -5182,6 +5177,7 @@ function ugvHumans(){const L=[];try{if(player.alive&&MPM.hp>0)L.push({x:player.p
   try{if(MPM.on&&NT.opp&&RPS.al&&RPS.pos)L.push({x:RPS.pos.x,y:RPS.pos.y,z:RPS.pos.z,opp:true,st:RPS.stn,sp:RPS.sp||0,vx:0,vz:0});}catch(e){}
   {const cu=UGV.cur;if(cu&&cu.pl){const mt=secTeam();const R=L.filter(h=>(h.opp?3-mt:mt)!==cu.pl);   // a team UGV only sees the other side
     if(UGV_DEER)for(const d of DEER)if(d.st!=='dead'&&d.st!=='dying')R.push({x:d.x,y:d.y,z:d.z,opp:null,deer:d,st:'crouch',sp:d.spd||0,vx:0,vz:0});   // testing: it hunts deer too
+    if(!MPM.on)for(const q of DRS){if(!q.m||q.dead||!q.m.root.visible||droidTeam(q)===cu.pl)continue;const D=q.m.D;R.push({x:D.x,y:groundH(D.x,D.z),z:D.z,opp:null,droid:q,st:'stand',sp:Math.abs(D.v),vx:Math.sin(D.yaw)*D.v,vz:Math.cos(D.yaw)*D.v});}   // and the GD01 bots of the other side
     return R;}}
   return L;}
 const UGV_DEER=true;   // for testing, the team UGV also shoots deer (set false to remove)
@@ -5193,7 +5189,7 @@ function ugvSees(u,h){const o=ugvEye(u).clone();_ud.set(h.x-o.x,ugvChestY(h)-o.y
 function ugvRangeFor(u,h){return GAME.uSee*(h.st==='prone'?0.45:h.st==='crouch'?0.7:1)*(h.sp>4?1.15:h.sp<0.3?0.85:1)*(u.blind>0?0.25:1)*(u.boost>0?1.6:1);}
 function ugvLook(u){try{if(MPM.on&&NT.M.ph!=='live')return null;}catch(e){}let best=null,bd=1e9;
   for(const h of ugvHumans()){const d=Math.hypot(h.x-u.x,h.z-u.z);if(d>ugvRangeFor(u,h)||d>=bd)continue;if(!ugvSees(u,h))continue;best=h;bd=d;}return best;}
-function ugvFresh(T){const L=ugvHumans();if(T.deer)return L.find(h=>h.deer===T.deer)||null;for(const h of L)if(h.opp===T.opp)return h;return null;}
+function ugvFresh(T){const L=ugvHumans();if(T.deer)return L.find(h=>h.deer===T.deer)||null;if(T.droid)return L.find(h=>h.droid===T.droid)||null;for(const h of L)if(h.opp===T.opp)return h;return null;}
 // ---- driving: tracked, so it pivots on the spot when the heading is far off; steers round trunks and rocks
 function ugvDrive(u,tx,tz,want,dt){const h=ugvHome(),lr=u.pl?0:Math.hypot(tx-h.x,tz-h.z);if(lr>GAME.uLeash){const k=GAME.uLeash/lr;tx=h.x+(tx-h.x)*k;tz=h.z+(tz-h.z)*k;}
   const d=Math.hypot(tx-u.x,tz-u.z);if(d<2.5)want=0;
@@ -5393,8 +5389,7 @@ function ugvMapOrder(x,z){const u=ugvMine();if(!u)return false;
   PUG.cmd={x,z};toast('UGV ordered to '+Math.round(x)+' E  '+Math.round(-z)+' N · '+Math.round(Math.hypot(x-u.x,z-u.z))+' m away');return true;}
 function ugvNetCmd(d){if(!MPM.on||MPM.guest)return;const gt=3-secTeam();
   if(d.c==='spawn'){if(NT.M.ph!=='live')return;const x=+d.x,z=+d.z,ya=+d.ya;if(!isFinite(x+z+ya))return;ugvPlSpawn(gt,clamp(x,-470,470),clamp(z,-470,470),ya);}
-  else if(d.c==='follow'){const u=UGVS.find(q=>q.pl===gt&&!q.dead&&!q.gone);if(u)ugvFollow(u);}
-  else if(d.c==='go'){const x=+d.x,z=+d.z;if(!isFinite(x+z))return;const u=UGVS.find(q=>q.pl===gt&&!q.dead&&!q.gone);if(u)ugvOrder(u,x,z);}}
+}
 // the brain of a team UGV (host): look for the other side, stop and fire when one is in range, otherwise drive to the order
 function ugvHostP(u,dt){if(u.gone)return;if(u.dead){u.deadT+=dt;return;}
   if(u.air>0){u.air=Math.max(0,u.air-7*dt);u.tgt=null;return;}   // still under the parachute
@@ -5405,11 +5400,15 @@ function ugvHostP(u,dt){if(u.gone)return;if(u.dead){u.deadT+=dt;return;}
   const idle=()=>{
     if(u.follow){const o=ugvOwner(u);if(!o){ugvDrive(u,u.x,u.z,0,dt);return;}   // no order given: tag along with its player
       const d=Math.hypot(o.x-u.x,o.z-u.z);
-      if(d>14||(u.fw&&d>7)){u.fw=1;u.fT=(u.fT||0)-dt;
+      if(d>GAME.uPatrol||(u.fw&&d>GAME.uPatrol*0.5)){u.fw=1;u.fT=(u.fT||0)-dt;
         if(!u.fpath||u.fT<=0||Math.hypot(o.x-u.fx,o.z-u.fz)>8){u.fT=3;u.fx=o.x;u.fz=o.z;const r=ugvPlan(u.x,u.z,o.x,o.z);u.fpath=r.path;u.fi=0;}
         let w=u.fpath&&u.fpath[u.fi];if(w&&u.fi<u.fpath.length-1&&Math.hypot(w.x-u.x,w.z-u.z)<4.5){u.fi++;w=u.fpath[u.fi];}
         ugvDrive(u,w?w.x:o.x,w?w.z:o.z,Math.min(GAME.uChase*0.9,2.5+d*0.12),dt);}
-      else{u.fw=0;ugvDrive(u,u.x,u.z,0,dt);}
+      else{u.fw=0;   // close to its player: wander inside the patrol radius round them
+        if(!u.pw||Math.hypot(u.pw.x-o.x,u.pw.z-o.z)>GAME.uPatrol){if(u.pwPause>0){u.pwPause-=dt;ugvDrive(u,u.x,u.z,0,dt);return;}
+          u.pw=null;const R=Math.max(8,GAME.uPatrol*0.6);for(let k=0;k<30;k++){const a=Math.random()*PI*2,r=4+Math.random()*R,x=o.x+Math.sin(a)*r,z=o.z+Math.cos(a)*r;if(!ugvBlocked(x,z)&&ugpLos(u.x,u.z,x,z)){u.pw={x,z};u.pwT=0;break;}}
+          if(!u.pw){u.pwPause=2;ugvDrive(u,u.x,u.z,0,dt);return;}}
+        const dd=ugvDrive(u,u.pw.x,u.pw.z,GAME.uSpd,dt);if(dd<2.5||(u.pwT+=dt)>12){u.pw=null;u.pwPause=2+Math.random()*3;}}
       return;}
     if(!u.home)u.home={x:u.x,z:u.z};u.hold=(u.hold||0)+dt;
     if(u.hold<10){ugvDrive(u,u.x,u.z,0,dt);return;}
@@ -5418,7 +5417,9 @@ function ugvHostP(u,dt){if(u.gone)return;if(u.dead){u.deadT+=dt;return;}
       if(!u.pw){u.pwPause=3;return;}}
     const d=ugvDrive(u,u.pw.x,u.pw.z,GAME.uSpd,dt);if(d<2.5||(u.pwT+=dt)>12){u.pw=null;u.pwPause=2+Math.random()*3;}};
   const arrive=()=>{if(u.cmd)u.home={x:u.cmd.x,z:u.cmd.z};u.cmd=null;u.path=null;u.hold=0;u.pw=null;if(u.pl===secTeam())PUG.cmd=null;};
-  const go=()=>{if(!u.cmd){idle();return;}
+  const go=()=>{
+    if(u.pl){u.follow=true;u.cmd=null;}   // a team UGV stays with its friendly player and patrols round them
+    if(!u.cmd){idle();return;}
     if(!u.path)ugvRoute(u);
     u.pT+=dt;if(u.pT>5){u.pT=0;if(Math.hypot(u.x-u.pX,u.z-u.pZ)<3)ugvRoute(u);else{u.pX=u.x;u.pZ=u.z;}}   // no progress for 5 s: plan again from here
     const P=u.path;if(!P||!P.length){u.cmd={x:u.x,z:u.z};arrive();return;}
@@ -5487,7 +5488,7 @@ function drawUgvMark(c,x,y,u,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWid
   const css=document.createElement('style');css.textContent=`#paneUgv .gr{display:grid;grid-template-columns:270px 1fr 64px;gap:10px;align-items:center;margin:5px 0;font-size:13px}#paneUgv .gr input[type=range],#paneUgv .gr input[type=checkbox]{accent-color:var(--moss)}#paneUgv .gr input[type=range]{width:100%}#paneUgv .gr input[type=checkbox]{width:16px;height:16px}#paneUgv .gr output{font-variant-numeric:tabular-nums;opacity:.85;text-align:right}#paneUgv button{margin:10px 8px 0 0}#paneUgv .off{opacity:.38;pointer-events:none}#paneUgv .ge{display:flex;gap:6px;align-items:center}#paneUgv input[type=number]{width:84px;padding:3px 6px;background:rgba(255,255,255,.08);color:inherit;border:1px solid rgba(255,255,255,.25);border-radius:4px;font:inherit}#paneUgv select{padding:3px 6px;background:rgba(0,0,0,.35);color:inherit;border:1px solid rgba(255,255,255,.25);border-radius:4px;font:inherit}`;document.head.appendChild(css);
   const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabUgv';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','paneUgv');tb.textContent='UGV';tabs.appendChild(tb);
   const pn=document.createElement('div');pn.id='paneUgv';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabUgv');pn.hidden=true;after.after(pn);
-  const ROWS=[['sec','Termit UGV'],['uPatrol','Patrol radius round its grid reference (m)',20,150,5,0],['uSpd','Patrol speed (m/s)',0.5,5,0.1,1],['uChase','Closing speed when it drives at you (m/s)',1,8,0.5,1],['uLeash','Leaves its patrol point to chase you up to (m)',50,900,10,0],
+  const ROWS=[['sec','Termit UGV'],['uPatrol','Patrol radius round its player (m)',20,150,5,0],['uSpd','Patrol speed (m/s)',0.5,5,0.1,1],['uChase','Closing speed when it drives at you (m/s)',1,8,0.5,1],['uLeash','Leaves its patrol point to chase you up to (m)',50,900,10,0],
     ['sec','Sensors'],['uSee','Spots you within (m · less when you crouch or lie prone · needs a clear line of sight)',40,600,10,0],['uReact','Reaction time once it spots you (s)',0,5,0.1,1],['uMem','Searches your last position for (s)',0,90,1,0],
     ['sec','.50 cal'],['uRange','Opens fire within (m · drives closer when you are further)',30,450,10,0],['uTurn','Turret traverse (°/s)',10,180,5,0],['uRpm','Rate of fire (rounds per minute)',200,900,25,0],['uBurst','Rounds per burst',1,20,1,0],['uPause','Pause between bursts (s)',0.2,5,0.1,1],
     ['uSpread','Spread (mrad · higher misses more; worse against a running target)',0.5,15,0.5,1],['uDmg','Damage per round (hp · ×2 head, ×0.6 limbs)',5,100,1,0],
@@ -5497,23 +5498,20 @@ function drawUgvMark(c,x,y,u,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWid
   const save=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}ugcSave();};
   const dim=()=>{pn.querySelectorAll('[data-u]').forEach(e=>e.classList.toggle('off',!GAME.uOn));};
   const build=()=>{const n=Math.max(1,Math.min(6,Math.round(GAME.uCnt||1)));if(sel>=n)sel=0;const c=ugcGet(sel);
-    pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. Each UGV patrols round its own grid reference (the same E / N metres as the map). Shoot the optic (the box on the right of the gun) to blind it for 25 s. In a match the host runs the UGVs and they can target either player.</p>'
+    pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. A team UGV stays with its friendly player and patrols round them within the patrol radius. Shoot the optic (the box on the right of the gun) to blind it for 25 s. In a match the host runs the UGVs and they can target either player.</p>'
       +`<div class="gr"><label>UGVs patrol the area</label><input type="checkbox" data-g="uOn" ${GAME.uOn?'checked':''}></div>`
       +`<div class="gr" data-u="1"><label>Number of UGVs</label><input type="range" min="1" max="6" step="1" value="${n}" data-g="uCnt"><output>${n}</output></div>`
       +(n>1?`<div class="gr" data-u="1"><label>Settings for</label><select id="ugSel">${Array.from({length:n},(_,k)=>`<option value="${k}" ${k===sel?'selected':''}>UGV ${k+1}</option>`).join('')}</select><span></span></div>`:'')
-      +`<div class="gr" data-u="1"><label>Patrol point · grid reference${n>1?' (UGV '+(sel+1)+')':''}</label><span class="ge"><input type="number" min="-465" max="465" step="1" value="${Math.round(c.uGE)}" data-c="uGE"> E &nbsp;<input type="number" min="-465" max="465" step="1" value="${Math.round(c.uGN)}" data-c="uGN"> N</span><span></span></div>`
       +ROWS.map(r=>{
       if(r[0]==='sec')return `<p class="sec" style="margin-top:14px">${r[1]}</p>`;
-      return `<div class="gr" data-u="1"><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${c[r[0]]}" data-k="${r[0]}"><output>${(+c[r[0]]).toFixed(r[5])}</output></div>`;}).join('')
-      +'<button type="button" class="btn" id="ugReset">Reset '+(n>1?'UGV '+(sel+1):'UGV')+' to defaults</button>';
+      return `<div class="gr" data-u="1"><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${c[r[0]]}" data-k="${r[0]}"><output>${(+c[r[0]]).toFixed(r[5])}</output></div>`;}).join('');
     pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);ugcGet(sel)[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.step<1?1:0);save();if(k==='uHp')UGVS.forEach(u=>{if(u.i===sel&&!u.dead)u.hp=Math.min(u.hp,v);});});
     pn.querySelectorAll('input[data-c]').forEach(i=>i.onchange=()=>{const v=clamp(Math.round(parseFloat(i.value)||0),-465,465);i.value=v;ugcGet(sel)[i.dataset.c]=v;save();
       try{if(!(MPM&&MPM.on))UGVS.forEach(u=>{if(u.i===sel)ugvRespawn(u);});}catch(e){}});
     pn.querySelectorAll('input[data-g]').forEach(i=>{if(i.type==='checkbox')i.onchange=()=>{GAME[i.dataset.g]=i.checked?1:0;save();dim();};
       else{i.oninput=()=>{const v=parseFloat(i.value);GAME[i.dataset.g]=v;i.nextElementSibling.textContent=v;save();};i.onchange=()=>{build();};}});
     const sl=pn.querySelector('#ugSel');if(sl)sl.onchange=()=>{sel=+sl.value;build();};
-    pn.querySelector('#ugReset').onclick=()=>{const c2=ugcGet(sel);KEYS.forEach(k=>{c2[k]=GAME_DEF[k];});delete c2.uGE;delete c2.uGN;ugcGet(sel);save();
-      try{if(!(MPM&&MPM.on))UGVS.forEach(u=>{if(u.i===sel)ugvRespawn(u);});}catch(e){}build();};dim();};
+    dim();};
   build();
   tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};
   tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
@@ -5581,15 +5579,14 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
       +ROWS.map(r=>{
       if(r[0]==='sec')return `<p class="sec" style="margin-top:14px">${r[1]}</p>`;
       return `<div class="gr" data-u="1"><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${c[r[0]]}" data-k="${r[0]}"><output>${(+c[r[0]]).toFixed(r[5])}</output></div>`;}).join('')
-      +'<p class="sec" style="margin-top:14px">Make '+(n>1?nm(sel):'the droid')+' talk</p><div data-u="1">'+WORDS.map(w=>`<button type="button" class="btn" data-w="${w}">${w}</button>`).join('')+'</div>'
-      +'<button type="button" class="btn" id="gdReset">Reset '+(n>1?nm(sel):'GD01')+' to defaults</button>';
+      +'<p class="sec" style="margin-top:14px">Make '+(n>1?nm(sel):'the droid')+' talk</p><div data-u="1">'+WORDS.map(w=>`<button type="button" class="btn" data-w="${w}">${w}</button>`).join('')+'</div>';
     pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);dcGet(sel)[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.step<1?(+i.step<0.1?2:1):0);save();if(k==='dHp'){const q=DRS[sel];if(q&&!q.dead)q.hp=Math.min(q.hp,v);}});
     pn.querySelectorAll('input[data-c]').forEach(i=>i.onchange=()=>{const v=clamp(Math.round(parseFloat(i.value)||0),-465,465);i.value=v;dcGet(sel)[i.dataset.c]=v;save();respawn();});
     pn.querySelectorAll('input[data-g]').forEach(i=>{if(i.type==='checkbox')i.onchange=()=>{GAME[i.dataset.g]=i.checked?1:0;save();dim();};
       else{i.oninput=()=>{const v=parseFloat(i.value);GAME[i.dataset.g]=v;i.nextElementSibling.textContent=v;save();};i.onchange=()=>{build();};}});
     const sl=pn.querySelector('#gdSel');if(sl)sl.onchange=()=>{sel=+sl.value;build();};
     pn.querySelectorAll('button[data-w]').forEach(b=>b.onclick=()=>{const q=DRS[sel];if(!q||!q.m)return;const keep=DR;DR=q;try{droidSay(b.dataset.w);}finally{DR=keep;}});
-    pn.querySelector('#gdReset').onclick=()=>{const c2=dcGet(sel);KEYS.forEach(k=>{c2[k]=GAME_DEF[k];});delete c2.dGE;delete c2.dGN;dcGet(sel);save();respawn();build();};dim();};
+    dim();};
   build();
   tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};
   tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
@@ -5883,7 +5880,7 @@ function droidKill(q){secUnitDown(droidTeam(q));q.dead=true;q.deadT=0;q.tgO=null
   const p=V(D.x,groundH(D.x,D.z)+1.2,D.z);emit(gFire,matFire,p,V(0,1,0),0.5,{s:0.8,grow:4});for(let i=0;i<12;i++){const a=Math.random()*PI*2;emit(gPuff,i%2?UGV_SMK:matSmoke,p,V(Math.cos(a)*3,2+Math.random()*4,Math.sin(a)*3),2,{s:0.4,grow:1.4,drag:1.4});}
   try{boomAt(p);}catch(e){}toast('GD01 destroyed');}
 function droidBulletVsUgv(b,d,len){
-  if(b.tm!==secTeam())for(const u of UGVS){if(u.dead||u.gone||u.pl!==secTeam()||u.air>0)continue;const t=raySph(b.p,d,u.x,u.y+0.8,u.z,1.5,len);if(t<0)continue;
+  if(b.dr&&b.tm!==secTeam())for(const u of UGVS){if(u.dead||u.gone||u.pl!==secTeam()||u.air>0)continue;const t=raySph(b.p,d,u.x,u.y+0.8,u.z,1.5,len);if(t<0)continue;
     u.hp-=b.ud*1.5;try{impact(V(u.x,u.y+0.8,u.z).addScaledVector(d,-1.3),d.clone().negate(),'rock');}catch(e){}
     if(u.hp<=0){u.hp=0;ugvWreck(u,true);secUnitDown(secTeam());toast('Your UGV was destroyed by a GD01');}return true;}
   for(const q of DRS){if(!q.m||q.dead||!q.m.root.visible||droidTeam(q)===b.tm)continue;const D=q.m.D,gy=groundH(D.x,D.z)+D.hJ;
