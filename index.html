@@ -3365,7 +3365,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=488;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=489;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4962,7 +4962,7 @@ addEventListener('keydown',e=>{if(e.code!=='KeyY'||e.repeat||!playing||MPM.on)re
 const SOLO_END={t:-1,el:null};
 function soloEnd(dt){
   if(SOLO_END.t>=0){SOLO_END.t+=dt;if(SOLO_END.t>=7){SOLO_END.t=-1;if(SOLO_END.el)SOLO_END.el.style.display='none';
-      secReset();try{for(const q of DRS)q.tele=true;}catch(e){}try{respawn();}catch(e){}const sp=secSpawnFor(secTeam());secPlace(sp.x,sp.z);toast('New round');}return;}
+      secReset();try{resReset();}catch(e){console.warn('round reset',e);}try{for(const q of DRS)q.tele=true;}catch(e){}try{respawn();}catch(e){}const sp=secSpawnFor(secTeam());secPlace(sp.x,sp.z);toast('New round');}return;}
   const me=secTeam()-1,a=SECT.tk[me],b=SECT.tk[1-me];if(a>0&&b>0)return;
   const win=b<=0&&a>0;SOLO_END.t=0;SECT.tk[win?1-me:me]=0;try{secTkDraw();}catch(err){}   // the side that lost shows 0
   if(!SOLO_END.el){const e=document.createElement('div');e.style.cssText='position:fixed;left:0;right:0;top:30%;text-align:center;z-index:9;pointer-events:none;font:700 54px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;text-shadow:0 2px 14px #000';document.body.appendChild(e);SOLO_END.el=e;}
