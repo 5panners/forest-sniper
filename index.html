@@ -3374,7 +3374,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=439;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=440;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4808,7 +4808,7 @@ function siloVoice(S,f){if(!AC||!soundOn||!noiseBuf)return;const t=AC.currentTim
   V.hiss.g.gain.setTargetAtTime(0.10+0.05*Math.random(),t,0.08);}
 function siloVoiceStop(){const V=SILO_SV;if(!V)return;SILO_SV=null;try{const t=AC.currentTime;V.out.gain.cancelScheduledValues(t);V.out.gain.setTargetAtTime(0,t,0.4);setTimeout(()=>{try{[V.rum,V.roar,V.hiss,V.crk,V.crk2].forEach(n=>n.s.stop());V.sub.stop();V.sub2.stop();V.out.disconnect();}catch(e){}},2500);}catch(e){}}
 function siloTryLaunch(){const S=SILO;if(!S.built||!playing||!player.alive)return false;
-  if(Math.hypot(player.pos.x-S.con.x,player.pos.z-S.con.z)>3)return false;
+  if(MPM.on&&Math.hypot(player.pos.x-S.con.x,player.pos.z-S.con.z)>3)return false;   // solo: L works from anywhere, for testing
   if(S.st!=='idle'){toast(S.st==='gone'?'The silo is empty':'Launch sequence already running');return true;}
   if(MPM.on&&NT.M.ph==='live'){if(!secArmed(secTeam())){toast('Not armed · hold the centre and at least '+SEC_ARM+' of 7 sectors');return true;}if(!MPM.guest)SECT.launch=secTeam();}
   siloLaunch(true);return true;}
@@ -4823,7 +4823,7 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
   // test cycle (solo only): the silo launches by itself every GAME.siloEvery seconds and reloads a few seconds after each missile is gone
   if(GAME.siloEvery>0&&!MPM.on&&playing&&player.alive){S.at=(S.at||0)+dt;if(S.st==='idle'&&S.at>=GAME.siloEvery){S.at=0;siloLaunch(true);}else if(S.st==='gone'){S.gt=(S.gt||0)+dt;if(S.gt>6){S.gt=0;siloReset();}}}
   // console prompt
-  {const d=Math.hypot(player.pos.x-S.con.x,player.pos.z-S.con.z),tip=playing&&player.alive&&d<3?(S.st==='gone'?'Silo empty':S.st!=='idle'?'Launch in progress…':''):'';
+  {const d=Math.hypot(player.pos.x-S.con.x,player.pos.z-S.con.z),tip=playing&&player.alive&&d<3?(S.st==='idle'?'Press L to launch the missile':S.st==='gone'?'Silo empty':'Launch in progress…'):'';
    if(tip!==S.ts){S.ts=tip;S.tip.textContent=tip;S.tip.hidden=!tip;}}
   // beacons spin while a launch is on
   {const on=S.st==='count'||S.st==='fly';const k=on?(Math.sin(now/90)>0?1:0.25):0.15;for(const b of S.beac)b.material.color.setRGB(0.35+0.65*k,0.15+0.35*k,0.05);}
@@ -4848,6 +4848,7 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
   {const em=Math.max(0,Math.min(1,(S.pos.y-S.y0)/5));
    if(S.glow){const fl=0.88+Math.random()*0.24,k=(f<1.6?0.6:1)*em;S.glow.scale.set(Math.max(0.01,34*fl*k),Math.max(0.01,34*fl*k),1);S.glow.material.opacity=0.8*em;S.glow.visible=em>0.01;const h=S.glow.userData.halo;if(h){const q=Math.max(0.01,90*(0.94+Math.random()*0.12)/34);h.scale.set(q,q,1);}}
    if(S.fl2){S.fl2.position.copy(S.pos).addScaledVector(S.dir,-3);S.fl2.intensity=14*PL_K*(0.85+Math.random()*0.3)*em*(1-Math.min(1,Math.max(0,(f-85)/25)));}}
+  try{siloVoice(S,f);}catch(e){}   // the sustained roar and crackle follow the missile
   // smoke: a billow out of the shaft at ignition, then a thick trail behind the missile
   const ex=S.pos.clone().addScaledVector(S.dir,-0.6*S.K);
   // (rate-limited per second, not per frame, so a fast machine does not drown in puffs)
@@ -4858,7 +4859,7 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
     MPM.hp-=55*dt;try{EDGE.burn=0.35;EDGE.k=1;}catch(e){}if(!S.burnT||now-S.burnT>1500){S.burnT=now;toast('Caught in the rocket blast!');}
     if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed by the missile launch');}}
   if(f>110||S.pos.y>S.y0+9000){if(S.fl2)S.fl2.intensity=0;S.st='gone';siloVoiceStop();S.mis.visible=false;S.flame.visible=false;if(S.glow)S.glow.visible=false;}}
-// (the manual launch at the silo console was removed: the missile now launches only by the solo auto-launch timer)
+addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyL')siloTryLaunch();});   // L launches the missile (for testing)
 resReset=(f=>function(){f.apply(this,arguments);try{siloReset();}catch(e){}})(resReset);
 // ================= sector capture: seven sectors in two lanes (east home · Tower 1 / Tower 4 · centre silo · Tower 3 / Tower 2 · west home) =================
 // The host decides who owns what (it knows both positions); the guest just draws the state it is sent. Sides swap every round, so sectors are coloured by "mine / theirs", not by east / west.
