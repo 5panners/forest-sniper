@@ -1857,6 +1857,7 @@ const LABEL={idle:'Idle',walk:'Patrol walk',run:'Run',sprint:'Sprint',cidle:'Cro
 const NOMINAL={walk:1.9,run:4.4,sprint:6.6,cwalk:1.5,crawl:0.75};
 const UP_KEYS=['spine','chest','neck','head','lUpper','lFore','lHand','rUpper','rFore','rHand','gunP','gunR','ikR','ikL','R','L','poleR','poleL'];
 const HEIGHT={stand:1.9,crouch:1.3,prone:0.62};
+function proneLift(v){v.y+=0.22;v.x+=Math.sin(camYaw)*0.4;v.z+=Math.cos(camYaw)*0.4;return v;}
 const SPAWN=MAP.spawn.clone();
 const player={pos:SPAWN.clone(),vel:V(0,0,0),yaw:0,grounded:true,stance:'stand',alive:true,
   lw:{idle:1,walk:0,run:0,sprint:0,cidle:0,cwalk:0,prone:0,crawl:0,kneel:0},lt:{idle:0,walk:0,run:0,sprint:0,cidle:0,cwalk:0,prone:0,crawl:0,kneel:0},
@@ -2284,7 +2285,7 @@ function shootAR(time){const pl=player;pl.ammo--;pl.lastShot=time;pl.kick=0.55;s
   const mv=Math.hypot(pl.vel.x,pl.vel.z),ads=input.rmb;
   const spread=(GAME.arSpread/1000)*(ads?1:2.4)*(pl.stance==='prone'?0.6:pl.stance==='crouch'?0.8:1)+Math.min(0.03,mv*0.006);
   camera.getWorldDirection(_cd);const h=castRay(camera.position,_cd,1500);const aimPt=h?h.point:camera.position.clone().addScaledVector(_cd,1500);
-  flashGrp.getWorldPosition(_mz);const origin=_mz.clone();const dir=launchDir(origin,aimPt,spread,V(0,0,0));
+  flashGrp.getWorldPosition(_mz);proneLift(_mz);const origin=_mz.clone();const dir=launchDir(origin,aimPt,spread,V(0,0,0));
   const b={p:origin.clone(),o:origin.clone(),v:dir.multiplyScalar(V0*0.92),t:0,tr:getP(gTracer,matTracer),w:'ar15'};bullets.push(b);mkStreak(b);if(MPM.on)netShot(b);
   try{if(!playSample('rifle',0.62*VOLS.gun,1.18+Math.random()*0.08)){noise(0.12,3200,0.8,0.32,'bandpass');noise(0.25,800,0.7,0.35);}}catch(e){}
   try{ejectBrass();}catch(e){}disturb(origin.x,origin.z,180,600);
@@ -2834,7 +2835,7 @@ function shoot(time){
   const mv=Math.hypot(pl.vel.x,pl.vel.z);
   const spread=0.00025+Math.min(0.04,mv*0.008)+(scoped&&pl.stance==='prone'?-0.0001:0);
   camera.getWorldDirection(_cd);const h=castRay(camera.position,_cd,2000);const aimPt=h?h.point:camera.position.clone().addScaledVector(_cd,2000);
-  flashGrp.getWorldPosition(_mz);const origin=(scoped?camera.position:_mz).clone();
+  flashGrp.getWorldPosition(_mz);if(!scoped)proneLift(_mz);const origin=(scoped?camera.position:_mz).clone();
   const dir=launchDir(origin,aimPt,spread,V(0,0,0));
   bullets.push({p:origin.clone(),o:origin.clone(),v:dir.multiplyScalar(V0),t:0,tr:getP(gTracer,matTracer)});mkStreak(bullets[bullets.length-1]);if(MPM.on)netShot(bullets[bullets.length-1]);
   sfx.shot();disturb(origin.x,origin.z,200,650);input.lmb=false;
@@ -2999,7 +3000,7 @@ function updateCamera(dt){
     J.head.updateMatrixWorld(true);_eye.set(0,0.235,scoped?0.212:-0.136);J.head.localToWorld(_eye);   // first person (unscoped): camera sits back at the nose so more of the weapon is in view; the scope keeps the eye position
     if(scoped&&!_wasScoped&&aimPtTP&&!viewFP){const dx=aimPtTP.x-_eye.x,dy=aimPtTP.y-_eye.y,dz=aimPtTP.z-_eye.z,hz=Math.hypot(dx,dz);   // entering the scope: look at the point the third-person crosshair was on
       if(hz>6){camYaw=Math.atan2(dx,dz);camPitch=clamp(Math.atan2(dy,hz),-1.25,1.05);_dir.set(Math.sin(camYaw)*Math.cos(camPitch),Math.sin(camPitch),Math.cos(camYaw)*Math.cos(camPitch));}}
-    camera.position.copy(_eye);J.head.visible=false;marine.visible=!scoped;
+    if(pl.stance==='prone')proneLift(_eye);camera.position.copy(_eye);J.head.visible=false;marine.visible=!scoped;
     if(scoped)fov=62/(ZOOMS[zoomI]*(WPN.cur==='rifle'?1:1.3));
   } else {
     J.head.visible=true;marine.visible=true;
@@ -3380,7 +3381,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=458;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=459;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
