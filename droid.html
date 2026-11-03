@@ -66,6 +66,23 @@ const hull=new T.Group();hull.position.y=0.1;chassis.add(hull);   // lifted so t
 rbox(hull,0.98,0.4,0.74,MAT.olive,0,0.81,0,0.17,0.06);rbox(hull,0.84,0.12,0.62,MAT.olive2,0,0.62,0,0.05,0.025);
 for(const s of [-1,1]){rbox(hull,0.06,0.5,0.6,MAT.olive2,s*0.42,0.5,0,0.05,0.012);rbox(hull,0.07,0.1,0.62,MAT.orange,s*0.425,0.26,0,0.03,0.015);}
 // chevron armour on the front, red stripe
+// stencilled "GD01" on the lower front panel, drawn as angular chamfered letters with stencil bridges (so it looks futuristic without needing a font file)
+{const cv=document.createElement('canvas');cv.width=1024;cv.height=300;const c=cv.getContext('2d');c.clearRect(0,0,1024,300);
+  const K=2.5,gx=22,glyphW=60,tot=4*glyphW+3*gx,ox=(1024-tot*K)/2,oy=(300-100*K)/2;
+  c.strokeStyle='#ff9a2a';c.lineWidth=15*K;c.lineJoin='bevel';c.lineCap='butt';
+  const P=(pts,x0,close)=>{c.beginPath();pts.forEach(([x,y],i)=>{const X=ox+(x0+x)*K,Y=oy+y*K;i?c.lineTo(X,Y):c.moveTo(X,Y);});if(close)c.closePath();c.stroke();};
+  const G=[[56,12],[16,12],[8,20],[8,80],[16,88],[56,88],[56,52],[30,52]];
+  const Dd=[[8,12],[40,12],[54,26],[54,74],[40,88],[8,88]];
+  const O0=[[16,12],[46,12],[54,20],[54,80],[46,88],[16,88],[8,80],[8,20]];
+  const I1=[[16,30],[34,12],[34,88]];
+  P(G,0);P(Dd,glyphW+gx,true);P(O0,2*(glyphW+gx),true);P(I1,3*(glyphW+gx));
+  c.beginPath();c.moveTo(ox+(3*(glyphW+gx)+14)*K,oy+88*K);c.lineTo(ox+(3*(glyphW+gx)+56)*K,oy+88*K);c.stroke();
+  c.globalCompositeOperation='destination-out';                            // stencil bridges
+  const gap=(x,y,w,h)=>c.fillRect(ox+x*K,oy+y*K,w*K,h*K);
+  gap(-2,47,24,6);gap(glyphW+gx-2,47,24,6);gap(2*(glyphW+gx)-2,47,24,6);gap(2*(glyphW+gx)+40,47,24,6);gap(glyphW+gx+30,5,6,20);gap(3*(glyphW+gx)+30,40,8,6);
+  const tex=new T.CanvasTexture(cv);tex.anisotropy=4;
+  const pl=new T.Mesh(new T.PlaneGeometry(0.72,0.72*300/1024),new T.MeshStandardMaterial({map:tex,transparent:true,alphaTest:0.4,roughness:0.9,metalness:0,side:T.FrontSide}));
+  pl.position.set(0,0.8,0.378);hull.add(pl);}
 // belly lights and status LEDs
 const LED=[];
 // big chest block, huge pauldrons, beefy arms, ammo pack on the back
