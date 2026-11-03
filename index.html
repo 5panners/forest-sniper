@@ -2203,7 +2203,7 @@ function at4Fire(){const pl=player;input.lmb=false;
 function at4Reload(){if(!WPN.has||WPN.ld||WPN.rl>=0)return;if(!((INV.at4r|0)>0)){toast('No AT4 rounds · look for the pale pink glow');return;}WPN.rl=0;try{sfx.click();}catch(e){}toast('Loading the AT4…');}
 function at4Step(dt){
   at4Lights(dt);
-  if(WPN.rl>=0){WPN.rl+=dt;if(!player.alive)WPN.rl=-1;else if(WPN.rl>=GAME.at4Reload){WPN.rl=-1;if((INV.at4r|0)>0){INV.at4r--;WPN.ld=1;try{invUI();sfx.click();}catch(e){}toast('AT4 loaded');try{EQB.ui(true);}catch(e){}}}}
+  if(WPN.rl>=0){WPN.rl+=dt;if(!player.alive)WPN.rl=-1;else if(WPN.rl>=GAME.at4Reload/1.4){WPN.rl=-1;if((INV.at4r|0)>0){INV.at4r--;WPN.ld=1;try{invUI();sfx.click();}catch(e){}toast('AT4 loaded');try{EQB.ui(true);}catch(e){}}}}
   for(let i=ROCKETS.length-1;i>=0;i--){const r=ROCKETS[i];let done=false;const n=Math.max(1,Math.ceil(dt/0.008));
     for(let k=0;k<n&&!done;k++){const d=dt/n;r.v.y-=GRAV*GAME.at4Drop*d;const len=r.v.length()*d;const dir=_v9.copy(r.v).normalize();
       let h=castRay(r.p,dir,len,!r.mine);
@@ -3381,7 +3381,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=461;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=462;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
