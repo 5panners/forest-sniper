@@ -2461,17 +2461,17 @@ function boomAt(p){const c=sp3(p.x,p.y,p.z,4000);if(!c)return;nz(c,c.t0,1.3,420,
 
 // --- hearing and fear ---
 // disturb(): a noise at x,z. Deer inside fleeR bolt, inside alertR they stop and stare. Each fright raises fear, and fear widens both radii.
-function disturb(x,z,fleeR,alertR){for(const d of DEER){if(d.st==='dead')continue;const dist=Math.hypot(d.x-x,d.z-z);if(dist>alertR*3)continue;d.ev.push({t:dist/343,x,z,f:fleeR,a:alertR});}}
+function disturb(x,z,fleeR,alertR,mild){for(const d of DEER){if(d.st==='dead')continue;const dist=Math.hypot(d.x-x,d.z-z);if(dist>alertR*3)continue;d.ev.push({t:dist/343,x,z,f:fleeR,a:alertR,mild});}}
 const DEER_SCARE=0.5;   // all deer fright distances (people and noise) are scaled by this
-function hear(d,e){if(d.st==='dead')return;if(e.force){scare(d,e.x,e.z);return;}
+function hear(d,e){if(d.st==='dead')return;if(e.force){scare(d,e.x,e.z,e.mild);return;}
   const dist=Math.hypot(d.x-e.x,d.z-e.z),k=(1+d.fear*0.6)*DEER_SCARE;
-  if(dist<e.f*k)scare(d,e.x,e.z);else if(dist<e.a*k)alertD(d,e.x,e.z,0.2);}
+  if(dist<e.f*k)scare(d,e.x,e.z,e.mild);else if(dist<e.a*k)alertD(d,e.x,e.z,e.mild?0.1:0.2);}
 function release(d){const m=d.mate;if(!m)return;d.mate=null;m.mate=null;if(m.st==='hold'||m.st==='court'||m.st==='mount'){m.st='graze';m.stT=10+Math.random()*10;m.mountK=m.mountK;}}
-function scare(d,x,z){if(d.st==='dead')return;d.fear=Math.min(1.5,d.fear+0.45);d.thx=x;d.thz=z;release(d);
-  if(d.st==='flee'||d.st==='dying'){d.fleeLeft=Math.max(d.fleeLeft,120);return;}
-  d.st=d.wound==='fatal'?'dying':'flee';d.fleeLeft=70+Math.random()*130;d.fleeOff=Math.random()<0.35?(Math.random()<0.5?-1:1)*(1.0+Math.random()*0.9):(Math.random()-0.5)*1.5;d.stT=120;
+function scare(d,x,z,mild){if(d.st==='dead')return;d.fear=Math.min(mild?1.0:1.5,d.fear+(mild?0.2:0.45));d.thx=x;d.thz=z;release(d);   // mild = UGV gunfire: they dodge it, but only a short way and soon drift back
+  if(d.st==='flee'||d.st==='dying'){d.fleeLeft=Math.max(d.fleeLeft,mild?25:120);if(!mild)d.mildF=false;return;}
+  d.mildF=!!mild&&d.wound!=='fatal';d.st=d.wound==='fatal'?'dying':'flee';d.fleeLeft=70+Math.random()*130;d.fleeOff=Math.random()<0.35?(Math.random()<0.5?-1:1)*(1.0+Math.random()*0.9):(Math.random()-0.5)*1.5;d.stT=120;if(mild)d.fleeLeft=14+Math.random()*22;
   if(d.sex==='f'&&Math.random()<0.35)dvox.bark(d);
-  for(const o of DEER){if(o===d||o.st==='dead'||o.st==='flee'||o.st==='dying')continue;if(Math.hypot(o.x-d.x,o.z-d.z)<40&&Math.random()<0.7)o.ev.push({t:0.2+Math.random()*0.6,x,z,force:true});}}
+  for(const o of DEER){if(o===d||o.st==='dead'||o.st==='flee'||o.st==='dying')continue;if(Math.hypot(o.x-d.x,o.z-d.z)<40&&Math.random()<0.7)o.ev.push({t:0.2+Math.random()*0.6,x,z,force:true,mild:mild});}}
 function alertD(d,x,z,add){if(d.st==='dead'||d.st==='flee'||d.st==='dying')return;d.fear+=add||0.25;d.thx=x;d.thz=z;
   if(d.fear>1.5){scare(d,x,z);return;}
   if(d.st==='bed')return;if(d.st==='alert'){d.stT=Math.max(d.stT,2.5);return;}
@@ -2542,7 +2542,7 @@ function deerAI(d,dt){
       // anti-circling: a flee that gains no ground (boxed in by trees/water, or the player keeps re-frightening it) gets a new bearing, then gives up and trots off
       d.pgT=(d.pgT==null?4:d.pgT)-dt;if(d.pgT<=0){const dd=Math.hypot(d.x-d.thx,d.z-d.thz);if(d.pgD!=null&&dd-d.pgD<9){d.fleeOff=(Math.random()<0.5?-1:1)*(0.8+Math.random()*0.9);d.fbN=0;d.pgN=(d.pgN||0)+1;if(d.pgN>=2&&d.st==='flee'){d.pgN=0;d.fleeLeft=0;d.fear=Math.min(d.fear,0.5);}}else d.pgN=0;d.pgD=dd;d.pgT=4;}
       if(d.stuck>4){d.stuck=0;d.fbN=0;if(d.st==='flee')d.fleeLeft=Math.min(d.fleeLeft,20);}
-      d.fleeLeft-=d.spd*dt;if(d.st==='flee'&&d.fleeLeft<=0){if(d.wound==='gut'){d.st='bed';}else{d.st='trot';d.tx=d.x+Math.sin(a)*60;d.tz=d.z+Math.cos(a)*60;d.stT=40;}}break;}
+      d.fleeLeft-=d.spd*dt;if(d.st==='flee'&&d.fleeLeft<=0){if(d.wound==='gut'){d.st='bed';}else if(d.mildF){d.mildF=false;d.fear=Math.min(d.fear,0.6);toGraze(d,5+Math.random()*8);}else{d.st='trot';d.tx=d.x+Math.sin(a)*60;d.tz=d.z+Math.cos(a)*60;d.stT=40;}}break;}
     case 'bed':break;
     case 'roar':{d.roarCD-=dt;if(d.roarCD<=0&&d.roarN>0){dvox.roar(d);d.roarA=2.0;d.roarN--;d.roarCD=3+Math.random()*3;
         const P=mouth(d),fw=V(Math.sin(d.yaw),0.35,Math.cos(d.yaw));for(let i=0;i<4;i++)emit(gPuff,matSmoke,P,fw.clone().multiplyScalar(0.7+Math.random()*0.5),1.4,{s:0.05,grow:0.9,drag:1.5});}
@@ -3375,7 +3375,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=416;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=417;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4769,8 +4769,10 @@ function siloBuild(){
    for(let i=0;i<4;i++){const a=i*Math.PI/2,g=new THREE.BoxGeometry(0.06,1.3,0.7);g.rotateY(-a);M.push(bPart(g,[Math.cos(a)*0.95,0.95,Math.sin(a)*0.95],null,null,()=>'#2b2d2f'));}
    for(let i=0;i<3;i++){const a=i*Math.PI*2/3,g=new THREE.CylinderGeometry(0.16,0.3,0.45,10,1,true);M.push(bPart(g,[Math.cos(a)*0.38,0.05,Math.sin(a)*0.38],null,null,()=>'#3a3532'));}
    const grp=new THREE.Group(),mm=new THREE.Mesh(bMerge(M),SILO_MIS);mm.castShadow=true;mm.renderOrder=32;grp.add(mm);
-   const flame=new THREE.Mesh(new THREE.ConeGeometry(0.75,6,12,1,true).translate(0,-3,0).rotateX(Math.PI),new THREE.MeshBasicMaterial({color:0xffb347,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
-   flame.rotation.x=Math.PI;flame.position.y=-0.1;flame.visible=false;flame.renderOrder=33;grp.add(flame);
+   const flame=new THREE.Group();
+   {const fm=(r,len,col,op)=>new THREE.Mesh(new THREE.ConeGeometry(r,len,14,1,true).rotateX(Math.PI).translate(0,-len/2,0),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
+    const o=fm(1.5,16,0xff8a2a,0.55),m2=fm(1.05,12,0xffc060,0.7),c=fm(0.6,8,0xfff2c8,0.9);[o,m2,c].forEach(m=>{m.renderOrder=33;flame.add(m);});}   // wide at the nozzles, tapering away behind the missile
+   flame.position.y=0.1;flame.visible=false;grp.add(flame);
    let glow=null;try{glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffa040,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false}));glow.scale.set(14,14,1);glow.position.y=-1.5;glow.visible=false;glow.renderOrder=33;grp.add(glow);}catch(e){}
    grp.scale.setScalar(K);scene.add(grp);S.mis=grp;S.flame=flame;S.glow=glow;}
   // ---- blast hatch: a thick armoured slab with a hazard border, lifting lugs and a centre plate; it rolls out along the rails
@@ -4795,7 +4797,25 @@ function siloPose(){const S=SILO;
 // ---- sounds: klaxon at the pad, the hatch grinding back, and the launch roar
 function siloKlaxon(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,700);if(!c)return;for(let i=0;i<14;i++)tn(c,c.t0+i*0.5,i%2?520:700,0,0.42,0.32*GAME.siloVol*GAME.siloVK,'square');}
 function siloGrind(){const c=sp3(SILO.x,SILO.y0+1,SILO.z,500);if(!c)return;nz(c,c.t0,5,160,0.8,1.2*GAME.siloVol*GAME.siloVG,'lowpass');nz(c,c.t0,5,900,5,0.18*GAME.siloVol*GAME.siloVG);}
-function siloRoar(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,6000);if(!c)return;const V=GAME.siloVol*GAME.siloVR,L=Math.min(2.4,1/Math.max(0.42,GAME.siloAcc));nz(c,c.t0,14*L,110,0.7,3.2*V,'lowpass');nz(c,c.t0,10*L,420,0.6,1.3*V);nz(c,c.t0+0.05,2.5*L,2200,0.5,0.6*V);}
+function siloRoar(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,6000);if(!c)return;const V=GAME.siloVol*GAME.siloVR,L=Math.min(2.4,1/Math.max(0.42,GAME.siloAcc));nz(c,c.t0,6,90,0.7,3.4*V,'lowpass');nz(c,c.t0,4,420,0.6,1.1*V);nz(c,c.t0+0.05,1.8,2200,0.5,0.6*V);}
+
+// ---- sustained rocket sound: deep rumble, sub-bass, roar and a continuous crackle; follows the missile and fades with its climb
+let SILO_SV=null;
+function siloVoice(S,f){if(!AC||!soundOn||!noiseBuf)return;const t=AC.currentTime;
+  if(!SILO_SV){const out=AC.createGain();out.gain.value=0;const pn=AC.createPanner();pn.panningModel='HRTF';pn.distanceModel='inverse';pn.refDistance=90;pn.rolloffFactor=0.55;pn.maxDistance=30000;out.connect(pn);pn.connect(AC.destination);
+    const nzs=(type,fq,q,g0)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;s.loopStart=Math.random()*1.5;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=fq;fl.Q.value=q;const g=AC.createGain();g.gain.value=g0;s.connect(fl);fl.connect(g);g.connect(out);s.start();return {s,fl,g};};
+    const rum=nzs('lowpass',85,0.9,1.0),roar=nzs('lowpass',520,0.6,0.55),hiss=nzs('highpass',3200,0.5,0.0),crk=nzs('bandpass',1700,0.8,0.0),crk2=nzs('highpass',5200,0.7,0.0);
+    const sub=AC.createOscillator();sub.type='sine';sub.frequency.value=34;const sg=AC.createGain();sg.gain.value=0.9;sub.connect(sg);sg.connect(out);sub.start();
+    const sub2=AC.createOscillator();sub2.type='sawtooth';sub2.frequency.value=52;const s2=AC.createBiquadFilter();s2.type='lowpass';s2.frequency.value=140;const sg2=AC.createGain();sg2.gain.value=0.35;sub2.connect(s2);s2.connect(sg2);sg2.connect(out);sub2.start();
+    SILO_SV={out,pn,rum,roar,hiss,crk,crk2,sub,sub2,sg,sg2,ck:0};}
+  const V=SILO_SV,up=Math.min(1,f/1.4),fade=1-Math.min(1,Math.max(0,(f-78)/32));
+  V.out.gain.setTargetAtTime(1.5*GAME.siloVol*GAME.siloVR*up*fade,t,0.25);
+  if(V.pn.positionX){V.pn.positionX.value=S.pos.x;V.pn.positionY.value=S.pos.y;V.pn.positionZ.value=S.pos.z;}else V.pn.setPosition(S.pos.x,S.pos.y,S.pos.z);
+  V.rum.fl.frequency.setTargetAtTime(70+30*Math.sin(f*1.3)+Math.min(60,f*5),t,0.2);V.sub.frequency.setTargetAtTime(30+4*Math.sin(f*2.1),t,0.2);
+  // crackle: random pops, several a second, each a short burst of mid and high noise
+  V.ck-=0.016;if(V.ck<=0){V.ck=0.02+Math.random()*0.09;const k=Math.random();V.crk.g.gain.setTargetAtTime(k<0.45?0.9*k+0.2:0.05,t,0.004);V.crk2.g.gain.setTargetAtTime(k<0.25?0.5:0.04,t,0.003);V.crk.fl.frequency.setTargetAtTime(900+Math.random()*2200,t,0.01);}
+  V.hiss.g.gain.setTargetAtTime(0.08+0.05*Math.random(),t,0.05);}
+function siloVoiceStop(){const V=SILO_SV;if(!V)return;SILO_SV=null;try{const t=AC.currentTime;V.out.gain.cancelScheduledValues(t);V.out.gain.setTargetAtTime(0,t,0.4);setTimeout(()=>{try{[V.rum,V.roar,V.hiss,V.crk,V.crk2].forEach(n=>n.s.stop());V.sub.stop();V.sub2.stop();V.out.disconnect();}catch(e){}},2500);}catch(e){}}
 function siloTryLaunch(){const S=SILO;if(!S.built||!playing||!player.alive)return false;
   if(Math.hypot(player.pos.x-S.con.x,player.pos.z-S.con.z)>3)return false;
   if(S.st!=='idle'){toast(S.st==='gone'?'The silo is empty':'Launch sequence already running');return true;}
@@ -4804,7 +4824,7 @@ function siloTryLaunch(){const S=SILO;if(!S.built||!playing||!player.alive)retur
 function siloLaunch(mine){const S=SILO;if(!S.built||S.st!=='idle')return;S.st='count';S.t=0;S.sfx=0;
   toast(mine?'Launch sequence started · stand clear of the silo':'The other player has started a missile launch!');try{siloKlaxon();}catch(e){}
   if(mine){try{if(MPM.on&&NT.room)NT.room.emit('silo',{t:secTeam()}).catch(()=>{});}catch(e){}}}
-function siloReset(){const S=SILO;if(!S.built)return;S.st='idle';S.t=0;S.hx=0;S.v=0;S.flame.visible=false;if(S.glow)S.glow.visible=false;S.mis.visible=true;siloPose();
+function siloReset(){const S=SILO;if(!S.built)return;try{siloVoiceStop();}catch(e){}S.st='idle';S.t=0;S.hx=0;S.v=0;S.flame.visible=false;if(S.glow)S.glow.visible=false;S.mis.visible=true;siloPose();
   try{for(const n of RES_NODES)if(n.silo&&!n.got)resSetGot(n,true);}catch(e){}}
 function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(now-(S.lt||now))/1000);S.lt=now;
   if(!S.built){if(playing)try{siloBuild();}catch(e){console.warn('silo',e);S.built=true;S.st='broken';}return;}
@@ -4830,7 +4850,7 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
   // the ground shakes and the screen with it: strongest at the pad during lift-off, fading with distance from the missile
   {const dm=Math.hypot(player.pos.x-S.pos.x,player.pos.y-S.pos.y,player.pos.z-S.pos.z),R=450,th=f<1.6?0.55:f<10?1:0.7;if(dm<R)shake=Math.max(shake,GAME.siloShake*th*Math.pow(1-dm/R,1.6)*1.6);}
   S.pos.addScaledVector(S.dir,S.v*dt);S.mis.position.copy(S.pos);S.mis.quaternion.setFromUnitVectors(V(0,1,0),S.dir);
-  S.flame.scale.set(0.9+Math.random()*0.25,(f<1.6?0.6:1.2)+Math.random()*0.35,0.9+Math.random()*0.25);
+  S.flame.scale.set(0.9+Math.random()*0.25,(f<1.6?0.7:1.15)+Math.random()*0.4,0.9+Math.random()*0.25);try{siloVoice(S,f);}catch(e){}
   // smoke: a billow out of the shaft at ignition, then a thick trail behind the missile
   const ex=S.pos.clone().addScaledVector(S.dir,-0.6*S.K);
   // (rate-limited per second, not per frame, so a fast machine does not drown in puffs)
@@ -4840,7 +4860,7 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
   if(f<6&&player.alive&&MPM.hp>0&&Math.hypot(player.pos.x-S.x,player.pos.z-S.z)<7&&player.pos.y<S.y0+6){
     MPM.hp-=55*dt;try{EDGE.burn=0.35;EDGE.k=1;}catch(e){}if(!S.burnT||now-S.burnT>1500){S.burnT=now;toast('Caught in the rocket blast!');}
     if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed by the missile launch');}}
-  if(f>110||S.pos.y>S.y0+9000){S.st='gone';S.mis.visible=false;S.flame.visible=false;if(S.glow)S.glow.visible=false;}}
+  if(f>110||S.pos.y>S.y0+9000){S.st='gone';siloVoiceStop();S.mis.visible=false;S.flame.visible=false;if(S.glow)S.glow.visible=false;}}
 addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyL')siloTryLaunch();});
 resReset=(f=>function(){f.apply(this,arguments);try{siloReset();}catch(e){}})(resReset);
 // ================= sector capture: seven sectors in two lanes (east home · Tower 1 / Tower 4 · centre silo · Tower 3 / Tower 2 · west home) =================
@@ -5155,7 +5175,7 @@ function ugvShoot(u,T){const o=ugvMuzzle(u),d=Math.hypot(T.x-o.x,T.z-o.z);const 
   u.shots++;const tr=u.shots%3===1;ugvRound(o,dir,tr,u.pl);u.fl=0.05;
   try{if(MPM.on&&NT.room)NT.room.emit('ugvf',{i:UGVS.indexOf(u),tm:u.pl|0,o:[nr2(o.x),nr2(o.y),nr2(o.z)],v:[+dir.x.toFixed(4),+dir.y.toFixed(4),+dir.z.toFixed(4)],t:tr?1:0}).catch(()=>{});}catch(e){}}
 function ugvRound(o,dir,tr,tm){const b={tm:tm|0,p:o.clone(),o:o.clone(),v:dir.clone().multiplyScalar(V0),t:0,tr:getP(gTracer,matTracer),rem:true,ugv:true,ud:GAME.uDmg};bullets.push(b);if(tr)try{mkStreak(b);}catch(e){}
-  ugvGunSnd(o);try{farFlash(o);}catch(e){}try{disturb(o.x,o.z,200,650);}catch(e){}}
+  ugvGunSnd(o);try{farFlash(o);}catch(e){}try{disturb(o.x,o.z,110,380,true);}catch(e){}}
 function ugvNetFire(d){if(!Array.isArray(d.o)||!Array.isArray(d.v))return;const o=V(+d.o[0],+d.o[1],+d.o[2]),v=V(+d.v[0],+d.v[1],+d.v[2]);if(!isFinite(o.x+o.y+o.z+v.x)||v.lengthSq()<0.5)return;
   v.normalize();ugvRound(o,v,!!d.t,d.tm|0);const u=UGVS[d.i|0]||UGVS[0];if(u)u.fl=0.05;}
 function ugvHurtMe(zone,ud){if(!player.alive||MPM.hp<=0)return;try{if(MPM.on&&NT.M.ph!=='live')return;}catch(e){}
@@ -5386,7 +5406,7 @@ function ugvVoice(u,dt){if(!AC||!soundOn||!noiseBuf)return;const cp=camera.posit
     const out=AC.createGain();out.gain.value=0;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3800;
     const pn=AC.createPanner();pn.panningModel='HRTF';pn.distanceModel='inverse';pn.refDistance=14;pn.rolloffFactor=1.25;pn.maxDistance=20000;out.connect(lp);lp.connect(pn);pn.connect(AC.destination);
     const osc=(type,g0,flt)=>{const o=AC.createOscillator();o.type=type;const g=AC.createGain();g.gain.value=g0;if(flt){const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=flt;o.connect(f);f.connect(g);}else o.connect(g);g.connect(out);o.start();return {o,g};};
-    const hum=osc('sawtooth',0,900),whine=osc('triangle',0,0),thin=osc('sine',0,0),servo=osc('sawtooth',0,1800);
+    const hum=osc('sawtooth',0,900),whine=osc('triangle',0,1100),thin=osc('sine',0,0),servo=osc('sawtooth',0,1800);
     const nzs=(f,q,type)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;s.loopStart=Math.random();const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain();g.gain.value=0;s.connect(fl);fl.connect(g);g.connect(out);s.start();return {s,g,fl};};
     const rum=nzs(150,0.7,'lowpass'),clat=nzs(1250,1.1,'bandpass');
     const lfo=AC.createOscillator();lfo.type='square';lfo.frequency.value=3;const lg=AC.createGain();lg.gain.value=0;lfo.connect(lg);lg.connect(clat.g.gain);lfo.start();
@@ -5397,9 +5417,9 @@ function ugvVoice(u,dt){if(!AC||!soundOn||!noiseBuf)return;const cp=camera.posit
   sm(V_.out.gain,live?0.9:0,0.15);
   if(V_.pn.positionX){V_.pn.positionX.value=u.x;V_.pn.positionY.value=u.y+0.8;V_.pn.positionZ.value=u.z;}else V_.pn.setPosition(u.x,u.y+0.8,u.z);
   sm(V_.hum.o.frequency,62+v*30);sm(V_.hum.g.gain,0.10*run+0.015*(live?1:0));            // motor hum under load
-  sm(V_.whine.o.frequency,310+v*150);sm(V_.whine.g.gain,0.035*run);                      // inverter whine
-  sm(V_.thin.o.frequency,2400+v*420);sm(V_.thin.g.gain,0.006*run);
-  sm(V_.servo.o.frequency,420+(u.tRate||0)*160);sm(V_.servo.g.gain,live?0.02*sv:0);       // turret traverse
+  sm(V_.whine.o.frequency,260+v*110);sm(V_.whine.g.gain,0.011*run);                      // inverter whine
+  sm(V_.thin.o.frequency,2400+v*420);sm(V_.thin.g.gain,0.0015*run);
+  sm(V_.servo.o.frequency,420+(u.tRate||0)*160);sm(V_.servo.g.gain,live?0.009*sv:0);       // turret traverse
   sm(V_.rum.g.gain,live?0.16*run:0);sm(V_.rum.fl.frequency,120+v*28);
   sm(V_.clat.g.gain,live?0.05*run:0);sm(V_.lfo.frequency,Math.max(1,v*3.4));sm(V_.lg.gain,live?0.045*run:0);   // track links
 }
