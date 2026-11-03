@@ -110,7 +110,7 @@ rbox(ammo,0.56,0.36,0.3,MAT.olive2,0,0,0,0.08,0.04);box(ammo,0.56,0.035,0.3,MAT.
 for(const s of [-1,1]){box(ammo,0.03,0.12,0.2,MAT.dark,s*0.285,-0.02,0);}
 box(ammo,0.36,0.06,0.02,MAT.orange,0,0,-0.155);
 // antenna with a status bulb
-cyl(hull,0.008,0.012,0.4,5,MAT.dark,-0.2,1.5,-0.46);const bulb=add(hull,new T.IcosahedronGeometry(0.024,0),M(0xff7a2a,{emissive:0xff5a10,emissiveIntensity:1.4}),-0.2,1.76,-0.46);
+cyl(hull,0.008,0.012,0.4,5,MAT.dark,-0.2,1.5,-0.46);const bulb={material:{emissiveIntensity:0,emissive:new T.Color(),color:new T.Color()}};   // no light on the antenna
 // exhaust / vents at the back
 for(let i=0;i<3;i++)box(hull,0.4,0.02,0.02,MAT.dark,0,0.72+i*0.07,-0.335);
 
@@ -177,7 +177,6 @@ const POD={};
   const pod=new T.Group();pod.position.y=0.15;neck.add(pod);POD.pod=pod;
   rbox(pod,0.5,0.36,0.4,MAT.olive,0,0,0,0.12,0.05);                                  // helmet
   const vis=rbox(pod,0.4,0.18,0.06,MAT.glassD,0,-0.01,0.2,0.07,0.025);                // dark visor slot
-  cyl(pod,0.012,0.012,0.14,5,MAT.dark,0.2,0.26,-0.08);
   POD.eyes=[];
   const eg=new T.Group();eg.position.set(0,-0.01,0.245);pod.add(eg);
   const bez=add(eg,new T.RingGeometry(0.1,0.118,18),MAT.steel,0,0,0.001);bez.castShadow=false;
