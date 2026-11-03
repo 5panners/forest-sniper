@@ -2578,7 +2578,7 @@ function poseDeer(d,dt){
   for(let i=0;i<4;i++){const L=d.legs[i];let tu=L.front?0:-0.25,tl=L.front?0:0.5;
     if(mode){const f=(d.ph+OFF[i])%1;let a=A;if(d.limp===i)a*=0.3;
       {const SB=[0,0.85,1.5,3.2][mode]*duty*Math.min(1,v/0.4)*(d.limp===i?0.35:1),LF=[0,0.07,0.12,0.2][mode]*Math.min(1,v/0.4);let oz,oy=0;if(f<duty){oz=SB/2-SB*(f/duty);}else{const q=(f-duty)/(1-duty);oz=-SB/2+SB*(0.5-0.5*Math.cos(PI*q));oy=LF*Math.sin(PI*q);}const th=d.body.rotation.x,by=d.body.position.y,ux=L.u.position,c=Math.cos(th),sn=Math.sin(th);const hy=by+ux.y*c-ux.z*sn,hz=-0.40+ux.y*sn+ux.z*c;const Lu=L.front?0.34:0.36,Ll=L.front?0.40:0.42;let dy=-0.04+oy-hy,dz=(L.front?0:-0.015)+(hz-(-0.40+ux.z))*0+ux.z-0.40+oz-hz;let D=Math.hypot(dy,dz);const M=Lu+Ll-0.003;if(D>M){dy*=M/D;dz*=M/D;D=M;}const base=Math.atan2(-dz,-dy),al=Math.acos(clamp((Lu*Lu+D*D-Ll*Ll)/(2*Lu*D),-1,1)),a1=L.front?base-al:base+al;const ky=-Lu*Math.cos(a1),kz=-Lu*Math.sin(a1);const a2=Math.atan2(-(dz-kz),-(dy-ky));tu=a1-th;tl=a2-a1;if(f>=duty&&L.front)tl+=0.25*Math.sin(PI*(f-duty)/(1-duty));}
-      if(mode>=2&&L.pf>f&&(i===0||i===2))dvox.hoof(d);L.pf=f;}
+      L.pf=f;}   // no hoof noise when deer run
     if(d.limp===i)tl+=0.55;
     if(L.front)tu-=0.22*d.grazeK;
     if(mk>0){if(L.front){tu=dl(tu,-1.25,mk);tl=dl(tl,1.3,mk);}else{tu=dl(tu,0.2,mk);tl=dl(tl,0.2,mk);}}
@@ -3362,7 +3362,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=481;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=482;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
