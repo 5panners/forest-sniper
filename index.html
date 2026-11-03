@@ -2235,6 +2235,10 @@ function at4Blast(p,r){
     const dm=GAME.at4Ugv*(d<2.2?1:Math.pow(1-(d-2.2)/(R-1),1.2));if(dm<=0)continue;u.hp-=dm;try{dmgNum(u.x,u.y+2.2,u.z,dm,'#ffd25a',GAME.uHp);}catch(e){}
     u.lx=from.x;u.lz=from.z;u.ly=from.y+1;u.boost=20;if(u.st==='patrol'||u.st==='return'){u.st='search';u.stT=GAME.uMem+10;}
     if(u.hp<=0){u.hp=0;ugvWreck(u,true);if(mine)toast('UGV destroyed · AT4 · '+dist+' m');}else if(mine)toast('UGV hit · AT4 · '+Math.round(100*u.hp/Math.max(1,GAME.uHp))+'% armour left · '+dist+' m');}}catch(e){}
+  if(mine)try{for(const q of DRS){if(!q.m||q.dead||!q.m.root.visible||droidTeam(q)===secTeam())continue;const D=q.m.D,gy=groundH(D.x,D.z)+1.1,d=Math.hypot(D.x-p.x,gy-p.y,D.z-p.z);if(d>R+1.2)continue;   // GD01 bots of the other side
+    const dm=GAME.at4Ugv*(d<2.2?1:Math.pow(1-(d-2.2)/(R-1),1.2));if(dm<=0)continue;q.hp-=dm;try{dmgNum(D.x,gy+1.4,D.z,dm,'#ffd25a',dcGet(q.i).dHp);}catch(e){}
+    DRS.lastT[droidTeam(q)]={x:from.x,z:from.z,t:DRS.clock};
+    if(q.hp<=0)droidKill(q,['Player',secTeam()],false);else{toast('GD01 hit · AT4 · '+Math.max(0,Math.round(100*q.hp/Math.max(1,dcGet(q.i).dHp)))+'% armour left · '+dist+' m');if(!q.tgO){const keep=DR;DR=q;try{droidSay('alert');}finally{DR=keep;}}}}}catch(e){}
   try{for(const b of BEARS){if(b.dead>0)continue;const d=Math.hypot(b.x-p.x,b.z-p.z);if(d>R)continue;const dm=GAME.at4Dmg*2*Math.pow(1-d/R,0.8);b.hp-=dm;
     if(b.hp<=0){b.hp=0;b.dead=0.001;b.spd=0;if(mine)toast('Bear down · AT4 · '+dist+' m');}else{b.st='flee';b.stT=10;const a=Math.atan2(b.x-p.x,b.z-p.z);b.tx=b.x+Math.sin(a)*90;b.tz=b.z+Math.cos(a)*90;}}}catch(e){}
   try{for(const dd of DEER.slice()){if(dd.st==='dead'||dd.st==='dying')continue;const d=Math.hypot(dd.x-p.x,dd.z-p.z);if(d>R*0.8)continue;MPM.mute=true;try{hitDeer(dd,'neck',dist);}finally{MPM.mute=false;}}}catch(e){}}
@@ -3361,7 +3365,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=487;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=488;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5872,7 +5876,7 @@ function droidHit(q,sub,dist,by){if(!q||q.dead)return;try{flashHit();}catch(e){}
   try{dmgNum(q.m.D.x,groundH(q.m.D.x,q.m.D.z)+2.6,q.m.D.z,dm,'#ffd25a',dcGet(q.i).dHp);}catch(e){}
   toast('GD01 hit · '+(sub==='head'?'head':'body')+' · '+Math.max(0,Math.round(100*q.hp/Math.max(1,dcGet(q.i).dHp)))+'% armour left · '+Math.round(dist)+' m');
   DRS.lastT[droidTeam(q)]={x:player.pos.x,z:player.pos.z,t:DRS.clock};   // the squad comes to look where the shot came from
-  if(q.hp<=0)droidKill(q,by||['Player',secTeam()],sub==='head');else if(!q.tgO)droidSay('alert');}
+  if(q.hp<=0)droidKill(q,by||['Player',secTeam()],sub==='head');else if(!q.tgO){const keep=DR;DR=q;try{droidSay('alert');}finally{DR=keep;}}}
 function droidKill(q,by,head){try{if(!q.dead&&by)kfeed(by[0],by[1],kfDroid(q),droidTeam(q),head,1);}catch(e){}secUnitDown(droidTeam(q));q.dead=true;q.deadT=0;q.tgO=null;q.tgI=null;const m=q.m,D=m.D;D.fire=false;D.vT=0;D.yawT=0;
   const keep=DR;DR=q;try{droidSay('sad');}finally{DR=keep;}D.colT.setHex(0x120404);
   const p=V(D.x,groundH(D.x,D.z)+1.2,D.z);emit(gFire,matFire,p,V(0,1,0),0.5,{s:0.8,grow:4});for(let i=0;i<12;i++){const a=Math.random()*PI*2;emit(gPuff,i%2?UGV_SMK:matSmoke,p,V(Math.cos(a)*3,2+Math.random()*4,Math.sin(a)*3),2,{s:0.4,grow:1.4,drag:1.4});}
