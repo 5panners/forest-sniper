@@ -3316,7 +3316,7 @@ const CK=['top','hor','glow','hs','hg','sc','wat','cl','deep'],LIN={top:1,wat:1,
 DK_KEYS.forEach(k=>CK.forEach(n=>{const c=new THREE.Color(k[n]);if(LIN[n])c.convertSRGBToLinear();k['_'+n]=c;}));
 const DUSK_PINK=new THREE.Color('#e46a86');
 const RATES=[0,0.5,1,2,4,8,15,30,60,120,240];   // game minutes per real second
-const DAY={tod:6.05,rateI:1,sunMax:1,moonMax:1.5,el:0,night:0,dark:0};
+const DAY={tod:6.05,rateI:2,sunMax:1,moonMax:1.5,el:0,night:0,dark:0};
 const _dc={},_sd2=V(0,0,0),_md=V(0,0,0),_ld=V(0,0,0);CK.forEach(n=>_dc[n]=new THREE.Color());
 const hhmm=t=>{const m=Math.floor(((t%24)+24)%24*60);return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');};
 function celest(t,phase,tilt,out){const th=2*PI*(t-6)/24+phase;return out.set(Math.cos(th),Math.sin(th)*Math.sin(tilt),Math.sin(th)*Math.cos(tilt)).normalize();}
@@ -3380,7 +3380,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=452;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=453;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
