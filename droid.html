@@ -106,11 +106,16 @@ for(const s of [-1,1]){
   rbox(hull,0.04,0.2,0.2,MAT.orange,s*0.735,0.95,0.0,0.02,0.01);              // orange guard plate on the outside of the arm
   rbox(hull,0.14,0.12,0.2,MAT.dark,s*0.63,0.76,0.02,0.04,0.025);}               // fist / wrist block under the arm
 const ammo=new T.Group();ammo.position.set(0,1.18,-0.44);hull.add(ammo);
-rbox(ammo,0.56,0.36,0.3,MAT.olive2,0,0,0,0.08,0.04);box(ammo,0.56,0.035,0.3,MAT.dark,0,0.18,0);box(ammo,0.12,0.05,0.14,MAT.tan,0,0.21,0.0);
-for(const s of [-1,1]){box(ammo,0.03,0.12,0.2,MAT.dark,s*0.285,-0.02,0);}
-box(ammo,0.36,0.06,0.02,MAT.orange,0,0,-0.155);
+const AY=new T.MeshStandardMaterial({color:0xd9c24a,flatShading:true,roughness:0.8});
+rbox(ammo,0.6,0.3,0.28,MAT.olive2,0,-0.02,0,0.03,0.015);            // box body (same shape as the game's ammo boxes)
+rbox(ammo,0.624,0.06,0.304,MAT.olive,0,0.165,0,0.02,0.01);           // slightly wider lid
+box(ammo,0.26,0.035,0.045,MAT.dark,0,0.21,0);                        // carry handle
+for(const s of [-1,1])box(ammo,0.05,0.05,0.045,MAT.dark,s*0.15,0.2,0);
+for(const s of [-1,1])box(ammo,0.06,0.12,0.02,MAT.dark,s*0.2,0.06,-0.152);   // latches
+box(ammo,0.34,0.07,0.01,AY,0,-0.03,-0.146);                           // yellow stencil band
+box(ammo,0.12,0.04,0.01,AY,-0.17,-0.12,-0.146);
 // antenna with a status bulb
-cyl(hull,0.008,0.012,0.4,5,MAT.dark,-0.2,1.5,-0.46);const bulb={material:{emissiveIntensity:0,emissive:new T.Color(),color:new T.Color()}};   // no light on the antenna
+cyl(hull,0.008,0.012,0.4,5,MAT.dark,-0.3,1.61,-0.22);const bulb={material:{emissiveIntensity:0,emissive:new T.Color(),color:new T.Color()}};   // no light on the antenna
 // exhaust / vents at the back
 for(let i=0;i<3;i++)box(hull,0.4,0.02,0.02,MAT.dark,0,0.72+i*0.07,-0.335);
 
