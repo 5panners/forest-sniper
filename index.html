@@ -1372,8 +1372,8 @@ const plantMat=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:tru
 const INC=12, ICK=FE*2/INC;              // inner chunks: 12x12 of ~87 m covering the fine square
 const OCK=250, ONC=8;                    // outer chunks: 8x8 of 250 m covering 2 km
 const chunks=[];
-function mkChunk(x0,z0,size,inner){const c={x0,z0,x1:x0+size,z1:z0+size,inner,hi:new THREE.Group(),lo:new THREE.Group(),far:new THREE.Group(),near:new THREE.Group(),items:{},box:new THREE.Box3(),ymin:1e9,ymax:-1e9,hiOn:false};
-  scene.add(c.hi,c.lo,c.far,c.near);c.hi.visible=c.lo.visible=c.far.visible=c.near.visible=false;chunks.push(c);return c;}
+function mkChunk(x0,z0,size,inner){const c={x0,z0,x1:x0+size,z1:z0+size,inner,hi:new THREE.Group(),lo:new THREE.Group(),far:new THREE.Group(),near:new THREE.Group(),res:new THREE.Group(),items:{},box:new THREE.Box3(),ymin:1e9,ymax:-1e9,hiOn:false};
+  scene.add(c.hi,c.lo,c.far,c.near,c.res);c.hi.visible=c.lo.visible=c.far.visible=c.near.visible=c.res.visible=false;chunks.push(c);return c;}
 const innerCh=[],outerCh=[];
 for(let j=0;j<INC;j++)for(let i=0;i<INC;i++)innerCh.push(mkChunk(-FE+i*ICK,-FE+j*ICK,ICK,true));
 for(let j=0;j<ONC;j++)for(let i=0;i<ONC;i++)outerCh.push(mkChunk(-HALF+i*OCK,-HALF+j*OCK,OCK,false));
@@ -3401,12 +3401,12 @@ function updateLOD(){
     if(c.inner&&shOn){const dpx=Math.max(c.x0-pp.x,0,pp.x-c.x1),dpz=Math.max(c.z0-pp.z,0,pp.z-c.z1);sh=Math.hypot(dpx,dpz)<SH_D+8;}
     const dx=Math.max(c.x0-cp.x,0,cp.x-c.x1),dz=Math.max(c.z0-cp.z,0,cp.z-c.z1);const dn=Math.hypot(dx,dz)/zk;
     const lit=vis||sh;
-    const hi=lit&&c.inner&&dn<95, mid=lit&&c.inner&&!hi&&dn<300;c.hi.visible=hi;c.lo.visible=mid;c.far.visible=vis&&!hi&&!mid;c.near.visible=vis&&dn<(scoped?110:75);
+    const hi=lit&&c.inner&&dn<95, mid=lit&&c.inner&&!hi&&dn<300;c.hi.visible=hi;c.lo.visible=mid;c.far.visible=vis&&!hi&&!mid;c.near.visible=vis&&dn<(scoped?110:75);c.res.visible=vis&&dn<(scoped?220:150);   // pick-ups and their glow: only the nearby chunks are drawn
     if(c.inner&&sh!==c.hiOn){c.hiOn=sh;c.hi.children.forEach(m=>m.castShadow=sh);c.lo.children.forEach(m=>m.castShadow=sh);}}
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=497;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=498;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3520,11 +3520,12 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
     else if(R.n!=null){cand.sort((p,q)=>p[0]-q[0]);cand.length=Math.max(0,Math.min(cand.length,R.n-have));}
     for(const c of cand)resAdd(R.k,c[1],c[2],c[3]);});
   RES_T.forEach(R=>{const L=RES_NODES.filter(n=>n.t===R.k);R.idx=L.map(n=>RES_NODES.indexOf(n));
-    const m=new THREE.InstancedMesh(RES_GEO[R.k],RES_MAT,Math.max(1,L.length));if(!L.length)m.count=0;m.frustumCulled=false;m.castShadow=false;m.receiveShadow=false;
-    L.forEach((n,i)=>{n.mi=i;_re.set(0,n.ry,0);_rq.setFromEuler(_re);_rm.compose(_rp.set(n.x,n.y-0.02,n.z),_rq,_rs.set(n.s,n.s,n.s));m.setMatrixAt(i,_rm);n.mat=_rm.clone();});
-    m.instanceMatrix.needsUpdate=true;scene.add(m);RES_MESH[R.k]=m;});
+    const byC=new Map();L.forEach(n=>{const c=chunkFor(n.x,n.z);let l=byC.get(c);if(!l)byC.set(c,l=[]);l.push(n);c.box.expandByPoint(_rp.set(n.x,n.y+1.5,n.z));c.box.expandByPoint(_rp.set(n.x,n.y-0.5,n.z));});
+    byC.forEach((CL,c)=>{const m=new THREE.InstancedMesh(RES_GEO[R.k],RES_MAT,CL.length);m.frustumCulled=false;m.castShadow=false;m.receiveShadow=false;   // one small mesh per chunk, hidden with the chunk
+      CL.forEach((n,i)=>{n.mi=i;n.cm=m;_re.set(0,n.ry,0);_rq.setFromEuler(_re);_rm.compose(_rp.set(n.x,n.y-0.02,n.z),_rq,_rs.set(n.s,n.s,n.s));m.setMatrixAt(i,_rm);n.mat=_rm.clone();});
+      m.instanceMatrix.needsUpdate=true;c.res.add(m);});});
 })();
-function resSetGot(n,v){n.got=v;if(n.gim)leadGlowSet(n,v);const m=RES_MESH[n.t];m.setMatrixAt(n.mi,v?_ZERO:n.mat);m.instanceMatrix.needsUpdate=true;}
+function resSetGot(n,v){n.got=v;if(n.gim)leadGlowSet(n,v);const m=n.cm;if(!m)return;m.setMatrixAt(n.mi,v?_ZERO:n.mat);m.instanceMatrix.needsUpdate=true;}
 function resReset(){try{bearReset();}catch(e){}STAM.v=GAME.stStart/100;BOOST.on=false;HEAL.pool=0;STAM.lock=false;for(const n of RES_NODES)if(n.got)resSetGot(n,false);for(const k in INV)INV[k]=0;invUI();try{at4Reset();}catch(e){}try{slotReset();}catch(e){console.warn('slots',e);}}
 function resRemoteTake(i){const n=RES_NODES[i];if(n&&!n.got)resSetGot(n,true);}
 function resNearest(){const p=player.pos;let best=null,bd=2.7*2.7;const cx=Math.floor(p.x/8),cz=Math.floor(p.z/8);
@@ -3622,8 +3623,10 @@ const GLOWC={rifle:0xffe08a,ar15:0xff8a2a,berries:0xff4f8b,mushroom:0xffa03a,scr
 const LEADGLOW=(()=>{const sc=new THREE.Matrix4().makeScale(1.13,1.13,1.13),ms=[];let k=0;
   for(const t in GLOWC){const L=RES_NODES.filter(n=>n.t===t);if(!L.length||!RES_GEO[t])continue;
     const m=new THREE.MeshBasicMaterial({color:GLOWC[t],side:THREE.BackSide,transparent:true,opacity:0.5,depthWrite:false,blending:THREE.AdditiveBlending,fog:false});
-    const im=new THREE.InstancedMesh(RES_GEO[t],m,L.length);L.forEach((n,i)=>{n.gi=i;n.gim=im;n.gmat=n.mat.clone().multiply(sc);im.setMatrixAt(i,n.gmat);});
-    im.instanceMatrix.needsUpdate=true;im.frustumCulled=false;im.renderOrder=6;scene.add(im);ms.push({m,ph:(k++)*0.6});}
+    const byC=new Map();L.forEach(n=>{const c=chunkFor(n.x,n.z);let l=byC.get(c);if(!l)byC.set(c,l=[]);l.push(n);});
+    byC.forEach((CL,c)=>{const im=new THREE.InstancedMesh(RES_GEO[t],m,CL.length);CL.forEach((n,i)=>{n.gi=i;n.gim=im;n.gmat=n.mat.clone().multiply(sc);im.setMatrixAt(i,n.gmat);});
+      im.instanceMatrix.needsUpdate=true;im.frustumCulled=false;im.renderOrder=6;c.res.add(im);});
+    ms.push({m,ph:(k++)*0.6});}
   return {ms};})();
 function leadGlowSet(n,v){if(!n.gim)return;n.gim.setMatrixAt(n.gi,v?_ZERO:n.gmat);n.gim.instanceMatrix.needsUpdate=true;}
 function leadGlowStep(){const t=performance.now()/1000;for(const g of LEADGLOW.ms)g.m.opacity=0.1+0.75*(0.5-0.5*Math.cos((t+g.ph)*Math.PI*2/3));}
