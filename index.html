@@ -3361,7 +3361,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=486;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=487;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4859,7 +4859,7 @@ addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)retur
 resReset=(f=>function(){f.apply(this,arguments);try{siloReset();}catch(e){}})(resReset);
 // ================= sector capture: seven sectors in two lanes (east home · Tower 1 / Tower 4 · centre silo · Tower 3 / Tower 2 · west home) =================
 // The host decides who owns what (it knows both positions); the guest just draws the state it is sent. Sides swap every round, so sectors are coloured by "mine / theirs", not by east / west.
-const TK_START=10, TK_DEATH=1, TK_KILL=1, TK_BLEED=0.1;   // tickets (Battlefield 1942 style): 100 each; a death costs the dead side TK_DEATH, a kill earns the killer's side TK_KILL; a side also bleeds TK_BLEED/s for every sector the enemy holds beyond 3 of 7; 0 loses the round
+const TK_START=15, TK_DEATH=1, TK_KILL=1, TK_BLEED=0.1;   // tickets (Battlefield 1942 style): 100 each; a death costs the dead side TK_DEATH, a kill earns the killer's side TK_KILL; a side also bleeds TK_BLEED/s for every sector the enemy holds beyond 3 of 7; 0 loses the round
 // ---- kill feed (top right): who dealt with whom, in a few words
 const KF={el:null,L:[],last:''};
 const KF_HEAD=['{K} exterminates {V} with a headshot.','{K} turns off {V}\'s lights. Headshot.','{K} gives {V} a very bad hair day. Headshot.','{K} lands one right between the eyes of {V}.','{K} takes {V}\'s head off the problem.'];
