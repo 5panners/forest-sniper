@@ -2832,7 +2832,7 @@ function castRay(o,d,max,noRem){
 function launchDir(from,to,spread,out){const d=out.subVectors(to,from).normalize();
   const pitch=Math.atan2(d.y,Math.hypot(d.x,d.z))+zeroComp+(Math.random()-0.5)*spread*2,yaw=Math.atan2(d.x,d.z)+(Math.random()-0.5)*spread*2;
   return out.set(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch));}
-let scoped=false, scopeKick=0, boltT=-1;
+let scoped=false, scopeKick=0, boltT=-1, AT4Z=1;   // AT4Z: mouse wheel while aiming the AT4 switches its view between 1x and 2x
 function shoot(time){
   const pl=player;pl.ammo--;pl.lastShot=time;pl.kick=1;stats.shots++;roundNo++;
   const mv=Math.hypot(pl.vel.x,pl.vel.z);
@@ -3026,6 +3026,7 @@ function updateCamera(dt){
     const g=groundH(camera.position.x,camera.position.z)+0.25;if(camera.position.y<g)camera.position.y=g;
     if(aim)fov=(input.rmb&&WPN.cur==='at4')?56/1.25:(input.rmb&&WPN.cur==='ar15')?56/1.45:56;
   }
+  if(!(input.rmb&&WPN.cur==='at4'))AT4Z=1;else if(!scoped)fov=(viewFP?62:56)/(1.25*AT4Z);   // aiming the AT4: the sight view, 2x with the wheel
   camera.fov=scoped?fov:damp(camera.fov,fov,12,dt);camera.updateProjectionMatrix();
   camera.lookAt(_v9.copy(camera.position).add(_dir));camera.updateMatrixWorld();
   if(shake>0){camera.position.add(rv(shake*0.15));camera.rotation.z+=(Math.random()-0.5)*shake*0.02;shake=Math.max(0,shake-dt*2.2);}
@@ -3143,8 +3144,8 @@ cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('mousedown',e=>{if(!playing)return;if(!locked&&(!fallback||everLocked))requestLock();if(e.button===0)input.lmb=true;if(e.button===2)input.rmb=!input.rmb;});
 addEventListener('mouseup',e=>{if(e.button===0)input.lmb=false;});
 addEventListener('mousemove',e=>{if(!playing)return;if(!(locked||(fallback&&(input.lmb||input.rmb||e.buttons))))return;
-  const k=0.0022*sens*(scoped?1.3/(ZOOMS[zoomI]*(WPN.cur==='rifle'?1:WPN.cur==='at4'?1.56:1.3)):(input.rmb?0.6:1));camYaw-=e.movementX*k;camPitch=clamp(camPitch-e.movementY*k,-1.25,1.05);});
-cv.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();if(scoped){zoomI=clamp(zoomI+(e.deltaY<0?1:-1),0,ZOOMS.length-1);}else camDist=clamp(camDist+Math.sign(e.deltaY)*0.4,2,7);},{passive:false});
+  const k=0.0022*sens*((input.rmb&&!scoped&&WPN.cur==='at4')?1/AT4Z:1)*(scoped?1.3/(ZOOMS[zoomI]*(WPN.cur==='rifle'?1:WPN.cur==='at4'?1.56:1.3)):(input.rmb?0.6:1));camYaw-=e.movementX*k;camPitch=clamp(camPitch-e.movementY*k,-1.25,1.05);});
+cv.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();if(!scoped&&input.rmb&&WPN.cur==='at4'){const z=e.deltaY<0?2:1;if(z!==AT4Z){AT4Z=z;toast('AT4 sight '+z+'×');}}else if(scoped){zoomI=clamp(zoomI+(e.deltaY<0?1:-1),0,ZOOMS.length-1);}else camDist=clamp(camDist+Math.sign(e.deltaY)*0.4,2,7);},{passive:false});
 let hbShown=false;
 function setHB(on){hbShown=on;showHB(on);showDeerHB(on);P2HB.forEach(e=>e.visible=on);const c=$('optHB');if(c)c.checked=on;}
 $('optHB').addEventListener('change',e=>setHB(e.target.checked));
@@ -3405,7 +3406,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=495;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=496;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
