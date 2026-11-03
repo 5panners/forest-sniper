@@ -3405,7 +3405,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=494;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=495;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3780,9 +3780,6 @@ ${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Hei
 <p class="tn">Pick up a radio (cyan glow) and press its gadget key (3 or 4). The drone flies in from the map edge, circles for the time on station with the other player marked on your map and minimap, then leaves. Either player can shoot it down: wings and tail take 75% damage, an AT4 burst within 3 m destroys it. Only one drone per player at a time.</p></section>
 <section class="wc"><div class="wh">${IC.ugv}<div><h3>UGV gadget</h3><p>Pickup (teal glow) · gadget key deploys a Termit robot beside you</p></div><span class="tag">Team robot</span></div>
 <p class="tn">It fires only at the other team, drives to the spot you right-click on the map (the waypoint), and captures sectors for your team while it sits in them. One per team: when it is destroyed the gadget is spent. It can be shot (rifle) or blasted (AT4) by the other side, not by you.</p></section>
-<section class="wc"><div class="wh">${IC.ugv}<div><h3>Termit UGV .50 cal</h3><p>Fired by the patrolling robot, not by players</p></div><span class="tag">AI weapon</span></div>
-${sp([['Damage / hit',GAME.uDmg+' hp'],['Rate of fire',GAME.uRpm+' rpm'],['Burst',GAME.uBurst+' rounds'],['Spread',GAME.uSpread+' mrad'],['Opens fire',GAME.uRange+' m'],['Armour',GAME.uHp+' hp']])}
-<p class="tn">Headshots count double, limbs 60%. Change these in the UGV tab.</p></section>
 </div>
 <p class="sec" style="margin-top:14px">Targets · hit points</p><table><tr><th>Target</th><th>Hit points</th><th>Hit by</th></tr>
 <tr><td>Player (you or the opponent)</td><td>100 at the start of a round, up to 200 with food</td><td>rifle, AT4 blast, UGV</td></tr>
