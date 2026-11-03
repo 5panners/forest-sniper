@@ -2925,7 +2925,7 @@ function chuteLand(){if(!CHUTE.on)return;CHUTE.on=false;CHM.grp.visible=false;CH
 // Space in the air: open the chute if you are clear of the structure and well above what you would land on
 function chuteKey(){const pl=player;if(CHUTE.on||pl.grounded||!pl.alive||pl.action||pl.slide)return false;
   try{if(TW.climb||ZIP.on)return false;}catch(e){}try{if(LIFT&&LIFT.p1)return false;}catch(e){}
-  if(pl.vel.y>1.5||chuteHeight(pl)<3)return false;                       // still rising, or too low for the canopy to open
+  {const bo=BOOST.on;if((!bo&&pl.vel.y>1.5)||chuteHeight(pl)<(bo?0.5:3))return false;}                       // still rising, or too low for the canopy to open
   const o=_cv.set(pl.pos.x,pl.pos.y+1.9,pl.pos.z),up=_cr.set(0,1,0);
   for(const dx of [0,-2.6,2.6]){const oo=o.clone();oo.x+=dx*Math.cos(camYaw);oo.z-=dx*Math.sin(camYaw)*-1;const h=castRay(oo,up,8.5);if(h&&h.dist<8.2){toast('Not clear · get away from the tower or trees before opening the chute');return true;}}
   chuteOpen(false);return true;}
@@ -3380,7 +3380,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=456;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=457;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
