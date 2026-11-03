@@ -3378,7 +3378,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=446;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=447;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3777,7 +3777,7 @@ ${sp([['Damage / hit',GAME.uDmg+' hp'],['Rate of fire',GAME.uRpm+' rpm'],['Burst
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:2,slotG:2,uavDur:60,uavR:300,uavAlt:70,uavSpd:40,uavHp:140,uavVol:1,siloAcc:0.45,siloEvery:120,siloShake:1,siloVol:2,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:4,bWalk:1.5,bRear:14,bAtk:1,bTrig:2,bFight:60,bChance:60,bSense:80,bChSpd:8,bReach:2.8,bDmg:30,bRate:1.6,bChase:25,bCool:60,fallOn:1,fallSafe:4,fallDmg:10,paraH:70,dCnt:3,rUGun:1,rUMot:1,rUBeep:1,rDGun:1,rDVoi:1,dEn:0,dHunt:0,dSpd:6.5,dSee:160,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:0.75,dSpread:8,dTalk:1};
+const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:2,slotG:2,uavDur:60,uavR:300,uavAlt:70,uavSpd:40,uavHp:140,uavVol:1,siloAcc:0.45,siloEvery:120,siloShake:1,siloVol:2,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:4,bWalk:1.5,bRear:14,bAtk:1,bTrig:2,bFight:60,bChance:60,bSense:80,bChSpd:8,bReach:2.8,bDmg:30,bRate:1.6,bChase:25,bCool:60,fallOn:1,fallSafe:4,fallDmg:10,paraH:70,dCnt:0,dFr:0,gMode:0,rUGun:1,rUMot:1,rUBeep:1,rDGun:1,rDVoi:1,dHunt:0,dSpd:6.5,dSee:160,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:0.75,dSpread:8,dTalk:1};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 try{if(!localStorage.getItem('fsSiloV2')){GAME.siloVol=2;localStorage.setItem('fsSiloV2','1');}}catch(e){}
 function balApply(){V0=GAME.bV0;DRAG=GAME.bDrag;GBUL=9.81*GAME.bDrop;try{setZero(zeroM);}catch(e){}}balApply();
@@ -4893,7 +4893,7 @@ function secAttackable(i,team){return i!==0&&i!==6&&SECT.s[i].own!==team;}   // 
 function secPlayers(){const out=[],t=secTeam();out.push({team:t,x:player.pos.x,z:player.pos.z,al:player.alive&&MPM.hp>0});
   if(MPM.on&&NT.opp&&RPS.pos&&RPS.r===NT.M.r)out.push({team:3-t,x:RPS.pos.x,z:RPS.pos.z,al:!!RPS.al});
   for(const u of UGVS)if(u.pl&&!u.dead&&!u.gone)out.push({team:u.pl,x:u.x,z:u.z,al:!(u.air>0),ugv:true});   // team UGVs capture too
-  try{if(!MPM.on)for(const q of DRS)if(q.m&&q.m.root.visible)out.push({team:3-t,x:q.m.D.x,z:q.m.D.z,al:!q.dead,droid:true});}catch(e){}   // so do the red GD01 droids (solo)
+  try{if(!MPM.on)for(const q of DRS)if(q.m&&q.m.root.visible)out.push({team:droidTeam(q),x:q.m.D.x,z:q.m.D.z,al:!q.dead,droid:true});}catch(e){}   // so do the GD01 droids of both sides (solo)
   return out;}
 // the host (or single player) runs the capture
 function secSim(dt){const P=secPlayers();
@@ -5501,6 +5501,34 @@ function dcGet(i){let c=DGC[i];if(!c)c=DGC[i]={};for(const k of DGKEYS)if(c[k]==
   if(c.dGE==null||c.dGN==null||!isFinite(+c.dGE)||!isFinite(+c.dGN)){const s=droidSpot(i);c.dGE=Math.round(s.x);c.dGN=Math.round(-s.z);}return c;}
 // run a droid's code with that droid's own settings in GAME
 function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=GAME[k];GAME[k]=c[k];}try{return fn();}finally{for(const k of DGKEYS)GAME[k]=sv[k];}}
+// ---- Create Game: the first menu tab. Who plays: solo or an online 1v1, and how many GD01 bots fight on each side
+(function(){
+  const tabs=document.querySelector('.tabs'),first=document.getElementById('paneBrief');if(!tabs||!first)return;
+  const css=document.createElement('style');css.textContent=`#paneCg .gr{display:grid;grid-template-columns:270px 1fr 64px;gap:10px;align-items:center;margin:8px 0;font-size:13px}#paneCg .gr input[type=range]{width:100%;accent-color:var(--moss)}#paneCg .gr output{font-variant-numeric:tabular-nums;opacity:.85;text-align:right}#paneCg .seg{display:flex;gap:6px;margin:6px 0 4px}#paneCg .seg button{flex:1;margin:0;padding:10px 12px;text-transform:none;letter-spacing:0;font:600 13px var(--f-ui);background:rgba(255,255,255,.06);color:inherit;border:1px solid rgba(255,255,255,.22);border-radius:6px;cursor:pointer;text-align:left}#paneCg .seg button small{display:block;font-weight:400;opacity:.7;margin-top:2px}#paneCg .seg button[aria-pressed=true]{border-color:var(--amber);color:var(--amber);background:rgba(255,200,80,.08)}#paneCg .off{opacity:.38;pointer-events:none}#paneCg .sum{margin:14px 0 4px;padding:10px 12px;border:1px solid rgba(255,255,255,.18);border-radius:6px;font:600 14px var(--f-mono)}#paneCg .sum i{font-style:normal;color:#ff7a6a}#paneCg .sum b{color:#7fb0ff}`;document.head.appendChild(css);
+  const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabCg';tb.setAttribute('aria-selected','true');tb.setAttribute('aria-controls','paneCg');tb.textContent='Create Game';tabs.insertBefore(tb,tabs.firstChild);
+  const pn=document.createElement('div');pn.id='paneCg';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabCg');first.before(pn);
+  const save=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}};
+  const MAXB=4;
+  const build=()=>{const on=GAME.gMode===1,ne=DR_NE(),nf=DR_NF();
+    pn.innerHTML='<div class="seg"><button type="button" data-m="0" aria-pressed="'+(!on)+'"><b>Solo</b><small>You and GD01 bots, offline</small></button><button type="button" data-m="1" aria-pressed="'+on+'"><b>Online 1v1</b><small>You against a friend, set up in the Multiplayer tab</small></button></div>'
+      +'<p class="sec" style="margin-top:16px">GD01 bots</p>'
+      +`<div class="gr${on?' off':''}"><label>Enemy bots (red team)</label><input type="range" min="0" max="${MAXB}" step="1" value="${ne}" data-k="dCnt"><output>${ne}</output></div>`
+      +`<div class="gr${on?' off':''}"><label>Friendly bots (your team)</label><input type="range" min="0" max="${MAXB}" step="1" value="${nf}" data-k="dFr"><output>${nf}</output></div>`
+      +'<div class="sum">'+(on?'You <b>vs</b> your online opponent':'You'+(nf?' + <b>'+nf+' bot'+(nf>1?'s':'')+'</b>':'')+' <b>vs</b> '+(ne?'<i>'+ne+' bot'+(ne>1?'s':'')+'</i>':'nobody on the red team'))+'</div>'
+      +'<div class="note" style="margin:8px 0 16px">'+(on?'Online matches are player against player for now: bots are switched off while you are connected. Host or join in the <b>Multiplayer</b> tab, then press Deploy.':'Red bots start at the red base and friendly bots at yours. Both sides take flags and shoot the other side, and every kill and death moves the tickets. Fine-tune each bot in the <b>GD01</b> tab. You can change the numbers mid-game from the menu.')+'</div>'
+      +(on?'<button type="button" class="btn" id="cgMp">Open Multiplayer</button>':'');
+    pn.querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>{GAME.gMode=+b.dataset.m;save();build();});
+    pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{GAME[i.dataset.k]=parseFloat(i.value);save();build2(i.dataset.k);});
+    const mp=pn.querySelector('#cgMp');if(mp)mp.onclick=()=>{try{showTab('mp');tb.setAttribute('aria-selected','false');pn.hidden=true;}catch(e){}};};
+  // redraw the summary without rebuilding the slider being dragged
+  const build2=k=>{const ne=DR_NE(),nf=DR_NF();pn.querySelectorAll('input[data-k]').forEach(i=>{i.nextElementSibling.textContent=Math.round(GAME[i.dataset.k]||0);});
+    pn.querySelector('.sum').innerHTML='You'+(nf?' + <b>'+nf+' bot'+(nf>1?'s':'')+'</b>':'')+' <b>vs</b> '+(ne?'<i>'+ne+' bot'+(ne>1?'s':'')+'</i>':'nobody on the red team');};
+  build();
+  // open on this tab
+  document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));
+  tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};
+  tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
+})();
 // ---- GD01 options tab (laid out like the UGV tab: one set of settings per droid)
 (function(){
   const tabs=document.querySelector('.tabs'),after=document.getElementById('paneUgv');if(!tabs||!after)return;
@@ -5515,20 +5543,21 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
   const KEYS=ROWS.filter(r=>r[0]!=='sec').map(r=>r[0]);
   let sel=0;
   const save=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}dcSave();};
-  const dim=()=>{pn.querySelectorAll('[data-u]').forEach(e=>e.classList.toggle('off',!GAME.dEn));};
+  const dim=()=>{pn.querySelectorAll('[data-u]').forEach(e=>e.classList.toggle('off',DR_NE()+DR_NF()===0));};
   const WORDS=['hi','yes','no','excited','alert','sad','curious','thanks'];
   const respawn=()=>{try{const q=DRS[sel];if(q)q.tele=true;}catch(e){}};
-  const build=()=>{const n=Math.max(1,Math.min(6,Math.round(GAME.dCnt||1)));if(sel>=n)sel=0;const c=dcGet(sel);
-    pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. GD01 is the one-wheeled gunner droid. In solo games a squad works for the red team: each droid spawns at its own grid reference (the same E / N metres as the map, by default round the red base), takes flags and shoots you and your UGV. Shoot the head for double damage. Its guns always point at what it is firing at. Its sounds fade out with distance.</p>'
-      +`<div class="gr"><label>GD01 droids at the red base</label><input type="checkbox" data-g="dEn" ${GAME.dEn?'checked':''}></div>`
-      +`<div class="gr" data-u="1"><label>Number of GD01 droids</label><input type="range" min="1" max="6" step="1" value="${n}" data-g="dCnt"><output>${n}</output></div>`
-      +(n>1?`<div class="gr" data-u="1"><label>Settings for</label><select id="gdSel">${Array.from({length:n},(_,k)=>`<option value="${k}" ${k===sel?'selected':''}>GD01 ${k+1}</option>`).join('')}</select><span></span></div>`:'')
-      +`<div class="gr" data-u="1"><label>Spawn point · grid reference${n>1?' (GD01 '+(sel+1)+')':''}</label><span class="ge"><input type="number" min="-465" max="465" step="1" value="${Math.round(c.dGE)}" data-c="dGE"> E &nbsp;<input type="number" min="-465" max="465" step="1" value="${Math.round(c.dGN)}" data-c="dGN"> N</span><span></span></div>`
+  const slots=()=>{const L=[];for(let i=0;i<DR_NE();i++)L.push(i);for(let j=0;j<DR_NF();j++)L.push(6+j);return L;};
+  const nm=i=>i<6?'Red GD01 '+(i+1):'Blue GD01 '+(i-5);
+  const build=()=>{const L=slots(),n=L.length;if(!L.includes(sel))sel=L.length?L[0]:0;const c=dcGet(sel);
+    pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. GD01 is the one-wheeled gunner droid. How many play, and for which side, is set in the Create Game tab. Red droids spawn at the red base and work against you; blue droids spawn at your base and fight for you. Each droid has its own spawn grid reference (the same E / N metres as the map). Both sides take flags and shoot the other side; shoot the head for double damage. Sounds fade out with distance.</p>'
+      +(n===0?'<p class="note"><b>No droids in this game.</b> Add some under Create Game.</p>':'')
+      +(n>1?`<div class="gr" data-u="1"><label>Settings for</label><select id="gdSel">${L.map(k=>`<option value="${k}" ${k===sel?'selected':''}>${nm(k)}</option>`).join('')}</select><span></span></div>`:'')
+      +`<div class="gr" data-u="1"><label>Spawn point · grid reference${n>1?' ('+nm(sel)+')':''}</label><span class="ge"><input type="number" min="-465" max="465" step="1" value="${Math.round(c.dGE)}" data-c="dGE"> E &nbsp;<input type="number" min="-465" max="465" step="1" value="${Math.round(c.dGN)}" data-c="dGN"> N</span><span></span></div>`
       +ROWS.map(r=>{
       if(r[0]==='sec')return `<p class="sec" style="margin-top:14px">${r[1]}</p>`;
       return `<div class="gr" data-u="1"><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${c[r[0]]}" data-k="${r[0]}"><output>${(+c[r[0]]).toFixed(r[5])}</output></div>`;}).join('')
-      +'<p class="sec" style="margin-top:14px">Make '+(n>1?'GD01 '+(sel+1):'the droid')+' talk</p><div data-u="1">'+WORDS.map(w=>`<button type="button" class="btn" data-w="${w}">${w}</button>`).join('')+'</div>'
-      +'<button type="button" class="btn" id="gdReset">Reset '+(n>1?'GD01 '+(sel+1):'GD01')+' to defaults</button>';
+      +'<p class="sec" style="margin-top:14px">Make '+(n>1?nm(sel):'the droid')+' talk</p><div data-u="1">'+WORDS.map(w=>`<button type="button" class="btn" data-w="${w}">${w}</button>`).join('')+'</div>'
+      +'<button type="button" class="btn" id="gdReset">Reset '+(n>1?nm(sel):'GD01')+' to defaults</button>';
     pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);dcGet(sel)[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.step<1?(+i.step<0.1?2:1):0);save();if(k==='dHp'){const q=DRS[sel];if(q&&!q.dead)q.hp=Math.min(q.hp,v);}});
     pn.querySelectorAll('input[data-c]').forEach(i=>i.onchange=()=>{const v=clamp(Math.round(parseFloat(i.value)||0),-465,465);i.value=v;dcGet(sel)[i.dataset.c]=v;save();respawn();});
     pn.querySelectorAll('input[data-g]').forEach(i=>{if(i.type==='checkbox')i.onchange=()=>{GAME[i.dataset.g]=i.checked?1:0;save();dim();};
@@ -5789,7 +5818,7 @@ return {root,hull,D,GUNS,POD,BELT,stepSim,setMood,jump,MOODS};
 // ================= GD01: enemy droids. A squad of one-wheeled gunner bots works for the red team: they take flags and shoot the other side (solo only for now) =================
 // The model, suspension and sim come from the standalone viewer (droid.html). The GD01 options tab holds all their settings.
 const mkDR=()=>({m:null,tele:true,tgO:null,tgI:null,mem:0,losT:0,burst:0,pause:0,talkT:8,fT:0,path:null,pi:0,skT:0,skX:0,skZ:0,stuck:0,rev:0,shots:0,slP:0,slR:0,hp:0,dead:false,deadT:0,obj:-1,objT:0,react:0,capQ:-1,exT:0,want:0});
-let DR=mkDR();DRS.push(DR);DRS.clock=0;DRS.last=null;
+let DR=mkDR();DRS.push(DR);DRS.clock=0;DRS.lastT=[null,null,null];
 const DR_WORDS={hi:{mood:'hi',seq:[[620,980,110,'triangle'],[1180,900,150,'triangle'],[760,1250,140,'sine']]},yes:{mood:'yes',seq:[[520,640,90,'square',0.5],[700,1200,170,'triangle']]},
  no:{mood:'no',seq:[[420,260,190,'sawtooth',0.5],[300,170,260,'sawtooth',0.5]]},excited:{mood:'excited',seq:[[600,800,60,'square',0.4],[800,1000,60,'square',0.4],[1000,1300,60,'square',0.4],[1300,1700,60,'square',0.4],[1500,2000,120,'triangle'],[1900,1500,60,'triangle'],[1600,2100,260,'triangle']]},
  alert:{mood:'alert',seq:[[900,880,120,'sawtooth',0.5],[600,590,120,'sawtooth',0.5],[900,880,120,'sawtooth',0.5],[600,590,160,'sawtooth',0.5]]},sad:{mood:'sad',seq:[[620,540,160,'sine'],[540,300,520,'sine'],[290,190,420,'sine']]},
@@ -5811,30 +5840,42 @@ function droidShot(g){const T=DR.tgI;if(!T||!DR.m)return;DR.m.root.updateMatrixW
 // ---- the droids as targets: ray test against a few spheres (head, chest, hull, wheel)
 function raySph(o,d,cx,cy,cz,r,len){const ox=o.x-cx,oy=o.y-cy,oz=o.z-cz,b=ox*d.x+oy*d.y+oz*d.z,c=ox*ox+oy*oy+oz*oz-r*r,disc=b*b-c;if(disc<0)return -1;const t=-b-Math.sqrt(disc);if(t>=0&&t<=len)return t;if(c<0)return 0;return -1;}
 function rayDroid(o,d,len,noRem){if(noRem)return null;let best=null,bt=len;
-  for(const q of DRS){if(!q.m||q.dead||!q.m.root.visible)continue;const D=q.m.D,gy=groundH(D.x,D.z)+D.hJ;if(Math.hypot(D.x-o.x,D.z-o.z)>len+4)continue;
+  for(const q of DRS){if(!q.m||q.dead||!q.m.root.visible||droidTeam(q)===secTeam())continue;const D=q.m.D,gy=groundH(D.x,D.z)+D.hJ;if(Math.hypot(D.x-o.x,D.z-o.z)>len+4)continue;
     for(const [h,r,sub] of [[2.24,0.34,'head'],[1.6,0.5,'body'],[1.1,0.55,'body'],[0.55,0.55,'body']]){const t=raySph(o,d,D.x,gy+h,D.z,r,bt);if(t>=0&&t<=bt){bt=t;best={point:V(o.x+d.x*t,o.y+d.y*t,o.z+d.z*t),normal:d.clone().negate(),dist:t,object:null,kind:'metal',droid:q,sub};}}}
   return best;}
 function droidHit(q,sub,dist){if(!q||q.dead)return;try{flashHit();}catch(e){}
   const base=(DMG.w.rifle.k&&DMG.w.rifle.k.body!=null)?DMG.w.rifle.k.body:70,dm=base*(sub==='head'?2:1);q.hp-=dm;
   try{dmgNum(q.m.D.x,groundH(q.m.D.x,q.m.D.z)+2.6,q.m.D.z,dm,'#ffd25a',dcGet(q.i).dHp);}catch(e){}
   toast('GD01 hit · '+(sub==='head'?'head':'body')+' · '+Math.max(0,Math.round(100*q.hp/Math.max(1,dcGet(q.i).dHp)))+'% armour left · '+Math.round(dist)+' m');
-  DRS.last={x:player.pos.x,z:player.pos.z,t:DRS.clock};   // the squad comes to look where the shot came from
+  DRS.lastT[droidTeam(q)]={x:player.pos.x,z:player.pos.z,t:DRS.clock};   // the squad comes to look where the shot came from
   if(q.hp<=0)droidKill(q);else if(!q.tgO)droidSay('alert');}
-function droidKill(q){secUnitDown(DR_TEAM());q.dead=true;q.deadT=0;q.tgO=null;q.tgI=null;const m=q.m,D=m.D;D.fire=false;D.vT=0;D.yawT=0;
+function droidKill(q){secUnitDown(droidTeam(q));q.dead=true;q.deadT=0;q.tgO=null;q.tgI=null;const m=q.m,D=m.D;D.fire=false;D.vT=0;D.yawT=0;
   const keep=DR;DR=q;try{droidSay('sad');}finally{DR=keep;}D.colT.setHex(0x120404);
   const p=V(D.x,groundH(D.x,D.z)+1.2,D.z);emit(gFire,matFire,p,V(0,1,0),0.5,{s:0.8,grow:4});for(let i=0;i<12;i++){const a=Math.random()*PI*2;emit(gPuff,i%2?UGV_SMK:matSmoke,p,V(Math.cos(a)*3,2+Math.random()*4,Math.sin(a)*3),2,{s:0.4,grow:1.4,drag:1.4});}
   try{boomAt(p);}catch(e){}toast('GD01 destroyed');}
-function droidBulletVsUgv(b,d,len){for(const u of UGVS){if(u.dead||u.gone||u.pl!==secTeam()||u.air>0)continue;const t=raySph(b.p,d,u.x,u.y+0.8,u.z,1.5,len);if(t<0)continue;
-    u.hp-=GAME.dDmg*1.5;try{impact(V(u.x,u.y+0.8,u.z).addScaledVector(d,-1.3),d.clone().negate(),'rock');}catch(e){}
-    if(u.hp<=0){u.hp=0;ugvWreck(u,true);secUnitDown(secTeam());toast('Your UGV was destroyed by a GD01');}return true;}return false;}
+function droidBulletVsUgv(b,d,len){
+  if(b.tm!==secTeam())for(const u of UGVS){if(u.dead||u.gone||u.pl!==secTeam()||u.air>0)continue;const t=raySph(b.p,d,u.x,u.y+0.8,u.z,1.5,len);if(t<0)continue;
+    u.hp-=b.ud*1.5;try{impact(V(u.x,u.y+0.8,u.z).addScaledVector(d,-1.3),d.clone().negate(),'rock');}catch(e){}
+    if(u.hp<=0){u.hp=0;ugvWreck(u,true);secUnitDown(secTeam());toast('Your UGV was destroyed by a GD01');}return true;}
+  for(const q of DRS){if(!q.m||q.dead||!q.m.root.visible||droidTeam(q)===b.tm)continue;const D=q.m.D,gy=groundH(D.x,D.z)+D.hJ;
+    for(const [h,r,sub] of [[2.24,0.34,2],[1.6,0.5,1],[1.1,0.55,1],[0.55,0.55,1]]){const t=raySph(b.p,d,D.x,gy+h,D.z,r,len);if(t<0)continue;
+      q.hp-=b.ud*sub*1.5;try{impact(V(D.x,gy+h,D.z).addScaledVector(d,-0.4),d.clone().negate(),'metal');}catch(e){}
+      if(q.hp<=0){droidKill(q);}else{const keep=DR;DR=q;try{if(!q.tgO)droidSay('alert');}finally{DR=keep;}}return true;}}
+  return false;}
 // ---- brain
-function DR_TEAM(){return 3-secTeam();}
-function droidBase(){return SEC_DEF[DR_TEAM()===2?6:0];}   // the enemy's home sector: the red base (west) in solo
-function droidSpot(i){const b=droidBase(),n=Math.max(1,GAME.dCnt|0),a0=(i||0)/n*PI*2+0.5;for(let k=0;k<40;k++){const a=a0+(k%2?1:-1)*Math.floor(k/2)*0.4,r=9+Math.floor(k/6)*3,x=b.x+Math.sin(a)*r,z=b.z+Math.cos(a)*r;if(!ugvBlocked(x,z))return {x,z};}return {x:b.x,z:b.z};}
-function droidFlag(m){const fl=new THREE.Mesh(new THREE.PlaneGeometry(0.26,0.15),new THREE.MeshBasicMaterial({color:0xb00d18,side:THREE.DoubleSide}));fl.position.set(-0.3,1.74,-0.35);fl.rotation.y=PI/2;m.hull.add(fl);}   // a red pennant on the antenna
-function droidEnemies(){const L=[];   // everything on the other side that a red droid may shoot
-  if(player.alive&&!MPM.on)L.push({o:'p',k:'p',x:player.pos.x,y:player.pos.y,z:player.pos.z,cy:player.pos.y+(player.stance==='prone'?0.3:player.stance==='crouch'?0.95:1.35),st:player.stance,sp:Math.hypot(player.vel.x,player.vel.z),vx:player.vel.x,vz:player.vel.z});
-  for(const u of UGVS)if(u.pl===secTeam()&&!u.dead&&!u.gone&&!(u.air>0))L.push({o:u,k:'u',x:u.x,y:u.y,z:u.z,cy:u.y+0.8,st:'stand',sp:Math.abs(u.spd),vx:Math.sin(u.yaw)*u.spd,vz:Math.cos(u.yaw)*u.spd});
+function droidTeam(q){return q.i>=6?secTeam():3-secTeam();}   // slots 0-5 work for the red team, 6-11 for yours
+function DR_TEAM(){return droidTeam(DR);}
+function DR_NE(){return Math.max(0,Math.min(4,Math.round(GAME.dCnt||0)));}
+function DR_NF(){return Math.max(0,Math.min(4,Math.round(GAME.dFr||0)));}
+function droidBase(t){return SEC_DEF[(t||DR_TEAM())===2?6:0];}   // the enemy's home sector: the red base (west) in solo
+function droidSpot(i){const red=i<6,b=droidBase(red?3-secTeam():secTeam()),n=Math.max(1,red?DR_NE():DR_NF()),a0=(i%6)/n*PI*2+0.5;for(let k=0;k<40;k++){const a=a0+(k%2?1:-1)*Math.floor(k/2)*0.4,r=9+Math.floor(k/6)*3,x=b.x+Math.sin(a)*r,z=b.z+Math.cos(a)*r;if(!ugvBlocked(x,z))return {x,z};}return {x:b.x,z:b.z};}
+function droidFlag(m,blue){const fl=new THREE.Mesh(new THREE.PlaneGeometry(0.26,0.15),new THREE.MeshBasicMaterial({color:blue?0x1f5fd0:0xb00d18,side:THREE.DoubleSide}));fl.position.set(-0.3,1.74,-0.35);fl.rotation.y=PI/2;m.hull.add(fl);}   // a red pennant on the antenna
+function droidEnemies(team){const L=[];   // everything on the other side that a droid of this team may shoot
+  const red=team!==secTeam();
+  if(red){
+    if(player.alive&&!MPM.on)L.push({o:'p',k:'p',x:player.pos.x,y:player.pos.y,z:player.pos.z,cy:player.pos.y+(player.stance==='prone'?0.3:player.stance==='crouch'?0.95:1.35),st:player.stance,sp:Math.hypot(player.vel.x,player.vel.z),vx:player.vel.x,vz:player.vel.z});
+    for(const u of UGVS)if(u.pl===secTeam()&&!u.dead&&!u.gone&&!(u.air>0))L.push({o:u,k:'u',x:u.x,y:u.y,z:u.z,cy:u.y+0.8,st:'stand',sp:Math.abs(u.spd),vx:Math.sin(u.yaw)*u.spd,vz:Math.cos(u.yaw)*u.spd});}
+  for(const q of DRS)if(q.m&&q.m.root.visible&&!q.dead&&droidTeam(q)!==team){const D=q.m.D,gy=groundH(D.x,D.z);L.push({o:q,k:'q',x:D.x,y:gy,z:D.z,cy:gy+1.4,st:'stand',sp:Math.abs(D.v),vx:Math.sin(D.yaw)*D.v,vz:Math.cos(D.yaw)*D.v});}
   for(const d of DEER)if(d.st!=='dead'&&d.st!=='dying')L.push({o:d,k:'d',x:d.x,y:d.y,z:d.z,cy:d.y+0.9,st:'crouch',sp:d.spd||0,vx:0,vz:0});
   return L;}
 const _de=new THREE.Vector3(),_dd=new THREE.Vector3();
@@ -5842,8 +5883,8 @@ function droidRange(e){return GAME.dSee*(e.st==='prone'?0.45:e.st==='crouch'?0.7
 function droidSees(D,e){_de.set(D.x,groundH(D.x,D.z)+1.7,D.z);_dd.set(e.x-_de.x,e.cy-_de.y,e.z-_de.z);const L=_dd.length();if(L<1)return true;_dd.multiplyScalar(1/L);return !castRay(_de,_dd,Math.max(0.5,L-0.9),true);}
 function droidPickObj(){const team=DR_TEAM(),D=DR.m.D;let best=-1,bs=1e9;
   for(let i=1;i<SEC_DEF.length-1;i++){if(SECT.s[i].own===team)continue;let sc=Math.hypot(SEC_DEF[i].x-D.x,SEC_DEF[i].z-D.z);
-    for(const q of DRS)if(q!==DR&&q.obj===i&&!q.dead)sc+=160;   // spread out over the flags
-    if(SECT.s[i].by===secTeam()&&SECT.s[i].cap>0)sc-=140;      // somebody is taking one: go and stop them
+    for(const q of DRS)if(q!==DR&&q.obj===i&&!q.dead&&droidTeam(q)===team)sc+=160;   // spread out over the flags
+    if(SECT.s[i].by===3-team&&SECT.s[i].cap>0)sc-=140;      // somebody is taking one: go and stop them
     if(sc<bs){bs=sc;best=i;}}
   DR.obj=best<0?3:best;DR.objT=4;}
 function droidSteer(gx,gz,speed,dp,dt){const D=DR.m.D;
@@ -5864,14 +5905,14 @@ function droidStepAll(){
   try{if(MPM&&MPM.on){for(const q of DRS)if(q.m)q.m.root.visible=false;return;}}catch(e){}
   if(!playing)return;
   DRS.clock+=dt;
-  const n=GAME.dEn?Math.max(0,Math.min(6,Math.round(GAME.dCnt==null?3:GAME.dCnt))):0;
+  const nE=DR_NE(),nF=DR_NF(),n=nE+nF;
   if(!DRL.parent)scene.add(DRL);DRL.t-=dt;if(DRL.t<=0)DRL.intensity=0;
-  const enem=n>0?droidEnemies():[];
-  for(let i=0;i<DRS.length||i<n;i++){const q=DRS[i]||(DRS[i]=mkDR());q.i=i;if(i>=n){if(q.m)q.m.root.visible=false;continue;}DR=q;droidW(q,()=>droidStep1(dt,n,enem));}}
+  const enR=nE>0?droidEnemies(3-secTeam()):[],enB=nF>0?droidEnemies(secTeam()):[];
+  for(let i=0;i<12;i++){const q=DRS[i]||(DRS[i]=mkDR());q.i=i;if(!(i<6?i<nE:i-6<nF)){if(q.m)q.m.root.visible=false;continue;}DR=q;droidW(q,()=>droidStep1(dt,n,i<6?enR:enB));}}
 // everything a droid must not drive into besides trees, rocks, water and steep ground: UGVs and the other droids
 function droidDyn(self){DR_DYN=[];for(const u of UGVS)if(!u.gone)DR_DYN.push({x:u.x,z:u.z,r:2.8});for(const q of DRS)if(q!==self&&q.m&&q.m.root.visible)DR_DYN.push({x:q.m.D.x,z:q.m.D.z,r:2.2});}
 function droidStep1(dt,nD,enem){
-  if(!DR.m){DR.m=makeDroidGD(THREE,groundH,{shot:droidShot,rate:()=>Math.max(2,GAME.dRate)});scene.add(DR.m.root);droidFlag(DR.m);DR.tele=true;}
+  if(!DR.m){DR.m=makeDroidGD(THREE,groundH,{shot:droidShot,rate:()=>Math.max(2,GAME.dRate)});scene.add(DR.m.root);droidFlag(DR.m,DR.i>=6);DR.tele=true;}
   const m=DR.m,D=m.D;m.root.visible=true;droidDyn(DR);const team=DR_TEAM();
   if(DR.tele){DR.tele=false;DR.dead=false;DR.deadT=0;DR.hp=GAME.dHp;const cg=dcGet(DR.i),s={x:clamp(+cg.dGE,-465,465),z:-clamp(+cg.dGN,-465,465)},b=droidBase();D.x=s.x;D.z=s.z;D.yaw=Math.atan2(-b.x,-b.z);D.v=D.vT=0;D.yawRate=0;D.hJ=0;D.slR=0;D.slP=0;DR.slR=0;DR.slP=0;DR.tgO=null;DR.tgI=null;DR.path=null;DR.obj=-1;DR.stuck=0;DR.rev=0;DR.react=0;D.fire=false;m.setMood('neutral');D.colT.setHex(0xe01410);D.col.setHex(0xe01410);m.stepSim(0.016);}
   if(DR.dead){DR.deadT+=dt;D.vT=0;D.yawT=0;D.fire=false;DR.slR+=(1.35-DR.slR)*Math.min(1,dt*2.5);D.slR=DR.slR;D.slP=0;D.vis=true;m.stepSim(dt);
@@ -5881,7 +5922,7 @@ function droidStep1(dt,nD,enem){
   // ---- eyes: look for the other side five times a second, keep it in mind for a moment after it hides
   DR.losT-=dt;if(DR.losT<=0){DR.losT=0.2;let best=null,bd=1e9;
     for(const e of enem){if(e.k==='d'&&!GAME.dHunt)continue;const d=Math.hypot(e.x-D.x,e.z-D.z);if(d>droidRange(e)||d>=bd)continue;if(!droidSees(D,e))continue;best=e;bd=d;}
-    if(best){if(DR.tgO!==best.o){DR.tgO=best.o;DR.react=GAME.dReact;DR.burst=0;DR.pause=0;if(best.k!=='d')droidSay('alert');}DR.mem=Math.min(3,GAME.dMem);if(best.k!=='d')DRS.last={x:best.x,z:best.z,t:DRS.clock};}
+    if(best){if(DR.tgO!==best.o){DR.tgO=best.o;DR.react=GAME.dReact;DR.burst=0;DR.pause=0;if(best.k!=='d')droidSay('alert');}DR.mem=Math.min(3,GAME.dMem);if(best.k!=='d')DRS.lastT[team]={x:best.x,z:best.z,t:DRS.clock};}
     else if(DR.tgO){DR.mem-=0.2;if(DR.mem<=0)DR.tgO=null;}}
   const T=DR.tgO?enem.find(e=>e.o===DR.tgO):null;if(!T&&DR.tgO)DR.tgO=null;
   DR.tgI=T||null;
@@ -5893,7 +5934,7 @@ function droidStep1(dt,nD,enem){
     if(dT>GAME.dEng){droidGoTo(T.x,T.z,GAME.dChase,dt);}
     else{D.vT=0;D.yawT=clamp(rel*3,-2.2,2.2);DR.want=0;DR.path=null;}
     fire=dT<=GAME.dEng*1.15&&DR.react<=0&&Math.abs(rel)<0.45;}
-  else{const L=DRS.last;
+  else{const L=DRS.lastT[team];
     if(L&&DRS.clock-L.t<GAME.dMem&&DR.seen!==L.t&&Math.hypot(L.x-D.x,L.z-D.z)<240){const d=droidGoTo(L.x,L.z,GAME.dSpd*0.9,dt);if(d<10)DR.seen=L.t;}
     else{DR.objT=(DR.objT||0)-dt;if(DR.obj<0||DR.objT<=0||(DR.obj!==3&&SECT.s[DR.obj].own===team))droidPickObj();
       const o=SEC_DEF[DR.obj],dd=Math.hypot(o.x-D.x,o.z-D.z);
