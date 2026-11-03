@@ -3380,7 +3380,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=449;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=450;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4947,10 +4947,21 @@ function secTickets(dt,myT,oT,hd,od){const n1=SECT.s.reduce((a,s)=>a+(s.own===1?
 const TK_TEST=[3,5,4,2,1,6];
 addEventListener('keydown',e=>{if(e.code!=='KeyY'||e.repeat||!playing||MPM.on)return;if(e.shiftKey){secReset();toast('Sectors and tickets reset');return;}
   const i=TK_TEST.find(k=>SECT.s[k].own!==2);if(i==null)return;SECT.s[i].own=2;SECT.s[i].cap=0;SECT.s[i].by=0;toast('Test: the enemy took '+SEC_DEF[i].n);});
+// single player: a side whose tickets reach 0 loses the round; a banner shows, then the round restarts
+const SOLO_END={t:-1,el:null};
+function soloEnd(dt){
+  if(SOLO_END.t>=0){SOLO_END.t+=dt;if(SOLO_END.t>=7){SOLO_END.t=-1;if(SOLO_END.el)SOLO_END.el.style.display='none';
+      secReset();try{for(const q of DRS)q.tele=true;}catch(e){}try{respawn();}catch(e){}const sp=secSpawnFor(secTeam());secPlace(sp.x,sp.z);toast('New round');}return;}
+  const me=secTeam()-1,a=SECT.tk[me],b=SECT.tk[1-me];if(a>0&&b>0)return;
+  const win=b<=0&&a>0;SOLO_END.t=0;
+  if(!SOLO_END.el){const e=document.createElement('div');e.style.cssText='position:fixed;left:0;right:0;top:30%;text-align:center;z-index:9;pointer-events:none;font:700 54px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;text-shadow:0 2px 14px #000';document.body.appendChild(e);SOLO_END.el=e;}
+  const e=SOLO_END.el;e.style.display='block';e.style.color=win?'#9be36a':'#ff6a5a';e.innerHTML=(win?'Victory':'Defeat')+'<div style="font:600 16px var(--f-mono);letter-spacing:.05em;margin-top:8px;color:#f1e6c0">'+(win?'The red team is out of tickets':'Your team is out of tickets')+' · new round in a few seconds</div>';
+  try{(win?playCaptured:playLost)();}catch(err){}}
 function secFrame(dt){
+  try{if(!MPM.on&&playing)soloEnd(dt);}catch(e){}
   try{spwFrame(dt);}catch(e){}
   const live=MPM.on&&NT.room&&NT.M.ph==='live';
-  if(!MPM.on&&playing)secTickets(dt,1,2,!player.alive,false);
+  if(!MPM.on&&playing&&SOLO_END.t<0)secTickets(dt,1,2,!player.alive,false);
   if(!MPM.on||(MPM.on&&!MPM.guest&&live)){if(!MPM.on||live)secSim(dt);}
   if(MPM.on&&!MPM.guest&&live){const M=NT.M;
     secTickets(dt,secTeam(),3-secTeam(),!player.alive||MPM.hp<=0,RPS.hp!=null&&RPS.hp<=0&&RPS.r===M.r);
