@@ -3374,7 +3374,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=434;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=435;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3856,7 +3856,7 @@ window.SNIPER_RES.pil=()=>MAP.pillars;
 // ---- item pick-up sound (Audio options > Item pick-up): a soft cloth rustle
 const PICK={vol:0.45};try{const v=localStorage.getItem('fsPick');if(v!=null)PICK.vol=Math.max(0,Math.min(2,+v));}catch(e){}
 function pickSnd(){if(!AC||!soundOn||PICK.vol<=0)return;try{const t=AC.currentTime,out=AC.createGain();out.gain.value=0.9*PICK.vol;out.connect(AC.destination);
-  if(typeof noiseBuf!=='undefined'&&noiseBuf){const s=AC.createBufferSource();s.buffer=noiseBuf;const f=AC.createBiquadFilter();f.type='bandpass';f.frequency.value=2200;f.Q.value=0.8;const g=AC.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(1.0,t+0.03);g.gain.exponentialRampToValueAtTime(0.001,t+0.2);s.connect(f);f.connect(g);g.connect(out);s.start(t,Math.random()*0.5,0.22);}}catch(e){}}
+  if(typeof noiseBuf!=='undefined'&&noiseBuf){const s=AC.createBufferSource();s.buffer=noiseBuf;const f=AC.createBiquadFilter();f.type='bandpass';f.frequency.value=1250;f.Q.value=0.5;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1900;const g=AC.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.7,t+0.07);g.gain.exponentialRampToValueAtTime(0.001,t+0.32);s.connect(f);f.connect(lp);lp.connect(g);g.connect(out);s.start(t,Math.random()*0.5,0.34);}}catch(e){}}
 (function(){const el=document.getElementById('audPk'),o=document.getElementById('audPkv');if(!el)return;el.value=Math.round(PICK.vol*100);o.textContent=el.value+'%';
   el.oninput=()=>{PICK.vol=el.value/100;o.textContent=el.value+'%';try{localStorage.setItem('fsPick',String(PICK.vol));}catch(e){}};})();
 // ---- bullet-hit thud: a heavy body *thud* (low sine drop + a dull noise slap) when the player's shot hits an animal. Headshots ring the bell instead.
