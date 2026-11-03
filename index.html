@@ -3115,6 +3115,7 @@ function drawMap(){if(!mapBase)buildMap();const W=mapCv.width,Z=MZ.k,N=MAPL*Z;  
   mctx.setTransform(1,0,0,1,0,0);mctx.imageSmoothingEnabled=true;mctx.fillStyle='#0b0f10';mctx.fillRect(0,0,W,W);mctx.drawImage(mapBaseCv,MZ.x,MZ.y,W*Z,W*Z);mctx.setTransform(W/MAPL,0,0,W/MAPL,MZ.x,MZ.y);const S=v=>(v+FE)/(FE*2)*N;
   if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));if($('optDeerMap').checked)BEARS.forEach(b=>drawBearMark(mctx,S(b.x),S(b.z),b,0.9,0));if($('optDeerMap').checked&&typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mctx,S(u.x),S(u.z),u,0.9));
   try{secDrawMap(mctx,S,N);}catch(e){}
+  try{droidMapMarks(mctx,(x,z)=>[S(x),S(z)],0.9);}catch(e){}
   SILO_SITES.forEach(q=>drawSiloMark(mctx,S(q.x),S(q.z),1,0,true));
   try{zipDrawMap(mctx,S);}catch(e){}
   try{uavDrawMap(mctx,S);}catch(e){}
@@ -3249,6 +3250,7 @@ function drawMini(){mini.parentNode.style.display=miniOn?'':'none';if(!miniOn)re
   mx.translate(W/2,W/2);mx.rotate(th);mx.scale(sc,sc);mx.drawImage(baseCv,-(p.x+FE)*ppm,-(p.z+FE)*ppm);
   if($('optDeerMap').checked){const k=1/sc;DEER.forEach(d=>drawDeerMark(mx,(d.x-p.x)*ppm,(d.z-p.z)*ppm,d,k*1.2,th));BEARS.forEach(b=>drawBearMark(mx,(b.x-p.x)*ppm,(b.z-p.z)*ppm,b,k*1.5,th));if(typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mx,(u.x-p.x)*ppm,(u.z-p.z)*ppm,u,k*1.5));}
   try{secDrawMini(mx,p,ppm,1/sc,th);}catch(e){}
+  try{droidMapMarks(mx,(x,z)=>[(x-p.x)*ppm,(z-p.z)*ppm],1/sc*1.5);}catch(e){}
   SILO_SITES.forEach(q=>drawSiloMark(mx,(q.x-p.x)*ppm,(q.z-p.z)*ppm,1/sc*1.5,th,false));
   try{zipDrawMini(mx,p,ppm);}catch(e){}
   try{uavDrawMini(mx,p,ppm,1/sc,th);}catch(e){}
@@ -3378,7 +3380,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=447;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=448;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4995,6 +4997,10 @@ function secDrawMap(c,S,N){SEC_DEF.forEach(d=>{});const sc=N/(FE*2);
     if(SPW.open&&s.own===secTeam()){const pu=0.5+0.5*Math.sin(performance.now()/220);c.strokeStyle='rgba(255,255,255,'+(0.55+0.45*pu)+')';c.lineWidth=3;c.setLineDash([6,4]);c.beginPath();c.arc(x,y,r+8+pu*3,0,PI*2);c.stroke();c.setLineDash([]);c.fillStyle='#fff';c.font='700 11px "IBM Plex Mono", monospace';c.textAlign='center';c.fillText('DEPLOY',x,y-r-12);}
     c.textBaseline='alphabetic';c.lineWidth=3;c.strokeStyle='rgba(0,0,0,0.8)';c.font='600 10px "IBM Plex Mono", monospace';c.strokeText(d.nm,x,y+r+12);c.fillStyle='#fff';c.fillText(d.nm,x,y+r+12);});
   c.restore();}
+// your own team's GD01 bots on the map and minimap: a blue disc with a tick for the way it faces
+function droidMapMarks(c,P,k){if(typeof DRS==='undefined'||MPM.on)return;for(const q of DRS){if(!q.m||q.i<6||q.dead||!q.m.root.visible)continue;const D=q.m.D,[x,y]=P(D.x,D.z);
+  c.save();c.translate(x,y);c.lineWidth=1.6*k;c.strokeStyle='#04122a';c.fillStyle='#3d8bff';c.beginPath();c.arc(0,0,6*k,0,PI*2);c.fill();c.stroke();
+  c.strokeStyle='#ffffff';c.lineWidth=2*k;c.beginPath();c.moveTo(0,0);c.lineTo(Math.sin(D.yaw)*10*k,Math.cos(D.yaw)*10*k);c.stroke();c.restore();}}
 function secDrawMini(c,p,ppm,k,th){SEC_DEF.forEach((d,i)=>{const s=SECT.s[i],col=SEC_COL[secRel(s.own)],x=(d.x-p.x)*ppm,y=(d.z-p.z)*ppm,r=d.r*ppm;
     c.fillStyle=col+'2a';c.strokeStyle=col;c.lineWidth=2.2*k;c.beginPath();c.arc(x,y,r,0,PI*2);c.fill();c.stroke();
     if(s.cap>0){c.strokeStyle=SEC_COL[secRel(s.by)];c.lineWidth=4*k;c.beginPath();c.arc(x,y,r,-HP,-HP+PI*2*s.cap);c.stroke();}
