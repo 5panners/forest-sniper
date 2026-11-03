@@ -3381,7 +3381,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=466;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=467;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4338,6 +4338,10 @@ function slotStep(){if(player.arAuto>0&&--player.arAuto===0&&WPN.cur==='ar15'&&p
   if(SLOT.g.some(q=>q&&q.used&&q.k==='radio')&&!UAVS.some(u=>u.mine&&u.st!=='gone')){for(let j=0;j<SLOT.g.length;j++)if(SLOT.g[j]&&SLOT.g[j].used&&SLOT.g[j].k==='radio')SLOT.g[j]=null;slotSync();}
   if(SLOT.g.some(q=>q&&q.used&&q.k==='ugv'&&performance.now()-(q.t0||0)>5000)&&!ugvMine()){for(let j=0;j<SLOT.g.length;j++)if(SLOT.g[j]&&SLOT.g[j].used&&SLOT.g[j].k==='ugv'&&performance.now()-(SLOT.g[j].t0||0)>5000)SLOT.g[j]=null;slotSync();}
   if(DROPS.length){const o=0.15+0.6*(0.5-0.5*Math.cos(performance.now()/1000*Math.PI*2/3));for(const d of DROPS)d.gm.material.opacity=o;}}
+// start loadout: an AT4 launcher with one round in it and three spare (new game, game reset, each match round)
+function at4Loadout(){try{slotGive({k:'at4',ld:1});INV.at4r=3;invUI();slotSync();}catch(e){console.warn('at4 loadout',e);}}
+resReset=(f=>function(){f.apply(this,arguments);at4Loadout();})(resReset);
+at4Loadout();
 window.SNIPER_SLOT={G:GAME,rr:()=>resReset(),SLOT,DROPS,give:slotGive,drop:slotDrop,key:slotKey,reset:slotReset,fit:slotFit,take:dropTake,net:dropNet,get:()=>SLOT};
 
 // ================= recon drone, called in on a radio: a 6.5 m span, unarmed, pusher-prop surveillance drone =================
