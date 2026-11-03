@@ -3405,7 +3405,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=493;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=494;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6470,6 +6470,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&NT.room&&
 
 ;setInterval(()=>{const b=document.getElementById('mpDx');if(b&&!b.hidden&&b.scrollHeight>b.clientHeight+2)b.style.height=(b.scrollHeight+6)+'px';},400);
 
+try{const t=document.querySelector('.tabs'),mp=$('tabMp');if(t&&mp&&t.children[0]!==mp)t.children[0].after(mp);}catch(e){}   // Multiplayer is the second tab
 {const b=$('cfgBtn');b.onclick=()=>{const o={};for(const k of['fsGame','fsDgc','fsDmg','fsUgc','sniperTime','sniperGfx2','sniperAudio','fsPick','fsKeys','fsSens']){try{const v=localStorage.getItem(k);if(v!=null)o[k]=v;}catch(e){}}
   const t=JSON.stringify(o);const done=()=>{b.textContent='Copied ✓';setTimeout(()=>{b.textContent='Copy settings';},2000);};
   const fb=()=>{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;left:10%;top:30%;width:80%;height:30%;z-index:99';document.body.appendChild(a);a.select();try{document.execCommand('copy');done();}catch(e){}a.onblur=()=>a.remove();};
