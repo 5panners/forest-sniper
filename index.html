@@ -3180,7 +3180,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;});
 
-const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Parachute','Space'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['God mode (dev)','` backquote'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Launch the missile (at the silo console)','L'],['Shadows','O'],['Mute','M']];
+const KEYS=[['Move','WASD'],['Look','Mouse'],['Scope on / off','RMB'],['Fire (hold for automatic with the AR-15)','LMB'],['Scope zoom 2/3/4×','Wheel'],['Parachute','Space'],['Weapon slots','1 · 2 (X cycles)'],['Gadget slots (radio: call in the recon drone)','3 · 4'],['Drop the weapon in your hands','G'],['Zip line (on a tower deck, by the red bar)','F · Space lets go'],['God mode (dev)','` backquote'],['Zero −/+ 50 m','Q / E'],['Hold breath (scoped)','Shift'],['Sprint','Shift'],['Boost run (uses stamina)','Double-tap W, keep holding W'],['Jump','Space'],['Slide (while running)','Ctrl'],['Crouch','C'],['Prone / get up (WASD crawls)','Z'],['Reload','R'],['Full map','Tab / P'],['Mini map zoom','+ / −'],['Mini map on / off','N'],['1st / 3rd person','V'],['Gather / pick up','F'],['Cycle weapons','X'],['Reload (rifle or AT4)','R'],['Shadows','O'],['Mute','M']];
 $('keyList').innerHTML=KEYS.map(k=>`<div><kbd>${k[1]}</kbd><span>${k[0]}</span></div>`).join('');
 
 /* ---------------- menu tabs + graphics options ---------------- */
@@ -3376,7 +3376,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=432;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=433;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4837,7 +4837,7 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
   // test cycle (solo only): the silo launches by itself every GAME.siloEvery seconds and reloads a few seconds after each missile is gone
   if(GAME.siloEvery>0&&!MPM.on&&playing&&player.alive){S.at=(S.at||0)+dt;if(S.st==='idle'&&S.at>=GAME.siloEvery){S.at=0;siloLaunch(true);}else if(S.st==='gone'){S.gt=(S.gt||0)+dt;if(S.gt>6){S.gt=0;siloReset();}}}
   // console prompt
-  {const d=Math.hypot(player.pos.x-S.con.x,player.pos.z-S.con.z),tip=playing&&player.alive&&d<3?(S.st==='idle'?'Press L to launch the missile':S.st==='gone'?'Silo empty':'Launch in progress…'):'';
+  {const d=Math.hypot(player.pos.x-S.con.x,player.pos.z-S.con.z),tip=playing&&player.alive&&d<3?(S.st==='gone'?'Silo empty':S.st!=='idle'?'Launch in progress…':''):'';
    if(tip!==S.ts){S.ts=tip;S.tip.textContent=tip;S.tip.hidden=!tip;}}
   // beacons spin while a launch is on
   {const on=S.st==='count'||S.st==='fly';const k=on?(Math.sin(now/90)>0?1:0.25):0.15;for(const b of S.beac)b.material.color.setRGB(0.35+0.65*k,0.15+0.35*k,0.05);}
@@ -4868,7 +4868,7 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
     MPM.hp-=55*dt;try{EDGE.burn=0.35;EDGE.k=1;}catch(e){}if(!S.burnT||now-S.burnT>1500){S.burnT=now;toast('Caught in the rocket blast!');}
     if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed by the missile launch');}}
   if(f>110||S.pos.y>S.y0+9000){S.st='gone';siloVoiceStop();S.mis.visible=false;S.flame.visible=false;if(S.glow)S.glow.visible=false;}}
-addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)return;if(e.code==='KeyL')siloTryLaunch();});
+// (the manual launch at the silo console was removed: the missile now launches only by the solo auto-launch timer)
 resReset=(f=>function(){f.apply(this,arguments);try{siloReset();}catch(e){}})(resReset);
 // ================= sector capture: seven sectors in two lanes (east home · Tower 1 / Tower 4 · centre silo · Tower 3 / Tower 2 · west home) =================
 // The host decides who owns what (it knows both positions); the guest just draws the state it is sent. Sides swap every round, so sectors are coloured by "mine / theirs", not by east / west.
@@ -5012,7 +5012,7 @@ function secHudDraw(){try{secTkDraw();}catch(e){}const show=playing&&!mapOpen;se
     if(z&&z.own!==mine&&z.by===mine&&z.cap>0&&player.alive&&secAttackable(q,mine)){const now=performance.now();if(now>=(secHudDraw.tk||0)){secHudDraw.tk=now+(1000-450*z.cap);if(AC&&soundOn){tone(1250,0.035,0.05,'sine',980);}}}
     else secHudDraw.tk=0;}catch(e){}
   if(S.built&&S.st==='count'&&MPM.on){t='MISSILE LAUNCH · '+Math.max(0,Math.ceil(SEC_CT-S.t))+' s';col='#ff7a4a';}
-  else if(secArmed(mine)){t='MISSILE ARMED · L at the silo';col='#ffd24a';}
+  else if(secArmed(mine)){t='MISSILE ARMED';col='#ffd24a';}
   else if(secArmed(3-mine)){t='ENEMY MISSILE ARMED · retake a sector';col='#ff7a4a';}
   else{const n=SEC_DEF.findIndex((d,i)=>Math.hypot(px-d.x,pz-d.z)<d.r);if(n>=0){const s=SECT.s[n];if(s.own===mine)t=SEC_DEF[n].n+' · held';else if(!secAttackable(n,mine))t=SEC_DEF[n].n+' · cannot be captured';else if(s.cap>0)t=(s.by===mine?'Capturing ':'Losing ')+SEC_DEF[n].n+' · '+Math.round(s.cap*100)+'%'+((s.in===3)?' · contested':'');else t=SEC_DEF[n].n+' · stand here to capture';}}
   if(t){c.font='600 12px "IBM Plex Mono", monospace';c.textAlign='center';c.textBaseline='alphabetic';c.lineWidth=4;c.strokeStyle='rgba(0,0,0,0.85)';c.strokeText(t,W/2,18);c.fillStyle=col;c.fillText(t,W/2,18);}}
