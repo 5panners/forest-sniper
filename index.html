@@ -3376,7 +3376,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=421;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=422;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4798,16 +4798,16 @@ function siloPose(){const S=SILO;
 // ---- sounds: klaxon at the pad, the hatch grinding back, and the launch roar
 function siloKlaxon(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,700);if(!c)return;for(let i=0;i<14;i++)tn(c,c.t0+i*0.5,i%2?520:700,0,0.42,0.32*GAME.siloVol*GAME.siloVK,'square');}
 function siloGrind(){const c=sp3(SILO.x,SILO.y0+1,SILO.z,500);if(!c)return;nz(c,c.t0,5,160,0.8,1.2*GAME.siloVol*GAME.siloVG,'lowpass');nz(c,c.t0,5,900,5,0.18*GAME.siloVol*GAME.siloVG);}
-function siloRoar(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,6000);if(!c)return;const V=GAME.siloVol*GAME.siloVR,L=Math.min(2.4,1/Math.max(0.42,GAME.siloAcc));nz(c,c.t0,6,90,0.7,3.4*V,'lowpass');nz(c,c.t0,4,420,0.6,1.1*V);nz(c,c.t0+0.05,1.8,2200,0.5,0.6*V);}
+function siloRoar(){const c=sp3(SILO.x,SILO.y0+2,SILO.z,6000);if(!c)return;const V=GAME.siloVol*GAME.siloVR,L=Math.min(2.4,1/Math.max(0.42,GAME.siloAcc));nz(c,c.t0,4,420,0.6,1.1*V);nz(c,c.t0+0.05,1.8,2200,0.5,0.6*V);}
 
 // ---- sustained rocket sound: deep rumble, sub-bass, roar and a continuous crackle; follows the missile and fades with its climb
 let SILO_SV=null;
 function siloVoice(S,f){if(!AC||!soundOn||!noiseBuf)return;const t=AC.currentTime;
   if(!SILO_SV){const out=AC.createGain();out.gain.value=0;const pn=AC.createPanner();pn.panningModel='HRTF';pn.distanceModel='inverse';pn.refDistance=90;pn.rolloffFactor=0.55;pn.maxDistance=30000;out.connect(pn);pn.connect(AC.destination);
     const nzs=(type,fq,q,g0)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;s.loopStart=Math.random()*1.5;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=fq;fl.Q.value=q;const g=AC.createGain();g.gain.value=g0;s.connect(fl);fl.connect(g);g.connect(out);s.start();return {s,fl,g};};
-    const rum=nzs('lowpass',85,0.9,1.0),roar=nzs('lowpass',650,0.5,1.1),hiss=nzs('highpass',2600,0.4,0.0),crk=nzs('bandpass',1200,0.5,0.0),crk2=nzs('lowpass',2400,0.5,0.9);
-    const sub=AC.createOscillator();sub.type='sine';sub.frequency.value=34;const sg=AC.createGain();sg.gain.value=0.9;sub.connect(sg);sg.connect(out);sub.start();
-    const sub2=AC.createOscillator();sub2.type='sawtooth';sub2.frequency.value=52;const s2=AC.createBiquadFilter();s2.type='lowpass';s2.frequency.value=140;const sg2=AC.createGain();sg2.gain.value=0.35;sub2.connect(s2);s2.connect(sg2);sg2.connect(out);sub2.start();
+    const rum=nzs('lowpass',85,0.9,0.0),roar=nzs('lowpass',650,0.5,1.1),hiss=nzs('highpass',2600,0.4,0.0),crk=nzs('bandpass',1200,0.5,0.0),crk2=nzs('lowpass',2400,0.5,0.9);
+    const sub=AC.createOscillator();sub.type='sine';sub.frequency.value=34;const sg=AC.createGain();sg.gain.value=0.0;sub.connect(sg);sg.connect(out);sub.start();
+    const sub2=AC.createOscillator();sub2.type='sawtooth';sub2.frequency.value=52;const s2=AC.createBiquadFilter();s2.type='lowpass';s2.frequency.value=140;const sg2=AC.createGain();sg2.gain.value=0.0;sub2.connect(s2);s2.connect(sg2);sg2.connect(out);sub2.start();
     SILO_SV={out,pn,rum,roar,hiss,crk,crk2,sub,sub2,sg,sg2,ck:0};}
   const V=SILO_SV,up=Math.min(1,f/1.4),fade=1-Math.min(1,Math.max(0,(f-78)/32));
   V.out.gain.setTargetAtTime(1.5*GAME.siloVol*GAME.siloVR*up*fade,t,0.25);
