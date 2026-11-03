@@ -3342,7 +3342,7 @@ const CK=['top','hor','glow','hs','hg','sc','wat','cl','deep'],LIN={top:1,wat:1,
 DK_KEYS.forEach(k=>CK.forEach(n=>{const c=new THREE.Color(k[n]);if(LIN[n])c.convertSRGBToLinear();k['_'+n]=c;}));
 const DUSK_PINK=new THREE.Color('#e46a86');
 const RATES=[0,0.5,1,2,4,8,15,30,60,120,240];   // game minutes per real second
-const DAY={tod:6.05,rateI:2,sunMax:1,moonMax:1.5,el:0,night:0,dark:0};
+const DAY={tod:6.05,rateI:2,sunMax:1,moonMax:1.75,el:0,night:0,dark:0};
 const _dc={},_sd2=V(0,0,0),_md=V(0,0,0),_ld=V(0,0,0);CK.forEach(n=>_dc[n]=new THREE.Color());
 const hhmm=t=>{const m=Math.floor(((t%24)+24)%24*60);return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');};
 function celest(t,phase,tilt,out){const th=2*PI*(t-6)/24+phase;return out.set(Math.cos(th),Math.sin(th)*Math.sin(tilt),Math.sin(th)*Math.cos(tilt)).normalize();}
@@ -3406,7 +3406,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=496;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=497;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3801,7 +3801,7 @@ ${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Hei
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:2,slotG:3,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloAcc:0.45,siloEvery:120,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.7,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:160,at4R:8,at4Dmg:200,at4Ugv:520,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:5,bInst:1,bears:1,bWalk:1.2,bRear:9,bAtk:1,bTrig:2,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1};
+const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:2,slotG:3,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloAcc:0.3,siloEvery:0,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.8,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:100,at4R:6,at4Dmg:200,at4Ugv:300,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:7.5,bInst:1,bears:2,bWalk:1.2,bRear:9,bAtk:1,bTrig:1,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 try{if(!localStorage.getItem('fsSiloV2')){GAME.siloVol=2;localStorage.setItem('fsSiloV2','1');}}catch(e){}
 function balApply(){V0=GAME.bV0;DRAG=GAME.bDrag;GBUL=9.81*GAME.bDrop;try{setZero(zeroM);}catch(e){}}balApply();
