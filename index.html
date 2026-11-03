@@ -2978,7 +2978,7 @@ const _cp=V(0,0,0),_dir=V(0,0,0),_eye=V(0,0,0),_rt=V(0,0,0), camRay=new THREE.Ra
 let breath=6, breathLock=0, swayT=0, range=null, rangeT=0;
 let camBoom=3;
 const DEVFACE={on:false};
-let aimYawV=null,aimPitchV=null,aimPtTP=null,_wasScoped=false;
+let aimYawV=null,aimPitchV=null,aimPtTP=null,_wasScoped=false;const SAL={on:false,t:0,yaw:0,pit:0,p0:new THREE.Vector3()};
 function gunYaw(){return aimYawV!=null?aimYawV:camYaw;}
 function gunPitch(){return aimPitchV!=null?aimPitchV:camPitch;}
 function updateCamera(dt){
@@ -2997,10 +2997,10 @@ function updateCamera(dt){
   _rt.set(-Math.cos(yaw),0,Math.sin(yaw));
   let fov=62;
   if(scoped||viewFP){
-    J.head.updateMatrixWorld(true);_eye.set(0,0.235,scoped?0.212:-0.136);J.head.localToWorld(_eye);   // first person (unscoped): camera sits back at the nose so more of the weapon is in view; the scope keeps the eye position
+    J.head.updateMatrixWorld(true);_eye.set(0,0.235,scoped?0.212:-0.136);J.head.localToWorld(_eye);if(pl.stance==='prone'){if(scoped){const sy=Math.sin(camYaw),cy=Math.cos(camYaw);const ex=pl.pos.x+sy*1.29+cy*0.21,ez=pl.pos.z+cy*1.29-sy*0.21;_eye.set(ex,groundH(ex,ez)+0.5,ez);}proneLift(_eye);}   // first person (unscoped): camera sits back at the nose so more of the weapon is in view; the scope keeps the eye position
     if(scoped&&!_wasScoped&&aimPtTP&&!viewFP){const dx=aimPtTP.x-_eye.x,dy=aimPtTP.y-_eye.y,dz=aimPtTP.z-_eye.z,hz=Math.hypot(dx,dz);   // entering the scope: look at the point the third-person crosshair was on
-      if(hz>45){camYaw=Math.atan2(dx,dz);camPitch=clamp(Math.atan2(dy,hz),-1.25,1.05);_dir.set(Math.sin(camYaw)*Math.cos(camPitch),Math.sin(camPitch),Math.cos(camYaw)*Math.cos(camPitch));}}
-    if(pl.stance==='prone')proneLift(_eye);camera.position.copy(_eye);J.head.visible=false;marine.visible=!scoped;
+      if(hz>4){SAL.on=true;SAL.t=0;SAL.yaw=Math.atan2(dx,dz);SAL.pit=clamp(Math.atan2(dy,hz),-1.25,1.05);SAL.p0.copy(camera.position);}}
+    if(SAL.on&&scoped){SAL.t+=dt;const k=Math.min(1,SAL.t/0.2),e=k*k*(3-2*k),q=Math.min(1,dt*11);camYaw+=wrapA(SAL.yaw-camYaw)*q;camPitch+=(SAL.pit-camPitch)*q;_dir.set(Math.sin(camYaw)*Math.cos(camPitch),Math.sin(camPitch),Math.cos(camYaw)*Math.cos(camPitch));camera.position.lerpVectors(SAL.p0,_eye,e);if(k>=1)SAL.on=false;}else{SAL.on=false;camera.position.copy(_eye);}J.head.visible=false;marine.visible=!scoped;
     if(scoped)fov=62/(ZOOMS[zoomI]*(WPN.cur==='rifle'?1:WPN.cur==='at4'?1.56:1.3));
   } else {
     J.head.visible=true;marine.visible=true;
@@ -3381,7 +3381,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=469;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=470;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
