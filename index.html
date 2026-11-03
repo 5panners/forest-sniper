@@ -3361,7 +3361,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=484;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=485;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5520,12 +5520,11 @@ function drawUgvMark(c,x,y,u,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWid
   tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
 })();
 const DGKEYS=['dSpd','dChase','dTalk','dHunt','dSee','dReact','dMem','dEng','dRate','dBurst','dPause','dSpread','dDmg','dHp','dRespawn'];
-const DG0={dSpd:6.5,dChase:5.5,dTalk:1,dHunt:0,dSee:150,dReact:2,dMem:20,dEng:100,dRate:14,dBurst:0.65,dPause:2,dSpread:11,dDmg:8,dHp:250,dRespawn:45,dGE:-371,dGN:142};   // the first droid's own settings
+const DG0={dSpd:6.5,dChase:5.5,dTalk:1,dHunt:0,dSee:150,dReact:2,dMem:20,dEng:100,dRate:14,dBurst:0.65,dPause:2,dSpread:11,dDmg:8,dHp:250,dRespawn:45};   // settings shared by every droid
 const DGC=[];
 try{const a=JSON.parse(localStorage.getItem('fsDgc')||'null');if(Array.isArray(a))a.forEach((c,i)=>{if(c&&typeof c==='object')DGC[i]=c;});}catch(e){}
 function dcSave(){try{localStorage.setItem('fsDgc',JSON.stringify(DGC));}catch(e){}}
-function dcGet(i){let c=DGC[i];if(!c){c=DGC[i]={};if(!i)Object.assign(c,DG0);}for(const k of DGKEYS)if(c[k]==null||!isFinite(+c[k]))c[k]=GAME_DEF[k];
-  if(c.dGE==null||c.dGN==null||!isFinite(+c.dGE)||!isFinite(+c.dGN)){const s=droidSpot(i);c.dGE=Math.round(s.x);c.dGN=Math.round(-s.z);}return c;}
+function dcGet(i){let c=DGC[0];if(!c){c=DGC[0]={};Object.assign(c,DG0);}for(const k of DGKEYS)if(c[k]==null||!isFinite(+c[k]))c[k]=GAME_DEF[k];return c;}   // one set of settings for every GD01
 // run a droid's code with that droid's own settings in GAME
 function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=GAME[k];GAME[k]=c[k];}try{return fn();}finally{for(const k of DGKEYS)GAME[k]=sv[k];}}
 // ---- Create Game: the first menu tab. Who plays: solo or an online 1v1, and how many GD01 bots fight on each side
@@ -5576,19 +5575,15 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
   const slots=()=>{const L=[];for(let i=0;i<DR_NE();i++)L.push(i);for(let j=0;j<DR_NF();j++)L.push(6+j);return L;};
   const nm=i=>i<6?'Red GD01 '+(i+1):'Blue GD01 '+(i-5);
   const build=()=>{const L=slots(),n=L.length;if(!L.includes(sel))sel=L.length?L[0]:0;const c=dcGet(sel);
-    pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. GD01 is the one-wheeled gunner droid. How many play, and for which side, is set in the Create Game tab. Red droids spawn at the red base and work against you; blue droids spawn at your base and fight for you. Each droid has its own spawn grid reference (the same E / N metres as the map). Both sides take flags and shoot the other side; shoot the head for double damage. Sounds fade out with distance.</p>'
+    pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. GD01 is the one-wheeled gunner droid. How many play, and for which side, is set in the Create Game tab. Red droids spawn at the red base and work against you; blue droids spawn at your base and fight for you. Both sides take flags and shoot the other side; shoot the head for double damage. Sounds fade out with distance.</p>'
       +(n===0?'<p class="note"><b>No droids in this game.</b> Add some under Create Game.</p>':'')
-      +(n>1?`<div class="gr" data-u="1"><label>Settings for</label><select id="gdSel">${L.map(k=>`<option value="${k}" ${k===sel?'selected':''}>${nm(k)}</option>`).join('')}</select><span></span></div>`:'')
-      +`<div class="gr" data-u="1"><label>Spawn point · grid reference${n>1?' ('+nm(sel)+')':''}</label><span class="ge"><input type="number" min="-465" max="465" step="1" value="${Math.round(c.dGE)}" data-c="dGE"> E &nbsp;<input type="number" min="-465" max="465" step="1" value="${Math.round(c.dGN)}" data-c="dGN"> N</span><span></span></div>`
       +ROWS.map(r=>{
       if(r[0]==='sec')return `<p class="sec" style="margin-top:14px">${r[1]}</p>`;
       return `<div class="gr" data-u="1"><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${c[r[0]]}" data-k="${r[0]}"><output>${(+c[r[0]]).toFixed(r[5])}</output></div>`;}).join('')
       ;
-    pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);dcGet(sel)[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.step<1?(+i.step<0.1?2:1):0);save();if(k==='dHp'){const q=DRS[sel];if(q&&!q.dead)q.hp=Math.min(q.hp,v);}});
-    pn.querySelectorAll('input[data-c]').forEach(i=>i.onchange=()=>{const v=clamp(Math.round(parseFloat(i.value)||0),-465,465);i.value=v;dcGet(sel)[i.dataset.c]=v;save();respawn();});
+    pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);dcGet(sel)[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.step<1?(+i.step<0.1?2:1):0);save();if(k==='dHp'){for(const q of DRS)if(q&&!q.dead)q.hp=Math.min(q.hp,v);}});
     pn.querySelectorAll('input[data-g]').forEach(i=>{if(i.type==='checkbox')i.onchange=()=>{GAME[i.dataset.g]=i.checked?1:0;save();dim();};
       else{i.oninput=()=>{const v=parseFloat(i.value);GAME[i.dataset.g]=v;i.nextElementSibling.textContent=v;save();};i.onchange=()=>{build();};}});
-    const sl=pn.querySelector('#gdSel');if(sl)sl.onchange=()=>{sel=+sl.value;build();};
     dim();};
   build();
   tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};
@@ -5943,7 +5938,7 @@ function droidDyn(self){DR_DYN=[];for(const u of UGVS)if(!u.gone)DR_DYN.push({x:
 function droidStep1(dt,nD,enem){
   if(!DR.m){DR.m=makeDroidGD(THREE,groundH,{shot:droidShot,rate:()=>Math.max(2,GAME.dRate)});scene.add(DR.m.root);droidFlag(DR.m,DR.i>=6);DR.tele=true;}
   const m=DR.m,D=m.D;m.root.visible=true;droidDyn(DR);const team=DR_TEAM();
-  if(DR.tele){DR.tele=false;DR.dead=false;DR.deadT=0;DR.hp=GAME.dHp;const cg=dcGet(DR.i),s={x:clamp(+cg.dGE,-465,465),z:-clamp(+cg.dGN,-465,465)},b=droidBase();D.x=s.x;D.z=s.z;D.yaw=Math.atan2(-b.x,-b.z);D.v=D.vT=0;D.yawRate=0;D.hJ=0;D.slR=0;D.slP=0;DR.slR=0;DR.slP=0;DR.tgO=null;DR.tgI=null;DR.path=null;DR.obj=-1;DR.stuck=0;DR.rev=0;DR.react=0;D.fire=false;m.setMood('neutral');D.colT.setHex(0xe01410);D.col.setHex(0xe01410);m.stepSim(0.016);}
+  if(DR.tele){DR.tele=false;DR.dead=false;DR.deadT=0;DR.hp=GAME.dHp;const s=droidSpot(DR.i),b=droidBase();D.x=s.x;D.z=s.z;D.yaw=Math.atan2(-b.x,-b.z);D.v=D.vT=0;D.yawRate=0;D.hJ=0;D.slR=0;D.slP=0;DR.slR=0;DR.slP=0;DR.tgO=null;DR.tgI=null;DR.path=null;DR.obj=-1;DR.stuck=0;DR.rev=0;DR.react=0;D.fire=false;m.setMood('neutral');D.colT.setHex(0xe01410);D.col.setHex(0xe01410);m.stepSim(0.016);}
   if(DR.dead){DR.deadT+=dt;D.vT=0;D.yawT=0;D.fire=false;DR.slR+=(1.35-DR.slR)*Math.min(1,dt*2.5);D.slR=DR.slR;D.slP=0;D.vis=true;m.stepSim(dt);
     if(DR.deadT<25){DR.smT=(DR.smT||0)-dt;if(DR.smT<=0){DR.smT=0.2;const p=V(D.x+(Math.random()-0.5)*0.8,groundH(D.x,D.z)+1,D.z+(Math.random()-0.5)*0.8);emit(gPuff,UGV_SMK,p,V((Math.random()-0.5)*0.6+0.6,2.2+Math.random(),(Math.random()-0.5)*0.6),4.5,{s:0.45,grow:1.1,drag:0.3});}}
     if(GAME.dRespawn>0&&DR.deadT>GAME.dRespawn)DR.tele=true;return;}
