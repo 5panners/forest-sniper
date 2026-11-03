@@ -3375,7 +3375,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=417;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=418;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4804,7 +4804,7 @@ let SILO_SV=null;
 function siloVoice(S,f){if(!AC||!soundOn||!noiseBuf)return;const t=AC.currentTime;
   if(!SILO_SV){const out=AC.createGain();out.gain.value=0;const pn=AC.createPanner();pn.panningModel='HRTF';pn.distanceModel='inverse';pn.refDistance=90;pn.rolloffFactor=0.55;pn.maxDistance=30000;out.connect(pn);pn.connect(AC.destination);
     const nzs=(type,fq,q,g0)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;s.loopStart=Math.random()*1.5;const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=fq;fl.Q.value=q;const g=AC.createGain();g.gain.value=g0;s.connect(fl);fl.connect(g);g.connect(out);s.start();return {s,fl,g};};
-    const rum=nzs('lowpass',85,0.9,1.0),roar=nzs('lowpass',520,0.6,0.55),hiss=nzs('highpass',3200,0.5,0.0),crk=nzs('bandpass',1700,0.8,0.0),crk2=nzs('highpass',5200,0.7,0.0);
+    const rum=nzs('lowpass',85,0.9,1.0),roar=nzs('lowpass',650,0.5,1.1),hiss=nzs('highpass',2600,0.4,0.0),crk=nzs('bandpass',1200,0.5,0.0),crk2=nzs('lowpass',2400,0.5,0.9);
     const sub=AC.createOscillator();sub.type='sine';sub.frequency.value=34;const sg=AC.createGain();sg.gain.value=0.9;sub.connect(sg);sg.connect(out);sub.start();
     const sub2=AC.createOscillator();sub2.type='sawtooth';sub2.frequency.value=52;const s2=AC.createBiquadFilter();s2.type='lowpass';s2.frequency.value=140;const sg2=AC.createGain();sg2.gain.value=0.35;sub2.connect(s2);s2.connect(sg2);sg2.connect(out);sub2.start();
     SILO_SV={out,pn,rum,roar,hiss,crk,crk2,sub,sub2,sg,sg2,ck:0};}
@@ -4812,9 +4812,12 @@ function siloVoice(S,f){if(!AC||!soundOn||!noiseBuf)return;const t=AC.currentTim
   V.out.gain.setTargetAtTime(1.5*GAME.siloVol*GAME.siloVR*up*fade,t,0.25);
   if(V.pn.positionX){V.pn.positionX.value=S.pos.x;V.pn.positionY.value=S.pos.y;V.pn.positionZ.value=S.pos.z;}else V.pn.setPosition(S.pos.x,S.pos.y,S.pos.z);
   V.rum.fl.frequency.setTargetAtTime(70+30*Math.sin(f*1.3)+Math.min(60,f*5),t,0.2);V.sub.frequency.setTargetAtTime(30+4*Math.sin(f*2.1),t,0.2);
-  // crackle: random pops, several a second, each a short burst of mid and high noise
-  V.ck-=0.016;if(V.ck<=0){V.ck=0.02+Math.random()*0.09;const k=Math.random();V.crk.g.gain.setTargetAtTime(k<0.45?0.9*k+0.2:0.05,t,0.004);V.crk2.g.gain.setTargetAtTime(k<0.25?0.5:0.04,t,0.003);V.crk.fl.frequency.setTargetAtTime(900+Math.random()*2200,t,0.01);}
-  V.hiss.g.gain.setTargetAtTime(0.08+0.05*Math.random(),t,0.05);}
+  // roar: broadband turbulent rush, slowly breathing, with only a faint rough edge instead of discrete pops
+  const tb=0.75+0.25*Math.sin(f*7.3)*Math.sin(f*2.9+1.3)+0.12*(Math.random()-0.5);
+  V.roar.g.gain.setTargetAtTime(1.15*tb,t,0.05);V.roar.fl.frequency.setTargetAtTime(520+260*Math.sin(f*0.8)+Math.min(500,f*40),t,0.15);
+  V.crk2.g.gain.setTargetAtTime(0.75*tb,t,0.06);V.crk2.fl.frequency.setTargetAtTime(1800+700*Math.sin(f*1.7),t,0.2);
+  V.crk.g.gain.setTargetAtTime(0.22*tb*(0.6+0.8*Math.random()),t,0.02);
+  V.hiss.g.gain.setTargetAtTime(0.10+0.05*Math.random(),t,0.08);}
 function siloVoiceStop(){const V=SILO_SV;if(!V)return;SILO_SV=null;try{const t=AC.currentTime;V.out.gain.cancelScheduledValues(t);V.out.gain.setTargetAtTime(0,t,0.4);setTimeout(()=>{try{[V.rum,V.roar,V.hiss,V.crk,V.crk2].forEach(n=>n.s.stop());V.sub.stop();V.sub2.stop();V.out.disconnect();}catch(e){}},2500);}catch(e){}}
 function siloTryLaunch(){const S=SILO;if(!S.built||!playing||!player.alive)return false;
   if(Math.hypot(player.pos.x-S.con.x,player.pos.z-S.con.z)>3)return false;
