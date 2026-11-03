@@ -2852,7 +2852,7 @@ function stepBullets1(dt){
     const len=b.v.length()*dt;_bd.copy(b.v).normalize();
     const h=castRay(b.p,_bd,len,b.rem);
     if(b.dr&&droidBulletVsUgv(b,_bd,h?Math.min(len,h.dist):len)){b.end=b.p.clone();if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}
-    if(b.ugv&&player.alive&&!(b.tm&&b.tm===secTeam())){const ph=rayPlayerZones(b.p,_bd,h?Math.min(len,h.dist):len);if(ph){ugvHurtMe(ph.zone,b.ud,b.dr);impact(ph.point,_bd.clone().negate(),'flesh');b.end=ph.point.clone();if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}}
+    if(b.ugv&&player.alive&&!(b.tm&&b.tm===secTeam())){const ph=rayPlayerZones(b.p,_bd,h?Math.min(len,h.dist):len);if(ph){ugvHurtMe(ph.zone,b.ud,b.dr,b.o);impact(ph.point,_bd.clone().negate(),'flesh');b.end=ph.point.clone();if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}}
     if(b.hostile&&player.alive){const ph=rayPlayerZones(b.p,_bd,h?Math.min(len,h.dist):len);if(ph){damagePlayer(ph.zone,b.dmg);impact(ph.point,_bd.clone().negate(),'dirt');if(b.tr)relP(b.tr);bullets.splice(i,1);continue;}}
     if(h||b.t>4||b.p.y<-200){
       if(h){b.end=h.point.clone();impact(h.point,h.normal,h.kind);impactSnd(h.point,h.kind);if(h.kind!=='water'&&h.kind!=='flesh'&&h.kind!=='metal')addMark(h.point,h.normal,h.kind,h.point.distanceTo(b.o),null);const dist=h.point.distanceTo(b.o);stats.last=[h.point.x,h.point.y,h.point.z,h.kind,dist];
@@ -3380,7 +3380,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=454;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=455;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3841,11 +3841,19 @@ window.SNIPER_RES.fire=()=>({GAME,SND,playing:()=>playing});
 
 // ---- red edge flash on the screen when you are hurt
 const EDGE={burn:0,fl:0,lt:0,el:null};
-(function(){const st=document.createElement('style');st.textContent='#edgeGlow{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;background:linear-gradient(90deg,rgba(255,20,10,.95) 0,rgba(255,20,10,0) 30%,rgba(255,20,10,0) 70%,rgba(255,20,10,.95) 100%)}';document.head.appendChild(st);const e=document.createElement('div');e.id='edgeGlow';document.body.appendChild(e);EDGE.el=e;})();
-function edgeFlash(){EDGE.fl=1;}
+(function(){const st=document.createElement('style');st.textContent='#edgeGlow{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;background:linear-gradient(90deg,rgba(255,20,10,.95) 0,rgba(255,20,10,0) 30%,rgba(255,20,10,0) 70%,rgba(255,20,10,.95) 100%)}';document.head.appendChild(st);const e=document.createElement('div');e.id='edgeGlow';document.body.appendChild(e);EDGE.el=e;
+  const st2=document.createElement('style');st2.textContent='#edgeDir{position:fixed;inset:0;pointer-events:none;z-index:6;--t:0;--r:0;--b:0;--l:0;background:linear-gradient(180deg,rgba(255,20,10,var(--t)) 0,rgba(255,20,10,0) 34%),linear-gradient(270deg,rgba(255,20,10,var(--r)) 0,rgba(255,20,10,0) 34%),linear-gradient(0deg,rgba(255,20,10,var(--b)) 0,rgba(255,20,10,0) 34%),linear-gradient(90deg,rgba(255,20,10,var(--l)) 0,rgba(255,20,10,0) 34%)}';document.head.appendChild(st2);const e2=document.createElement('div');e2.id='edgeDir';document.body.appendChild(e2);EDGE.dl=e2;})();
+// a hit lights the screen edge on the side the shot came from (relative to where you are looking); without a source both sides flash
+EDGE.d=[0,0,0,0];   // front, right, behind, left
+function edgeFlash(src){if(!src||src.x==null||src.z==null){EDGE.fl=1;return;}
+  const dx=src.x-player.pos.x,dz=src.z-player.pos.z,L=Math.hypot(dx,dz);if(L<0.5){EDGE.fl=1;return;}
+  const sn=Math.sin(camYaw),cs=Math.cos(camYaw),f=(dx*sn+dz*cs)/L,rt=(-dx*cs+dz*sn)/L;
+  const w=[Math.max(0,f),Math.max(0,rt),Math.max(0,-f),Math.max(0,-rt)];for(let i=0;i<4;i++)EDGE.d[i]=Math.max(EDGE.d[i],Math.min(1,Math.pow(w[i],0.8)*1.15));}
 function edgeStep(){const now=performance.now(),dt=Math.min(0.25,(now-(EDGE.lt||now))/1000);EDGE.lt=now;let o=0;
   if(EDGE.burn>0){EDGE.burn-=dt;o=Math.max(o,(0.5+0.5*Math.sin(now/1000*8))*(0.55+0.45*(EDGE.k||0.5))*Math.min(1,EDGE.burn/0.2)+0.2);}
   if(EDGE.fl>0){EDGE.fl-=dt/0.7;o=Math.max(o,Math.max(0,EDGE.fl)*0.8);}
+  {const dk=!player.alive||!playing?0:1;let any=false;for(let i=0;i<4;i++){EDGE.d[i]=Math.max(0,EDGE.d[i]-dt/0.8);if(EDGE.d[i]>0)any=true;}
+   if(EDGE.dl&&(any||EDGE.dOn)){const a=EDGE.d.map(v=>(v*0.9*dk).toFixed(2)),k=a.join(',');if(k!==EDGE.dk){EDGE.dk=k;EDGE.dl.style.setProperty('--t',a[0]);EDGE.dl.style.setProperty('--r',a[1]);EDGE.dl.style.setProperty('--b',a[2]);EDGE.dl.style.setProperty('--l',a[3]);}EDGE.dOn=any;}}
   if(!player.alive||!playing)o=0;o=Math.round(o*50)/50;if(EDGE.o!==o){EDGE.o=o;EDGE.el.style.opacity=o;}}
 window.SNIPER_RES.hp=()=>MPM.hp;window.SNIPER_RES.alive=()=>player.alive;
 window.SNIPER_RES.heal={eat:(k,q)=>eatFood(k,q),hp:(v)=>{if(v!=null)MPM.hp=v;return MPM.hp;},pool:()=>HEAL.pool,step:()=>healStep(),st:(v)=>{if(v!=null)STAM.v=v;return STAM.v},boost:()=>BOOST.on};
@@ -4045,7 +4053,7 @@ function bearCharge(b,H){b.st='charge';b.stT=GAME.bChase;b.swT=0;b.swHit=false;b
   try{bearRoar(b,'charge');}catch(e){}}
 function bearGiveUp(b){b.st='walk';b.cool=GAME.bCool;bearTarget(b);b.stT=60;b.swT=0;}
 function bearHurtMe(dmg,b){if(!player.alive||MPM.hp<=0)return;try{if(MPM.on&&NT.M.ph!=='live')return;}catch(e){}
-  MPM.hp-=dmg;try{flashHit();edgeFlash();clawFx();}catch(e){}
+  MPM.hp-=dmg;try{flashHit();edgeFlash(b);clawFx();}catch(e){}
   if(b){const a=Math.atan2(player.pos.x-b.x,player.pos.z-b.z);player.vel.x+=Math.sin(a)*3.5;player.vel.z+=Math.cos(a)*3.5;}
   toast('Mauled by a bear · -'+Math.round(dmg));
   if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed by a bear');}}
@@ -5220,8 +5228,8 @@ function ugvRound(o,dir,tr,tm){const b={tm:tm|0,p:o.clone(),o:o.clone(),v:dir.cl
   ugvGunSnd(o);try{farFlash(o);}catch(e){}try{disturb(o.x,o.z,110,380,true);}catch(e){}}
 function ugvNetFire(d){if(!Array.isArray(d.o)||!Array.isArray(d.v))return;const o=V(+d.o[0],+d.o[1],+d.o[2]),v=V(+d.v[0],+d.v[1],+d.v[2]);if(!isFinite(o.x+o.y+o.z+v.x)||v.lengthSq()<0.5)return;
   v.normalize();ugvRound(o,v,!!d.t,d.tm|0);const u=UGVS[d.i|0]||UGVS[0];if(u)u.fl=0.05;}
-function ugvHurtMe(zone,ud,dr){if(!player.alive||MPM.hp<=0)return;try{if(MPM.on&&NT.M.ph!=='live')return;}catch(e){}
-  const dmg=(ud!=null?ud:GAME.uDmg)*(zone==='head'?2:zone==='limb'?0.6:1);MPM.hp-=dmg;try{flashHit();edgeFlash();shake=Math.max(shake,0.3);dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,dmg,'#ff3a3a');impactSnd(player.pos,'flesh');}catch(e){}
+function ugvHurtMe(zone,ud,dr,src){if(!player.alive||MPM.hp<=0)return;try{if(MPM.on&&NT.M.ph!=='live')return;}catch(e){}
+  const dmg=(ud!=null?ud:GAME.uDmg)*(zone==='head'?2:zone==='limb'?0.6:1);MPM.hp-=dmg;try{flashHit();edgeFlash(src);shake=Math.max(shake,0.3);dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,dmg,'#ff3a3a');impactSnd(player.pos,'flesh');}catch(e){}
   toast('Hit by the '+(dr?'GD01':'UGV')+' · '+(zone==='head'?'head':zone==='limb'?'limb':'body')+' · -'+Math.round(dmg));
   if(MPM.hp<=0){MPM.hp=0;SECT.pk=1;startAction('death');toast('Killed by the '+(dr?'GD01':'UGV'));}}
 // ---- the brain (host)
@@ -6244,7 +6252,7 @@ function netHitRemote(h,dist){flashHit();try{const op=RPS.pos;if(op)dmgNum(op.x,
   if(NT.M.ph!=='live'||!NT.room)return;const n=++NT.hitN;NT.pend.set(n,{msg:{n,z,dist:Math.round(dist),r:NT.M.r,w:HITW==='ar15'?1:0},next:0,tries:0});}
 function takeHit(d,peer){const key=peer+':'+d.n;if(NT.seen.has(key))return;NT.seen.add(key);
   if(NT.M.ph!=='live'||!player.alive||d.r!==NT.M.r)return;const z=d.z==='head'||d.z==='torso'||d.z==='limb'?d.z:'torso';
-  const dz=(d.w&&DMG.w.ar15)?DMG.w.ar15.p[z]:MP_DMG[z];MPM.hp-=dz;try{dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,dz,'#ff3a3a');}catch(e){}flashHit();edgeFlash();shake=Math.max(shake,0.35);
+  const dz=(d.w&&DMG.w.ar15)?DMG.w.ar15.p[z]:MP_DMG[z];MPM.hp-=dz;try{dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,dz,'#ff3a3a');}catch(e){}flashHit();edgeFlash(RPS&&RPS.pos);shake=Math.max(shake,0.35);
   if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed · '+(z==='head'?'headshot':z==='torso'?'body shot':'limb shot')+' from '+(d.dist|0)+' m');}
   else toast('You are hit · '+(z==='torso'?'body':z)+' · '+(d.dist|0)+' m · '+Math.round(MPM.hp)+' hp left');}
 function netDeerHit(d,sub,leg,dist){flashHit();try{dmgNum(d.x,d.y+2.0*d.s,d.z,animalDmg(d.kind,sub),null,(DMG.hp&&DMG.hp[d.kind])||100);animalCry('deer',d.x,d.y+1.2*d.s,d.z,sub==='head'||sub==='neck',d.kind);}catch(e){}if(sub==='head')headDing();else hitThud();toast(deerName(d)+' hit · '+sub+' · '+Math.round(dist)+' m');const i=DEER.indexOf(d);if(i<0||!NT.room)return;
