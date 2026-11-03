@@ -1863,7 +1863,7 @@ const player={pos:SPAWN.clone(),vel:V(0,0,0),yaw:0,grounded:true,stance:'stand',
   aimW:0,airW:0,action:null,ammo:MAG,reloadT:-1,lastShot:-9,kick:0,fireCD:0,dir:1,twist:0,wading:0,splashT:0,landT:0,fallV:0,slide:null,slideW:0,slideCD:0};
 const STEP=0.42, PRAD=0.34;
 const ACTIONS={
-  proneDown:{clip:'Go prone',t0:0,t1:2.2,rate:1.7,lock:true,blend:0.1},
+  proneDown:{clip:'Go prone',t0:0,t1:2.2,rate:2.21,lock:true,blend:0.1},
   proneUp:{clip:'Go prone',t0:2.2,t1:0,rate:3.5,lock:true,blend:0.05},
   land:{clip:'Jump',t0:1.0,t1:1.36,rate:1.3,lock:false,blend:0.05,out:0.12},
   salute:{clip:'Salute',t0:0,t1:2.4,rate:1,lock:true,blend:0.15,out:0.2},
@@ -3380,7 +3380,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=457;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=458;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
