@@ -148,10 +148,10 @@ function beltStep(){for(const b of BELT){for(let i=0;i<b.N;i++){const u=((i/b.N)
 
 /* ---------- the eye pod: ONE rounded pod on a short telescoping neck, housing two big blinking eyes ---------- */
 const POD={};
-{const neck=new T.Group();neck.position.set(0,1.42,0.04);hull.add(neck);POD.neck=neck;
-  const collar=cyl(neck,0.1,0.12,0.04,10,MAT.dark,0,0.02,0);
-  POD.segs=[0.075,0.062,0.05].map((r,i)=>cyl(neck,r,r,1,10,i===1?MAT.steel:MAT.dark,0,0,0));
-  const pod=new T.Group();neck.add(pod);POD.pod=pod;
+{const neck=new T.Group();neck.position.set(0,1.38,0.05);hull.add(neck);POD.neck=neck;   // no neck any more: the pod is set into the top of the body
+  rbox(neck,0.52,0.1,0.34,MAT.olive,0,0.05,-0.02,0.05,0.03);                          // cradle that blends the pod into the ammo-box housing
+  POD.segs=[];
+  const pod=new T.Group();pod.position.y=0.115;neck.add(pod);POD.pod=pod;
   const cream=M(0xe9e1c8,{roughness:0.55,metalness:0.05});
   add(pod,new T.SphereGeometry(1,16,10),cream,0,0,0).scale.set(0.30,0.175,0.175);                                   // the pod shell
   const ringM=M(0x4a5632);const rg=add(pod,new T.TorusGeometry(1,0.045,5,16),ringM,0,0,0);rg.scale.set(0.28,0.16,0.16);rg.rotation.x=Math.PI/2;rg.position.y=0.0;rg.scale.set(0.285,0.285*0.0+0.17,0.16);   // olive band round the middle
@@ -234,17 +234,12 @@ function stepSim(dt){
   if(D.mood==='no')chassis.rotation.y=Math.sin(D.t*14)*0.12*Math.exp(-((D.moodElapsed||0)*0.0));else chassis.rotation.y*=0.8;
   chassis.updateMatrix();
   // eye pod: neck extends, pod nods / yaws / tilts, two big eyes blink and emote
-  {const extM=(P.ext[0]+P.ext[1])/2,L=0.04+0.16*extM+(D.mood==='excited'?0.05*Math.abs(Math.sin(D.t*10)):0);
-   POD.segs.forEach((sg,j)=>{sg.scale.y=L/3;sg.position.y=0.04+L/3*(j+0.5);});POD.pod.position.y=0.04+L+0.15;
-   const nod=P.bob*Math.sin(D.t*P.bobF*2)*(D.mood==='yes'?1.4:0.35);
-   POD.pod.rotation.x=(D.mood==='sad'?0.45:0)+nod-(D.mood==='alert'?0.12:0);
-   POD.pod.rotation.y=P.yawShake*Math.sin(D.t*P.bobF*2)*1.1+P.look*Math.sin(D.t*0.8)*0.35;
-   POD.pod.rotation.z=(D.mood==='curious'?0.22:0)+(D.mood==='sad'?0.08:0)+(P.wig?0.16*Math.sin(D.t*9):0);
+  {POD.pod.rotation.set(0,0,0);   // the head stays put: all the emoting is done by the eyes, lids and colour
    const bl=D.blink>0?Math.sin(Math.min(1,D.blink/0.14)*Math.PI):0;let happy=(D.mood==='hi'||D.mood==='yes'||D.mood==='excited')?1:0;
    POD.eyes.forEach((e,i)=>{const c=Math.max(0,Math.min(0.9,(P.lid[i]-0.1)*0.7));const cc=Math.min(1,c+bl*1.1);
      e.up.scale.y=Math.min(1,cc*2);e.lo.scale.y=Math.max(0.0001,cc*2-1);e.up.visible=e.up.scale.y>0.02;e.lo.visible=cc>0.5;
      e.lidP.rotation.z=P.tilt[i];
-     const pop=0.9+0.35*(P.ext[i]-0.4);e.eg.scale.setScalar(Math.max(0.7,Math.min(1.25,pop+(D.mood==='excited'?0.08*Math.sin(D.t*18):0))));
+     const pop=0.9+0.35*(P.ext[i]-0.4);e.eg.scale.setScalar(Math.max(0.7,Math.min(1.25,pop+(D.mood==='excited'?0.06*Math.sin(D.t*18):0))));
      e.em.color.copy(D.col);e.em.emissive.copy(D.col);e.em.emissiveIntensity=1.2+0.5*Math.sin(D.t*(D.mood==='excited'?22:3)+i);
      const lx=Math.sin(D.t*1.3+i*0.6)*0.024*(0.4+P.look)+(D.mood==='curious'?0.02*Math.sin(D.t*2):0),ly=Math.cos(D.t*0.9+i)*0.014*(0.4+P.look)-(D.mood==='sad'?0.02:0)+(D.mood==='hi'?0.01:0);e.pupilG.position.set(lx,ly,0);
      e.pupilG.scale.setScalar(D.mood==='excited'?1.25:D.mood==='alert'?0.75:D.mood==='sad'?1.15:1.0);
