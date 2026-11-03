@@ -3166,7 +3166,7 @@ addEventListener('keydown',e=>{
     case 'Equal': case 'NumpadAdd': miniZoom(-1); break;
     case 'Minus': case 'NumpadSubtract': miniZoom(1); break;
     case 'KeyN': miniOn=!miniOn;miniTxt(); break;
-    case 'KeyP': case 'Tab': if(typeof SPW!=='undefined'&&SPW.open)break; setMap(!mapOpen); break;
+    case 'Tab': if(typeof SPW!=='undefined'&&SPW.open)break; setMap(!mapOpen); break;
   }
   switch(e.code){
     case 'ControlLeft': case 'ControlRight': if(!busy)tryStartSlide(); break;
@@ -3185,7 +3185,7 @@ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.r
 const KB_ACT=[
   ['Movement',[['fwd','Forward','KeyW'],['back','Back','KeyS'],['left','Strafe left','KeyA'],['right','Strafe right','KeyD'],['jump','Jump · parachute · let go of the zip line','Space'],['crouch','Crouch','KeyC'],['prone','Prone / get up (WASD crawls)','KeyZ']]],
   ['Weapons and gear',[['reload','Reload','KeyR'],['zup','Zero +50 m','KeyE'],['zdn','Zero −50 m','KeyQ'],['s1','Weapon slot 1','Digit1'],['s2','Weapon slot 2','Digit2'],['s3','Gadget slot 3 (radio: recon drone)','Digit3'],['s4','Gadget slot 4','Digit4'],['gather','Gather / pick up · zip line','KeyF'],['launch','Launch the missile (silo)','KeyL']]],
-  ['Interface',[['map','Full map (Tab works too)','KeyP'],['mzin','Mini map zoom in','Equal'],['mzout','Mini map zoom out','Minus'],['mini','Mini map on / off','KeyN'],['view','1st / 3rd person','KeyV'],['mute','Mute','KeyM'],['hb','Show hit boxes','KeyB']]]];
+  ['Interface',[['mzin','Mini map zoom in','Equal'],['mzout','Mini map zoom out','Minus'],['mini','Mini map on / off','KeyN'],['view','1st / 3rd person','KeyV'],['mute','Mute','KeyM'],['hb','Show hit boxes','KeyB']]]];
 const KB_FIXED=[['Look','Mouse'],['Scope on / off','Right mouse'],['Fire (hold for automatic with the AR-15)','Left mouse'],['Scope zoom 2 / 3 / 4 / 5×','Wheel'],['Hold breath (scoped) · sprint','Shift'],['Boost run (uses stamina)','Double-tap forward, keep holding'],['Slide (while running)','Ctrl'],['Full map','Tab'],['Move (as well as WASD)','Arrow keys'],['Menu / release the mouse','Esc']];
 const KB={user:{},inj:false,listen:null,M:{}};
 try{const v=JSON.parse(localStorage.getItem('fsKeys')||'null');if(v&&typeof v==='object')for(const k in v)if(typeof v[k]==='string')KB.user[k]=v[k];}catch(e){}
@@ -3402,7 +3402,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=490;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=491;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4410,7 +4410,7 @@ function uavStep(dt){if(!UAVS.length)return;
       const gy=groundH(u.p.x,u.p.z);if(u.p.y<=gy+0.4){u.p.y=gy+0.4;uavCrash(u);UAVS.splice(i,1);continue;}}
     else{u.acc+=dt;while(u.acc>=1/30){u.acc-=1/30;uavSim(u,1/30);}
       if(u.st==='gone'){uavSndStop(u);scene.remove(u.g);UAVS.splice(i,1);if(u.mine)toast('Recon drone has left the area');try{EQB.ui(true);}catch(e){}continue;}
-      if(u.st==='loiter'&&!u.ann){u.ann=true;if(u.mine){const has=MPM.on&&NT.opp&&RPS.pos&&RPS.al;toast(has?'Drone on station · the other player is marked on your map (P)':'Drone on station · no other player in the area');}else toast('Enemy drone overhead · your position is exposed. Shoot it down!');}
+      if(u.st==='loiter'&&!u.ann){u.ann=true;if(u.mine){const has=MPM.on&&NT.opp&&RPS.pos&&RPS.al;toast(has?'Drone on station · the other player is marked on your map (Tab)':'Drone on station · no other player in the area');}else toast('Enemy drone overhead · your position is exposed. Shoot it down!');}
       if(u.st==='out'&&u.ann!=='out'){u.ann='out';toast(u.mine?'Recon drone leaving · the mark is gone':'The enemy drone is leaving');}}
     u.g.position.copy(u.p);u.g.rotation.y=u.hd;u.g.rotation.z=-Math.max(-0.6,Math.min(0.6,u.bank));u.prop.rotation.z+=dt*(u.st==='down'?18:70);u.g.updateMatrixWorld(true);
     uavSnd(u,dt);}
@@ -5393,7 +5393,7 @@ function ugvDeploy(gi){const it=SLOT.g[gi];if(!it||it.k!=='ugv'||!playing||!play
   const ya=wrapA(camYaw+PI);it.used=true;it.t0=performance.now();PUG.cmd=null;
   if(MPM.on&&MPM.guest){try{NT.room.emit('pug',{c:'spawn',x:nr1(sp.x),z:nr1(sp.z),ya:nr2(ya)}).catch(()=>{});}catch(e){}}
   else ugvPlSpawn(secTeam(),sp.x,sp.z,ya);
-  try{sfx.click();}catch(e){}toast('UGV dropping by parachute, it will follow you until ordered · '+Math.round(Math.hypot(sp.x-player.pos.x,sp.z-player.pos.z))+' m away · open the map (P), right-click it, then right-click a destination');try{EQB.ui(true);}catch(e){}}
+  try{sfx.click();}catch(e){}toast('UGV dropping by parachute, it will follow you until ordered · '+Math.round(Math.hypot(sp.x-player.pos.x,sp.z-player.pos.z))+' m away · open the map (Tab), right-click it, then right-click a destination');try{EQB.ui(true);}catch(e){}}
 // ---- route planning: A* over a 3 m grid (trees, rocks, water, steep ground and the silo count as blocked), then the corners are cut with line-of-sight checks
 const UGP={cs:3,R:160,cache:new Map(),G:null,P:null,ST:null,stamp:0};
 function ugpBlk(i,j){const k=(i+400)*1000+(j+400);const CC=DR_X?(UGP.c2||(UGP.c2=new Map())):UGP.cache;let v=CC.get(k);if(v===undefined){DR_DYNON=false;try{v=ugvBlocked(i*UGP.cs,j*UGP.cs)?1:0;}finally{DR_DYNON=true;}CC.set(k,v);}return (v||(DR_X&&DR_DYN.length&&drDyn(i*UGP.cs,j*UGP.cs)))?1:0;}
