@@ -2020,7 +2020,7 @@ function updatePlayer(dt,time){
   for(const k in pl.lt){const nom=NOMINAL[k];pl.lt[k]+=dt*(nom?clamp(hs/nom,0.55,1.7)*rate:1);}
   // timers
   pl.fireCD-=dt; pl.kick=Math.max(0,pl.kick-dt*9);
-  if(pl.reloadT>=0){pl.reloadT+=dt*1.15;if(pl.reloadT>=2.6){pl.reloadT=-1;{const tk=Math.min(MAG-pl.ammo,pl.reserve|0);pl.ammo+=tk;pl.reserve=(pl.reserve|0)-tk;}}}
+  if(pl.reloadT>=0){pl.reloadT+=dt*1.61;if(pl.reloadT>=2.6){pl.reloadT=-1;{const tk=Math.min(MAG-pl.ammo,pl.reserve|0);pl.ammo+=tk;pl.reserve=(pl.reserve|0)-tk;}}}
   // shooting
   if(firing&&pl.alive&&!(A_&&A_.lock)&&pl.reloadT<0&&pl.fireCD<=0){
     if(WPN.cur==='none'){input.lmb=false;}
@@ -3381,7 +3381,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=460;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=461;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
