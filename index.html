@@ -3361,7 +3361,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=485;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=486;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5519,8 +5519,8 @@ function drawUgvMark(c,x,y,u,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWid
   tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};
   tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
 })();
-const DGKEYS=['dSpd','dChase','dTalk','dHunt','dSee','dReact','dMem','dEng','dRate','dBurst','dPause','dSpread','dDmg','dHp','dRespawn'];
-const DG0={dSpd:6.5,dChase:5.5,dTalk:1,dHunt:0,dSee:150,dReact:2,dMem:20,dEng:100,dRate:14,dBurst:0.65,dPause:2,dSpread:11,dDmg:8,dHp:250,dRespawn:45};   // settings shared by every droid
+const DGKEYS=['dSpd','dChase','dTalk','dSee','dReact','dMem','dEng','dRate','dBurst','dPause','dSpread','dDmg','dHp','dRespawn'];
+const DG0={dSpd:6.5,dChase:5.5,dTalk:1,dSee:150,dReact:2,dMem:20,dEng:100,dRate:14,dBurst:0.65,dPause:2,dSpread:11,dDmg:8,dHp:250,dRespawn:45};   // settings shared by every droid
 const DGC=[];
 try{const a=JSON.parse(localStorage.getItem('fsDgc')||'null');if(Array.isArray(a))a.forEach((c,i)=>{if(c&&typeof c==='object')DGC[i]=c;});}catch(e){}
 function dcSave(){try{localStorage.setItem('fsDgc',JSON.stringify(DGC));}catch(e){}}
@@ -5561,7 +5561,7 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
   const css=document.createElement('style');css.textContent=`#paneGd .gr{display:grid;grid-template-columns:270px 1fr 64px;gap:10px;align-items:center;margin:5px 0;font-size:13px}#paneGd .gr input[type=range],#paneGd .gr input[type=checkbox]{accent-color:var(--moss)}#paneGd .gr input[type=range]{width:100%}#paneGd .gr input[type=checkbox]{width:16px;height:16px}#paneGd .gr output{font-variant-numeric:tabular-nums;opacity:.85;text-align:right}#paneGd button{margin:10px 8px 0 0}#paneGd .off{opacity:.38;pointer-events:none}#paneGd .ge{display:flex;gap:6px;align-items:center}#paneGd input[type=number]{width:84px;padding:3px 6px;background:rgba(255,255,255,.08);color:inherit;border:1px solid rgba(255,255,255,.25);border-radius:4px;font:inherit}#paneGd select{padding:3px 6px;background:rgba(0,0,0,.35);color:inherit;border:1px solid rgba(255,255,255,.25);border-radius:4px;font:inherit}`;document.head.appendChild(css);
   const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabGd';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','paneGd');tb.textContent='GD01';tabs.appendChild(tb);
   const pn=document.createElement('div');pn.id='paneGd';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabGd');pn.hidden=true;after.after(pn);
-  const ROWS=[['sec','GD01 droid'],['dSpd','Patrol speed (m/s)',1,10,0.5,1],['dChase','Closing speed when it drives at you (m/s)',1,10,0.5,1],['dTalk','Chatter (1 = normal, 0 = silent unless it spots something)',0,3,0.1,1],['dHunt','Also shoots deer it can see (1 = yes)',0,1,1,0],
+  const ROWS=[['sec','GD01 droid'],['dSpd','Patrol speed (m/s)',1,10,0.5,1],['dChase','Closing speed when it drives at you (m/s)',1,10,0.5,1],['dTalk','Chatter (1 = normal, 0 = silent unless it spots something)',0,3,0.1,1],
     ['sec','Sensors'],['dSee','Spots you within (m · less when you crouch or lie prone · needs a clear line of sight)',30,400,10,0],['dReact','Reaction time once it spots you (s)',0,5,0.1,1],['dMem','Searches your last position for (s)',0,90,1,0],
     ['sec','Twin AR-15s'],['dEng','Opens fire within (m · drives closer when you are further)',20,300,5,0],['dRate','Rate of fire (rounds per second, both guns together)',4,30,1,0],['dBurst','Burst length (s)',0.1,3,0.05,2],['dPause','Pause between bursts (s)',0.1,5,0.05,2],
     ['dSpread','Spread (mrad · higher misses more; worse against a running target)',0.5,20,0.5,1],['dDmg','Damage per round (hp · ×2 head, ×0.6 limbs)',1,50,1,0],
@@ -5945,7 +5945,8 @@ function droidStep1(dt,nD,enem){
   const live=true;
   // ---- eyes: look for the other side five times a second, keep it in mind for a moment after it hides
   DR.losT-=dt;if(DR.losT<=0){DR.losT=0.2;let best=null,bd=1e9;
-    for(const e of enem){if(e.k==='d'&&!GAME.dHunt)continue;const d=Math.hypot(e.x-D.x,e.z-D.z);if(d>droidRange(e)||d>=bd)continue;if(!droidSees(D,e))continue;best=e;bd=d;}
+    for(const e of enem){if(e.k==='d')continue;   // droids no longer shoot deer
+    const d=Math.hypot(e.x-D.x,e.z-D.z);if(d>droidRange(e)||d>=bd)continue;if(!droidSees(D,e))continue;best=e;bd=d;}
     if(best){if(DR.tgO!==best.o){DR.tgO=best.o;DR.react=GAME.dReact;DR.burst=0;DR.pause=0;if(best.k!=='d')droidSay('alert');}DR.mem=Math.min(3,GAME.dMem);if(best.k!=='d')DRS.lastT[team]={x:best.x,z:best.z,t:DRS.clock};}
     else if(DR.tgO){DR.mem-=0.2;if(DR.mem<=0)DR.tgO=null;}}
   const T=DR.tgO?enem.find(e=>e.o===DR.tgO):null;if(!T&&DR.tgO)DR.tgO=null;
