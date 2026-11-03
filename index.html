@@ -3381,7 +3381,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=467;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=468;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4541,7 +4541,7 @@ function towerStep1(pl,dt){
   // on the ladder
   if(keys.Space&&!TW.sp){TW.sp=true;TW.climb=false;TW.cd=0.5;pl.grounded=false;pl.fallV=0;pl.vel.set(0,4.6,3.4);pl.pos.z=TW.z+TW.Lz+0.7;toast('Jumped off the ladder');return;}   // Space: kick off backwards
   TW.sp=!!keys.Space;
-  const dir=mi.f*(face>=0?1:-1);TW.cy+=dir*1.7*dt;pl.pos.y=TW.cy;pl.pos.x=TW.x;pl.pos.z=TW.z+TW.Lz+0.42;pl.vel.set(0,0,0);pl.grounded=false;pl.fallV=0;pl.stance='stand';pl.yaw=Math.PI;
+  const dir=mi.f*(face>=0?1:-1);TW.cy+=dir*2.125*dt;pl.pos.y=TW.cy;pl.pos.x=TW.x;pl.pos.z=TW.z+TW.Lz+0.42;pl.vel.set(0,0,0);pl.grounded=false;pl.fallV=0;pl.stance='stand';pl.yaw=Math.PI;
   const g=groundH(pl.pos.x,pl.pos.z);
   if(pl.pos.y>=deck){pl.pos.y=deck;pl.grounded=true;pl.pos.z=TW.z+TW.D-0.65;TW.climb=false;TW.cd=0.8;}
   else if(pl.pos.y<=g&&dir<0){pl.pos.y=g;pl.grounded=true;pl.pos.z=TW.z+TW.Lz+1.0;TW.climb=false;TW.cd=0.8;}
