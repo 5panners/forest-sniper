@@ -386,7 +386,8 @@ const XS=(()=>{
 // true where the extra structures stand (no trees, rocks, logs or ferns)
 const XS_SHRINE=false;
 function xsClear(x,z){const s=XS.shrine,l=XS.look,f=XS.farm;return (XS_SHRINE&&Math.hypot(x-s.x,z-s.z)<4.5)||Math.hypot(x-l.x,z-l.z)<18||(Math.abs(x-f.x)<27&&Math.abs(z-f.z)<16)||Math.hypot(x-SEC_HOME.e.x,z-SEC_HOME.e.z)<16||Math.hypot(x-SEC_HOME.w.x,z-SEC_HOME.w.z)<16;}
-function addRock(x,z,w,h,d,ry,moss,col,yOff){const g=Math.min(groundH(x-w*0.35,z-d*0.35),groundH(x+w*0.35,z+d*0.35),groundH(x-w*0.35,z+d*0.35),groundH(x+w*0.35,z-d*0.35));
+function addRock(x,z,w,h,d,ry,moss,col,yOff){if(Math.hypot(x+125.3,z-433.6)<0.3&&w>2){w=0.05;h=0.05;d=0.05;}   // the lone boulder in the pool at the foot of the cascade was removed
+  const g=Math.min(groundH(x-w*0.35,z-d*0.35),groundH(x+w*0.35,z+d*0.35),groundH(x-w*0.35,z+d*0.35),groundH(x+w*0.35,z-d*0.35));
   const r={x,z,y:(yOff!=null?yOff:g-h*0.28),w,h,d,ry,moss,col:col!==false,i:ROCKS.length};ROCKS.push(r);return r;}
 const _nTor0=ROCKS.length;
 // granite tor on the summit: a broad base, a second tier, then flat-topped capstones (the spawn point)
@@ -3375,7 +3376,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=418;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=419;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4851,7 +4852,7 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
   const acc=(f<1.6?7:f<6?24:38)*GAME.siloAcc;S.v=Math.min(900,S.v+acc*dt);
   if(f>4.5){const tgt=new THREE.Vector3(Math.sin(S.yaw)*0.8,0.6,Math.cos(S.yaw)*0.8).normalize();S.dir.lerp(tgt,Math.min(1,dt*0.12)).normalize();}
   // the ground shakes and the screen with it: strongest at the pad during lift-off, fading with distance from the missile
-  {const dm=Math.hypot(player.pos.x-S.pos.x,player.pos.y-S.pos.y,player.pos.z-S.pos.z),R=450,th=f<1.6?0.55:f<10?1:0.7;if(dm<R)shake=Math.max(shake,GAME.siloShake*th*Math.pow(1-dm/R,1.6)*1.6);}
+  {const dm=Math.hypot(player.pos.x-S.pos.x,player.pos.y-S.pos.y,player.pos.z-S.pos.z),R=450,th=f<1.6?0.55:f<10?1:0.7;if(dm<R)shake=Math.max(shake,GAME.siloShake*th*Math.pow(1-dm/R,1.6)*1.15);}
   S.pos.addScaledVector(S.dir,S.v*dt);S.mis.position.copy(S.pos);S.mis.quaternion.setFromUnitVectors(V(0,1,0),S.dir);
   S.flame.scale.set(0.9+Math.random()*0.25,(f<1.6?0.7:1.15)+Math.random()*0.4,0.9+Math.random()*0.25);try{siloVoice(S,f);}catch(e){}
   // smoke: a billow out of the shaft at ignition, then a thick trail behind the missile
@@ -5409,7 +5410,7 @@ function ugvVoice(u,dt){if(!AC||!soundOn||!noiseBuf)return;const cp=camera.posit
     const out=AC.createGain();out.gain.value=0;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3800;
     const pn=AC.createPanner();pn.panningModel='HRTF';pn.distanceModel='inverse';pn.refDistance=14;pn.rolloffFactor=1.25;pn.maxDistance=20000;out.connect(lp);lp.connect(pn);pn.connect(AC.destination);
     const osc=(type,g0,flt)=>{const o=AC.createOscillator();o.type=type;const g=AC.createGain();g.gain.value=g0;if(flt){const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=flt;o.connect(f);f.connect(g);}else o.connect(g);g.connect(out);o.start();return {o,g};};
-    const hum=osc('sawtooth',0,900),whine=osc('triangle',0,1100),thin=osc('sine',0,0),servo=osc('sawtooth',0,1800);
+    const hum=osc('sawtooth',0,900),whine=osc('triangle',0,650),thin=osc('sine',0,0),servo=osc('sawtooth',0,1800);
     const nzs=(f,q,type)=>{const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;s.loopStart=Math.random();const fl=AC.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain();g.gain.value=0;s.connect(fl);fl.connect(g);g.connect(out);s.start();return {s,g,fl};};
     const rum=nzs(150,0.7,'lowpass'),clat=nzs(1250,1.1,'bandpass');
     const lfo=AC.createOscillator();lfo.type='square';lfo.frequency.value=3;const lg=AC.createGain();lg.gain.value=0;lfo.connect(lg);lg.connect(clat.g.gain);lfo.start();
@@ -5420,9 +5421,9 @@ function ugvVoice(u,dt){if(!AC||!soundOn||!noiseBuf)return;const cp=camera.posit
   sm(V_.out.gain,live?0.9:0,0.15);
   if(V_.pn.positionX){V_.pn.positionX.value=u.x;V_.pn.positionY.value=u.y+0.8;V_.pn.positionZ.value=u.z;}else V_.pn.setPosition(u.x,u.y+0.8,u.z);
   sm(V_.hum.o.frequency,62+v*30);sm(V_.hum.g.gain,0.10*run+0.015*(live?1:0));            // motor hum under load
-  sm(V_.whine.o.frequency,260+v*110);sm(V_.whine.g.gain,0.011*run);                      // inverter whine
-  sm(V_.thin.o.frequency,2400+v*420);sm(V_.thin.g.gain,0.0015*run);
-  sm(V_.servo.o.frequency,420+(u.tRate||0)*160);sm(V_.servo.g.gain,live?0.009*sv:0);       // turret traverse
+  sm(V_.whine.o.frequency,220+v*80);sm(V_.whine.g.gain,0.004*run);                      // inverter whine
+  sm(V_.thin.o.frequency,2400+v*420);sm(V_.thin.g.gain,0.0004*run);
+  sm(V_.servo.o.frequency,420+(u.tRate||0)*160);sm(V_.servo.g.gain,live?0.004*sv:0);       // turret traverse
   sm(V_.rum.g.gain,live?0.16*run:0);sm(V_.rum.fl.frequency,120+v*28);
   sm(V_.clat.g.gain,live?0.05*run:0);sm(V_.lfo.frequency,Math.max(1,v*3.4));sm(V_.lg.gain,live?0.045*run:0);   // track links
 }
