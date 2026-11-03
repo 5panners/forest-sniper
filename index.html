@@ -3378,7 +3378,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=445;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=446;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3777,7 +3777,7 @@ ${sp([['Damage / hit',GAME.uDmg+' hp'],['Rate of fire',GAME.uRpm+' rpm'],['Burst
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:2,slotG:2,uavDur:60,uavR:300,uavAlt:70,uavSpd:40,uavHp:140,uavVol:1,siloAcc:0.45,siloEvery:120,siloShake:1,siloVol:2,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:4,bWalk:1.5,bRear:14,bAtk:1,bTrig:2,bFight:60,bChance:60,bSense:80,bChSpd:8,bReach:2.8,bDmg:30,bRate:1.6,bChase:25,bCool:60,fallOn:1,fallSafe:4,fallDmg:10,paraH:70,dCnt:3,rUGun:1,rUMot:1,rUBeep:1,rDGun:1,rDVoi:1,dOn:1,dHunt:0,dSpd:6.5,dSee:160,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:0.75,dSpread:8,dTalk:1};
+const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:2,slotG:2,uavDur:60,uavR:300,uavAlt:70,uavSpd:40,uavHp:140,uavVol:1,siloAcc:0.45,siloEvery:120,siloShake:1,siloVol:2,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.25,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:160,at4R:6,at4Dmg:160,at4Ugv:520,at4Reload:3,stStart:50,stGain:10,stDrain:10,stMult:2,bMeat:3,bInst:0,bears:4,bWalk:1.5,bRear:14,bAtk:1,bTrig:2,bFight:60,bChance:60,bSense:80,bChSpd:8,bReach:2.8,bDmg:30,bRate:1.6,bChase:25,bCool:60,fallOn:1,fallSafe:4,fallDmg:10,paraH:70,dCnt:3,rUGun:1,rUMot:1,rUBeep:1,rDGun:1,rDVoi:1,dEn:0,dHunt:0,dSpd:6.5,dSee:160,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:0.75,dSpread:8,dTalk:1};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 try{if(!localStorage.getItem('fsSiloV2')){GAME.siloVol=2;localStorage.setItem('fsSiloV2','1');}}catch(e){}
 function balApply(){V0=GAME.bV0;DRAG=GAME.bDrag;GBUL=9.81*GAME.bDrop;try{setZero(zeroM);}catch(e){}}balApply();
@@ -5515,12 +5515,12 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
   const KEYS=ROWS.filter(r=>r[0]!=='sec').map(r=>r[0]);
   let sel=0;
   const save=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}dcSave();};
-  const dim=()=>{pn.querySelectorAll('[data-u]').forEach(e=>e.classList.toggle('off',!GAME.dOn));};
+  const dim=()=>{pn.querySelectorAll('[data-u]').forEach(e=>e.classList.toggle('off',!GAME.dEn));};
   const WORDS=['hi','yes','no','excited','alert','sad','curious','thanks'];
   const respawn=()=>{try{const q=DRS[sel];if(q)q.tele=true;}catch(e){}};
   const build=()=>{const n=Math.max(1,Math.min(6,Math.round(GAME.dCnt||1)));if(sel>=n)sel=0;const c=dcGet(sel);
     pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. GD01 is the one-wheeled gunner droid. In solo games a squad works for the red team: each droid spawns at its own grid reference (the same E / N metres as the map, by default round the red base), takes flags and shoots you and your UGV. Shoot the head for double damage. Its guns always point at what it is firing at. Its sounds fade out with distance.</p>'
-      +`<div class="gr"><label>GD01 droids at the red base</label><input type="checkbox" data-g="dOn" ${GAME.dOn?'checked':''}></div>`
+      +`<div class="gr"><label>GD01 droids at the red base</label><input type="checkbox" data-g="dEn" ${GAME.dEn?'checked':''}></div>`
       +`<div class="gr" data-u="1"><label>Number of GD01 droids</label><input type="range" min="1" max="6" step="1" value="${n}" data-g="dCnt"><output>${n}</output></div>`
       +(n>1?`<div class="gr" data-u="1"><label>Settings for</label><select id="gdSel">${Array.from({length:n},(_,k)=>`<option value="${k}" ${k===sel?'selected':''}>GD01 ${k+1}</option>`).join('')}</select><span></span></div>`:'')
       +`<div class="gr" data-u="1"><label>Spawn point · grid reference${n>1?' (GD01 '+(sel+1)+')':''}</label><span class="ge"><input type="number" min="-465" max="465" step="1" value="${Math.round(c.dGE)}" data-c="dGE"> E &nbsp;<input type="number" min="-465" max="465" step="1" value="${Math.round(c.dGN)}" data-c="dGN"> N</span><span></span></div>`
@@ -5864,7 +5864,7 @@ function droidStepAll(){
   try{if(MPM&&MPM.on){for(const q of DRS)if(q.m)q.m.root.visible=false;return;}}catch(e){}
   if(!playing)return;
   DRS.clock+=dt;
-  const n=GAME.dOn?Math.max(0,Math.min(6,Math.round(GAME.dCnt==null?3:GAME.dCnt))):0;
+  const n=GAME.dEn?Math.max(0,Math.min(6,Math.round(GAME.dCnt==null?3:GAME.dCnt))):0;
   if(!DRL.parent)scene.add(DRL);DRL.t-=dt;if(DRL.t<=0)DRL.intensity=0;
   const enem=n>0?droidEnemies():[];
   for(let i=0;i<DRS.length||i<n;i++){const q=DRS[i]||(DRS[i]=mkDR());q.i=i;if(i>=n){if(q.m)q.m.root.visible=false;continue;}DR=q;droidW(q,()=>droidStep1(dt,n,enem));}}
