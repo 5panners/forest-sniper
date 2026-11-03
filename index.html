@@ -45,9 +45,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-ui);o
 .grid div{display:flex;gap:9px;align-items:baseline;min-width:0}
 kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-radius:4px;padding:0 6px;color:var(--amber);min-width:52px;text-align:center;flex:none}
 #deployBtn{font:700 16px var(--f-ui);letter-spacing:.05em;text-transform:uppercase;background:var(--moss);color:#11160c;border:0;border-radius:6px;padding:11px 22px;cursor:pointer}
-#resetBtn{font:600 14px var(--f-ui);letter-spacing:.05em;text-transform:uppercase;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:10px 16px;margin-left:10px;cursor:pointer}
-#resetBtn:hover{color:var(--amber);border-color:var(--amber)}
-#resetBtn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+#resetBtn,#cfgBtn{font:600 14px var(--f-ui);letter-spacing:.05em;text-transform:uppercase;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:10px 16px;margin-left:10px;cursor:pointer}
+#resetBtn:hover,#cfgBtn:hover{color:var(--amber);border-color:var(--amber)}
+#resetBtn:focus-visible,#cfgBtn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 #deployBtn:disabled{opacity:.5;cursor:wait}
 #deployBtn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .note{font:12px var(--f-mono);color:var(--muted);margin-top:10px}
@@ -153,7 +153,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <p class="note">100% is the recording at its original level. Press M in game to mute everything.</p>
   </div>
   <div id="paneMp" role="tabpanel" aria-labelledby="tabMp" hidden><div id="mpBox"><b>1v1 match</b><button id="mpStart" type="button" hidden>Start match</button><button id="mpLeave" type="button" hidden>Leave</button><button id="mpDHost" type="button">Host match</button><button id="mpDJoin" type="button">Join match</button><textarea id="mpDx" rows="6" style="min-height:8em;resize:vertical" hidden spellcheck="false" aria-label="Connection code"></textarea><button id="mpDgo" type="button" hidden>Connect</button><div id="mpStat" class="note">Host a match and send the code to your opponent. They paste it and press Join match, then send you their reply code to paste back and Connect. One life per round, first to 3 rounds; 5 rounds loaded plus 15 spare.</div></div><label class="opt"><input type="checkbox" id="optNet" checked><span><b>Show network stats</b><small>While connected: round-trip time, connection path, data rates, lost packets, buffering and wildlife sync, top left.</small></span></label></div>
-  <button id="deployBtn" disabled>Generating forest…</button>
+  <button id="deployBtn" disabled>Generating forest…</button><button id="cfgBtn" type="button">Copy settings</button>
   <div class="note" id="stats"></div>
 </div></div>
 
@@ -3362,7 +3362,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=480;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=481;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6429,6 +6429,10 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&NT.room&&
 
 ;setInterval(()=>{const b=document.getElementById('mpDx');if(b&&!b.hidden&&b.scrollHeight>b.clientHeight+2)b.style.height=(b.scrollHeight+6)+'px';},400);
 
+{const b=$('cfgBtn');b.onclick=()=>{const o={};for(const k of['fsGame','fsDgc','fsDmg','fsUgc','sniperTime','sniperGfx2','sniperAudio','fsPick']){try{const v=localStorage.getItem(k);if(v!=null)o[k]=v;}catch(e){}}
+  const t=JSON.stringify(o);const done=()=>{b.textContent='Copied ✓';setTimeout(()=>{b.textContent='Copy settings';},2000);};
+  const fb=()=>{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;left:10%;top:30%;width:80%;height:30%;z-index:99';document.body.appendChild(a);a.select();try{document.execCommand('copy');done();}catch(e){}a.onblur=()=>a.remove();};
+  try{navigator.clipboard.writeText(t).then(done,fb);}catch(e){fb();}};}
 window.SNIPER={mp:{start:mpStart,fanfare:playFanfare,goodbye:playGoodbye,leave:mpLeave,NT,RPS,MPM,P2RHB,P2PAIRS,packPose,getDeerVer:()=>deerVer,getYaw:()=>player.yaw,getDeer:()=>DEER,getAim:()=>aimPtTP?aimPtTP.toArray():null,getCam:()=>{const d=new THREE.Vector3();camera.getWorldDirection(d);return [camera.position.toArray(),d.toArray(),scoped]}},deerSample,getDCGCD:()=>dcGCD,getP2:()=>P2M,getBoltT:()=>boltT,P1_SPAWN,P2_SPAWN,getFALL:()=>FALL,STREAM,BED,CW,getSE:()=>STREAM_END,hFull,lakeE,LOWR,hitBird,getAmb:()=>amb,SND,playSample,initAudio,getAC:()=>AC,DAY,stepDay,meadowK,BZ,BGRP,setBuzzards,STAIRS,TORTOPS,rockTopAt,DEER,MARKS,ROCKS,PGRID,setDeerCounts,disturb,miniZoom,keysDown:keys,player,marine,J,MAP,SEAT_INFO,SUMMIT,LW,chunks,stats,keys,input,camera,scene,renderer,castRay,groundH,setZero,
   set(o){if(o.yaw!=null)camYaw=o.yaw;if(o.pitch!=null)camPitch=o.pitch;if(o.pos)player.pos.set(o.pos[0],o.pos[1],o.pos[2]);if(o.fp!=null)viewFP=o.fp;if(o.zoom!=null)zoomI=o.zoom;},
   play(){setPlaying(true);fallback=true;}, pause(v){paused=v;}, lod(){updateLOD();}, tick(dt){update(dt);renderer.render(scene,camera);}, step(dt){update(dt);}, info(){return {genMs,nTrees,nPlants,rocks:ROCKS.length,inst:instCount,LW,tris:renderer.info.render.triangles,calls:renderer.info.render.calls};}};
