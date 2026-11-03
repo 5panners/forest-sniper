@@ -3380,7 +3380,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=455;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=456;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4488,11 +4488,9 @@ function towerBuild(){
   for(let k=0;k<=10;k++){const y=k*3,w=twHW(y);
     for(let f=0;f<4;f++){const [ax,az]=C[f],[bx,bz]=C[(f+1)%4];if(!(y>Yd&&y<H))twBar(L,[ax*w,y,az*w],[bx*w,y,bz*w],0.045,twSteel);   // no girt across the open bay above the deck (it blocked the view)
       if(k<10&&!(y>=Yd&&y<H)){const y2=y+3,w2=twHW(y2);twBar(L,[ax*w,y,az*w],[bx*w2,y2,bz*w2],0.035,twSteel);twBar(L,[bx*w,y,bz*w],[ax*w2,y2,az*w2],0.035,twSteel);}}}
-  // ---- observation deck: steel grating with painted grid, kick plates, railings, brackets down to the legs
+  // ---- observation deck: steel grating with painted grid, railings, brackets down to the legs
   const grate=(x,y,z)=>((Math.floor((x+10)*2.5)+Math.floor((z+10)*2.5))%2?'#55595c':'#4a4e51');
   twBox(L,[0,Yd-0.06,0],[2*D,0.12,2*D],grate,10);
-  for(let f=0;f<4;f++){const sgn=f<2?1:-1,ax=f%2===0;   // kick plates
-    if(ax){twBox(L,[0,Yd+0.08,sgn*D],[2*D,0.16,0.04],'#3d4144');}else twBox(L,[sgn*D,Yd+0.08,0],[0.04,0.16,2*D],'#3d4144');}
   const GAP=0.45;
   C.forEach(([sx,sz])=>{const w=twHW(Yd-3);twBar(L,[sx*D*0.98,Yd-0.1,sz*D*0.98],[sx*w,Yd-3,sz*w],0.05,twSteel);twBar(L,[sx*D,Yd-0.1,0],[sx*twHW(Yd-1.5),Yd-1.5,0],0.04,twSteel);twBar(L,[0,Yd-0.1,sz*D],[0,Yd-1.5,sz*twHW(Yd-1.5)],0.04,twSteel);});
   // weapons crate (closed for now): olive box with stencilled band and dark latches
