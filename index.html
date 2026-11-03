@@ -1237,16 +1237,46 @@ const clouds=new THREE.Group();scene.add(clouds);
  const m=new THREE.Mesh(g,new THREE.MeshLambertMaterial({vertexColors:true,fog:false,emissive:0x8899aa,emissiveIntensity:0.25,depthTest:false,depthWrite:false}));m.renderOrder=-2;m.frustumCulled=false;clouds.add(m);}
 
 /* ---------------- water: lake + stream ribbon (fresnel to sky, flowing foam on the stream) ---------------- */
-const waterMat=new THREE.ShaderMaterial({fog:true,transparent:true,side:THREE.DoubleSide,
-  uniforms:THREE.UniformsUtils.merge([THREE.UniformsLib.fog,{uTime:{value:0},deep:{value:C_('#1d3d3f')},skyC:{value:C_('#93b3c6')},foamC:{value:C_('#e6ece6')}}]),
-  vertexShader:'attribute vec2 flow;varying vec3 vW;varying vec2 vF;\n#include <fog_pars_vertex>\nvoid main(){vec4 w=modelMatrix*vec4(position,1.0);vW=w.xyz;vF=flow;vec4 mvPosition=viewMatrix*w;gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}',
-  fragmentShader:'uniform float uTime;uniform vec3 deep,skyC,foamC;varying vec3 vW;varying vec2 vF;\n#include <fog_pars_fragment>\nfloat hs(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}\nvoid main(){vec3 vd=normalize(cameraPosition-vW);float fr=pow(1.0-max(vd.y,0.0),3.0);\nvec2 q=floor(vW.xz*0.6);float rip=hs(q+floor(uTime*1.5))*0.06;\nvec3 c=mix(deep,skyC,clamp(0.15+fr*0.85+rip,0.0,1.0));\nif(vF.y>1.0){float lat=vF.y-1.0;float k=hs(floor(vec2(vF.x*0.8-uTime*7.0,lat*7.0)));float k2=hs(floor(vec2(vF.x*2.1-uTime*11.0,lat*13.0+3.0)));c=mix(vec3(0.55,0.68,0.70),foamC,clamp(0.35+0.45*k+0.3*k2,0.0,1.0));}\nelse if(vF.y>0.0){float b=sin(vF.x*1.7-uTime*4.0+hs(floor(vW.xz*1.3))*2.0);float foam=smoothstep(0.55,1.0,b)*vF.y;c=mix(c,foamC,clamp(foam,0.0,0.85));}\ngl_FragColor=vec4(c,0.95);gl_FragColor=linearToOutputTexel(gl_FragColor);\n#include <fog_fragment>\n}'});
-{ // lake
-  const P=[],F=[];const N=96;const ex=1.35;
-  for(let i=0;i<N;i++){const a0=i/N*PI*2,a1=(i+1)/N*PI*2;for(let rr=0;rr<4;rr++){const r0=rr/4*ex,r1=(rr+1)/4*ex;
-    const p=(r,a)=>[LCX+Math.cos(a)*LRX*r,LW,LCZ+Math.sin(a)*LRZ*r];const A=p(r0,a0),B2=p(r0,a1),C2=p(r1,a0),D=p(r1,a1);
-    P.push(...A,...C2,...B2,...B2,...C2,...D);for(let m=0;m<6;m++)F.push(0,0);}}
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('flow',new THREE.Float32BufferAttribute(F,2));
+const waterMat=new THREE.ShaderMaterial({fog:true,transparent:true,side:THREE.DoubleSide,depthWrite:false,
+  uniforms:THREE.UniformsUtils.merge([THREE.UniformsLib.fog,{uTime:{value:0},deep:{value:C_('#1d3d3f')},skyC:{value:C_('#93b3c6')},foamC:{value:C_('#e6ece6')},
+    top:{value:C_('#3f78bd')},hor:{value:FOG_C.clone()},sunDir:{value:SUN_OFF.clone().normalize()},glowC:{value:new THREE.Color(1,0.9,0.8)},glow:{value:0.12},sunVis:{value:1},lit:{value:1}}]),
+  vertexShader:'attribute vec2 flow;attribute float dep;attribute vec2 fd;varying vec3 vW;varying vec2 vF;varying float vDep;varying vec2 vFd;\n#include <fog_pars_vertex>\nvoid main(){vec4 w=modelMatrix*vec4(position,1.0);vW=w.xyz;vF=flow;vDep=dep;vFd=dot(fd,fd)>0.01?fd*3.2:vec2(0.35,0.22);vec4 mvPosition=viewMatrix*w;gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}',
+  fragmentShader:[
+'uniform float uTime,glow,sunVis,lit;uniform vec3 deep,skyC,foamC,top,hor,sunDir,glowC;varying vec3 vW;varying vec2 vF;varying float vDep;varying vec2 vFd;',
+'#include <fog_pars_fragment>',
+'float hs(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}',
+'float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hs(i),hs(i+vec2(1.0,0.0)),f.x),mix(hs(i+vec2(0.0,1.0)),hs(i+vec2(1.0,1.0)),f.x),f.y);}',
+'float wh(vec2 p,float t){return vn(p*0.9-vFd*t*0.9)*0.62+vn(p*2.3+vec2(1.7,-3.1)-vFd*t*1.4)*0.38;}',
+'vec3 skyCol(vec3 d){float h=max(d.y,0.0);vec3 c=mix(hor,top,pow(h,0.55));float s=max(dot(d,sunDir),0.0);',
+' vec2 hz=normalize(d.xz+vec2(1e-5)),sz=normalize(sunDir.xz+vec2(1e-5));float az=max(dot(hz,sz),0.0);',
+' c+=glowC*glow*(pow(s,5.0)*0.55+pow(1.0-h,7.0)*(0.25+0.75*pow(az,2.5))*0.9);return c;}',
+'void main(){',
+' float dp=vDep;float edge=smoothstep(0.0,0.45,dp);if(edge<=0.003)discard;',
+' vec3 vd=normalize(cameraPosition-vW);float dist=length(cameraPosition-vW);',
+' float strong=vF.y>1.0?0.0:(vF.y>0.0?0.5+vF.y*0.5:0.0);',
+' float amp=mix(0.55,1.1,min(strong,1.0))*(1.0-smoothstep(60.0,260.0,dist));',
+' vec2 p=vW.xz;float e=0.07;float h0=wh(p,uTime),hx=wh(p+vec2(e,0.0),uTime),hz2=wh(p+vec2(0.0,e),uTime);',
+' vec3 n=normalize(vec3(-(hx-h0)/e*0.16*amp,1.0,-(hz2-h0)/e*0.16*amp));',
+' float cs=max(dot(n,vd),0.0);float F=0.02+0.98*pow(1.0-cs,5.0);F=clamp(F*1.15,0.0,1.0);',
+' vec3 r=reflect(-vd,n);r.y=abs(r.y)+0.02;r=normalize(r);vec3 refl=skyCol(r);',
+' vec3 bed=vec3(0.20,0.25,0.17)*(0.18+0.82*lit);float clear=1.0-smoothstep(0.0,1.8,dp);',
+' vec3 refr=mix(deep,bed*(0.7+0.5*vn(p*1.6)),clear*0.85);',
+' vec3 c=mix(refr,refl,F);',
+' float sp=pow(max(dot(r,sunDir),0.0),260.0)*sunVis;c+=mix(vec3(1.0,0.92,0.75),glowC*1.4,clamp(glow,0.0,1.0))*sp*2.2;',
+' float a=mix(0.82,0.97,clear*0.0+F);a=max(a,0.0)*edge;a=mix(a*(0.55+0.45*smoothstep(0.0,1.2,dp)),a,F);',
+' if(vF.y>1.0){float lat=vF.y-1.0;float k=hs(floor(vec2(vF.x*0.8-uTime*7.0,lat*7.0)));float k2=hs(floor(vec2(vF.x*2.1-uTime*11.0,lat*13.0+3.0)));c=mix(vec3(0.55,0.68,0.70),foamC,clamp(0.35+0.45*k+0.3*k2,0.0,1.0));a=0.95*edge;}',
+' else if(vF.y>0.0){float b=sin(vF.x*1.7-uTime*4.0+hs(floor(vW.xz*1.3))*2.0);float foam=smoothstep(0.55,1.0,b)*vF.y;c=mix(c,foamC,clamp(foam,0.0,0.85));}',
+' float sh=(1.0-smoothstep(0.12,0.6,dp))*smoothstep(0.0,0.12,dp);float fo=sh*(0.45+0.55*vn(p*3.0+vec2(uTime*0.5,-uTime*0.35)))*(0.7+0.3*sin(uTime*1.4+p.x*0.8+p.y*0.6));',
+' c=mix(c,foamC*(0.55+0.45*lit),clamp(fo*0.9,0.0,0.9));a=max(a,fo*0.85);',
+' gl_FragColor=vec4(c,a);gl_FragColor=linearToOutputTexel(gl_FragColor);',
+'#include <fog_fragment>',
+'}'].join('\n')});
+{ // lake (finer rings so the bank depth fades smoothly into the shore)
+  const P=[],F=[],D=[],FD=[];const N=96,NR=14;const ex=1.18;
+  for(let i=0;i<N;i++){const a0=i/N*PI*2,a1=(i+1)/N*PI*2;for(let rr=0;rr<NR;rr++){const r0=rr/NR*ex,r1=(rr+1)/NR*ex;
+    const p=(r,a)=>{const x=LCX+Math.cos(a)*LRX*r,z=LCZ+Math.sin(a)*LRZ*r;return [x,LW,z];};const A=p(r0,a0),B2=p(r0,a1),C2=p(r1,a0),D2=p(r1,a1);
+    const V6=[A,C2,B2,B2,C2,D2];for(const v of V6){P.push(...v);F.push(0,0);FD.push(0,0);D.push(Math.max(-0.4,Math.min(4,LW-groundH(v[0],v[2])+0.05)));}}}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('flow',new THREE.Float32BufferAttribute(F,2));g.setAttribute('dep',new THREE.Float32BufferAttribute(D,1));g.setAttribute('fd',new THREE.Float32BufferAttribute(FD,2));
   const m=new THREE.Mesh(g,waterMat);m.renderOrder=1;scene.add(m);}
 { // stream ribbon: follows the bed, then hugs the slope where the ground falls away to the lake (cascade)
   const rows=[];const last=Math.min(STREAM_END+3,STREAM.n-1);
@@ -1261,11 +1291,11 @@ const waterMat=new THREE.ShaderMaterial({fog:true,transparent:true,side:THREE.Do
       rows.push({x,z,dx:dx/L,dz:dz/L,nx,nz,w,yc,fk,s:STREAM.s[i]+L*t,st,L:[Lx,ye(Lx,Lz),Lz],C:[x,yc,z],R:[Rx,ye(Rx,Rz),Rz]});
       if(yc<LW-0.4)break;}
     if(rows.length&&rows[rows.length-1].yc<LW-0.4)break;}
-  const P=[],F=[];const fy=(r,lat)=>r.fk>0.5?1.0+0.98*lat:r.st;
+  const P=[],F=[],D=[],FD=[];const fy=(r,lat)=>r.fk>0.5?1.0+0.98*lat:r.st;
   for(let a=0;a<rows.length-1;a++){const r0=rows[a],r1=rows[a+1];
-    const q=(A,B,C,D,la,lb)=>{P.push(...A,...B,...C,...B,...D,...C);F.push(r0.s,fy(r0,la),r0.s,fy(r0,lb),r1.s,fy(r1,la),r0.s,fy(r0,lb),r1.s,fy(r1,lb),r1.s,fy(r1,la));};
+    const dd=l=>0.05+0.75*(1-Math.abs(l-0.5)*2);const q=(A,B,C,Dv,la,lb)=>{P.push(...A,...B,...C,...B,...Dv,...C);F.push(r0.s,fy(r0,la),r0.s,fy(r0,lb),r1.s,fy(r1,la),r0.s,fy(r0,lb),r1.s,fy(r1,lb),r1.s,fy(r1,la));D.push(dd(la),dd(lb),dd(la),dd(lb),dd(lb),dd(la));FD.push(r0.dx,r0.dz,r0.dx,r0.dz,r1.dx,r1.dz,r0.dx,r0.dz,r1.dx,r1.dz,r1.dx,r1.dz);};
     q(r0.L,r0.C,r1.L,r1.C,0,0.5);q(r0.C,r0.R,r1.C,r1.R,0.5,1);}
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('flow',new THREE.Float32BufferAttribute(F,2));
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('flow',new THREE.Float32BufferAttribute(F,2));g.setAttribute('dep',new THREE.Float32BufferAttribute(D,1));g.setAttribute('fd',new THREE.Float32BufferAttribute(FD,2));
   const m=new THREE.Mesh(g,waterMat);m.renderOrder=1;scene.add(m);
   // the falling stretch, for the spray / splash / mist effects
   const fr=rows.filter(r=>r.fk>0.5);if(fr.length>2){let base=fr[fr.length-1];for(const r of fr)if(r.yc<=LW+0.15){base=r;break;}
@@ -3299,7 +3329,7 @@ function stepDay(dt){
   skyMat.uniforms.glowC.value.copy(_dc.glow);skyMat.uniforms.glow.value=L('g');skyMat.uniforms.night.value=nt;skyMat.uniforms.sunDisk.value=sst(-3,0,el);
   scene.fog.color.copy(_dc.hor);scene.background.copy(_dc.hor);
   const cm=clouds.children[0].material;cm.emissive.copy(_dc.cl);cm.emissiveIntensity=1;
-  waterMat.uniforms.skyC.value.copy(_dc.wat);waterMat.uniforms.deep.value.copy(_dc.deep);
+  waterMat.uniforms.skyC.value.copy(_dc.wat);waterMat.uniforms.deep.value.copy(_dc.deep);{const wu=waterMat.uniforms;wu.top.value.copy(_dc.top);wu.hor.value.copy(_dc.hor);wu.sunDir.value.copy(_sd2);wu.glowC.value.copy(_dc.glow);wu.glow.value=L('g');wu.sunVis.value=sst(-3,0,el);wu.lit.value=1-nt;}
   // light: the sun by day, the moon by night (direction kept a little above the horizon so shadows stay sane)
   const sI=L('sI')*DAY.sunMax,mI=0.5*DAY.moonMax*nt*moonUp;
   hemi.color.copy(_dc.hs);hemi.groundColor.copy(_dc.hg);hemi.intensity=L('hI')*(nt>0?(1-nt)+nt*(0.45+0.55*Math.min(1.5,DAY.moonMax)*moonUp):1)*(nt>0?1:Math.max(0.35,Math.min(1.3,0.4+0.6*DAY.sunMax)));
@@ -3345,7 +3375,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=413;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=414;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
