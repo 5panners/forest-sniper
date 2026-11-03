@@ -3376,7 +3376,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=431;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=432;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);godStep(dt);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4896,6 +4896,7 @@ function secAttackable(i,team){return i!==0&&i!==6&&SECT.s[i].own!==team;}   // 
 function secPlayers(){const out=[],t=secTeam();out.push({team:t,x:player.pos.x,z:player.pos.z,al:player.alive&&MPM.hp>0});
   if(MPM.on&&NT.opp&&RPS.pos&&RPS.r===NT.M.r)out.push({team:3-t,x:RPS.pos.x,z:RPS.pos.z,al:!!RPS.al});
   for(const u of UGVS)if(u.pl&&!u.dead&&!u.gone)out.push({team:u.pl,x:u.x,z:u.z,al:!(u.air>0),ugv:true});   // team UGVs capture too
+  try{if(!MPM.on)for(const q of DRS)if(q.m&&q.m.root.visible&&player.alive)out.push({team:t,x:q.m.D.x,z:q.m.D.z,al:true,droid:true});}catch(e){}   // so do GD01 droids (solo)
   return out;}
 // the host (or single player) runs the capture
 function secSim(dt){const P=secPlayers();
@@ -5755,7 +5756,7 @@ return {root,hull,D,GUNS,POD,BELT,stepSim,setMood,jump,MOODS};
 // ================= Droid Gunner: a one-wheeled buddy that spawns with you, follows you about, and shoots deer it can see (solo only for now) =================
 // The model, suspension and sim come from the standalone viewer (droid.html). The brain below is a cut-down version of the team UGV's: tag along, stop and fire at what it sees.
 // (GD tab in the options: on / off, how many, hunting deer, speed, how far it lets you go, sight range, rate of fire, burst, pause, spread, chatter, volumes)
-const mkDR=()=>({okT:0,m:null,tele:true,lt:0,tg:null,tgDeer:null,mem:0,losT:0,burst:0,pause:0,idleT:0,talkT:8,fw:0,fT:0,path:null,pi:0,skT:0,skX:0,skZ:0,stuck:0,shots:0,sad:false,slP:0,slR:0,px:0,pz:0,still:0});const DRS=[];let DR=mkDR();DRS.push(DR);
+const mkDR=()=>({okT:0,capQ:-1,exT:0,m:null,tele:true,lt:0,tg:null,tgDeer:null,mem:0,losT:0,burst:0,pause:0,idleT:0,talkT:8,fw:0,fT:0,path:null,pi:0,skT:0,skX:0,skZ:0,stuck:0,shots:0,sad:false,slP:0,slR:0,px:0,pz:0,still:0});const DRS=[];let DR=mkDR();DRS.push(DR);
 const DR_WORDS={hi:{mood:'hi',seq:[[620,980,110,'triangle'],[1180,900,150,'triangle'],[760,1250,140,'sine']]},yes:{mood:'yes',seq:[[520,640,90,'square',0.5],[700,1200,170,'triangle']]},
  no:{mood:'no',seq:[[420,260,190,'sawtooth',0.5],[300,170,260,'sawtooth',0.5]]},excited:{mood:'excited',seq:[[600,800,60,'square',0.4],[800,1000,60,'square',0.4],[1000,1300,60,'square',0.4],[1300,1700,60,'square',0.4],[1500,2000,120,'triangle'],[1900,1500,60,'triangle'],[1600,2100,260,'triangle']]},
  alert:{mood:'alert',seq:[[900,880,120,'sawtooth',0.5],[600,590,120,'sawtooth',0.5],[900,880,120,'sawtooth',0.5],[600,590,160,'sawtooth',0.5]]},sad:{mood:'sad',seq:[[620,540,160,'sine'],[540,300,520,'sine'],[290,190,420,'sine']]},
@@ -5843,6 +5844,12 @@ function droidStep1(dt,nD){
   else for(const g of m.GUNS){g.pivot.rotation.x*=Math.max(0,1-dt*6);g.pivot.rotation.y*=Math.max(0,1-dt*6);}
   // ---- personality: bored when you stand about, pleased when you come back
   const mv=Math.hypot(p.x-DR.px,p.z-DR.pz);DR.px=p.x;DR.pz=p.z;DR.still=mv<0.02?DR.still+dt:0;
+  // helping to take a point: it gets excited when the capture starts and again when the point is won
+  {const mt=secTeam(),q=SEC_DEF.findIndex(d=>Math.hypot(D.x-d.x,D.z-d.z)<d.r),z=q>=0?SECT.s[q]:null;
+    if(z&&z.own!==mt&&z.by===mt&&z.cap>0){if(DR.capQ!==q){DR.capQ=q;if((DR.exT||0)<=0){droidSay('excited');DR.exT=10;}}}
+    else if(DR.capQ>=0&&SECT.s[DR.capQ].own===mt){DR.capQ=-1;droidSay('excited');DR.exT=10;}
+    else if(DR.capQ>=0&&!z)DR.capQ=-1;
+    DR.exT=(DR.exT||0)-dt;}
   DR.okT-=dt;DR.talkT-=dt;if(DR.talkT<=0&&!DR.tg&&DR.i===0){DR.talkT=(10+Math.random()*14)*Math.max(0.1,GAME.dTalk);if(GAME.dTalk<=0){DR.talkT=60;}else if(DR.still>8)droidSay(Math.random()<0.5?'curious':'hi');else if(Math.random()<0.25)droidSay(Math.random()<0.5?'yes':'curious');}
 }
 resReset=(f=>function(){f.apply(this,arguments);try{for(const q of DRS)q.tele=true;}catch(e){}})(resReset);
