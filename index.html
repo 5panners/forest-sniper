@@ -2557,14 +2557,14 @@ function locomote(d,tS,dt,steer){
 function turnTo(d,x,z,dt,rate){d.yaw+=clamp(wrapA(Math.atan2(x-d.x,z-d.z)-d.yaw),-rate*dt,rate*dt);}
 function pickSub(d){const r=Math.random();if(r<(d.st==='hold'?0.4:0.6)){d.sub='eat';d.subT=3+Math.random()*7;}else if(r<0.85){d.sub='look';d.subT=1.5+Math.random()*3;d.nyR=(Math.random()-0.5)*1.8;}else{d.sub='step';d.subT=1+Math.random()*2;d.wob=(Math.random()-0.5)*0.9;}}
 const OPEN_K=0.42;
-function seekOpen(d){let bx=0,bz=0,bs=-9;for(let k=0;k<26;k++){const a=Math.random()*PI*2,r=25+Math.random()*130;const x=d.x+Math.cos(a)*r,z=d.z+Math.sin(a)*r;if(!deerOK(x,z)||treeAt(x,z,1))continue;
+function seekOpen(d){let bx=0,bz=0,bs=-9;for(let k=0;k<40;k++){const a=Math.random()*PI*2,r=25+Math.random()*180;const x=d.x+Math.cos(a)*r,z=d.z+Math.sin(a)*r;if(!deerOK(x,z)||treeAt(x,z,1))continue;
     const m=meadowK(x,z),sc=m*2-r*0.003+Math.random()*0.15;if(m>OPEN_K&&sc>bs){bs=sc;bx=x;bz=z;}}return bs>-9?[bx,bz]:null;}
 function nextActivity(d){
-  if(meadowK(d.x,d.z)<OPEN_K&&Math.random()<0.7){const o=seekOpen(d);if(o){d.st='walk';d.tx=o[0];d.tz=o[1];d.stT=140;return;}}
+  if(meadowK(d.x,d.z)<OPEN_K&&Math.random()<0.97){const o=seekOpen(d);if(o){d.st='walk';d.tx=o[0];d.tz=o[1];d.stT=140;d.seek=true;return;}}
   if(Math.random()<0.22){const b=bankPt(d);if(b){d.st='todrink';d.tx=b.x;d.tz=b.z;d.wx=b.wx;d.wz=b.wz;d.stT=150;return;}}
   if(d.herd.T<0){const h=pickHome(0);d.herd.x=h.x;d.herd.z=h.z;d.herd.T=150+Math.random()*250;}
   const [x,z]=wanderPt(d);d.st='walk';d.tx=x;d.tz=z;d.stT=100;}
-function toGraze(d,t){d.st='graze';const op=meadowK(d.x,d.z)>OPEN_K;d.stT=(t||15+Math.random()*45)*(op?1.8:0.7);pickSub(d);}
+function toGraze(d,t){d.st='graze';d.seek=false;const op=meadowK(d.x,d.z)>OPEN_K;d.stT=(t||15+Math.random()*45)*(op?1.8:0.25);pickSub(d);}   /* in the trees they only graze briefly before heading for open ground */
 
 // flee bearing: away from the threat, but swept for clear ground so a deer never spins on the spot; held 0.5 s so it does not jitter
 function fleeDir(d){const now=performance.now()/1000;if(d.fb!=null&&d.fbN>now)return d.fb;
@@ -2586,7 +2586,7 @@ function deerAI(d,dt){
         if(d.sex==='m'){d.rutT-=dt;if(d.rutT<=0&&d.fear<0.25&&!d.wound){d.st='roar';d.roarN=3+(Math.random()*3|0);d.roarCD=0.6;d.stT=40;}}}
       else if(d.stT<=0||!d.mate){release(d);toGraze(d,15);}
       break;}
-    case 'walk':tS=K.walk*wm;steer=true;if(Math.hypot(d.tx-d.x,d.tz-d.z)<2.2||d.stT<=0||d.stuck>6){d.stuck=0;toGraze(d);}break;
+    case 'walk':tS=K.walk*wm*(d.seek?1.5:1);steer=true;if(Math.hypot(d.tx-d.x,d.tz-d.z)<2.2||d.stT<=0||d.stuck>6){d.stuck=0;toGraze(d);}break;
     case 'trot':tS=3.4*wm;steer=true;if(Math.hypot(d.tx-d.x,d.tz-d.z)<3||d.stT<=0||d.stuck>6){d.stuck=0;d.st='alert';d.stT=3+Math.random()*4;}break;
     case 'todrink':tS=K.walk;steer=true;if(Math.hypot(d.tx-d.x,d.tz-d.z)<1.4){d.st='drink';d.stT=9+Math.random()*14;}else if(d.stT<=0||d.stuck>6){d.stuck=0;toGraze(d);}break;
     case 'drink':turnTo(d,d.wx,d.wz,dt,1.2);if(d.stT<=0)toGraze(d);break;
@@ -3471,7 +3471,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=536;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=537;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
