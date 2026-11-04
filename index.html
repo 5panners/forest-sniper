@@ -45,9 +45,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-ui);o
 .grid div{display:flex;gap:9px;align-items:baseline;min-width:0}
 kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-radius:4px;padding:0 6px;color:var(--amber);min-width:52px;text-align:center;flex:none}
 #deployBtn{font:700 16px var(--f-ui);letter-spacing:.05em;text-transform:uppercase;background:var(--moss);color:#11160c;border:0;border-radius:6px;padding:11px 22px;cursor:pointer}
-#resetBtn,#cfgBtn{font:600 14px var(--f-ui);letter-spacing:.05em;text-transform:uppercase;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:10px 16px;margin-left:10px;cursor:pointer}
-#resetBtn:hover,#cfgBtn:hover{color:var(--amber);border-color:var(--amber)}
-#resetBtn:focus-visible,#cfgBtn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+#resetBtn,#cfgBtn,#applyBtn{font:600 14px var(--f-ui);letter-spacing:.05em;text-transform:uppercase;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:10px 16px;margin-left:10px;cursor:pointer}
+#resetBtn:hover,#cfgBtn:hover,#applyBtn:hover{color:var(--amber);border-color:var(--amber)}
+#resetBtn:focus-visible,#cfgBtn:focus-visible,#applyBtn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 #deployBtn:disabled{opacity:.5;cursor:wait}
 #deployBtn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .note{font:12px var(--f-mono);color:var(--muted);margin-top:10px}
@@ -153,7 +153,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <p class="note">100% is the recording at its original level. Press M in game to mute everything.</p>
   </div>
   <div id="paneMp" role="tabpanel" aria-labelledby="tabMp" hidden><div id="mpBox"><b>1v1 match</b><button id="mpStart" type="button" hidden>Start match</button><button id="mpLeave" type="button" hidden>Leave</button><button id="mpDHost" type="button">Host match</button><button id="mpDJoin" type="button">Join match</button><textarea id="mpDx" rows="6" style="min-height:8em;resize:vertical" hidden spellcheck="false" aria-label="Connection code"></textarea><button id="mpDgo" type="button" hidden>Connect</button><div id="mpStat" class="note">Host a match and send the code to your opponent. They paste it and press Join match, then send you their reply code to paste back and Connect. One life per round, first to 3 rounds; 5 rounds loaded plus 15 spare.</div></div><label class="opt"><input type="checkbox" id="optNet" checked><span><b>Show network stats</b><small>While connected: round-trip time, connection path, data rates, lost packets, buffering and wildlife sync, top left.</small></span></label></div>
-  <button id="deployBtn" disabled>Generating forest…</button><button id="cfgBtn" type="button">Copy settings</button>
+  <button id="deployBtn" disabled>Generating forest…</button><button id="cfgBtn" type="button">Copy settings</button><button id="applyBtn" type="button" title="Save the settings and reload the page so map pickup quantities and placement take effect">Apply &amp; reload</button>
   <div class="note" id="stats"></div>
 </div></div>
 
@@ -3136,7 +3136,7 @@ function buildMap(){const N=mapCv.width,K=N/MAPL;const img=mctx.createImageData(
   mapBase=mctx.getImageData(0,0,N,N);mctx.setTransform(1,0,0,1,0,0);}
 // full map: free the mouse while it is open so you can click a spot (development teleport)
 function setMap(on){mapOpen=on;if(!on)try{UGSEL.sel=UGSEL.hov=false;mapCv.style.cursor='';}catch(e){}$('mapPanel').hidden=!on;
-  if(on){input.lmb=input.rmb=false;try{if(document.pointerLockElement)document.exitPointerLock();}catch(e){}}
+  if(on){input.lmb=input.rmb=false;try{if(document.pointerLockElement&&SPW.open)document.exitPointerLock();}catch(e){}}   // the map does not take the mouse: it stays locked to the game (only the respawn picker, which needs clicks, frees it)
   else if(playing&&!fallback&&!document.pointerLockElement)requestLock();}
 mapCv.addEventListener('click',e=>{if(!mapOpen)return;try{if(spwClick(e)){e.stopPropagation();return;}}catch(err){}const r=mapCv.getBoundingClientRect();
   const mw=mapW(e),x=clamp(mw.x,-PLAY+2,PLAY-2),z=clamp(mw.z,-PLAY+2,PLAY-2);
@@ -3165,7 +3165,8 @@ function wptBrg(){return ((Math.atan2(WPT.x-player.pos.x,-(WPT.z-player.pos.z))*
 function wptPin(c,x,y,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWidth=2.2;c.strokeStyle='#04202a';c.fillStyle='#35d6ff';c.beginPath();c.moveTo(0,0);c.bezierCurveTo(-9,-9,-8,-20,0,-20);c.bezierCurveTo(8,-20,9,-9,0,0);c.closePath();c.fill();c.stroke();c.fillStyle='#04202a';c.beginPath();c.arc(0,-13,3,0,PI*2);c.fill();c.restore();}
 mapCv.addEventListener('contextmenu',e=>{e.preventDefault();});   // the map no longer commands your UGV: it works by itself
 var WPNMAP=false;try{WPNMAP=localStorage.getItem('fsWpnMap')==='1';}catch(e){}
-function drawMap(){if(!mapBase)buildMap();const W=mapCv.width,Z=MZ.k,N=MAPL*Z;   // zoom: the terrain is drawn bigger, positions use the zoomed S, but icons and text keep their size
+function drawMap(){if(!mapBase)buildMap();const W=mapCv.width,Z=MZ.k,N=MAPL*Z;
+  if(document.pointerLockElement&&!SPW.open&&Z>1){const p=player.pos;MZ.x=W/2-(W/MAPL)*N*(p.x+FE)/(FE*2);MZ.y=W/2-(W/MAPL)*N*(p.z+FE)/(FE*2);mzClamp();}   // locked mouse: a zoomed map follows you   // zoom: the terrain is drawn bigger, positions use the zoomed S, but icons and text keep their size
   if(!mapBaseCv){mapBaseCv=document.createElement('canvas');mapBaseCv.width=mapBaseCv.height=W;mapBaseCv.getContext('2d').putImageData(mapBase,0,0);}
   mctx.setTransform(1,0,0,1,0,0);mctx.imageSmoothingEnabled=true;mctx.fillStyle='#0b0f10';mctx.fillRect(0,0,W,W);mctx.drawImage(mapBaseCv,MZ.x,MZ.y,W*Z,W*Z);mctx.setTransform(W/MAPL,0,0,W/MAPL,MZ.x,MZ.y);const S=v=>(v+FE)/(FE*2)*N;
   if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));if($('optDeerMap').checked)BEARS.forEach(b=>drawBearMark(mctx,S(b.x),S(b.z),b,0.9,0));if($('optDeerMap').checked&&typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mctx,S(u.x),S(u.z),u,0.9));
@@ -3204,7 +3205,7 @@ cv.addEventListener('mousedown',e=>{if(!playing)return;if(!locked&&(!fallback||e
 addEventListener('mouseup',e=>{if(e.button===0)input.lmb=false;});
 addEventListener('mousemove',e=>{if(!playing)return;if(!(locked||(fallback&&(input.lmb||input.rmb||e.buttons))))return;
   const k=0.0022*sens*((input.rmb&&!scoped&&WPN.cur==='at4')?1/AT4Z:1)*(scoped?1.3/(ZOOMS[zoomI]*(WPN.cur==='rifle'?1:WPN.cur==='at4'?1.56:1.3)):(input.rmb?0.6:1));camYaw-=e.movementX*k;camPitch=clamp(camPitch-e.movementY*k,-1.25,1.05);});
-cv.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();if(DEVFACE.on&&!scoped&&!viewFP){DEVFACE.r=clamp(DEVFACE.r+Math.sign(e.deltaY)*0.4,0.8,14);}else if(!scoped&&input.rmb&&WPN.cur==='at4'){const z=e.deltaY<0?2:1;if(z!==AT4Z){AT4Z=z;toast('AT4 sight '+z+'×');}}else if(scoped){zoomI=clamp(zoomI+(e.deltaY<0?1:-1),0,ZOOMS.length-1);}else camDist=clamp(camDist+Math.sign(e.deltaY)*0.4,2,7);},{passive:false});
+cv.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();if(mapOpen&&!SPW.open){MZ.k=clamp(MZ.k*Math.exp(-e.deltaY*0.0016),1,6);mzClamp();}else if(DEVFACE.on&&!scoped&&!viewFP){DEVFACE.r=clamp(DEVFACE.r+Math.sign(e.deltaY)*0.4,0.8,14);}else if(!scoped&&input.rmb&&WPN.cur==='at4'){const z=e.deltaY<0?2:1;if(z!==AT4Z){AT4Z=z;toast('AT4 sight '+z+'×');}}else if(scoped){zoomI=clamp(zoomI+(e.deltaY<0?1:-1),0,ZOOMS.length-1);}else camDist=clamp(camDist+Math.sign(e.deltaY)*0.4,2,7);},{passive:false});
 let hbShown=false;
 function setHB(on){hbShown=on;showHB(on);showDeerHB(on);P2HB.forEach(e=>e.visible=on);const c=$('optHB');if(c)c.checked=on;}
 $('optHB').addEventListener('change',e=>setHB(e.target.checked));
@@ -3466,7 +3467,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=519;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=521;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3984,9 +3985,9 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
       +`<p style="margin:10px 0">Radius around a control point: ${inp('pkRad',64)} m</p>`
       +'<p class="tn">Weapons are counted per control point (7 points), so 2 means 14 on the map. The percentage is the share of that pickup placed inside the radius; the rest lie anywhere on the map. Weapons and UGVs use fixed placement.</p>'
       +'<p class="sec" style="margin-top:14px">Start kit</p><table><tr><th>Item</th><th>You start with</th></tr><tr><td>Rifle</td><td>12 in the magazine</td></tr><tr><td>AT4</td><td>1 loaded + 3 spare rounds</td></tr><tr><td>M32</td><td>6 loaded + 12 spare grenades</td></tr></table>'
-      +'<div class="apply"><button type="button" class="btn" id="pkApply">Apply &amp; reload</button><span class="tn" id="pkMsg"></span></div>';
-    pn.querySelectorAll('input[type=number]').forEach(i=>{i.oninput=()=>{const v=parseFloat(i.value);if(!(v>=0))return;GAME[i.dataset.k]=v;try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}pn.querySelector('#pkMsg').textContent='Saved.';};i.onchange=()=>build();});
-    pn.querySelector('#pkApply').onclick=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}location.reload();};};
+      +'<p class="tn">Quantity and location changes need the Apply &amp; reload button next to Deploy.</p>';
+    pn.querySelectorAll('input[type=number]').forEach(i=>{i.oninput=()=>{const v=parseFloat(i.value);if(!(v>=0))return;GAME[i.dataset.k]=v;try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}};i.onchange=()=>build();});
+  };
   build();
   tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};
   tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
@@ -6617,6 +6618,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&NT.room&&
 ;setInterval(()=>{const b=document.getElementById('mpDx');if(b&&!b.hidden&&b.scrollHeight>b.clientHeight+2)b.style.height=(b.scrollHeight+6)+'px';},400);
 
 try{const t=document.querySelector('.tabs'),mp=$('tabMp');if(t&&mp&&t.children[0]!==mp)t.children[0].after(mp);}catch(e){}   // Multiplayer is the second tab
+{const ab=$('applyBtn');if(ab)ab.onclick=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}location.reload();};}
 {const b=$('cfgBtn');b.onclick=()=>{const o={};for(const k of['fsGame','fsDgc','fsDmg','fsUgc','sniperTime','sniperGfx2','sniperAudio','fsPick','fsKeys','fsSens']){try{const v=localStorage.getItem(k);if(v!=null)o[k]=v;}catch(e){}}
   const t=JSON.stringify(o);const done=()=>{b.textContent='Copied ✓';setTimeout(()=>{b.textContent='Copy settings';},2000);};
   const fb=()=>{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;left:10%;top:30%;width:80%;height:30%;z-index:99';document.body.appendChild(a);a.select();try{document.execCommand('copy');done();}catch(e){}a.onblur=()=>a.remove();};
