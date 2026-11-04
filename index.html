@@ -3030,7 +3030,7 @@ const ZOOMS=[2,3,4,5]; let zoomI=0;   // magnification; field of view = 62 deg (
 const _cp=V(0,0,0),_dir=V(0,0,0),_eye=V(0,0,0),_rt=V(0,0,0), camRay=new THREE.Raycaster();
 let breath=6, breathLock=0, swayT=0, range=null, rangeT=0;
 let camBoom=3;
-const DEVFACE={on:false};
+const DEVFACE={on:false,r:3.5};
 let SCOPE_TP=false;
 let aimYawV=null,aimPitchV=null,aimPtTP=null,_wasScoped=false;const SAL={on:false,t:0,yaw:0,pit:0,p0:new THREE.Vector3()};
 function gunYaw(){return aimYawV!=null?aimYawV:camYaw;}
@@ -3091,7 +3091,7 @@ function updateCamera(dt){
   if(scoped&&!viewFP){SCOPE_TP=true;viewFP=true;}else if(!scoped&&_wasScoped&&SCOPE_TP){SCOPE_TP=false;viewFP=false;}   // scoping from the third-person view switches to first person, and unscoping goes back
   _wasScoped=scoped;
   // dev: H flips the third-person camera round to the front of the player (looking back at him); aiming and controls are unchanged
-  if(DEVFACE.on&&!scoped&&!viewFP){camera.position.copy(camPivot).addScaledVector(_dir,Math.max(camBoom,2.2));const gg=groundH(camera.position.x,camera.position.z)+0.25;if(camera.position.y<gg)camera.position.y=gg;
+  if(DEVFACE.on&&!scoped&&!viewFP){camera.position.copy(camPivot).addScaledVector(_dir,DEVFACE.r);const gg=groundH(camera.position.x,camera.position.z)+0.25;if(camera.position.y<gg)camera.position.y=gg;
     camera.lookAt(camPivot);camera.updateMatrixWorld();marine.visible=true;J.head.visible=true;}
   rangeT-=dt;if(scoped&&rangeT<=0){rangeT=0.12;camera.getWorldDirection(_cd);const h=castRay(camera.position,_cd,1800);range=h?h.dist:null;}
 }
@@ -3198,7 +3198,7 @@ cv.addEventListener('mousedown',e=>{if(!playing)return;if(!locked&&(!fallback||e
 addEventListener('mouseup',e=>{if(e.button===0)input.lmb=false;});
 addEventListener('mousemove',e=>{if(!playing)return;if(!(locked||(fallback&&(input.lmb||input.rmb||e.buttons))))return;
   const k=0.0022*sens*((input.rmb&&!scoped&&WPN.cur==='at4')?1/AT4Z:1)*(scoped?1.3/(ZOOMS[zoomI]*(WPN.cur==='rifle'?1:WPN.cur==='at4'?1.56:1.3)):(input.rmb?0.6:1));camYaw-=e.movementX*k;camPitch=clamp(camPitch-e.movementY*k,-1.25,1.05);});
-cv.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();if(!scoped&&input.rmb&&WPN.cur==='at4'){const z=e.deltaY<0?2:1;if(z!==AT4Z){AT4Z=z;toast('AT4 sight '+z+'×');}}else if(scoped){zoomI=clamp(zoomI+(e.deltaY<0?1:-1),0,ZOOMS.length-1);}else camDist=clamp(camDist+Math.sign(e.deltaY)*0.4,2,7);},{passive:false});
+cv.addEventListener('wheel',e=>{if(!playing)return;e.preventDefault();if(DEVFACE.on&&!scoped&&!viewFP){DEVFACE.r=clamp(DEVFACE.r+Math.sign(e.deltaY)*0.4,0.8,14);}else if(!scoped&&input.rmb&&WPN.cur==='at4'){const z=e.deltaY<0?2:1;if(z!==AT4Z){AT4Z=z;toast('AT4 sight '+z+'×');}}else if(scoped){zoomI=clamp(zoomI+(e.deltaY<0?1:-1),0,ZOOMS.length-1);}else camDist=clamp(camDist+Math.sign(e.deltaY)*0.4,2,7);},{passive:false});
 let hbShown=false;
 function setHB(on){hbShown=on;showHB(on);showDeerHB(on);P2HB.forEach(e=>e.visible=on);const c=$('optHB');if(c)c.checked=on;}
 $('optHB').addEventListener('change',e=>setHB(e.target.checked));
@@ -3211,7 +3211,7 @@ addEventListener('keydown',e=>{
     case 'Escape': if(fallback||(MPM.on&&!locked))setPlaying(false); break;
     case 'KeyW': wTap(); break;
     case 'KeyV': viewFP=!viewFP; break;
-    case 'KeyH': DEVFACE.on=!DEVFACE.on;toast(DEVFACE.on?'Dev camera: facing the player (H again to return)':'Dev camera: normal');break;
+    case 'KeyH': DEVFACE.on=!DEVFACE.on;toast(DEVFACE.on?'Dev camera: facing the player · mouse wheel = orbit radius (H again to return)':'Dev camera: normal');break;
     case 'KeyM': soundOn=!soundOn;toast(soundOn?'Sound on':'Sound muted'); break;
     case 'KeyB': setHB(!hbShown);toast(hbShown?'Hit boxes shown · red head, yellow torso, blue limbs':'Hit boxes hidden'); break;
     case 'KeyE': setZero(zeroM+50);toast('Zero '+zeroM+' m'); break;
@@ -3459,7 +3459,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=502;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=503;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
