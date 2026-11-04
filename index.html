@@ -3470,7 +3470,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=540;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=541;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4000,7 +4000,7 @@ window.SNIPER_RES.fire=()=>({GAME,SND,playing:()=>playing});
 // ---- Health tab: every object that has hit points, with its maximum
 (function(){
   const tabs=document.querySelector('.tabs'),after=document.getElementById('paneDmg');if(!tabs||!after)return;
-  const css=document.createElement('style');css.textContent='#paneHp table{border-collapse:collapse;width:100%;font-size:13px;margin:6px 0 14px}#paneHp th{font:600 10px var(--f-ui);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);text-align:left;padding:2px 10px 6px 0}#paneHp td{padding:5px 10px 5px 0;vertical-align:middle;border-top:1px solid var(--line)}#paneHp td.nm{font-weight:600;white-space:nowrap}#paneHp td.nt{opacity:.65;font-size:12px}#paneHp input[type=number]{width:74px;background:rgba(255,255,255,.06);color:inherit;border:1px solid var(--line);border-radius:4px;padding:3px 5px;font:inherit}#paneHp .hr{display:flex;align-items:center;gap:10px}#paneHp .hr input[type=range]{width:min(260px,38vw)}#paneHp .hr output{min-width:42px;font-variant-numeric:tabular-nums}';document.head.appendChild(css);
+  const css=document.createElement('style');css.textContent='#paneHp .hcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:10px;align-items:start}#paneHp .hc{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:12px;padding:12px 16px 6px}#paneHp .hc h3{margin:0 0 6px;font:700 13px var(--f-ui);letter-spacing:.1em;text-transform:uppercase}#paneHp .hrow{padding:8px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}#paneHp .hl{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;font-weight:600}#paneHp .hrow input[type=range]{width:100%}#paneHp .hrow small{font-size:11.5px;opacity:.6;line-height:1.3}#paneHp input[type=number]{width:74px;background:rgba(255,255,255,.06);color:inherit;border:1px solid var(--line);border-radius:4px;padding:3px 5px;font:inherit;text-align:right}';document.head.appendChild(css);
   const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabHp';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','paneHp');tb.textContent='Health';
   const dm=document.getElementById('tabDmg');if(dm&&dm.nextSibling)tabs.insertBefore(tb,dm.nextSibling);else tabs.appendChild(tb);
   const pn=document.createElement('div');pn.id='paneHp';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabHp');pn.hidden=true;after.after(pn);
@@ -4021,13 +4021,13 @@ window.SNIPER_RES.fire=()=>({GAME,SND,playing:()=>playing});
       ['GD01 droid (every bot)',()=>dcGet(0).dHp,v=>{dcGet(0).dHp=v;dcSave();try{for(const q of DRS)if(q&&!q.dead)q.hp=Math.min(q.hp,v);}catch(e){}},50,2000,'head hits count as head, the rest as body'],
       ['Recon drone',()=>GAME.uavHp,v=>{GAME.uavHp=v;},10,1000,'wings and tail count as limbs']]]];
   const save=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}};
-  const build=()=>{let h='<p class="note">Every object that has hit points. Weapons do the same damage to all of them (Weapons tab), so these are the only thing that makes one target tougher than another. Changes save as you make them; health already on the map is only lowered, never raised, until the next respawn or round.</p>';
-    ROWS.forEach(([t,rs],gi)=>{h+='<p class="sec" style="margin-top:12px">'+t+'</p><table><tr><th>Object</th><th>Maximum health</th><th></th><th>Notes</th></tr>';
-      rs.forEach((r,ri)=>{const v=r[1]();h+='<tr><td class="nm">'+r[0]+'</td><td><div class="hr"><input type="range" min="'+r[3]+'" max="'+r[4]+'" step="1" value="'+v+'" data-g="'+gi+'" data-r="'+ri+'"><output>'+Math.round(v)+'</output></div></td><td><input type="number" min="1" step="1" value="'+Math.round(v)+'" data-g="'+gi+'" data-r="'+ri+'"></td><td class="nt">'+(r[5]||'')+'</td></tr>';});h+='</table>';});
-    h+='<p class="sec" style="margin-top:6px">Not damageable</p><p class="note">Trees, rocks, the hut and the ground stop bullets but have no health. Dead animals are butchered, not shot.</p>';
+  const build=()=>{let h='<p class="note">Every object that has hit points. Weapons do the same damage to all of them (Weapons tab), so these are the only thing that makes one target tougher than another. Changes save as you make them; health already on the map is only lowered, never raised, until the next respawn or round.</p><div class="hcols">';
+    ROWS.forEach(([t,rs],gi)=>{h+='<section class="hc"><h3>'+t+'</h3>';
+      rs.forEach((r,ri)=>{const v=r[1]();h+='<div class="hrow"><div class="hl"><span>'+r[0]+'</span><input type="number" min="1" step="1" value="'+Math.round(v)+'" data-g="'+gi+'" data-r="'+ri+'"></div><input type="range" min="'+r[3]+'" max="'+r[4]+'" step="1" value="'+v+'" data-g="'+gi+'" data-r="'+ri+'">'+(r[5]?'<small>'+r[5]+'</small>':'')+'</div>';});h+='</section>';});
+    h+='</div><p class="note" style="margin-top:12px">Not damageable: trees, rocks, the hut and the ground stop bullets but have no health. Dead animals are butchered, not shot.</p>';
     pn.innerHTML=h;
     pn.querySelectorAll('input[data-g]').forEach(i=>i.oninput=()=>{const r=ROWS[+i.dataset.g][1][+i.dataset.r],v=parseFloat(i.value);if(!(v>=1))return;r[2](v);save();
-      pn.querySelectorAll('input[data-g="'+i.dataset.g+'"][data-r="'+i.dataset.r+'"]').forEach(o=>{if(o!==i)o.value=Math.round(v);});const out=pn.querySelector('input[type=range][data-g="'+i.dataset.g+'"][data-r="'+i.dataset.r+'"]');if(out&&out.nextElementSibling)out.nextElementSibling.textContent=Math.round(v);});};
+      pn.querySelectorAll('input[data-g="'+i.dataset.g+'"][data-r="'+i.dataset.r+'"]').forEach(o=>{if(o!==i)o.value=Math.round(v);});});};
   tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};   /* built when opened: the UGV and GD01 settings it reads are created further down the file */
   tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
 })();
