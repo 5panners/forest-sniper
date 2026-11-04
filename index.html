@@ -1406,6 +1406,7 @@ function placeTree(x,z,inner){
   {const ds=Math.hypot(x-SUMMIT.x,z-SUMMIT.z);if(ds<230&&type!=='young')sc*=0.4+0.6*sst(50,230,ds);}
   const sy=sc*wrr(0.92,1.08);
   if(Math.hypot(x-TWPOS2.x,z-TWPOS2.z)<9||Math.hypot(x-TWPOS3.x,z-TWPOS3.z)<9||Math.hypot(x-TWPOS4.x,z-TWPOS4.z)<9||zipClear(x,z)||xsClear(x,z))return;   // clear ground round the second comms tower (checked after the random draws so the rest of the forest is unchanged)
+  if((type==='spruceA'||type==='spruceB')&&hsh(x*13.7+3.1,z*9.3-5.2)<0.1)return;   // 10% of the green conifers are left out (a position hash, so the random stream and the rest of the forest are unchanged)
   const tilt=(type==='snag'?wrr(-0.06,0.06):wrr(-0.02,0.02));if(skipT)return;
   {const cn=vn(x/80+31.7,z/80-12.4)*0.8+vn(x/37+5.1,z/37+8.8)*0.2;if(cn>0.5)return;if(cn>0.38&&hsh(Math.floor(x*3)+41,Math.floor(z*3)+7)<(cn-0.38)/0.12)return;}
   {const rr=Math.hypot(x,z),pk=Math.max(0,Math.min(1,(320-rr)/320))*0.6;if(hsh(Math.floor(x*4)+83,Math.floor(z*4)+29)<pk)return;}
@@ -3406,7 +3407,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=498;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=499;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
