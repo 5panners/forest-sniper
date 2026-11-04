@@ -3471,7 +3471,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=534;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=535;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6080,7 +6080,7 @@ function rayDroid(o,d,len,noRem){if(noRem)return null;let best=null,bt=len;
   for(const q of DRS){if(!q.m||q.dead||!q.m.root.visible||droidTeam(q)===secTeam())continue;const D=q.m.D,gy=groundH(D.x,D.z)+D.hJ;if(Math.hypot(D.x-o.x,D.z-o.z)>len+4)continue;
     for(const [h,r,sub] of DR_HB){const t=raySph(o,d,D.x,gy+h,D.z,r,bt);if(t>=0&&t<=bt){bt=t;best={point:V(o.x+d.x*t,o.y+d.y*t,o.z+d.z*t),normal:d.clone().negate(),dist:t,object:null,kind:'metal',droid:q,sub};}}}
   return best;}
-function droidHit(q,sub,dist,by){if(!q||q.dead)return;try{flashHit();}catch(e){}
+function droidHit(q,sub,dist,by){if(!q||q.dead)return;try{flashHit();}catch(e){}if(sub==='head')try{headDing();}catch(e){}   /* the head-shot bell */
   const base=(DMG.w.rifle.k&&DMG.w.rifle.k.body!=null)?DMG.w.rifle.k.body:70,dm=base*(sub==='head'?2:1);q.hp-=dm;
   try{dmgNum(q.m.D.x,groundH(q.m.D.x,q.m.D.z)+2.6,q.m.D.z,dm,'#ffd25a',dcGet(q.i).dHp);}catch(e){}
   toast('GD01 hit · '+(sub==='head'?'head':'body')+' · '+Math.max(0,Math.round(100*q.hp/Math.max(1,dcGet(q.i).dHp)))+'% armour left · '+Math.round(dist)+' m');
