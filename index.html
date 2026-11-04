@@ -97,7 +97,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 <div id="miniW"><canvas id="miniCv" width="400" height="400"></canvas><div id="miniT"></div></div>
 <div id="perf" class="chip" hidden></div>
 <div id="sndDbg" class="chip" hidden></div>
-<div id="mapPanel" hidden><div class="chip"><div id="mapWrap"><canvas id="mapCv" width="1260" height="1260"></canvas></div><p id="mapGrid" style="font:600 14px var(--f-mono);margin:6px 0 2px"></p><p>1 km playable square · grid 100 m · north up · P1 / P2 spawns · click to teleport (development) · scroll to zoom · drag to pan · right-click your UGV to select it, then right-click its destination (or yourself, to make it follow you)</p></div></div>
+<div id="mapPanel" hidden><div class="chip"><div id="mapWrap"><canvas id="mapCv" width="1260" height="1260"></canvas></div><p id="mapGrid" style="font:600 14px var(--f-mono);margin:6px 0 2px"></p><label style="display:inline-flex;gap:8px;align-items:center;font:600 13px var(--f-mono);margin:2px 0 4px;cursor:pointer"><input type="checkbox" id="optWpnMap"> Show weapon locations <span style="opacity:.7;font-weight:400">(AT4 · AR-15 · rifle · dropped weapons)</span></label><p>1 km playable square · grid 100 m · north up · P1 / P2 spawns · click to teleport (development) · scroll to zoom · drag to pan · right-click your UGV to select it, then right-click its destination (or yourself, to make it follow you)</p></div></div>
 <div id="overlay"><div class="card">
   <h1 aria-label="FOrest Sniper">F<svg class="scopeO" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="33" fill="none" stroke="currentColor" stroke-width="8"/><g stroke="currentColor" stroke-width="5" stroke-linecap="butt"><line x1="50" y1="0" x2="50" y2="38"/><line x1="50" y1="62" x2="50" y2="100"/><line x1="0" y1="50" x2="38" y2="50"/><line x1="62" y1="50" x2="100" y2="50"/></g><circle cx="50" cy="50" r="4" fill="#d4552e"/></svg>rest Sniper</h1>
   <div class="tabs" role="tablist">
@@ -3164,11 +3164,15 @@ function wptDist(){return Math.hypot(WPT.x-player.pos.x,WPT.z-player.pos.z);}
 function wptBrg(){return ((Math.atan2(WPT.x-player.pos.x,-(WPT.z-player.pos.z))*180/PI)+360)%360;}
 function wptPin(c,x,y,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWidth=2.2;c.strokeStyle='#04202a';c.fillStyle='#35d6ff';c.beginPath();c.moveTo(0,0);c.bezierCurveTo(-9,-9,-8,-20,0,-20);c.bezierCurveTo(8,-20,9,-9,0,0);c.closePath();c.fill();c.stroke();c.fillStyle='#04202a';c.beginPath();c.arc(0,-13,3,0,PI*2);c.fill();c.restore();}
 mapCv.addEventListener('contextmenu',e=>{e.preventDefault();});   // the map no longer commands your UGV: it works by itself
+(function(){const c=document.getElementById('optWpnMap');if(c){try{c.checked=localStorage.getItem('fsWpnMap')==='1';}catch(e){}c.onchange=()=>{try{localStorage.setItem('fsWpnMap',c.checked?'1':'0');}catch(e){}if(typeof mapOpen!=='undefined'&&mapOpen)try{drawMap();}catch(e){}};}})();
 function drawMap(){if(!mapBase)buildMap();const W=mapCv.width,Z=MZ.k,N=MAPL*Z;   // zoom: the terrain is drawn bigger, positions use the zoomed S, but icons and text keep their size
   if(!mapBaseCv){mapBaseCv=document.createElement('canvas');mapBaseCv.width=mapBaseCv.height=W;mapBaseCv.getContext('2d').putImageData(mapBase,0,0);}
   mctx.setTransform(1,0,0,1,0,0);mctx.imageSmoothingEnabled=true;mctx.fillStyle='#0b0f10';mctx.fillRect(0,0,W,W);mctx.drawImage(mapBaseCv,MZ.x,MZ.y,W*Z,W*Z);mctx.setTransform(W/MAPL,0,0,W/MAPL,MZ.x,MZ.y);const S=v=>(v+FE)/(FE*2)*N;
   if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));if($('optDeerMap').checked)BEARS.forEach(b=>drawBearMark(mctx,S(b.x),S(b.z),b,0.9,0));if($('optDeerMap').checked&&typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mctx,S(u.x),S(u.z),u,0.9));
   try{secDrawMap(mctx,S,N);}catch(e){}
+  if($('optWpnMap')&&$('optWpnMap').checked){const WL={at4:['AT','#ff2fbf'],ar15:['AR','#ff8a2a'],rifle:['RF','#ffe08a'],m32:['M3','#7fd6ff']};mctx.font='600 9px "IBM Plex Mono", monospace';mctx.textAlign='center';mctx.textBaseline='middle';
+    const mark=(k,x,y)=>{const w=WL[k];if(!w)return;mctx.beginPath();mctx.arc(x,y,7,0,PI*2);mctx.fillStyle='rgba(10,12,10,0.8)';mctx.fill();mctx.lineWidth=2;mctx.strokeStyle=w[1];mctx.stroke();mctx.fillStyle=w[1];mctx.fillText(w[0],x,y+0.5);};
+    for(const n of RES_NODES)if(!n.got&&WL[n.t])mark(n.t,S(n.x),S(n.z));for(const d of DROPS)mark(d.k,S(d.x),S(d.z));mctx.textAlign='left';mctx.textBaseline='alphabetic';}
   try{droidMapMarks(mctx,(x,z)=>[S(x),S(z)],0.9);}catch(e){}
   SILO_SITES.forEach(q=>drawSiloMark(mctx,S(q.x),S(q.z),1,0,true));
   try{zipDrawMap(mctx,S);}catch(e){}
@@ -3459,7 +3463,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=514;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=516;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3586,12 +3590,24 @@ const PK_R=Math.max(10,PK('pkRad'));
     else if(R.n!=null){cand.sort((p,q)=>p[0]-q[0]);cand.length=Math.max(0,Math.min(cand.length,R.n-have));}
     for(const c of cand)resAdd(R.k,c[1],c[2],c[3]);});
   RES_T.forEach(R=>{const L=RES_NODES.filter(n=>n.t===R.k);R.idx=L.map(n=>RES_NODES.indexOf(n));
-    const byC=new Map();L.forEach(n=>{const c=chunkFor(n.x,n.z);let l=byC.get(c);if(!l)byC.set(c,l=[]);l.push(n);c.box.expandByPoint(_rp.set(n.x,n.y+1.5,n.z));c.box.expandByPoint(_rp.set(n.x,n.y-0.5,n.z));});
-    byC.forEach((CL,c)=>{const m=new THREE.InstancedMesh(RES_GEO[R.k],RES_MAT,CL.length);m.frustumCulled=false;m.castShadow=false;m.receiveShadow=false;   // one small mesh per chunk, hidden with the chunk
-      CL.forEach((n,i)=>{n.mi=i;n.cm=m;_re.set(0,n.ry,0);_rq.setFromEuler(_re);_rm.compose(_rp.set(n.x,n.y-0.02,n.z),_rq,_rs.set(n.s,n.s,n.s));m.setMatrixAt(i,_rm);n.mat=_rm.clone();});
-      m.instanceMatrix.needsUpdate=true;c.res.add(m);});});
+    L.forEach(n=>{const c=chunkFor(n.x,n.z);c.box.expandByPoint(_rp.set(n.x,n.y+1.5,n.z));c.box.expandByPoint(_rp.set(n.x,n.y-0.5,n.z));_re.set(0,n.ry,0);_rq.setFromEuler(_re);n.mat=new THREE.Matrix4().compose(_rp.set(n.x,n.y-0.02,n.z),_rq,_rs.set(n.s,n.s,n.s));n.ch=c;});});
+  // every pickup of a chunk (all types) is baked into ONE static mesh: one draw call per chunk; a collected pickup collapses its own vertices to a point
+  {const byC=new Map();for(const n of RES_NODES){if(!n.ch)continue;let l=byC.get(n.ch);if(!l)byC.set(n.ch,l=[]);l.push(n);}
+   byC.forEach((CL,c)=>{const m=resBake(CL,null,RES_MAT);m.frustumCulled=false;m.castShadow=false;m.receiveShadow=false;c.res.add(m);CL.forEach(n=>{n.cm=m;});});}
 })();
-function resSetGot(n,v){n.got=v;if(n.gim)leadGlowSet(n,v);const m=n.cm;if(!m)return;m.setMatrixAt(n.mi,v?_ZERO:n.mat);m.instanceMatrix.needsUpdate=true;}
+// bake nodes into one mesh. glowM: a scale matrix for the enlarged glow shell (colour per vertex by type), or null for the solid pickups
+function resBake(CL,glowM,mat){const parts=CL.map(n=>{const g=RES_GEO[n.t];return g.index?g.toNonIndexed():g;});let nv=0;for(const g of parts)nv+=g.attributes.position.count;
+  const pos=new Float32Array(nv*3),nor=new Float32Array(nv*3),col=new Float32Array(nv*3),v=new THREE.Vector3(),m4=new THREE.Matrix4(),cc=new THREE.Color();let o=0;
+  CL.forEach((n,i)=>{const g=parts[i],P=g.attributes.position,N=g.attributes.normal,C=g.attributes.color,cnt=P.count;m4.copy(n.mat);if(glowM)m4.multiply(glowM);if(glowM)cc.set(GLOWC[n.t]);
+    for(let k=0;k<cnt;k++){const j=(o+k)*3;v.fromBufferAttribute(P,k).applyMatrix4(m4);pos[j]=v.x;pos[j+1]=v.y;pos[j+2]=v.z;
+      if(N){v.fromBufferAttribute(N,k).transformDirection(m4);nor[j]=v.x;nor[j+1]=v.y;nor[j+2]=v.z;}
+      if(glowM){col[j]=cc.r;col[j+1]=cc.g;col[j+2]=cc.b;}else if(C){col[j]=C.getX(k);col[j+1]=C.getY(k);col[j+2]=C.getZ(k);}else{col[j]=col[j+1]=col[j+2]=1;}}
+    if(!glowM){n.vs=o;n.vc=cnt;}o+=cnt;});
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.BufferAttribute(nor,3));geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const mesh=new THREE.Mesh(geo,mat);mesh.userData.orig=pos.slice();return mesh;}
+function resSetRange(mesh,n,v){if(!mesh||n.vs==null)return;const a=mesh.geometry.attributes.position,s3=n.vs*3,e3=(n.vs+n.vc)*3;
+  if(v){for(let i=s3;i<e3;i+=3){a.array[i]=n.x;a.array[i+1]=n.y;a.array[i+2]=n.z;}}else a.array.set(mesh.userData.orig.subarray(s3,e3),s3);a.needsUpdate=true;}
+function resSetGot(n,v){n.got=v;resSetRange(n.cm,n,v);resSetRange(n.gim,n,v);}
 function resReset(){try{bearReset();}catch(e){}STAM.v=GAME.stStart/100;BOOST.on=false;HEAL.pool=0;STAM.lock=false;for(const n of RES_NODES)if(n.got)resSetGot(n,false);for(const k in INV)INV[k]=0;invUI();try{at4Reset();}catch(e){}try{slotReset();}catch(e){console.warn('slots',e);}}
 function resRemoteTake(i){const n=RES_NODES[i];if(n&&!n.got)resSetGot(n,true);}
 function resNearest(){const p=player.pos;let best=null,bd=2.7*2.7;const cx=Math.floor(p.x/8),cz=Math.floor(p.z/8);
@@ -3638,7 +3654,7 @@ addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey)retur
 function resStep(dt){
   let s='';if(playing&&player.alive&&!scoped&&!mapOpen){const c=carcassNearest(),zt=zipPromptTxt();if(zt)s=zt;else if(c)s='<b>F</b> · butcher '+carcassName(c);else{const d=dropNearest();if(d)s='<b>F</b> · '+((d.k==='at4'&&WPN.has)||((d.k==='rifle'||d.k==='ar15')&&slotHas(d.k))?'you already carry one':slotTip(d.k));else{const i=resNearest();if(i!=null){const k=RES_T[RES_NODES[i].ti].k;s='<b>F</b> · '+(k==='at4'||k==='radio'||k==='ar15'||k==='rifle'?slotTip(k):'gather '+RES_T[RES_NODES[i].ti].label);}}}}
   if(s!==_prS){_prS=s;resPrompt.innerHTML=s;resPrompt.hidden=!s;}}
-window.SNIPER_RES={INV,RES_NODES};
+window.SNIPER_RES={INV,RES_NODES,setGot:(n,v)=>resSetGot(n,v)};
 
 // ---- tracer: a pencil-thin glowing line that follows the bullet's real (dropping) path, plus a hot head; fades fast after impact
 const STREAKS=[],ST_LIFE=0.6,ST_MAX=420;
@@ -3686,15 +3702,11 @@ window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if
 
 // ---- edge glow on every collectible: a slightly enlarged back-face shell per node, additive, pulsing on a 3 s cycle, one colour per resource type
 const GLOWC={rifle:0xffe08a,ar15:0xff8a2a,berries:0xff4f8b,mushroom:0xffa03a,scrap:0x45e6c8,r762:0xfff04a,at4:0xff2fbf,at4r:0xffa0dc,m32r:0x7fd6ff,radio:0x3ad8ff};
-const LEADGLOW=(()=>{const sc=new THREE.Matrix4().makeScale(1.13,1.13,1.13),ms=[];let k=0;
-  for(const t in GLOWC){const L=RES_NODES.filter(n=>n.t===t);if(!L.length||!RES_GEO[t])continue;
-    const m=new THREE.MeshBasicMaterial({color:GLOWC[t],side:THREE.BackSide,transparent:true,opacity:0.5,depthWrite:false,blending:THREE.AdditiveBlending,fog:false});
-    const byC=new Map();L.forEach(n=>{const c=chunkFor(n.x,n.z);let l=byC.get(c);if(!l)byC.set(c,l=[]);l.push(n);});
-    byC.forEach((CL,c)=>{const im=new THREE.InstancedMesh(RES_GEO[t],m,CL.length);CL.forEach((n,i)=>{n.gi=i;n.gim=im;n.gmat=n.mat.clone().multiply(sc);im.setMatrixAt(i,n.gmat);});
-      im.instanceMatrix.needsUpdate=true;im.frustumCulled=false;im.renderOrder=6;c.res.add(im);});
-    ms.push({m,ph:(k++)*0.6});}
-  return {ms};})();
-function leadGlowSet(n,v){if(!n.gim)return;n.gim.setMatrixAt(n.gi,v?_ZERO:n.gmat);n.gim.instanceMatrix.needsUpdate=true;}
+const LEADGLOW=(()=>{const sc=new THREE.Matrix4().makeScale(1.13,1.13,1.13);
+  const m=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide,transparent:true,opacity:0.5,depthWrite:false,blending:THREE.AdditiveBlending,fog:false});
+  const byC=new Map();for(const n of RES_NODES){if(!n.ch||!GLOWC[n.t])continue;let l=byC.get(n.ch);if(!l)byC.set(n.ch,l=[]);l.push(n);}
+  byC.forEach((CL,c)=>{const gm=resBake(CL,sc,m);gm.frustumCulled=false;gm.renderOrder=6;c.res.add(gm);CL.forEach(n=>{n.gim=gm;});});   // one additive glow mesh per chunk, all types
+  return {ms:[{m,ph:0}]};})();
 function leadGlowStep(){const t=performance.now()/1000;for(const g of LEADGLOW.ms)g.m.opacity=0.1+0.75*(0.5-0.5*Math.cos((t+g.ph)*Math.PI*2/3));}
 
 // ---- stamina + vitals panel (health and stamina bars, bottom left)
