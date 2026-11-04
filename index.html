@@ -3475,7 +3475,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=545;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=546;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6117,7 +6117,7 @@ function droidGunSnd(o){const c=sp3(o.x,o.y,o.z,1200);if(!c)return;const fd=Math
   if(SND.rifle){const s=AC.createBufferSource();s.buffer=SND.rifle;s.playbackRate.value=1.0+Math.random()*0.1;const g=AC.createGain();g.gain.value=1.5*vg*GAME.rDGun*fd;s.connect(g);g.connect(c.inp);s.start(c.t0);}else nz(c,c.t0,0.15,1800,0.8,1.6*vg*GAME.rDGun*fd);}
 function droidRound(o,dir,tr){const b={tm:DR_TEAM(),p:o.clone(),o:o.clone(),v:dir.clone().multiplyScalar(V0*0.92),t:0,tr:getP(gTracer,matTracer),rem:true,ugv:true,dr:true,ud:GAME.dDmg};bullets.push(b);if(tr)try{mkStreak(b);}catch(e){}
   droidGunSnd(o);try{farFlash(o);}catch(e){}try{disturb(o.x,o.z,110,380,true);}catch(e){}}
-window.__DRS=DRS;const DRL=new THREE.PointLight(0xffb347,0,30,2);DRL.t=0;   // muzzle-flash light, same colour and strength as the player's AR-15; one shared light, moved to whichever gun fired last
+window.__DRS=DRS;window.__droidKill=(q,b,h)=>droidKill(q,b,h);const DRL=new THREE.PointLight(0xffb347,0,30,2);DRL.t=0;   // muzzle-flash light, same colour and strength as the player's AR-15; one shared light, moved to whichever gun fired last
 const _dm=new THREE.Vector3(),_dq=new THREE.Quaternion(),_dv=new THREE.Vector3();
 function droidMuzzle(g){return g.gun.localToWorld(_dm.set(0,0.005,0.95)).clone();}
 function droidShot(g){const T=DR.tgI;if(!T||!DR.m)return;DR.m.root.updateMatrixWorld(true);const o=droidMuzzle(g),d=Math.hypot(T.x-o.x,T.z-o.z),tf=d/(V0*0.92),lead=0.55+Math.random()*0.4;
@@ -6142,8 +6142,17 @@ function droidHit(q,sub,dist,by){if(!q||q.dead)return;try{flashHit();}catch(e){}
   if(q.hp<=0)droidKill(q,by||['Player',secTeam()],sub==='head');else if(!q.tgO){const keep=DR;DR=q;try{droidSay('alert');}finally{DR=keep;}}}
 function droidKill(q,by,head){try{if(!q.dead&&by)kfeed(by[0],by[1],kfDroid(q),droidTeam(q),head,1);}catch(e){}secUnitDown(droidTeam(q));q.dead=true;q.deadT=0;q.tgO=null;q.tgI=null;const m=q.m,D=m.D;D.fire=false;D.vT=0;D.yawT=0;
   const keep=DR;DR=q;try{droidSay('sad');}finally{DR=keep;}D.colT.setHex(0x120404);
-  const p=V(D.x,groundH(D.x,D.z)+1.2,D.z);emit(gFire,matFire,p,V(0,1,0),0.5,{s:0.8,grow:4});for(let i=0;i<12;i++){const a=Math.random()*PI*2;emit(gPuff,i%2?UGV_SMK:matSmoke,p,V(Math.cos(a)*3,2+Math.random()*4,Math.sin(a)*3),2,{s:0.4,grow:1.4,drag:1.4});}
-  try{boomAt(p);}catch(e){}toast('GD01 destroyed');}
+  const p=V(D.x,groundH(D.x,D.z)+1.2,D.z);
+  /* a big kill: three fireballs, a thick smoke column, flying sparks and debris, a flash and a heavy boom that shakes the screen nearby */
+  emit(gFire,matFire,p,V(0,1,0),0.7,{s:1.6,grow:8});emit(gFire,matFire,p,V(0,2.5,0),0.55,{s:1.1,grow:6});emit(gFire,matFire,p.clone().add(V(0,0.6,0)),V(0,4,0),0.45,{s:0.8,grow:5});
+  for(let i=0;i<28;i++){const a=Math.random()*PI*2,k=2+Math.random()*5;emit(gPuff,i%2?UGV_SMK:matSmoke,p,V(Math.cos(a)*k,2+Math.random()*7,Math.sin(a)*k),2.8,{s:0.6,grow:2.0,drag:1.2});}
+  for(let i=0;i<22;i++)emit(gSpark,matFire,p,rv(16).add(V(0,6,0)),0.6,{s:1.3,grav:9});
+  try{BL.t=0;BLL.position.copy(p).y+=0.8;}catch(e){}
+  try{boomAt(p);droidBoomSnd(p);const dc=camera.position.distanceTo(p);shake=Math.max(shake,clamp((70-dc)/70,0,1)*0.9);}catch(e){}toast('GD01 destroyed');}
+/* the louder kill explosion: the recorded cannon blast pitched down and boosted, over a deep sub thump and a long rumble, with the usual distance falloff */
+function droidBoomSnd(p){const c=sp3(p.x,p.y,p.z,5000);if(!c)return;const t=c.t0,vg=(typeof VOLS!=='undefined'?VOLS.gun:1);
+  if(SND.m32x){const sx=AC.createBufferSource();sx.buffer=SND.m32x;sx.playbackRate.value=0.78;const gx=AC.createGain();gx.gain.value=2.0*vg;sx.connect(gx);gx.connect(c.inp);sx.start(t);}
+  tn(c,t,95,24,1.0,1.4*vg,'sine');nz(c,t,1.8,300,0.6,1.8*vg,'lowpass');nz(c,t,0.15,2200,0.8,0.7*vg,'bandpass');}
 function droidBulletVsUgv(b,d,len){
   if(b.dr&&b.tm!==secTeam())for(const u of UGVS){if(u.dead||u.gone||u.pl!==secTeam()||u.air>0)continue;const t=raySph(b.p,d,u.x,u.y+0.8,u.z,1.5,len);if(t<0)continue;
     u.hp-=b.ud*1.5;try{impact(V(u.x,u.y+0.8,u.z).addScaledVector(d,-1.3),d.clone().negate(),'rock');}catch(e){}
