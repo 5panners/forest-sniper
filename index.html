@@ -1429,6 +1429,7 @@ for(let z=-PLAY-15;z<PLAY+15;z+=3.6)for(let x=-PLAY-15;x<PLAY+15;x+=3.6){const p
   const sy=s*(fern?wrr(0.8,1.3):wrr(0.6,1.1)),ry=wr()*PI*2,col=fern?FERNC[Math.floor(wr()*FERNC.length)]:SHRUBC[Math.floor(wr()*SHRUBC.length)];
   if(fern)continue;   // ferns removed (random stream untouched)
   if(xsClear(px,pz))continue;   // 20% fewer ferns (the random stream is untouched, so the rest of the map is unchanged)
+  if(hsh(px*11.3+7.7,pz*8.9-2.1)<0.2)continue;   // 20% of the bushes are left out (a position hash, so the random stream is unchanged)
   addInst(c,fern?'fern':'shrub',px,groundH(px,pz)-0.05,pz,s,sy,ry,col);nPlants++;}
 // build instanced meshes per chunk
 const LOD_OF={spruceA:'spruceLo',spruceB:'spruceLo',beech:'beechLo',snag:'snagLo',young:'youngLo'};
@@ -3407,7 +3408,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=499;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=500;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
