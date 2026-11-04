@@ -3475,7 +3475,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=546;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=547;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3900,7 +3900,7 @@ ${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Hei
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={rM32Fire:1,rM32Boom:1,pHpStart:100,pHpMax:200,arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:3,slotG:3,pkM32:6,pkRifle:12,fBerry:2,pkRad:250,n_berries:250,n_mushroom:300,n_at4r:150,n_m32r:50,n_r762:300,n_radio:12,n_scrap:20,n_at4:2,n_ar15:2,n_rifle:2,p_berries:80,p_mushroom:80,p_at4r:80,p_m32r:80,p_r762:80,p_radio:80,m32Spd:76,m32Drop:1.6,m32R:4.5,m32Dmg:110,m32Ugv:160,m32Reload:3.2,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloAcc:0.3,siloEvery:0,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.8,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:100,at4R:6,at4Dmg:200,at4Ugv:300,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:7.5,bInst:1,bears:2,bWalk:1.2,bRear:9,bAtk:1,bTrig:1,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1};
+const GAME_DEF={rDBoom:1,rM32Fire:1,rM32Boom:1,pHpStart:100,pHpMax:200,arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:3,slotG:3,pkM32:6,pkRifle:12,fBerry:2,pkRad:250,n_berries:250,n_mushroom:300,n_at4r:150,n_m32r:50,n_r762:300,n_radio:12,n_scrap:20,n_at4:2,n_ar15:2,n_rifle:2,p_berries:80,p_mushroom:80,p_at4r:80,p_m32r:80,p_r762:80,p_radio:80,m32Spd:76,m32Drop:1.6,m32R:4.5,m32Dmg:110,m32Ugv:160,m32Reload:3.2,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloAcc:0.3,siloEvery:0,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.8,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:100,at4R:6,at4Dmg:200,at4Ugv:300,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:7.5,bInst:1,bears:2,bWalk:1.2,bRear:9,bAtk:1,bTrig:1,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 HP_MAX=Math.max(20,GAME.pHpMax);
 try{if(!localStorage.getItem('fsSiloV2')){GAME.siloVol=2;localStorage.setItem('fsSiloV2','1');}}catch(e){}
@@ -3930,7 +3930,7 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
 })();
 // ---- the UGV and GD01 volume sliders live in the Audio tab
 (function(){const pa=document.getElementById('paneAud');if(!pa)return;const note=[...pa.querySelectorAll('p.note')].pop();
-  const grp=[['Recon drone volume',[['uavVol','Drone engine']]],['M32 volumes',[['rM32Fire','M32 firing'],['rM32Boom','M32 grenade explosion']]],['UGV volumes',[['rUGun','UGV gunfire'],['rUMot','UGV motor, tracks and turret'],['rUBeep','UGV alert beep']]],['GD01 volumes',[['rDGun','GD01 gunfire'],['rDVoi','GD01 voice (beeps)']]]];
+  const grp=[['Recon drone volume',[['uavVol','Drone engine']]],['M32 volumes',[['rM32Fire','M32 firing'],['rM32Boom','M32 grenade explosion']]],['UGV volumes',[['rUGun','UGV gunfire'],['rUMot','UGV motor, tracks and turret'],['rUBeep','UGV alert beep']]],['GD01 volumes',[['rDGun','GD01 gunfire'],['rDVoi','GD01 voice (beeps)'],['rDBoom','GD01 destroyed explosion']]]];
   for(const [t,rs] of grp){const h=document.createElement('p');h.className='sec';h.style.marginTop='14px';h.textContent=t;pa.insertBefore(h,note||null);
     for(const [k,l] of rs){const lb=document.createElement('label');lb.className='rng';lb.innerHTML='<span>'+l+'</span><input type="range" min="0" max="3" step="0.05"><output></output>';const i=lb.querySelector('input'),o=lb.querySelector('output');i.value=GAME[k];o.textContent=(+GAME[k]).toFixed(2);
       i.oninput=()=>{const v=parseFloat(i.value);GAME[k]=v;o.textContent=v.toFixed(2);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}};pa.insertBefore(lb,note||null);}}})();
@@ -6151,8 +6151,8 @@ function droidKill(q,by,head){try{if(!q.dead&&by)kfeed(by[0],by[1],kfDroid(q),dr
   try{boomAt(p);droidBoomSnd(p);const dc=camera.position.distanceTo(p);shake=Math.max(shake,clamp((70-dc)/70,0,1)*0.9);}catch(e){}toast('GD01 destroyed');}
 /* the louder kill explosion: the recorded cannon blast pitched down and boosted, over a deep sub thump and a long rumble, with the usual distance falloff */
 function droidBoomSnd(p){const c=sp3(p.x,p.y,p.z,5000);if(!c)return;const t=c.t0,vg=(typeof VOLS!=='undefined'?VOLS.gun:1);
-  if(SND.m32x){const sx=AC.createBufferSource();sx.buffer=SND.m32x;sx.playbackRate.value=0.78;const gx=AC.createGain();gx.gain.value=2.0*vg;sx.connect(gx);gx.connect(c.inp);sx.start(t);}
-  tn(c,t,95,24,1.0,1.4*vg,'sine');nz(c,t,1.8,300,0.6,1.8*vg,'lowpass');nz(c,t,0.15,2200,0.8,0.7*vg,'bandpass');}
+  if(SND.m32x){const sx=AC.createBufferSource();sx.buffer=SND.m32x;sx.playbackRate.value=0.78;const gx=AC.createGain();gx.gain.value=2.0*vg*GAME.rDBoom;sx.connect(gx);gx.connect(c.inp);sx.start(t);}
+  tn(c,t,95,24,1.0,1.4*vg*GAME.rDBoom,'sine');nz(c,t,1.8,300,0.6,1.8*vg*GAME.rDBoom,'lowpass');nz(c,t,0.15,2200,0.8,0.7*vg*GAME.rDBoom,'bandpass');}
 function droidBulletVsUgv(b,d,len){
   if(b.dr&&b.tm!==secTeam())for(const u of UGVS){if(u.dead||u.gone||u.pl!==secTeam()||u.air>0)continue;const t=raySph(b.p,d,u.x,u.y+0.8,u.z,1.5,len);if(t<0)continue;
     u.hp-=b.ud*1.5;try{impact(V(u.x,u.y+0.8,u.z).addScaledVector(d,-1.3),d.clone().negate(),'rock');}catch(e){}
