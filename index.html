@@ -3476,7 +3476,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=548;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=549;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5558,7 +5558,7 @@ function ugvAudio(u,dt){if(u.dead||!AC||!soundOn)return;const cp=camera.position
     u.wh-=dt;if(u.wh<=0){u.wh=0.34;const c=sp3(u.x,u.y+0.6,u.z,120);if(c)tn(c,c.t0,240+v*45,250+v*45,0.4,0.035*GAME.rUMot,'sawtooth');}}
   if((u.tRate||0)>0.25){u.sv-=dt;if(u.sv<=0){u.sv=0.22;const c=sp3(u.x,u.y+1.4,u.z,80);if(c)tn(c,c.t0,640+u.tRate*60,700+u.tRate*60,0.24,0.03*GAME.rUMot,'square');}}}
 // ---- burning wreck: a column of black smoke and a few flames for a minute
-function ugvFx(u,dt){if(u.fl>0){u.fl-=dt;u.flash.visible=true;u.flash.scale.setScalar(0.7+Math.random()*0.6);}else u.flash.visible=false;
+function ugvFx(u,dt){if(u.fl>0){u.fl-=dt;u.flash.visible=true;u.flash.scale.setScalar(0.4+Math.random()*0.3);}else u.flash.visible=false;
   if(u.dead&&u.deadT<70){u.smT-=dt;if(u.smT<=0){u.smT=0.16;const p=V(u.x+(Math.random()-0.5)*0.8,u.y+1,u.z+(Math.random()-0.5)*0.8);emit(gPuff,UGV_SMK,p,V((Math.random()-0.5)*0.6+0.6,2.2+Math.random(),(Math.random()-0.5)*0.6),4.5,{s:0.45,grow:1.1,drag:0.3});
       if(u.deadT<35&&Math.random()<0.6)emit(gFire,matFire,V(u.x+(Math.random()-0.5)*1.2,u.y+0.85,u.z+(Math.random()-0.5)*1.6),V(0,1.2,0),0.5,{s:0.25,grow:0.8});}}}
 // wheels roll with the distance driven (left and right counter-rotate in a pivot turn: close enough)
@@ -6072,7 +6072,7 @@ function stepSim(dt){
   D.blinkT=(D.blinkT==null?2:D.blinkT)-dt;if(D.blinkT<0&&D.mood!=='no'&&D.mood!=='alert'){D.blink=0.14;D.blinkT=2+Math.random()*3.5;}D.blink=Math.max(0,(D.blink||0)-dt);
   // firing: alternate barrels, feed the belts, kick the hull
   if(D.fire){D.fireT-=dt;while(D.fireT<=0){D.fireT+=1/((H&&H.rate&&H.rate())||14);const g=GUNS[D.shot++%2];if(H&&H.shot)H.shot(g);g.flashT=0.045;g.rec=0.035;D.prv-=0.35;const b=BELT[g.s<0?0:1];b.feed=(b.feed+b.curve.getLength()>0?(b.feed+0.036/b.len*2)%1:0);}}
-  for(const g of GUNS){g.flashT=Math.max(0,(g.flashT||0)-dt);const ud=g.gun.userData;ud.flash.visible=g.flashT>0;ud.fl.intensity=g.flashT>0?9:0;ud.flash.rotation.z=Math.random()*6;ud.flash.scale.setScalar(0.8+Math.random()*0.5);g.rec*=Math.pow(0.0005,dt);g.gun.position.z=-0.1-g.rec;}
+  for(const g of GUNS){g.flashT=Math.max(0,(g.flashT||0)-dt);const ud=g.gun.userData;ud.flash.visible=g.flashT>0;ud.fl.intensity=g.flashT>0?9:0;ud.flash.rotation.z=Math.random()*6;ud.flash.scale.setScalar(0.4+Math.random()*0.25);g.rec*=Math.pow(0.0005,dt);g.gun.position.z=-0.1-g.rec;}
   // body motion
   const hop=P.bob*Math.abs(Math.sin(D.t*P.bobF*2))*0.5;
   root.position.set(D.x,gy,D.z);root.rotation.set(D.slP||0,D.yaw,D.slR||0);
@@ -6238,7 +6238,7 @@ function droidLOD(q,d){
     g.visible=false;q.m.root.add(g);q.proxy=g;
     /* a glow sprite on each muzzle, scaled with distance so a burst is still seen from far off (useful at night) */
     q.fsp=q.m.GUNS.map(gg=>{const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffc070,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));sp.position.set(0,0.005,0.95);sp.visible=false;gg.gun.add(sp);return sp;});}
-  if(q.fsp){const on=q.lodFull===false;for(let i=0;i<q.fsp.length;i++){const sp=q.fsp[i],fl=q.m.GUNS[i].flashT>0;sp.visible=on&&fl;if(sp.visible)sp.scale.setScalar(Math.min(9,Math.max(0.6,d*0.028))*(0.8+Math.random()*0.4));}}
+  if(q.fsp){const on=q.lodFull===false;for(let i=0;i<q.fsp.length;i++){const sp=q.fsp[i],fl=q.m.GUNS[i].flashT>0;sp.visible=on&&fl;if(sp.visible)sp.scale.setScalar(Math.min(3.2,Math.max(0.35,d*0.011))*(0.8+Math.random()*0.4));}}
   const nf=q.lodFull==null?d<45:q.lodFull?d<=48:d<40,sh=nf&&d<55;if(nf===q.lodFull&&sh===q.lodSh)return;
   q.lodFull=nf;q.lodSh=sh;
   for(const e of q.lod){e.o.layers.set(nf?0:1);e.o.castShadow=!!(e.sh&&q.lodSh);}
