@@ -2325,7 +2325,7 @@ function m32Switch(prev,w){M32G.visible=w==='m32';if(prev==='m32'&&w!=='m32')M32
 const M32_SH=(()=>build([[CY(0.02,0.02,0.07,10),'#c9a24a',[0,0,-0.05],[HP,0,0]],[CY(0.02,0.02,0.07,10),'#5b6340',[0,0,0.02],[HP,0,0]],[new THREE.ConeGeometry(0.02,0.045,10),'#3d4430',[0,0,0.075],[HP,0,0]]]))();
 function m32Spawn(o,dir,mine){const g=new THREE.Group();g.add(new THREE.Mesh(M32_SH,envMat));
   const fl=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffd890,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));fl.position.set(0,0,-0.08);fl.scale.setScalar(0.22);g.add(fl);
-  g.position.copy(o);scene.add(g);const r={p:o.clone(),o:o.clone(),v:dir.clone().normalize().multiplyScalar(GAME.m32Spd),t:0,g,fl,mine,sm:0,g40:true,drop:1,R:GAME.m32R,dm:GAME.m32Dmg,ug:GAME.m32Ugv};g.lookAt(_v9.copy(o).add(r.v));ROCKETS.push(r);
+  g.position.copy(o);scene.add(g);const r={p:o.clone(),o:o.clone(),v:dir.clone().normalize().multiplyScalar(GAME.m32Spd),t:0,g,fl,mine,sm:0,g40:true,drop:GAME.m32Drop,R:GAME.m32R,dm:GAME.m32Dmg,ug:GAME.m32Ugv};g.lookAt(_v9.copy(o).add(r.v));ROCKETS.push(r);
   try{const c=sp3(o.x,o.y,o.z,3000);if(c){const t=c.t0,vg=(typeof VOLS!=='undefined'?VOLS.gun:1);tn(c,t,140,45,0.35,0.9*vg,'sine');nz(c,t,0.35,900,0.6,0.8*vg,'lowpass');nz(c,t,0.12,3000,0.8,0.5*vg,'bandpass');}}catch(e){}
   emit(gFire,matFire,o,dir.clone().multiplyScalar(3),0.1,{s:0.22,grow:2.2});
   for(let i=0;i<5;i++)emit(gPuff,i%2?matSmoke:matDust,o,dir.clone().multiplyScalar(2+Math.random()*3).add(rv(1.2)),0.9,{s:0.14,grow:1.4,drag:2});
@@ -2334,9 +2334,8 @@ function m32Fire(){const pl=player;input.lmb=false;
   if(WPN.cur!=='m32')return;if(M32S.rl>=0){toast('Loading the M32…');return;}if(M32S.ld<=0){if((INV.m32r|0)>0)m32Reload();else toast('M32 empty · no spare grenades');return;}
   camera.getWorldDirection(_cd);const h=castRay(camera.position,_cd,1500);const aim=h?h.point:camera.position.clone().addScaledVector(_cd,1500);
   const o=M32_MUZ.getWorldPosition(new THREE.Vector3());const dir=aim.clone().sub(o).normalize();
-  // the grenade lobs: aim the bore up enough to land on the point you are looking at (flat-fire solution, capped), then a little scatter
-  {const dist=Math.min(o.distanceTo(aim),900),v=GAME.m32Spd,t=dist/v;dir.y+=0.5*GRAV*t*t/Math.max(1,dist)*0.98;
-   const mv=Math.hypot(pl.vel.x,pl.vel.z),sp=0.006+Math.min(0.03,mv*0.006);dir.x+=(Math.random()-0.5)*sp;dir.y+=(Math.random()-0.5)*sp;dir.z+=(Math.random()-0.5)*sp;dir.normalize();}
+  // fired straight along the crosshair line like the AT4, with no compensation: the grenade drops, so range and elevation are the shooter's job
+  {const mv=Math.hypot(pl.vel.x,pl.vel.z),sp=0.006+Math.min(0.03,mv*0.006);dir.x+=(Math.random()-0.5)*sp;dir.y+=(Math.random()-0.5)*sp;dir.z+=(Math.random()-0.5)*sp;dir.normalize();}
   M32S.ld--;pl.kick=0.9;shake=Math.max(shake,0.2);camPitch+=0.03;m32Spawn(o,dir,true);
   try{if(MPM.on&&NT.room)NT.room.emit('at4',{g:1,o:[nr2(o.x),nr2(o.y),nr2(o.z)],v:[+dir.x.toFixed(4),+dir.y.toFixed(4),+dir.z.toFixed(4)]}).catch(()=>{});}catch(e){}
   try{EQB.ui(true);}catch(e){}if(M32S.ld<=0&&(INV.m32r|0)>0)setTimeout(()=>{if(WPN.cur==='m32'&&M32S.ld<=0)m32Reload();},600);}
@@ -3460,7 +3459,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=511;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=512;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3838,9 +3837,9 @@ ${sp([['Rocket speed',GAME.at4Spd+' m/s'],['Blast radius',GAME.at4R+' m'],['Pers
 <p class="tn">Holding the right mouse button aims and zooms the view by 25%. Damage falls off to nothing at the blast radius, and you can hurt yourself. Deer within 80% of the radius die. The launcher is a rare pink pickup; rounds are the pale pink glow.</p></section>
 <section class="wc"><div class="wh">${m32Icon()}<div><h3>M32 grenade launcher</h3><p>6-round revolving cylinder · 40 mm grenades · start kit, slot 3</p></div><span class="key">LMB fire · R reload · RMB sights</span></div>
 ${sp([['Grenade speed',GAME.m32Spd+' m/s'],['Blast radius',GAME.m32R+' m'],['Person, centre',GAME.m32Dmg+' hp'],['UGV / GD01 / drone, direct',GAME.m32Ugv+' hp'],['Reload',GAME.m32Reload+' s'],['Cylinder','6 loaded + 12 spare']])}
-<h4>Grenade and blast</h4>${sl('m32Spd','Grenade speed (m/s)',30,150,2,0)}${sl('m32R','Blast radius (m)',1,12,0.5,1)}${sl('m32Reload','Reload time (s)',0.5,8,0.1,1)}
+<h4>Grenade and blast</h4>${sl('m32Spd','Grenade speed (m/s)',30,150,2,0)}${sl('m32Drop','Grenade drop (1 = full gravity)',0,3,0.1,1)}${sl('m32R','Blast radius (m)',1,12,0.5,1)}${sl('m32Reload','Reload time (s)',0.5,8,0.1,1)}
 <h4>Damage</h4>${sl('m32Dmg','Person at the centre (hp)',10,300,5,0)}${sl('m32Ugv','UGV, direct hit (hp)',20,1000,10,0)}
-<p class="tn">Grenades fall under full gravity, so the bore is lifted to land on the point you look at. They burst on impact with the AT4 blast code; damage falls off to nothing at the radius, you can hurt yourself, bears take double. In multiplayer your opponent sees a rifle in your hands.</p></section>
+<p class="tn">Grenades fall faster than gravity (default 1.6×) and are NOT corrected for range: they leave along the crosshair line, so you have to aim above the target. They burst on impact with the AT4 blast code; damage falls off to nothing at the radius, you can hurt yourself, bears take double. In multiplayer your opponent sees a rifle in your hands.</p></section>
 <section class="wc"><div class="wh">${IC.radio}<div><h3>Recon drone</h3><p>Radio call-in · 6.5 m span, unarmed · marks the other player on your map</p></div><span class="key">gadget key calls in</span></div>
 ${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Height above the highest ground',GAME.uavAlt+' m'],['Speed',GAME.uavSpd+' m/s'],['Toughness',GAME.uavHp+' hp'],['Rifle hits to down it',Math.ceil(GAME.uavHp/Math.max(1,(DMG.w.rifle.k&&DMG.w.rifle.k.body)||70))]])}
 <h4>Flight</h4>${sl('uavDur','Time on station (s)',15,180,5,0)}${sl('uavR','Orbit radius (m)',100,460,10,0)}${sl('uavAlt','Height above the highest ground (m)',20,250,5,0)}${sl('uavSpd','Speed (m/s)',15,80,1,0)}
@@ -3875,7 +3874,7 @@ ${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Hei
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:3,slotG:3,pkM32:6,m32Spd:76,m32R:4.5,m32Dmg:110,m32Ugv:160,m32Reload:3.2,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloAcc:0.3,siloEvery:0,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.8,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:100,at4R:6,at4Dmg:200,at4Ugv:300,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:7.5,bInst:1,bears:2,bWalk:1.2,bRear:9,bAtk:1,bTrig:1,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1};
+const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:3,slotG:3,pkM32:6,m32Spd:76,m32Drop:1.6,m32R:4.5,m32Dmg:110,m32Ugv:160,m32Reload:3.2,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloAcc:0.3,siloEvery:0,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.8,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:100,at4R:6,at4Dmg:200,at4Ugv:300,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:7.5,bInst:1,bears:2,bWalk:1.2,bRear:9,bAtk:1,bTrig:1,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 try{if(!localStorage.getItem('fsSiloV2')){GAME.siloVol=2;localStorage.setItem('fsSiloV2','1');}}catch(e){}
 function balApply(){V0=GAME.bV0;DRAG=GAME.bDrag;GBUL=9.81*GAME.bDrop;try{setZero(zeroM);}catch(e){}}balApply();
