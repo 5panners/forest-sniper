@@ -3471,7 +3471,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=530;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=531;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6150,12 +6150,24 @@ function droidStepAll(){
     let dt1=dt;if(q.m&&!q.dead&&!q.tele){const dd=Math.hypot(q.m.D.x-pp.x,q.m.D.z-pp.z),sk=dd>150?3:dd>70?2:1;if(sk>1&&((DRS.fr+i)%sk)){q.acc=(q.acc||0)+dt;try{droidHBStep(q,!q.dead);}catch(e){}continue;}dt1=dt+(q.acc||0);q.acc=0;}
     droidW(q,()=>droidStep1(Math.min(0.2,dt1),n,i<10?enR:enB));try{droidHBStep(q,!q.dead);}catch(e){}}}
 // everything a droid must not drive into besides trees, rocks, water and steep ground: UGVs and the other droids
-/* draw-call level of detail: a GD01 is ~180 meshes (~110 casting shadows). Far away only its biggest parts are drawn, and the shadow pass skips it beyond 55 m.
-   Uses object layers (the camera only sees layer 0), so it never fights the droid's own .visible toggles. */
+/* draw-call level of detail: a GD01 is ~180 meshes (~110 casting shadows). Beyond ~45 m the whole detailed model is switched off (object layers: the
+   camera only sees layer 0, so this never fights the droid's own .visible toggles) and a 4-box stand-in, sized from the real model's bounds, is drawn
+   instead. Only the detailed model casts shadows, and only within 55 m. */
 function droidLOD(q,d){
-  if(!q.lod){const L=[];q.m.root.traverse(o=>{if(!o.isMesh)return;const g=o.geometry;if(!g.boundingSphere)g.computeBoundingSphere();const sc=Math.max(o.scale.x,o.scale.y,o.scale.z);L.push({o,r:(g.boundingSphere?g.boundingSphere.radius:0.1)*sc,sh:o.castShadow});});L.sort((a,b)=>b.r-a.r);q.lod=L;q.lodK=-1;}
-  const keep=d<40?q.lod.length:d<90?Math.min(q.lod.length,60):d<170?30:14,sh=d<55?1:0,key=keep*2+sh;if(key===q.lodK)return;q.lodK=key;
-  for(let i=0;i<q.lod.length;i++){const e=q.lod[i];if(i<keep)e.o.layers.set(0);else e.o.layers.set(1);e.o.castShadow=e.sh&&sh&&i<keep;}}
+  if(!q.lod){const L=[];q.m.root.traverse(o=>{if(o.isMesh)L.push({o,sh:o.castShadow});});q.lod=L;q.lodK=-1;
+    const r=q.m.root,p0=r.position.clone(),q0=r.quaternion.clone(),s0=r.scale.clone();r.position.set(0,0,0);r.quaternion.identity();r.scale.set(1,1,1);r.updateMatrixWorld(true);
+    const bb=new THREE.Box3().setFromObject(r),sz=bb.getSize(new THREE.Vector3()),c=bb.getCenter(new THREE.Vector3());r.position.copy(p0);r.quaternion.copy(q0);r.scale.copy(s0);r.updateMatrixWorld(true);
+    const g=new THREE.Group(),mb=q.proxyMatB||(q.proxyMatB=new THREE.MeshStandardMaterial({color:0x3b4147,flatShading:true,roughness:0.8,metalness:0.2})),ma=new THREE.MeshStandardMaterial({color:0x8d949a,flatShading:true,roughness:0.7,metalness:0.2});
+    const box=(w,h,dp,x,y,z,m)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,dp),m);b.position.set(x,y,z);g.add(b);return b;};
+    box(sz.x*0.9,sz.y*0.42,sz.z,c.x,bb.min.y+sz.y*0.26,c.z,mb);          /* chassis */
+    box(sz.x*0.62,sz.y*0.3,sz.z*0.6,c.x,bb.min.y+sz.y*0.6,c.z,ma);       /* body */
+    box(sz.x*0.16,sz.y*0.12,sz.z*0.8,c.x-sz.x*0.3,bb.min.y+sz.y*0.74,c.z+sz.z*0.1,mb);   /* the two guns */
+    box(sz.x*0.16,sz.y*0.12,sz.z*0.8,c.x+sz.x*0.3,bb.min.y+sz.y*0.74,c.z+sz.z*0.1,mb);
+    g.visible=false;q.m.root.add(g);q.proxy=g;}
+  const nf=q.lodFull==null?d<45:q.lodFull?d<=48:d<40,sh=nf&&d<55;if(nf===q.lodFull&&sh===q.lodSh)return;
+  q.lodFull=nf;q.lodSh=sh;
+  for(const e of q.lod){e.o.layers.set(nf?0:1);e.o.castShadow=!!(e.sh&&q.lodSh);}
+  q.proxy.visible=!nf;}
 function droidDyn(self){DR_DYN=[];const sx=self.m.D.x,sz=self.m.D.z;   /* only what is within 18 m can matter to this droid: keeps the per-query cost flat as the squads grow */
   for(const u of UGVS)if(!u.gone&&Math.abs(u.x-sx)<18&&Math.abs(u.z-sz)<18)DR_DYN.push({x:u.x,z:u.z,r:2.8});for(const q of DRS)if(q!==self&&q.m&&q.m.root.visible){const X=q.m.D.x,Z=q.m.D.z;if(Math.abs(X-sx)<18&&Math.abs(Z-sz)<18)DR_DYN.push({x:X,z:Z,r:2.2});}}
 function droidStep1(dt,nD,enem){
