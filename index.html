@@ -3471,7 +3471,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=532;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=533;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6153,6 +6153,8 @@ function droidStepAll(){
 /* draw-call level of detail: a GD01 is ~180 meshes (~110 casting shadows). Beyond ~45 m the whole detailed model is switched off (object layers: the
    camera only sees layer 0, so this never fights the droid's own .visible toggles) and a 4-box stand-in, sized from the real model's bounds, is drawn
    instead. Only the detailed model casts shadows, and only within 55 m. */
+const _taC=new Map();
+function droidTexAvg(t){let v=_taC.get(t);if(v)return v;v=[0.5,0.5,0.5];try{const im=t.image;if(im&&(im.width||im.videoWidth)){const c=document.createElement('canvas');c.width=c.height=1;const x=c.getContext('2d');x.drawImage(im,0,0,1,1);const d=x.getImageData(0,0,1,1).data;v=[Math.pow(d[0]/255,2.2),Math.pow(d[1]/255,2.2),Math.pow(d[2]/255,2.2)];}}catch(e){}_taC.set(t,v);return v;}
 function droidLOD(q,d){
   if(!q.lod){const L=[];q.m.root.traverse(o=>{if(o.isMesh)L.push({o,sh:o.castShadow});});q.lod=L;q.lodK=-1;
     const r=q.m.root,p0=r.position.clone(),q0=r.quaternion.clone(),s0=r.scale.clone();r.position.set(0,0,0);r.quaternion.identity();r.scale.set(1,1,1);r.updateMatrixWorld(true);
@@ -6160,9 +6162,10 @@ function droidLOD(q,d){
        so it looks the same as the detailed droid but costs a single draw call; wheels, gun pivots and the flash are frozen in their spawn pose */
     const g=new THREE.Group(),P=[],N=[],C=[];
     r.updateMatrixWorld(true);r.position.set(0,0,0);r.quaternion.identity();r.scale.set(1,1,1);r.updateMatrixWorld(true);
-    r.traverseVisible(o=>{if(!o.isMesh||!o.geometry||!o.geometry.attributes.position)return;const m=o.material;if(!m||m.map||m.transparent&&m.opacity<0.9)return;
+    r.traverseVisible(o=>{if(!o.isMesh||!o.geometry||!o.geometry.attributes.position)return;const m=o.material;if(!m||m.alphaTest>0||m.transparent&&m.opacity<0.9)return;   /* textured panels are kept, as their average texture colour */
       let ge=o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone();ge.applyMatrix4(o.matrixWorld);if(!ge.attributes.normal)ge.computeVertexNormals();
       const pa=ge.attributes.position.array,na=ge.attributes.normal.array,n=ge.attributes.position.count;let cr=m.color?m.color.r:0.5,cg=m.color?m.color.g:0.5,cb=m.color?m.color.b:0.5;
+      if(m.map){const t=droidTexAvg(m.map);cr*=t[0];cg*=t[1];cb*=t[2];}
       if(m.emissive&&(m.emissive.r+m.emissive.g+m.emissive.b)>0){const k=m.emissiveIntensity==null?1:m.emissiveIntensity;cr=Math.min(1,cr+m.emissive.r*k);cg=Math.min(1,cg+m.emissive.g*k);cb=Math.min(1,cb+m.emissive.b*k);}
       for(let k=0;k<n;k++){P.push(pa[k*3],pa[k*3+1],pa[k*3+2]);N.push(na[k*3],na[k*3+1],na[k*3+2]);C.push(cr,cg,cb);}ge.dispose();});
     r.position.copy(p0);r.quaternion.copy(q0);r.scale.copy(s0);r.updateMatrixWorld(true);
