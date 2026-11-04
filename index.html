@@ -3459,7 +3459,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=504;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=505;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3498,7 +3498,8 @@ $('stats').textContent=nTrees.toLocaleString()+' trees · '+nPlants.toLocaleStri
    Nodes are placed from a position hash only (no random numbers), so both players get exactly the same ones.
    Only "taken" events cross the network. Five instanced meshes, no shadows: a few hundred triangles each. */
 const RES_T=[
-  {k:'berries', label:'berries',   cell:11, p:0.30, amt:[1,1], n:300},
+  {k:'berries', label:'berries',   cell:11, p:0.30, amt:[1,1], n:250},
+  {k:'m32r',    label:'M32 rounds',   cell:13, p:0.25, amt:[1,1], n:50},
   {k:'mushroom',label:'Magic Mushrooms', cell:11, p:0.25, amt:[1,3], n:300},
   {k:'at4r',    label:'AT4 rounds',   cell:13, p:0.25, amt:[1,1], n:150},
   {k:'at4',     label:'AT4 launcher', cell:31, p:0.3, amt:[1,1], n:0},
@@ -3508,7 +3509,7 @@ const RES_T=[
   {k:'r762',    label:'7.62 rounds',  cell:13, p:0.25, amt:[1,1], n:300},
   {k:'rifle',   label:'Rifle',        cell:31, p:0.3, amt:[1,1], n:0}];   // weapons (AR-15, AT4, rifle) are placed by hand: two of each within 100 m of every capture point
 const INV={m32r:12,radio:0,berries:0,mushroom:0,at4r:0,scrap:0,meat:0,hide:0};
-const INV_LABEL={radio:'radios',berries:'berries',mushroom:'Magic Mushrooms',at4r:'AT4 rounds',scrap:'UGV',meat:'meat',hide:'hide'};
+const INV_LABEL={radio:'radios',berries:'berries',mushroom:'Magic Mushrooms',at4r:'AT4 rounds',m32r:'M32 rounds',scrap:'UGV',meat:'meat',hide:'hide'};
 const RES_GEO={
   r762:build([[B(0.3,0.17,0.14),'#4e5934',[0,0.085,0]],[B(0.312,0.032,0.152),'#5c683f',[0,0.186,0]],[B(0.13,0.018,0.022),'#2c3120',[0,0.212,0]],[B(0.03,0.06,0.03),'#3a4228',[0.16,0.13,0]],
     [B(0.17,0.035,0.004),'#d9c24a',[0,0.1,0.071]],[B(0.06,0.02,0.004),'#d9c24a',[-0.09,0.05,0.071]],
@@ -3526,6 +3527,7 @@ const RES_GEO={
   radio:build([[B(0.075,0.04,0.17),'#f2d21b',[0,0.022,0]],[B(0.05,0.006,0.045),'#9fb98a',[0,0.045,0.035]],[B(0.05,0.006,0.03),'#1d1e20',[0,0.045,-0.02]],[CY(0.009,0.009,0.12,6),'#1d1e20',[0.02,0.03,0.14],[HP,0,0]],[B(0.03,0.012,0.02),'#ff6a2a',[-0.02,0.046,0.08]]]),
   at4r:build([[CY(0.04,0.04,0.34,12),'#1f1f1e',[-0.1,0.045,0],[0,0,PI/2]],[CY(0.046,0.046,0.014,12),'#161615',[-0.267,0.045,0],[0,0,PI/2]],[CY(0.022,0.022,0.012,10),'#3b3b39',[-0.276,0.045,0],[0,0,PI/2]],
     [CY(0.041,0.041,0.05,12),'#adb0ae',[0.095,0.045,0],[0,0,PI/2]],[CY(0.012,0.04,0.17,12),'#4a5233',[0.205,0.045,0],[0,0,-PI/2]],[CY(0.013,0.013,0.012,8),'#8d8d86',[0.293,0.045,0],[0,0,-PI/2]]]),
+  m32r:build([0,1,2].map(i=>[CY(0.02,0.02,0.07,10),'#c9a24a',[-0.045+i*0.045,0.02,0.0],[0,0,PI/2]]).concat([0,1,2].map(i=>[CY(0.02,0.02,0.07,10),'#5b6340',[-0.045+i*0.045,0.02,0.045],[0,0,PI/2]]),[0,1,2].map(i=>[new THREE.ConeGeometry(0.02,0.04,10),'#3d4430',[-0.045+i*0.045+0.055,0.02,0.045],[0,0,-PI/2]]),[[B(0.16,0.012,0.12),'#4e5934',[0,0.006,0.02]]])),
   scrap:build([[B(0.44,0.035,0.3),'#a8643a',[0,0.03,0],[0.0,0.4,0.08]],[B(0.28,0.03,0.22),'#9aa2aa',[0.12,0.07,0.1],[0.05,-0.3,0.0]],[CY(0.035,0.035,0.42,6),'#7a8088',[-0.12,0.08,-0.12],[0,0,PI/2]],[B(0.12,0.1,0.12),'#b87a3c',[-0.16,0.06,0.15]]])};
 const RES_MAT=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:0.9,metalness:0});
 const RES_MESH={},RES_NODES=[],RES_CELLS=new Map(),_rm=new THREE.Matrix4(),_rq=new THREE.Quaternion(),_re=new THREE.Euler(),_rp=new THREE.Vector3(),_rs=new THREE.Vector3(),_ZERO=new THREE.Matrix4().makeScale(0,0,0),_RC=new THREE.Color();
@@ -3542,6 +3544,8 @@ function resOK(x,z,t){
 function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH(x,z);
   RES_NODES.push({t,ti,x,y:h,z,ry:hsh(salt+11,salt+29)*PI*2,s:(1.25+hsh(salt+5,salt+7)*0.5)*(t==='berries'?0.6:1),got:false,a:hsh(salt+1,salt+2)});
   const n=RES_NODES.length-1,key=Math.floor(x/8)+','+Math.floor(z/8);let L=RES_CELLS.get(key);if(!L){L=[];RES_CELLS.set(key,L);}L.push(n);return n;}
+const CTRL_PTS=()=>[SEC_HOME.e,TWPOS,TWPOS4,SILO_POS,TWPOS3,TWPOS2,SEC_HOME.w];
+const PK_NEAR=0.8,PK_R=250;
 (function resGen(){
   // a few at each starting point so the first minute has something to do, and UGV around the hut
   const near=(c,list)=>list.forEach(([t,a,d],i)=>{for(let k=0;k<12;k++){const ang=a+k*0.7+hsh(i,k+Math.round(c.x))*0.6,r=d+k*2.2,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
@@ -3566,7 +3570,11 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
       const h0=hsh(ix*31+ti*977,iz*17+ti*613);if(h0>R.p)continue;
       const x=(ix+hsh(ix+ti*5,iz*3+1))*R.cell,z=(iz+hsh(ix*7+2,iz+ti*11))*R.cell;
       if(resOK(x,z,R.k))cand.push([h0,x,z,ix*13+iz*7+ti*101]);}
-    if(R.k==='r762'||R.k==='at4r'||R.k==='berries'){cand.sort((p,q)=>p[0]-q[0]);const IN=[],OUT=[];for(const c of cand)(inRing(c[1],c[2])?IN:OUT).push(c);const want=R.n-have,nin=Math.min(IN.length,Math.round(want*0.85)),pre=R.k==='r762'?(L=>{const E=[],O=[];for(const c of L)(edgeOK(c[1],c[2])?E:O).push(c);return E.concat(O);}):(L=>L);
+    if(R.n>0&&R.k!=='scrap'){const want=Math.max(0,R.n-have),CP=CTRL_PTS();cand.sort((a,b)=>a[0]-b[0]);const N=[],F=[];for(const c of cand)(CP.some(q=>Math.hypot(c[1]-q.x,c[2]-q.z)<PK_R)?N:F).push(c);
+      const pf=(R.k==='r762'||R.k==='mushroom')?(L=>{const E=[],O=[];for(const c of L)(edgeOK(c[1],c[2])?E:O).push(c);return E.concat(O);}):(L=>L);
+      const nn=Math.min(N.length,Math.round(want*PK_NEAR));const pick=pf(N).slice(0,nn).concat(pf(F).slice(0,want-nn));if(pick.length<want)for(const c of pf(N).slice(nn)){if(pick.length>=want)break;pick.push(c);}
+      cand.length=0;for(const c of pick)cand.push(c);R._done=true;}
+    else if(R.k==='r762'||R.k==='at4r'||R.k==='berries'){cand.sort((p,q)=>p[0]-q[0]);const IN=[],OUT=[];for(const c of cand)(inRing(c[1],c[2])?IN:OUT).push(c);const want=R.n-have,nin=Math.min(IN.length,Math.round(want*0.85)),pre=R.k==='r762'?(L=>{const E=[],O=[];for(const c of L)(edgeOK(c[1],c[2])?E:O).push(c);return E.concat(O);}):(L=>L);
       const pick=pre(IN).slice(0,nin).concat(OUT.slice(0,want-nin));cand.length=0;for(const c of pick)cand.push(c);   // mostly inside the ring road
       if(cand.length<want){for(const c of IN.slice(nin)){if(cand.length>=want)break;if(!cand.includes(c))cand.push(c);}}}
     else if(R.k==='mushroom'){const E=[],O=[];cand.sort((p,q)=>p[0]-q[0]);for(const c of cand)(edgeOK(c[1],c[2])?E:O).push(c);cand.length=0;for(const c of E.concat(O)){if(cand.length>=R.n-have)break;cand.push(c);}window._mushEdge=E.length;}
@@ -3608,7 +3616,7 @@ function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();i
   if(((R.k==='rifle'||R.k==='ar15')&&slotHas(R.k))||(R.k==='at4'&&WPN.has)){nullSnd();toast('You already carry '+(R.k==='at4'?'an AT4':'a'+(R.k==='ar15'?'n ':' ')+ITEM[R.k].name));return;}   // no taking ammo from a weapon you already have
   if(R.k==='berries'&&MPM.hp>=HP_MAX){nullSnd();return;}
   if(R.k==='mushroom'&&STAM.v>=0.999){nullSnd();return;}
-  resSetGot(n,true);const q=R.k==='r762'?Math.max(1,GAME.pk762|0):R.k==='at4r'?Math.max(1,GAME.pkAt4|0):R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));
+  resSetGot(n,true);const q=R.k==='r762'?Math.max(1,GAME.pk762|0):R.k==='at4r'?Math.max(1,GAME.pkAt4|0):R.k==='m32r'?Math.max(1,GAME.pkM32|0):R.amt[0]+Math.floor(n.a*(R.amt[1]-R.amt[0]+1));
   if(R.k==='scrap'){const out=slotGive({k:'ugv'});toast((out?'Swapped your '+out+' for a UGV':'UGV picked up')+' · press '+slotKeyOf('ugv')+' to deploy it beside you');pickSnd();if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});return;}
   if(R.k==='radio'){const out=slotGive({k:'radio'});toast((out?'Swapped your '+out+' for a radio':'Radio picked up')+' · press '+slotKeyOf('radio')+' to call in a recon drone');pickSnd();if(NT.room&&MPM.on)NT.room.emit('take',{i}).catch(()=>{});return;}
   if(R.k==='rifle'){if(slotHas('rifle')){player.reserve=(player.reserve|0)+12;invUI();toast('+12 7.62 rounds from the spare rifle');}else{const out=slotGive({k:'rifle',ammo:12});invUI();toast(out?'Swapped your '+out+' for the rifle · it dropped at your feet':'Rifle picked up · 12 rounds · press '+slotKeyOf('rifle')+' to use it');}
@@ -3672,7 +3680,7 @@ function lookStep(){const T=(f)=>{try{f();}catch(e){if(!window._lsErr){window._l
 window.SNIPER_RES.look=()=>{let c=0,d=0;scene.traverse(o=>{const m=o.material;if(m&&m.isMeshStandardMaterial){c++;if(m.defines&&m.defines.GSTYLE)d++;}});return {sh:true,std:c,withDef:d,keys:renderer.info.programs.map(p=>p.cacheKey.includes('GSTYLE')).join(','),lookI};};
 
 // ---- edge glow on every collectible: a slightly enlarged back-face shell per node, additive, pulsing on a 3 s cycle, one colour per resource type
-const GLOWC={rifle:0xffe08a,ar15:0xff8a2a,berries:0xff4f8b,mushroom:0xffa03a,scrap:0x45e6c8,r762:0xfff04a,at4:0xff2fbf,at4r:0xffa0dc,radio:0x3ad8ff};
+const GLOWC={rifle:0xffe08a,ar15:0xff8a2a,berries:0xff4f8b,mushroom:0xffa03a,scrap:0x45e6c8,r762:0xfff04a,at4:0xff2fbf,at4r:0xffa0dc,m32r:0x7fd6ff,radio:0x3ad8ff};
 const LEADGLOW=(()=>{const sc=new THREE.Matrix4().makeScale(1.13,1.13,1.13),ms=[];let k=0;
   for(const t in GLOWC){const L=RES_NODES.filter(n=>n.t===t);if(!L.length||!RES_GEO[t])continue;
     const m=new THREE.MeshBasicMaterial({color:GLOWC[t],side:THREE.BackSide,transparent:true,opacity:0.5,depthWrite:false,blending:THREE.AdditiveBlending,fog:false});
@@ -3870,7 +3878,7 @@ ${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Hei
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:3,slotG:3,m32Spd:76,m32R:4.5,m32Dmg:110,m32Ugv:160,m32Reload:3.2,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloAcc:0.3,siloEvery:0,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.8,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:100,at4R:6,at4Dmg:200,at4Ugv:300,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:7.5,bInst:1,bears:2,bWalk:1.2,bRear:9,bAtk:1,bTrig:1,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1};
+const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:3,slotG:3,pkM32:6,m32Spd:76,m32R:4.5,m32Dmg:110,m32Ugv:160,m32Reload:3.2,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloAcc:0.3,siloEvery:0,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.8,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:100,at4R:6,at4Dmg:200,at4Ugv:300,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:7.5,bInst:1,bears:2,bWalk:1.2,bRear:9,bAtk:1,bTrig:1,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 try{if(!localStorage.getItem('fsSiloV2')){GAME.siloVol=2;localStorage.setItem('fsSiloV2','1');}}catch(e){}
 function balApply(){V0=GAME.bV0;DRAG=GAME.bDrag;GBUL=9.81*GAME.bDrop;try{setZero(zeroM);}catch(e){}}balApply();
@@ -3924,6 +3932,30 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
     pn.querySelectorAll('input[type=checkbox]').forEach(i=>i.onchange=()=>{GAME[i.dataset.k]=i.checked?1:0;save();dim();});
     pn.querySelectorAll('select').forEach(i=>i.onchange=()=>{GAME[i.dataset.k]=+i.value;save();});
     dim();};
+  build();
+  tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};
+  tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
+})();
+
+// ---- Pickups tab: what lies on the map, how much each gives, where it is placed
+(function(){
+  const tabs=document.querySelector('.tabs'),gamePn=document.getElementById('paneGame');if(!tabs||!gamePn)return;
+  const css=document.createElement('style');css.textContent=`#panePick .gr{display:grid;grid-template-columns:270px 1fr 64px;gap:10px;align-items:center;margin:5px 0;font-size:13px}#panePick .gr input[type=range]{width:100%;accent-color:var(--moss)}#panePick .gr output{font-variant-numeric:tabular-nums;opacity:.85;text-align:right}#panePick table{border-collapse:collapse;font-size:13px;width:100%;margin:6px 0}#panePick th{font:600 10px var(--f-ui);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);text-align:left;padding:2px 10px 4px 0}#panePick td{padding:4px 10px 4px 0;border-top:1px solid var(--line);vertical-align:middle}#panePick .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;vertical-align:middle}#panePick .tn{font-size:12px;opacity:.65;line-height:1.4}`;document.head.appendChild(css);
+  const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabPick';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','panePick');tb.textContent='Pickups';tabs.appendChild(tb);
+  const pn=document.createElement('div');pn.id='panePick';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabPick');pn.hidden=true;gamePn.after(pn);
+  const INFO={berries:['Berries','Heals over time (ignored at full health)'],mushroom:['Magic Mushrooms','Stamina only (ignored at full stamina)'],at4r:['AT4 rounds',()=>'+'+Math.max(1,GAME.pkAt4|0)+' AT4 rounds'],m32r:['M32 rounds',()=>'+'+Math.max(1,GAME.pkM32|0)+' 40 mm grenades'],
+    r762:['7.62 ammo box',()=>'+'+Math.max(1,GAME.pk762|0)+' rounds (rifle and AR-15)'],at4:['AT4 launcher','Loaded AT4, or +1 round if you carry one'],ar15:['AR-15','Full magazine, or its rounds as spare 7.62'],rifle:['Rifle','12 rounds, or +12 spare 7.62'],
+    radio:['Radio','Gadget: calls in the recon drone'],scrap:['UGV','Gadget: deploys a Termit robot']};
+  const sl=(k,label,mn,mx,st)=>`<div class="gr"><label>${label}</label><input type="range" min="${mn}" max="${mx}" step="${st}" value="${GAME[k]}" data-k="${k}"><output>${GAME[k]}</output></div>`;
+  const build=()=>{const CP=CTRL_PTS();const near=n=>CP.some(q=>Math.hypot(n.x-q.x,n.z-q.z)<PK_R);
+    const rows=RES_T.map(R=>{const L=RES_NODES.filter(n=>n.t===R.k),nn=L.filter(near).length,I=INFO[R.k]||[R.label,''];const col='#'+(GLOWC[R.k]||0xffffff).toString(16).padStart(6,'0');
+      return `<tr><td><span class="dot" style="background:${col}"></span>${I[0]}</td><td>${L.length}</td><td>${L.length?Math.round(100*nn/L.length)+'%':'–'}</td><td>${typeof I[1]==='function'?I[1]():I[1]}</td></tr>`;}).join('');
+    pn.innerHTML='<p class="note">Everything lying on the map. Counts are what was placed this session; the placement bias applies when the map is generated.</p>'
+      +'<table><tr><th>Pickup</th><th>On map</th><th>Within '+PK_R+' m of a control point</th><th>Gives</th></tr>'+rows+'</table>'
+      +'<p class="tn">Berries, mushrooms, ammo, AT4 and M32 rounds and radios are placed '+Math.round(PK_NEAR*100)+'% within '+PK_R+' m of a control point, the rest anywhere. Weapons lie within 100 m of each point and UGVs within 150 m. Spare weapons you drop show a glow on the ground.</p>'
+      +'<p class="sec" style="margin-top:14px">Amounts</p>'+sl('pk762','7.62 rounds per ammo box',1,60,1)+sl('pkAt4','AT4 rounds per pickup',1,10,1)+sl('pkM32','M32 grenades per pickup',1,12,1);
+    pn.querySelectorAll('input[type=range]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;i.nextElementSibling.textContent=v;try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}});
+    pn.querySelectorAll('input[type=range]').forEach(i=>i.onchange=()=>build());};
   build();
   tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};
   tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
