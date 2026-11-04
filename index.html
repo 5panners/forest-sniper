@@ -3471,7 +3471,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=525;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=526;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6114,7 +6114,7 @@ function droidSteer(gx,gz,speed,dp,dt){const D=DR.m.D;
     if(f==null){DR.rev=1.2;DR.rs=Math.random()<0.5?1:-1;want=0;}else{turn=f;want*=0.55;}}
   DR.want=want;D.yawT=clamp(turn*2.5,-1.8,1.8);D.vT=want*Math.max(0,Math.cos(Math.min(Math.PI/2,Math.abs(turn)*1.3)));}
 function droidGoTo(tx,tz,speed,dt){const D=DR.m.D,dp=Math.hypot(tx-D.x,tz-D.z);let gx=tx,gz=tz;
-  if(dp>14||DR.stuck>0){DR.fT-=dt;if(!DR.path||DR.fT<=0||Math.hypot(tx-(DR.pgx||0),tz-(DR.pgz||0))>8){DR.fT=DR.stuck>0?1.5:3;DR.pgx=tx;DR.pgz=tz;const r=ugvPlan(D.x,D.z,tx,tz);DR.path=r.path;DR.pi=0;}
+  if(dp>14||DR.stuck>0){DR.fT-=dt;if(!DR.path||DR.fT<=0||Math.hypot(tx-(DR.pgx||0),tz-(DR.pgz||0))>8){if((DRS.pl|0)<1){DRS.pl=(DRS.pl|0)+1;DR.fT=DR.stuck>0?1.5:3;DR.pgx=tx;DR.pgz=tz;const r=ugvPlan(D.x,D.z,tx,tz);DR.path=r.path;DR.pi=0;}else DR.fT=Math.min(DR.fT,0.03);}   /* one A* plan per frame across all droids */
     let w=DR.path&&DR.path[DR.pi];if(w&&DR.pi<DR.path.length-1&&Math.hypot(w.x-D.x,w.z-D.z)<4.5){DR.pi++;w=DR.path[DR.pi];}if(w){gx=w.x;gz=w.z;}}
   else DR.path=null;
   droidSteer(gx,gz,speed,dp,dt);return dp;}
@@ -6126,10 +6126,14 @@ function droidStepAll(){
   DRS.clock+=dt;
   const nE=DR_NE(),nF=DR_NF(),n=nE+nF;
   if(!DRL.parent)scene.add(DRL);DRL.t-=dt;if(DRL.t<=0)DRL.intensity=0;
-  const enR=nE>0?droidEnemies(3-secTeam()):[],enB=nF>0?droidEnemies(secTeam()):[];
-  for(let i=0;i<20;i++){const q=DRS[i]||(DRS[i]=mkDR());q.i=i;if(!(i<10?i<nE:i-10<nF)){if(q.m)q.m.root.visible=false;try{droidHBStep(q,false);}catch(e){}continue;}DR=q;droidW(q,()=>droidStep1(dt,n,i<10?enR:enB));try{droidHBStep(q,!q.dead);}catch(e){}}}
+  const enR=nE>0?droidEnemies(3-secTeam()):[],enB=nF>0?droidEnemies(secTeam()):[];DRS.pl=0;DRS.fr=(DRS.fr|0)+1;const pp=player.pos;
+  for(let i=0;i<20;i++){const q=DRS[i]||(DRS[i]=mkDR());q.i=i;if(!(i<10?i<nE:i-10<nF)){if(q.m)q.m.root.visible=false;try{droidHBStep(q,false);}catch(e){}continue;}DR=q;
+    /* level of detail: droids far from the player think every 2nd or 3rd frame, with the time they skipped added on */
+    let dt1=dt;if(q.m&&!q.dead&&!q.tele){const dd=Math.hypot(q.m.D.x-pp.x,q.m.D.z-pp.z),sk=dd>150?3:dd>70?2:1;if(sk>1&&((DRS.fr+i)%sk)){q.acc=(q.acc||0)+dt;try{droidHBStep(q,!q.dead);}catch(e){}continue;}dt1=dt+(q.acc||0);q.acc=0;}
+    droidW(q,()=>droidStep1(Math.min(0.2,dt1),n,i<10?enR:enB));try{droidHBStep(q,!q.dead);}catch(e){}}}
 // everything a droid must not drive into besides trees, rocks, water and steep ground: UGVs and the other droids
-function droidDyn(self){DR_DYN=[];for(const u of UGVS)if(!u.gone)DR_DYN.push({x:u.x,z:u.z,r:2.8});for(const q of DRS)if(q!==self&&q.m&&q.m.root.visible)DR_DYN.push({x:q.m.D.x,z:q.m.D.z,r:2.2});}
+function droidDyn(self){DR_DYN=[];const sx=self.m.D.x,sz=self.m.D.z;   /* only what is within 18 m can matter to this droid: keeps the per-query cost flat as the squads grow */
+  for(const u of UGVS)if(!u.gone&&Math.abs(u.x-sx)<18&&Math.abs(u.z-sz)<18)DR_DYN.push({x:u.x,z:u.z,r:2.8});for(const q of DRS)if(q!==self&&q.m&&q.m.root.visible){const X=q.m.D.x,Z=q.m.D.z;if(Math.abs(X-sx)<18&&Math.abs(Z-sz)<18)DR_DYN.push({x:X,z:Z,r:2.2});}}
 function droidStep1(dt,nD,enem){
   if(!DR.m){DR.m=makeDroidGD(THREE,groundH,{shot:droidShot,rate:()=>Math.max(2,GAME.dRate)});scene.add(DR.m.root);droidFlag(DR.m,DR.i>=10);DR.tele=true;}
   const m=DR.m,D=m.D;m.root.visible=true;droidDyn(DR);const team=DR_TEAM();
