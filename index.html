@@ -3471,7 +3471,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=526;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=528;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4006,9 +4006,20 @@ const EDGE={burn:0,fl:0,lt:0,el:null};
 EDGE.d=[0,0,0,0];   // front, right, behind, left
 function edgeFlash(src){if(!src||src.x==null||src.z==null){EDGE.fl=1;return;}
   const dx=src.x-player.pos.x,dz=src.z-player.pos.z,L=Math.hypot(dx,dz);if(L<0.5){EDGE.fl=1;return;}
-  const sn=Math.sin(camYaw),cs=Math.cos(camYaw),f=(dx*sn+dz*cs)/L,rt=(-dx*cs+dz*sn)/L;
-  const w=[Math.max(0,f),Math.max(0,rt),Math.max(0,-f),Math.max(0,-rt)];for(let i=0;i<4;i++)EDGE.d[i]=Math.max(EDGE.d[i],Math.min(1,Math.pow(w[i],0.8)*1.15));}
-function edgeStep(){const now=performance.now(),dt=Math.min(0.25,(now-(EDGE.lt||now))/1000);EDGE.lt=now;let o=0;
+  /* a faded sector on a ring round the crosshair, pointing at where the shot came from; it turns with your view and fades out */
+  const b=Math.atan2(dx,dz);let h=null;for(const q of HITI)if(Math.abs(Math.atan2(Math.sin(q.b-b),Math.cos(q.b-b)))<0.2){h=q;break;}
+  if(h){h.b=b;h.t=1;}else{HITI.push({b,t:1});if(HITI.length>8)HITI.shift();}}
+const HITI=[];
+const HITC=(function(){const c=document.createElement('canvas');c.id='hitDir';c.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:6';document.body.appendChild(c);return {c,x:c.getContext('2d'),w:0,h:0,on:false};})();
+function hitDraw(dt){const C=HITC;if(!HITI.length&&!C.on)return;
+  const W=innerWidth,H=innerHeight,dpr=Math.min(2,devicePixelRatio||1);if(C.w!==W||C.h!==H){C.w=W;C.h=H;C.c.width=Math.round(W*dpr);C.c.height=Math.round(H*dpr);}
+  const x=C.x;x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,W,H);C.on=false;if(!player.alive||!playing){HITI.length=0;return;}
+  const cx=W/2,cy=H/2,R0=Math.min(W,H)*0.20,R1=R0+Math.min(W,H)*0.11;
+  for(let i=HITI.length-1;i>=0;i--){const q=HITI[i];q.t-=dt/1.6;if(q.t<=0){HITI.splice(i,1);continue;}
+    const th=camYaw-q.b-Math.PI/2,sp=0.30,a=Math.min(1,q.t*1.6)*0.8;   /* screen angle: 0 = up, clockwise */
+    const g=x.createRadialGradient(cx,cy,R0,cx,cy,R1);g.addColorStop(0,'rgba(255,30,20,0)');g.addColorStop(0.55,'rgba(255,30,20,'+a.toFixed(3)+')');g.addColorStop(1,'rgba(255,30,20,0)');
+    x.fillStyle=g;x.beginPath();x.arc(cx,cy,R1,th-sp,th+sp);x.arc(cx,cy,R0,th+sp,th-sp,true);x.closePath();x.fill();C.on=true;}}
+function edgeStep(){const now=performance.now(),dt=Math.min(0.25,(now-(EDGE.lt||now))/1000);EDGE.lt=now;let o=0;try{hitDraw(dt);}catch(e){}
   if(EDGE.burn>0){EDGE.burn-=dt;o=Math.max(o,(0.5+0.5*Math.sin(now/1000*8))*(0.55+0.45*(EDGE.k||0.5))*Math.min(1,EDGE.burn/0.2)+0.2);}
   if(EDGE.fl>0){EDGE.fl-=dt/0.7;o=Math.max(o,Math.max(0,EDGE.fl)*0.8);}
   {const dk=!player.alive||!playing?0:1;let any=false;for(let i=0;i<4;i++){EDGE.d[i]=Math.max(0,EDGE.d[i]-dt/0.8);if(EDGE.d[i]>0)any=true;}
@@ -6045,7 +6056,7 @@ function droidGunSnd(o){const c=sp3(o.x,o.y,o.z,1200);if(!c)return;const fd=Math
   if(SND.rifle){const s=AC.createBufferSource();s.buffer=SND.rifle;s.playbackRate.value=1.0+Math.random()*0.1;const g=AC.createGain();g.gain.value=1.5*vg*GAME.rDGun*fd;s.connect(g);g.connect(c.inp);s.start(c.t0);}else nz(c,c.t0,0.15,1800,0.8,1.6*vg*GAME.rDGun*fd);}
 function droidRound(o,dir,tr){const b={tm:DR_TEAM(),p:o.clone(),o:o.clone(),v:dir.clone().multiplyScalar(V0*0.92),t:0,tr:getP(gTracer,matTracer),rem:true,ugv:true,dr:true,ud:GAME.dDmg};bullets.push(b);if(tr)try{mkStreak(b);}catch(e){}
   droidGunSnd(o);try{farFlash(o);}catch(e){}try{disturb(o.x,o.z,110,380,true);}catch(e){}}
-const DRL=new THREE.PointLight(0xffb347,0,30,2);DRL.t=0;   // muzzle-flash light, same colour and strength as the player's AR-15; one shared light, moved to whichever gun fired last
+window.__DRS=DRS;const DRL=new THREE.PointLight(0xffb347,0,30,2);DRL.t=0;   // muzzle-flash light, same colour and strength as the player's AR-15; one shared light, moved to whichever gun fired last
 const _dm=new THREE.Vector3(),_dq=new THREE.Quaternion(),_dv=new THREE.Vector3();
 function droidMuzzle(g){return g.gun.localToWorld(_dm.set(0,0.005,0.95)).clone();}
 function droidShot(g){const T=DR.tgI;if(!T||!DR.m)return;DR.m.root.updateMatrixWorld(true);const o=droidMuzzle(g),d=Math.hypot(T.x-o.x,T.z-o.z),tf=d/(V0*0.92),lead=0.55+Math.random()*0.4;
@@ -6127,11 +6138,17 @@ function droidStepAll(){
   const nE=DR_NE(),nF=DR_NF(),n=nE+nF;
   if(!DRL.parent)scene.add(DRL);DRL.t-=dt;if(DRL.t<=0)DRL.intensity=0;
   const enR=nE>0?droidEnemies(3-secTeam()):[],enB=nF>0?droidEnemies(secTeam()):[];DRS.pl=0;DRS.fr=(DRS.fr|0)+1;const pp=player.pos;
-  for(let i=0;i<20;i++){const q=DRS[i]||(DRS[i]=mkDR());q.i=i;if(!(i<10?i<nE:i-10<nF)){if(q.m)q.m.root.visible=false;try{droidHBStep(q,false);}catch(e){}continue;}DR=q;
+  for(let i=0;i<20;i++){const q=DRS[i]||(DRS[i]=mkDR());q.i=i;if(!(i<10?i<nE:i-10<nF)){if(q.m)q.m.root.visible=false;try{droidHBStep(q,false);}catch(e){}continue;}DR=q;if(q.m){const d0=Math.hypot(q.m.D.x-pp.x,q.m.D.z-pp.z);try{droidLOD(q,d0);}catch(e){if(!window._lodErr){window._lodErr=e.message;console.warn("droidLOD",e);}}}
     /* level of detail: droids far from the player think every 2nd or 3rd frame, with the time they skipped added on */
     let dt1=dt;if(q.m&&!q.dead&&!q.tele){const dd=Math.hypot(q.m.D.x-pp.x,q.m.D.z-pp.z),sk=dd>150?3:dd>70?2:1;if(sk>1&&((DRS.fr+i)%sk)){q.acc=(q.acc||0)+dt;try{droidHBStep(q,!q.dead);}catch(e){}continue;}dt1=dt+(q.acc||0);q.acc=0;}
     droidW(q,()=>droidStep1(Math.min(0.2,dt1),n,i<10?enR:enB));try{droidHBStep(q,!q.dead);}catch(e){}}}
 // everything a droid must not drive into besides trees, rocks, water and steep ground: UGVs and the other droids
+/* draw-call level of detail: a GD01 is ~180 meshes (~110 casting shadows). Far away only its biggest parts are drawn, and the shadow pass skips it beyond 55 m.
+   Uses object layers (the camera only sees layer 0), so it never fights the droid's own .visible toggles. */
+function droidLOD(q,d){
+  if(!q.lod){const L=[];q.m.root.traverse(o=>{if(!o.isMesh)return;const g=o.geometry;if(!g.boundingSphere)g.computeBoundingSphere();const sc=Math.max(o.scale.x,o.scale.y,o.scale.z);L.push({o,r:(g.boundingSphere?g.boundingSphere.radius:0.1)*sc,sh:o.castShadow});});L.sort((a,b)=>b.r-a.r);q.lod=L;q.lodK=-1;}
+  const keep=d<40?q.lod.length:d<90?Math.min(q.lod.length,60):d<170?30:14,sh=d<55?1:0,key=keep*2+sh;if(key===q.lodK)return;q.lodK=key;
+  for(let i=0;i<q.lod.length;i++){const e=q.lod[i];if(i<keep)e.o.layers.set(0);else e.o.layers.set(1);e.o.castShadow=e.sh&&sh&&i<keep;}}
 function droidDyn(self){DR_DYN=[];const sx=self.m.D.x,sz=self.m.D.z;   /* only what is within 18 m can matter to this droid: keeps the per-query cost flat as the squads grow */
   for(const u of UGVS)if(!u.gone&&Math.abs(u.x-sx)<18&&Math.abs(u.z-sz)<18)DR_DYN.push({x:u.x,z:u.z,r:2.8});for(const q of DRS)if(q!==self&&q.m&&q.m.root.visible){const X=q.m.D.x,Z=q.m.D.z;if(Math.abs(X-sx)<18&&Math.abs(Z-sz)<18)DR_DYN.push({x:X,z:Z,r:2.2});}}
 function droidStep1(dt,nD,enem){
