@@ -3476,7 +3476,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=551;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=552;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5484,7 +5484,7 @@ function ugvRound(o,dir,tr,tm){const b={tm:tm|0,p:o.clone(),o:o.clone(),v:dir.cl
 function ugvNetFire(d){if(!Array.isArray(d.o)||!Array.isArray(d.v))return;const o=V(+d.o[0],+d.o[1],+d.o[2]),v=V(+d.v[0],+d.v[1],+d.v[2]);if(!isFinite(o.x+o.y+o.z+v.x)||v.lengthSq()<0.5)return;
   v.normalize();ugvRound(o,v,!!d.t,d.tm|0);const u=UGVS[d.i|0]||UGVS[0];if(u)u.fl=0.05;}
 function ugvHurtMe(zone,ud,dr,src){if(!player.alive||MPM.hp<=0)return;try{if(MPM.on&&NT.M.ph!=='live')return;}catch(e){}
-  const dmg=(ud!=null?ud:GAME.uDmg)*(zone==='head'?2:zone==='limb'?0.6:1);MPM.hp-=dmg;try{flashHit();edgeFlash(src);shake=Math.max(shake,0.3);dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,dmg,'#ff3a3a');impactSnd(player.pos,'flesh');}catch(e){}
+  const dmg=(ud!=null?ud:GAME.uDmg)*(zone==='head'?2:zone==='limb'?0.6:1);MPM.hp-=dmg;try{flashHit();edgeFlash(src);shake=Math.max(shake,dr?0.35:0.3);dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,dmg,'#ff3a3a');impactSnd(player.pos,'flesh');}catch(e){}
   toast('Hit by the '+(dr?'GD01':'UGV')+' · '+(zone==='head'?'head':zone==='limb'?'limb':'body')+' · -'+Math.round(dmg));
   if(MPM.hp<=0){MPM.hp=0;SECT.pk=1;try{if(!MPM.on)kfeed(dr?(secTeam()===1?'Blue':'Red')+' GD01':'Termit UGV',dr?3-secTeam():0,'Player',secTeam(),zone==='head');}catch(e){}startAction('death');toast('Killed by the '+(dr?'GD01':'UGV'));}}
 // ---- the brain (host)
