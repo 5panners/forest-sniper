@@ -3460,7 +3460,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=509;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=510;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5734,6 +5734,20 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
   build();
   tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};
   tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
+})();
+// ---- Bots tab: the GD01 droid and Termit UGV option pages live here as sub-tabs
+(function(){
+  const tabs=document.querySelector('.tabs'),pu=document.getElementById('paneUgv'),pg=document.getElementById('paneGd'),tu=document.getElementById('tabUgv'),tg=document.getElementById('tabGd');if(!tabs||!pu||!pg||!tu||!tg)return;
+  const css=document.createElement('style');css.textContent='#paneBots .bsub{display:flex;gap:6px;margin:6px 0 10px}#paneBots .bsub button{font:inherit;font-size:12px;padding:5px 14px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:inherit;cursor:pointer}#paneBots .bsub button[aria-selected=true]{background:rgba(227,163,59,.25);border-color:#e3a33b}';document.head.appendChild(css);
+  const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabBots';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','paneBots');tb.textContent='Bots';tabs.appendChild(tb);
+  const pn=document.createElement('div');pn.id='paneBots';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabBots');pn.hidden=true;pg.after(pn);
+  const bar=document.createElement('div');bar.className='bsub';pn.appendChild(bar);pn.appendChild(pg);pn.appendChild(pu);
+  tu.style.display='none';tg.style.display='none';
+  let cur=0;const subs=[['GD01 droid',tg],['Termit UGV',tu]];
+  const btn=subs.map(([t],i)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.onclick=()=>pick(i);bar.appendChild(b);return b;});
+  function pick(i){cur=i;subs[i][1].onclick();pn.hidden=false;tb.setAttribute('aria-selected','true');tg.setAttribute('aria-selected','false');tu.setAttribute('aria-selected','false');pg.hidden=i!==0;pu.hidden=i!==1;btn.forEach((b,j)=>b.setAttribute('aria-selected',j===i?'true':'false'));}
+  tb.onclick=()=>{setTimeout(()=>pick(cur),0);};
+  tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb&&t!==tu&&t!==tg){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
 })();
 function makeDroidGD(T,gh,H){
 const M=(c,o)=>new T.MeshStandardMaterial(Object.assign({color:c,flatShading:true,roughness:0.72,metalness:0.18},o||{}));
