@@ -2225,7 +2225,8 @@ function at4Blast(p,r){
   for(let i=0;i<10;i++)emit(gSpark,matFire,p,rv(14).add(V(0,5,0)),0.5,{s:1.2,grav:9});
   try{boomAt(p);const c=sp3(p.x,p.y,p.z,2500);if(c){nz(c,c.t0,0.12,2600,0.8,1.6);tn(c,c.t0,160,40,0.5,0.8);}}catch(e){}
   disturb(p.x,p.z,400,1100);{const d=camera.position.distanceTo(p);shake=Math.max(shake,clamp((40-d)/40,0,1.2));}
-  const R=r&&r.R?r.R:GAME.at4R,DM=r&&r.dm?r.dm:GAME.at4Dmg,UG=r&&r.ug?r.ug:GAME.at4Ugv,NM=r&&r.g40?'40mm':'AT4';
+  const R=r&&r.R?r.R:GAME.at4R,DM=r&&r.dm?r.dm:GAME.at4Dmg,UG=DM,   /* one blast damage for every target */
+    NM=r&&r.g40?'40mm':'AT4';
   // me
   if(player.alive&&MPM.hp>0){let live=true;try{if(MPM.on&&NT.M.ph!=='live')live=false;}catch(e){}
     const d=Math.hypot(player.pos.x-p.x,player.pos.y+1-p.y,player.pos.z-p.z);
@@ -2242,9 +2243,9 @@ function at4Blast(p,r){
     const dm=UG*(d<2.2?1:Math.pow(1-(d-2.2)/(R-1),1.2));if(dm<=0)continue;q.hp-=dm;try{dmgNum(D.x,gy+1.4,D.z,dm,'#ffd25a',dcGet(q.i).dHp);}catch(e){}
     DRS.lastT[droidTeam(q)]={x:from.x,z:from.z,t:DRS.clock};
     if(q.hp<=0)droidKill(q,['Player',secTeam()],false);else{toast('GD01 hit · '+NM+' · '+Math.max(0,Math.round(100*q.hp/Math.max(1,dcGet(q.i).dHp)))+'% armour left · '+dist+' m');if(!q.tgO){const keep=DR;DR=q;try{droidSay('alert');}finally{DR=keep;}}}}}catch(e){}
-  try{for(const b of BEARS){if(b.dead>0)continue;const d=Math.hypot(b.x-p.x,b.z-p.z);if(d>R)continue;const dm=DM*2*Math.pow(1-d/R,0.8);b.hp-=dm;
+  try{for(const b of BEARS){if(b.dead>0)continue;const d=Math.hypot(b.x-p.x,b.z-p.z);if(d>R)continue;const dm=DM*Math.pow(1-d/R,0.8);b.hp-=dm;
     if(b.hp<=0){b.hp=0;b.dead=0.001;b.spd=0;if(mine)toast('Bear down · '+NM+' · '+dist+' m');}else{b.st='flee';b.stT=10;const a=Math.atan2(b.x-p.x,b.z-p.z);b.tx=b.x+Math.sin(a)*90;b.tz=b.z+Math.cos(a)*90;}}}catch(e){}
-  try{for(const dd of DEER.slice()){if(dd.st==='dead'||dd.st==='dying')continue;const d=Math.hypot(dd.x-p.x,dd.z-p.z);if(d>R*0.8)continue;MPM.mute=true;try{hitDeer(dd,'neck',dist);}finally{MPM.mute=false;}}}catch(e){}}
+  try{for(const dd of DEER.slice()){if(dd.st==='dead'||dd.st==='dying')continue;const d=Math.hypot(dd.x-p.x,dd.z-p.z);if(d>R)continue;MPM.mute=true;try{hitDeer(dd,'blast',dist,DM*Math.pow(1-d/R,0.8));}finally{MPM.mute=false;}}}catch(e){}}
 // ---- sound: the launch is a hard crack and a deep thump; the burst uses the shared boom
 function at4LaunchSnd(o){const c=sp3(o.x,o.y,o.z,3500);if(!c)return;const t=c.t0,vg=(typeof VOLS!=='undefined'?VOLS.gun:1);
   if(SND.rifle){const s=AC.createBufferSource();s.buffer=SND.rifle;s.playbackRate.value=0.5;const g=AC.createGain();g.gain.value=2.2*vg;s.connect(g);g.connect(c.inp);s.start(t);}
@@ -2533,14 +2534,12 @@ function alertD(d,x,z,add){if(d.st==='dead'||d.st==='flee'||d.st==='dying')retur
 function deerName(d){return d.K.name;}
 function killDeer(d,shot){if(d.st==='dead')return;release(d);const was=d.wound;d.st='dead';d.wound=null;d.spd=0;d.rollSide=Math.random()<0.5?-1:1;
   if(!shot){const m=d.ranFrom?Math.round(Math.hypot(d.x-d.ranFrom.x,d.z-d.ranFrom.z)):0;toast(deerName(d)+(was==='gut'?' died of its wound':' went down')+(m>2?' · '+m+' m from where it was hit':''));try{animalCry('deer',d.x,d.y+1,d.z,true,d.kind);}catch(e){}dvox.thud(d);}}
-function hitDeer(d,sub,dist){const nm=deerName(d),R=' · '+Math.round(dist)+' m';flashHit();
-  if(d.st==='dead'){toast(nm+' is already down'+R);return;}try{dmgNum(d.x,d.y+2.0*d.s,d.z,animalDmg(d.kind,sub),null,(DMG.hp&&DMG.hp[d.kind])||100);animalCry('deer',d.x,d.y+1.2*d.s,d.z,sub==='head'||sub==='neck',d.kind);}catch(e){}
-  d.ranFrom=d.ranFrom||{x:d.x,z:d.z};const px=(hitFrom||player.pos).x,pz=(hitFrom||player.pos).z;{const _dm=DMG.w.rifle.d[sub]!=null?DMG.w.rifle.d[sub]:DMG.w.rifle.d.leg;d.hpL=(d.hpL==null?DMG.hp[d.kind]:d.hpL)-_dm;if(d.hpL<=0){killDeer(d,true);toast(nm+' down · '+sub+' shot'+R);return;}}
-  if(sub==='head'||sub==='neck'){killDeer(d,true);toast(nm+' down · '+sub+' shot'+R);return;}
-  if(d.wound||d.st==='bed'){if(sub!=='leg'||d.limp>=0){killDeer(d,true);toast(nm+' down · follow-up shot'+R);return;}}
-  if(sub==='vitals'){d.wound='fatal';d.dieT=2+Math.random()*4.5;d.st='flee';scare(d,px,pz);d.st='dying';toast(nm+' hit · heart/lung · it runs'+R);}
-  else if(sub==='gut'){d.wound='gut';d.dieT=45+Math.random()*75;scare(d,px,pz);toast(nm+' wounded · gut shot'+R);}
-  else{d.wound=d.wound||'leg';scare(d,px,pz);toast(nm+' wounded · leg'+R);}}
+function hitDeer(d,sub,dist,dmOv){const nm=deerName(d),R=' · '+Math.round(dist)+' m';flashHit();
+  if(d.st==='dead'){toast(nm+' is already down'+R);return;}const dm=dmOv!=null?dmOv:animalDmg(d.kind,sub),mx=(DMG.hp&&DMG.hp[d.kind])||100;d.hpL=(d.hpL==null?mx:d.hpL)-dm;try{dmgNum(d.x,d.y+2.0*d.s,d.z,dm,null,mx);animalCry('deer',d.x,d.y+1.2*d.s,d.z,sub==='head'||sub==='neck'||d.hpL<=0,d.kind);}catch(e){}
+  d.ranFrom=d.ranFrom||{x:d.x,z:d.z};const px=(hitFrom||player.pos).x,pz=(hitFrom||player.pos).z;
+  /* the same damage as against anything else: it dies when its hit points run out, otherwise it runs (a leg hit also makes it limp) */
+  if(d.hpL<=0){killDeer(d,true);toast(nm+' down · '+sub+' shot'+R);return;}
+  d.wound=d.wound||'leg';scare(d,px,pz);toast(nm+' hit · '+sub+' · '+Math.round(100*d.hpL/mx)+'% left'+R);}
 function legHit(d,leg){if(d.limp<0)d.limp=leg;}
 
 // --- steering ---
@@ -3471,7 +3470,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=537;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=538;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3796,16 +3795,21 @@ function healStep(){const now=performance.now(),dt=Math.min(0.25,(now-HEAL.t)/10
 
 // ---- damage model: every weapon's damage per target zone, hit points, and the list of what can be damaged (menu tab "Weapons")
 const DMG_DEF={
-  w:{rifle:{n:'Rifle',on:1,p:{head:100,torso:70,limb:35},d:{head:999,neck:999,vitals:70,gut:40,leg:25},k:{head:120,body:70,leg:25},b:100},
-    ar15:{n:'AR-15',on:1,p:{head:60,torso:28,limb:15},d:{head:999,neck:150,vitals:50,gut:25,leg:15},k:{head:60,body:28,leg:10},b:100}},
-  hp:{stag:120,fallow:100,roe:80,buzzard:10,bear:360},
+  /* one damage per weapon and zone, the same against every target (player, deer, bear, buzzard, UGV, GD01, drone); what differs is each target's hit points */
+  w:{rifle:{n:'Rifle',on:1,u:{head:100,body:70,limb:35}},
+    ar15:{n:'AR-15',on:1,u:{head:60,body:28,limb:15}}},
+  hp:{stag:100,fallow:90,roe:70,buzzard:10,bear:360},
   };
 const DMG=JSON.parse(JSON.stringify(DMG_DEF));
-try{const v=JSON.parse(localStorage.getItem('fsDmg')||'null');if(v){for(const w in DMG.w)if(v.w&&v.w[w]){for(const g of['p','d','k'])if(DMG.w[w][g])for(const k in DMG.w[w][g])if(v.w[w][g]&&v.w[w][g][k]!=null)DMG.w[w][g][k]=+v.w[w][g][k];if(v.w[w].b!=null)DMG.w[w].b=+v.w[w].b;}
-  if(v.hp)for(const k in DMG.hp)if(v.hp[k]!=null)DMG.hp[k]=+v.hp[k];}}catch(e){}
+/* the zone tables the older code reads (players, deer, bears, birds) are all derived from the one universal table */
+function dmgSync(){for(const k in DMG.w){const W=DMG.w[k],u=W.u;W.p={head:u.head,torso:u.body,limb:u.limb};W.d={head:u.head,neck:u.head,vitals:u.body,gut:u.body,leg:u.limb};W.k={head:u.head,body:u.body,leg:u.limb};W.b=u.body;}}
+try{const v=JSON.parse(localStorage.getItem('fsDmg')||'null');if(v){for(const w in DMG.w)if(v.w&&v.w[w]){const sv=v.w[w],u=DMG.w[w].u;
+    if(sv.u){for(const k in u)if(sv.u[k]!=null)u[k]=+sv.u[k];}else if(sv.p){if(sv.p.head!=null)u.head=+sv.p.head;if(sv.p.torso!=null)u.body=+sv.p.torso;if(sv.p.limb!=null)u.limb=+sv.p.limb;}}
+  if(v.v===2&&v.hp)for(const k in DMG.hp)if(v.hp[k]!=null)DMG.hp[k]=+v.hp[k];}}catch(e){}
+DMG.v=2;dmgSync();
 let _dmgApplied=false;
 function dmgApply(){if(typeof MP_DMG!=='undefined'){Object.assign(MP_DMG,DMG.w.rifle.p);_dmgApplied=true;}}
-function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(e){}dmgApply();}
+function dmgSave(){dmgSync();try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(e){}dmgApply();}
 (function(){
   const tabs=document.querySelector('.tabs'),paneMp=document.getElementById('paneMp');if(!tabs||!paneMp)return;
   const css=document.createElement('style');css.textContent=`
@@ -3830,6 +3834,7 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
   const sl=(k,label,mn,mx,st,dp)=>`<div class="gr"><label>${label}</label><input type="range" min="${mn}" max="${mx}" step="${st}" value="${GAME[k]}" data-k="${k}" data-dp="${dp}"><output>${(+GAME[k]).toFixed(dp)}</output></div>`;
   const sp=a=>'<div class="sp">'+a.map(x=>`<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join('')+'</div>';
   const dt=(title,g,cols,w)=>{w=w||'rifle';const W=DMG.w[w];return `<h4>${title}</h4><table><tr>${cols.map(c=>`<th>${c[1]}</th>`).join('')}</tr><tr>${cols.map(c=>`<td>${num('w.'+w+'.'+g+'.'+c[0],W[g][c[0]])}</td>`).join('')}</tr></table>`;};
+  const du=w=>{const W=DMG.w[w];return `<h4>Damage · the same against every target</h4><table><tr><th>Head</th><th>Body</th><th>Limbs</th></tr><tr>${['head','body','limb'].map(c=>`<td>${num('w.'+w+'.u.'+c,W.u[c])}</td>`).join('')}</tr></table>`;};
   const IC={rifle:'<svg viewBox="0 0 48 48"><path d="M3 27h20l3-2h16l3 1v3H28l-4 2H13l-3 6H5l2-6H3z" fill="#4a3a2a" stroke="#e7d2ae" stroke-width="1.4" stroke-linejoin="round"/><rect x="18" y="19" width="13" height="4" rx="2" fill="#20262a" stroke="#e7d2ae" stroke-width="1.2"/></svg>',
     at4:'<svg viewBox="0 0 48 48"><g stroke="#ffd0ee" stroke-width="1.3" stroke-linejoin="round"><rect x="9" y="19" width="30" height="8" rx="2" fill="#6e7944"/><rect x="38" y="16" width="5" height="14" rx="1.5" fill="#262624"/><path d="M9 19 3 16v14l6-3z" fill="#262624"/><rect x="28" y="27" width="4" height="9" fill="#2d2e2b"/><rect x="17" y="16" width="8" height="3" fill="#2b3046"/></g></svg>',
     rpg:'<svg viewBox="0 0 48 48"><g stroke="#ffd9b0" stroke-width="1.3" stroke-linejoin="round"><path d="M33 17c5 1 9 4 11 7-2 3-6 6-11 7z" fill="#5d6a3c"/><rect x="21" y="18" width="12" height="12" rx="2" fill="#4f5c33"/><path d="M21 21 13 22.5v3L21 27z" fill="#7a7d72"/><rect x="7" y="22.5" width="7" height="3" fill="#8b8e84"/></g></svg>',
@@ -3842,46 +3847,41 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
 ${sp([['Calibre','7.62 mm'],['Magazine',mag+' rounds'],['Bolt cycle',bolt+' s'],['Muzzle velocity',GAME.bV0+' m/s'],['Drop at 300 m',dropAt(300).y.toFixed(2).replace('-','')+' m'],['Drop at 600 m',dropAt(600).y.toFixed(2).replace('-','')+' m'],['Scope','2× 3× 4× (wheel)'],['Ammo','7.62 boxes']])}
 <h4>Pickups</h4>${sl('pk762','Rounds per ammo box',1,60,1,0)}
 <h4>Ballistics</h4>${sl('bDrop','Bullet drop (0 flat · 1 real)',0,3,0.1,1)}${sl('bV0','Muzzle velocity (m/s)',300,1200,10,0)}${sl('bDrag','Air drag (slows the bullet)',0,1,0.02,2)}
-${dt('Damage to players','p',[['head','Head'],['torso','Torso'],['limb','Limbs']])}
-${dt('Damage to deer','d',[['head','Head'],['neck','Neck'],['vitals','Heart / lungs'],['gut','Gut'],['leg','Leg']])}
-${dt('Damage to a bear','k',[['head','Head'],['body','Body'],['leg','Leg']])}
-<h4>Damage to a buzzard</h4><table><tr><th>Any hit</th></tr><tr><td>${num('w.rifle.b',W.b)}</td></tr></table>
+${du('rifle')}
 <p class="tn">Drop is measured over a flat shot at the same height. The scope zero (E / Q) re-adjusts to the new ballistics. Bullets always fall in a real arc, so a lower muzzle velocity means more time to target and more lead.</p>
-<p class="tn">Heart / lung deer hits leave a fatal wound, a gut hit bleeds out over one to two minutes, a leg hit causes a limp. A second hit on a wounded deer always kills.</p></section>
+<p class="tn">Every weapon does the same damage to everything and a target dies when its hit points run out (set them under Targets). A wounded deer runs; a leg hit also makes it limp.</p></section>
 <section class="wc"><div class="wh">${arIcon()}<div><h3>AR-15</h3><p>7.62 carbine · automatic · iron sights · orange pickup</p></div><span class="key">hold LMB · R reload · RMB sights</span></div>
 ${sp([['Calibre','7.62 mm (shares the rifle ammo)'],['Magazine',GAME.arMag+' rounds'],['Rate of fire',GAME.arRpm+' rpm'],['Spread aimed',GAME.arSpread+' mrad'],['Spread from the hip',(GAME.arSpread*2.4).toFixed(1)+' mrad'],['Torso hits to kill (100 hp)',Math.ceil(100/Math.max(1,DMG.w.ar15.p.torso))]])}
 ${sl('arMag','Magazine (rounds)',10,60,5,0)}${sl('arRpm','Rate of fire (rounds per minute)',200,1000,20,0)}${sl('arSpread','Spread when aimed (mrad · ×2.4 from the hip)',0.5,12,0.5,1)}${sl('arRecoil','Recoil (1 = normal)',0,3,0.1,1)}
-${dt('Damage to players','p',[['head','Head'],['torso','Torso'],['limb','Limbs']],'ar15')}
-${dt('Damage to deer','d',[['head','Head'],['neck','Neck'],['vitals','Heart / lungs'],['gut','Gut'],['leg','Leg']],'ar15')}
-${dt('Damage to a bear (also the drone and the UGV body)','k',[['head','Head'],['body','Body'],['leg','Leg']],'ar15')}
+${du('ar15')}
 <p class="tn">Uses the same 7.62 boxes as the bolt rifle; each rifle keeps the rounds in its own magazine. A second AR-15 pickup adds a magazine's worth of rounds. Crouch or go prone to tighten the spread.</p></section>
 <section class="wc"><div class="wh">${IC.at4}<div><h3>AT4</h3><p>Shoulder-mounted light anti-armour weapon · single shot</p></div><span class="key">1 / 2 switch · LMB fire · R load</span></div>
-${sp([['Rocket speed',GAME.at4Spd+' m/s'],['Blast radius',GAME.at4R+' m'],['Person, centre',GAME.at4Dmg+' hp'],['UGV, direct',GAME.at4Ugv+' hp'],['Reload',GAME.at4Reload+' s'],['Bears','2× person damage']])}
+${sp([['Rocket speed',GAME.at4Spd+' m/s'],['Blast radius',GAME.at4R+' m'],['Damage, centre',GAME.at4Dmg+' hp (all targets)'],['Reload',GAME.at4Reload+' s'],['Falloff','to nothing at the radius']])}
 <h4>Pickups</h4>${sl('pkAt4','AT4 rounds per round pickup',1,10,1,0)}
 <h4>Rocket and blast</h4>${sl('at4Spd','Rocket speed (m/s)',60,300,10,0)}${sl('at4R','Blast radius (m)',2,15,0.5,1)}${sl('at4Drop','Rocket drop (1 = full gravity)',0,1,0.05,2)}${sl('at4Reload','Reload time (s)',0.5,8,0.5,1)}
-<h4>Damage</h4>${sl('at4Dmg','Person at the centre (hp)',20,300,10,0)}${sl('at4Ugv','UGV, direct hit (hp)',100,1500,20,0)}
-<p class="tn">Holding the right mouse button aims and zooms the view by 25%. Damage falls off to nothing at the blast radius, and you can hurt yourself. Deer within 80% of the radius die. The launcher is a rare pink pickup; rounds are the pale pink glow.</p></section>
+<h4>Damage</h4>${sl('at4Dmg','Blast damage at the centre (hp, every target)',20,800,10,0)}
+<p class="tn">Holding the right mouse button aims and zooms the view by 25%. Damage falls off to nothing at the blast radius, and you can hurt yourself. The launcher is a rare pink pickup; rounds are the pale pink glow.</p></section>
 <section class="wc"><div class="wh">${m32Icon()}<div><h3>M32 grenade launcher</h3><p>6-round revolving cylinder · 40 mm grenades · start kit, slot 3</p></div><span class="key">LMB fire · R reload · RMB sights</span></div>
-${sp([['Grenade speed',GAME.m32Spd+' m/s'],['Blast radius',GAME.m32R+' m'],['Person, centre',GAME.m32Dmg+' hp'],['UGV / GD01 / drone, direct',GAME.m32Ugv+' hp'],['Reload',GAME.m32Reload+' s'],['Cylinder','6 loaded + 12 spare']])}
+${sp([['Grenade speed',GAME.m32Spd+' m/s'],['Blast radius',GAME.m32R+' m'],['Damage, centre',GAME.m32Dmg+' hp (all targets)'],['Reload',GAME.m32Reload+' s'],['Cylinder','6 loaded + 12 spare']])}
 <h4>Grenade and blast</h4>${sl('m32Spd','Grenade speed (m/s)',30,150,2,0)}${sl('m32Drop','Grenade drop (1 = full gravity)',0,3,0.1,1)}${sl('m32R','Blast radius (m)',1,12,0.5,1)}${sl('m32Reload','Reload time (s)',0.5,8,0.1,1)}
-<h4>Damage</h4>${sl('m32Dmg','Person at the centre (hp)',10,300,5,0)}${sl('m32Ugv','UGV, direct hit (hp)',20,1000,10,0)}
-<p class="tn">Grenades fall faster than gravity (default 1.6×) and are NOT corrected for range: they leave along the crosshair line, so you have to aim above the target. They burst on impact with the AT4 blast code; damage falls off to nothing at the radius, you can hurt yourself, bears take double. In multiplayer your opponent sees a rifle in your hands.</p></section>
+<h4>Damage</h4>${sl('m32Dmg','Blast damage at the centre (hp, every target)',10,800,5,0)}
+<p class="tn">Grenades fall faster than gravity (default 1.6×) and are NOT corrected for range: they leave along the crosshair line, so you have to aim above the target. They burst on impact with the AT4 blast code; damage falls off to nothing at the radius, you can hurt yourself. In multiplayer your opponent sees a rifle in your hands.</p></section>
 <section class="wc"><div class="wh">${IC.radio}<div><h3>Recon drone</h3><p>Radio call-in · 6.5 m span, unarmed · marks the other player on your map</p></div><span class="key">gadget key calls in</span></div>
-${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Height above the highest ground',GAME.uavAlt+' m'],['Speed',GAME.uavSpd+' m/s'],['Toughness',GAME.uavHp+' hp'],['Rifle hits to down it',Math.ceil(GAME.uavHp/Math.max(1,(DMG.w.rifle.k&&DMG.w.rifle.k.body)||70))]])}
+${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Height above the highest ground',GAME.uavAlt+' m'],['Speed',GAME.uavSpd+' m/s'],['Toughness',GAME.uavHp+' hp'],['Rifle body hits to down it',Math.ceil(GAME.uavHp/Math.max(1,DMG.w.rifle.u.body))]])}
 <h4>Flight</h4>${sl('uavDur','Time on station (s)',15,180,5,0)}${sl('uavR','Orbit radius (m)',100,460,10,0)}${sl('uavAlt','Height above the highest ground (m)',20,250,5,0)}${sl('uavSpd','Speed (m/s)',15,80,1,0)}
-<h4>Toughness and sound</h4>${sl('uavHp','Hit points (a body hit does the rifle bear-body damage)',20,600,10,0)}${sl('uavVol','Engine loudness',0,3,0.1,1)}
+<h4>Toughness and sound</h4>${sl('uavHp','Hit points',20,600,10,0)}${sl('uavVol','Engine loudness',0,3,0.1,1)}
 <p class="tn">Pick up a radio (cyan glow) and press its gadget key (3 or 4). The drone flies in from the map edge, circles for the time on station with the other player marked on your map and minimap, then leaves. Either player can shoot it down: wings and tail take 75% damage, an AT4 burst within 3 m destroys it. Only one drone per player at a time.</p></section>
 <section class="wc"><div class="wh">${IC.ugv}<div><h3>UGV gadget</h3><p>Pickup (teal glow) · gadget key deploys a Termit robot beside you</p></div><span class="tag">Team robot</span></div>
 <p class="tn">It fires only at the other team, drives to the spot you right-click on the map (the waypoint), and captures sectors for your team while it sits in them. One per team: when it is destroyed the gadget is spent. It can be shot (rifle) or blasted (AT4) by the other side, not by you.</p></section>
 </div>
 <p class="sec" style="margin-top:14px">Targets · hit points</p><table><tr><th>Target</th><th>Hit points</th><th>Hit by</th></tr>
 <tr><td>Player (you or the opponent)</td><td>100 at the start of a round, up to 200 with food</td><td>rifle, AT4 blast, UGV</td></tr>
-<tr><td>Red deer stag</td><td>${num('hp.stag',DMG.hp.stag)}</td><td>rifle, AT4 blast</td></tr>
-<tr><td>Fallow doe</td><td>${num('hp.fallow',DMG.hp.fallow)}</td><td>rifle, AT4 blast</td></tr>
-<tr><td>Roe doe</td><td>${num('hp.roe',DMG.hp.roe)}</td><td>rifle, AT4 blast</td></tr>
-<tr><td>Brown bear</td><td>${num('hp.bear',DMG.hp.bear)}</td><td>rifle, AT4 blast · default is three times the stag</td></tr>
-<tr><td>Buzzard</td><td>${num('hp.buzzard',DMG.hp.buzzard)}</td><td>rifle</td></tr>
-<tr><td>Termit UGV</td><td>${GAME.uHp}</td><td>rifle (sensors, optic, hull), AT4</td></tr></table>
+<tr><td>Red deer stag</td><td>${num('hp.stag',DMG.hp.stag)}</td><td>every weapon</td></tr>
+<tr><td>Fallow doe</td><td>${num('hp.fallow',DMG.hp.fallow)}</td><td>every weapon</td></tr>
+<tr><td>Roe doe</td><td>${num('hp.roe',DMG.hp.roe)}</td><td>every weapon</td></tr>
+<tr><td>Brown bear</td><td>${num('hp.bear',DMG.hp.bear)}</td><td>every weapon</td></tr>
+<tr><td>Buzzard</td><td>${num('hp.buzzard',DMG.hp.buzzard)}</td><td>every weapon</td></tr>
+<tr><td>Termit UGV</td><td>${GAME.uHp}</td><td>every weapon · set in the Bots tab · optic = head, tracks = limbs, the rest = body</td></tr><tr><td>GD01 droid</td><td>Bots tab</td><td>every weapon · head = head, the rest = body</td></tr><tr><td>Recon drone</td><td>${GAME.uavHp}</td><td>every weapon · set under Recon drone · wings and tail = limbs</td></tr></table>
 <p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Magic Mushrooms, ammo boxes, rounds, UGV</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>`;
     {const W=pn.querySelector('.wgrid');if(W){const secs=[...W.querySelectorAll(':scope>section.wc')];const nm=['Bolt rifle','AR-15','AT4','M32','Recon drone','UGV'];
       const tg=document.createElement('div');tg.className='wtg';let n=W.nextSibling;while(n){const nx=n.nextSibling;tg.appendChild(n);n=nx;}W.after(tg);
@@ -4614,9 +4614,9 @@ function uavDamage(u,dm,fromMe,dist){if(u.st==='down'||u.st==='gone'||!(dm>0))re
   if(fromMe){try{flashHit();}catch(e){}try{if(MPM.on&&NT.room)NT.room.emit('uav',{k:'hit',own:u.mine?1:0,dm:Math.round(dm)}).catch(()=>{});}catch(e){}
     if(u.hp>0)toast('Drone hit · '+Math.round(100*u.hp/Math.max(1,GAME.uavHp))+'% left'+(dist?' · '+Math.round(dist)+' m':''));}
   if(u.hp<=0)uavDown(u,fromMe?'me':'them');}
-const UAV_MULT={body:1,wing:0.75,tail:0.75};
-function uavShot(u,sub,dist){const base=(DMG.w.rifle.k&&DMG.w.rifle.k.body!=null)?DMG.w.rifle.k.body:70;uavDamage(u,base*(UAV_MULT[sub]||1),true,dist);}
-function uavBlast(p,R,UG0){for(const u of UAVS){if(u.st==='down'||u.st==='gone')continue;const d=u.p.distanceTo(p);if(d>R+3.3)continue;uavDamage(u,(UG0||GAME.at4Ugv)*(d<3.3?1:Math.max(0,1-(d-3.3)/R)),true,0);}}
+const UAV_ZONE={body:'body',wing:'limb',tail:'limb'};
+function uavShot(u,sub,dist){uavDamage(u,DMG.w.rifle.u[UAV_ZONE[sub]||'body'],true,dist);}
+function uavBlast(p,R,UG0){for(const u of UAVS){if(u.st==='down'||u.st==='gone')continue;const d=u.p.distanceTo(p);if(d>R+3.3)continue;uavDamage(u,(UG0||GAME.at4Dmg)*(d<3.3?1:Math.max(0,1-(d-3.3)/R)),true,0);}}
 const _aRay=new THREE.Raycaster();
 function rayUav(o,dir,len,noRem){if(noRem)return null;let best=null;
   for(const u of UAVS){if(u.st==='gone')continue;const cx=u.p.x-o.x,cy=u.p.y-o.y,cz=u.p.z-o.z;const t=cx*dir.x+cy*dir.y+cz*dir.z;if(t<-4||t>len+4)continue;
@@ -4657,7 +4657,7 @@ function uavBarText(){const u=UAVS.find(q=>q.mine&&q.st!=='gone');if(!u&&UAVS.so
 window.SNIPER_UAV={list:()=>UAVS,call:uavCall,make:uavMake,step:uavStep,ray:rayUav,shot:uavShot,blast:uavBlast,reset:uavReset,reveal:uavReveal,all:uavRevealAll,net:uavNet};
 window.SNIPER_EQ=EQB;
 
-window.SNIPER_BEAR={hurt:bearHurtMe,charge:bearCharge,human:bearHuman,list:()=>BEARS,reset:bearReset,step:bearStep,hit:hitBear,ray:rayBear,cast:(o,d,m)=>castRay(o,d,m)};
+window.__hitDeer=(d,s,x,o)=>hitDeer(d,s,x,o);window.SNIPER_BEAR={hurt:bearHurtMe,charge:bearCharge,human:bearHuman,list:()=>BEARS,reset:bearReset,step:bearStep,hit:hitBear,ray:rayBear,cast:(o,d,m)=>castRay(o,d,m)};
 
 // ================= comms tower: galvanised lattice mast with an open observation deck near the top, reached by a ladder =================
 // The deck is a sniper's perch: railings all round (gap at the ladder), room to go prone, and a weapons crate for later.
@@ -5489,19 +5489,19 @@ function rayUgv(o,dir,len,noRem){let best=null;if(noRem)return null;   // the UG
     let h=hs[0];for(const q of hs){if(q.object.userData.sub==='optic'&&q.distance<h.distance+0.15)h=q;}
     best={point:h.point.clone(),normal:dir.clone().negate(),dist:h.distance,object:null,kind:'metal',ugv:u,sub:h.object.userData.sub};}
   return best;}
-const UGV_MULT={hull:1,turret:1,track:0.6,optic:2.5,gun:0.5};
+const UGV_MULT={hull:1,turret:1,track:1,optic:1,gun:1},UGV_ZONE={hull:'body',turret:'body',track:'limb',optic:'head',gun:'body'};   /* same weapon damage by zone as for anything else */
 function ugvSparks(p,n){for(let i=0;i<7;i++)emit(gSpark,matFire,p,n.clone().multiplyScalar(3).add(rv(5)),0.25,{s:1,grav:9});
   const c=sp3(p.x,p.y,p.z,500);if(c){nz(c,c.t0,0.05,3200,1.2,1.4);tn(c,c.t0+0.005,1900+Math.random()*900,1200,0.35,0.3,'triangle');}}
 function hitUgv(u,sub,dist,remote,pt){const R=' · '+Math.round(dist)+' m';if(!remote)flashHit();
   if(u.dead){if(!remote)toast('The UGV is already destroyed'+R);return;}
-  const base=(DMG.w.rifle.k&&DMG.w.rifle.k.body!=null)?DMG.w.rifle.k.body:70,dm=base*(UGV_MULT[sub]||1);u.hp-=dm;
+  const dm=DMG.w.rifle.u[UGV_ZONE[sub]||'body'];u.hp-=dm;
   try{dmgNum(u.x,u.y+2.0,u.z,dm,'#ffd25a',GAME.uHp);}catch(e){}
   if(sub==='optic'){u.blind=25;}
   // it knows where the shot came from: turn that way and come looking
   const sp=(typeof hitFrom!=='undefined'&&hitFrom)||player.pos;u.lx=sp.x;u.lz=sp.z;u.ly=sp.y+1.2;u.boost=20;if(u.st==='patrol'||u.st==='return'){u.st='search';u.stT=GAME.uMem+10;}
   if(u.hp<=0){u.hp=0;ugvWreck(u,true);try{kfeed('Player',secTeam(),u.pl?(u.pl===1?'Red':'Blue')+' UGV':'Termit UGV',u.pl||0,0,1);}catch(e){}if(!remote)toast('UGV destroyed · '+sub+' shot'+R);return;}
   if(!remote)toast('UGV hit · '+sub+(sub==='optic'?' (blinded)':'')+' · '+Math.round(100*u.hp/Math.max(1,GAME.uHp))+'% armour left'+R);}
-function netUgvHit(u,sub,dist){flashHit();try{dmgNum(u.x,u.y+2.0,u.z,70*(UGV_MULT[sub]||1),'#ffd25a',GAME.uHp);}catch(e){}toast('UGV hit · '+sub+' · '+Math.round(dist)+' m');
+function netUgvHit(u,sub,dist){flashHit();try{dmgNum(u.x,u.y+2.0,u.z,DMG.w.rifle.u[UGV_ZONE[sub]||'body'],'#ffd25a',GAME.uHp);}catch(e){}toast('UGV hit · '+sub+' · '+Math.round(dist)+' m');
   const i=UGVS.indexOf(u);if(i<0||!NT.room)return;NT.room.emit('uhit',{i,sub,dist:Math.round(dist)}).catch(()=>{});}
 function ugvWreck(u,boom){u.dead=1;u.deadT=0;u.spd=0;u.st='patrol';u.tgt=null;u.meshes.forEach(m=>{m.material=UGV_BURNT;});u.root.traverse(o=>{if(o.material===UGV_LENS)o.visible=false;});u.tp=-0.3;u.ty+=0.4;
   const p=V(u.x,u.y+0.9,u.z);emit(gFire,matFire,p,V(0,1,0),0.5,{s:0.8,grow:4});for(let i=0;i<14;i++){const a=Math.random()*PI*2;emit(gPuff,i%2?UGV_SMK:matSmoke,p,V(Math.cos(a)*3,2+Math.random()*4,Math.sin(a)*3),2,{s:0.4,grow:1.4,drag:1.4});}
@@ -5708,7 +5708,7 @@ function drawUgvMark(c,x,y,u,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWid
     ['sec','Sensors'],['uSee','Spots you within (m · less when you crouch or lie prone · needs a clear line of sight)',40,600,10,0],['uReact','Reaction time once it spots you (s)',0,5,0.1,1],['uMem','Searches your last position for (s)',0,90,1,0],
     ['sec','.50 cal'],['uRange','Opens fire within (m · drives closer when you are further)',30,450,10,0],['uTurn','Turret traverse (°/s)',10,180,5,0],['uRpm','Rate of fire (rounds per minute)',200,900,25,0],['uBurst','Rounds per burst',1,20,1,0],['uPause','Pause between bursts (s)',0.2,5,0.1,1],
     ['uSpread','Spread (mrad · higher misses more; worse against a running target)',0.5,15,0.5,1],['uDmg','Damage per round (hp · ×2 head, ×0.6 limbs)',5,100,1,0],
-    ['sec','Armour'],['uHp','Armour (hp · a rifle hit does 70 to hull or turret, 175 to the optic, 42 to a track)',70,1500,10,0],['uRespawn','Back on patrol after it is destroyed (s · 0 = never · in a match, next round)',0,600,10,0]];
+    ['sec','Armour'],['uHp','Armour (hp · hits use the weapon head, body or limb damage: optic = head, tracks = limbs, hull and turret = body)',70,1500,10,0],['uRespawn','Back on patrol after it is destroyed (s · 0 = never · in a match, next round)',0,600,10,0]];
   const KEYS=ROWS.filter(r=>r[0]!=='sec').map(r=>r[0]);
   let sel=0;
   const save=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}ugcSave();};
@@ -5778,7 +5778,7 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
     ['sec','Sensors'],['dSee','Spots you within (m · less when you crouch or lie prone · needs a clear line of sight)',30,400,10,0],['dReact','Reaction time once it spots you (s)',0,5,0.1,1],['dMem','Searches your last position for (s)',0,90,1,0],
     ['sec','Twin AR-15s'],['dEng','Opens fire within (m · drives closer when you are further)',20,300,5,0],['dRate','Rate of fire (rounds per second, both guns together)',4,30,1,0],['dBurst','Burst length (s)',0.1,3,0.05,2],['dPause','Pause between bursts (s)',0.1,5,0.05,2],
     ['dSpread','Spread (mrad · higher misses more; worse against a running target)',0.5,20,0.5,1],['dDmg','Damage per round (hp · ×2 head, ×0.6 limbs)',1,50,1,0],
-    ['sec','Armour'],['dHp','Armour (hp · a rifle hit does 70 to the body, 140 to the head)',50,1000,10,0],['dRespawn','Back at its spawn point after it is destroyed (s · 0 = never)',0,600,5,0]];
+    ['sec','Armour'],['dHp','Armour (hp · hits use the weapon head or body damage)',50,1000,10,0],['dRespawn','Back at its spawn point after it is destroyed (s · 0 = never)',0,600,5,0]];
   const KEYS=ROWS.filter(r=>r[0]!=='sec').map(r=>r[0]);
   let sel=0;
   const save=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}dcSave();};
@@ -6095,7 +6095,7 @@ function rayDroid(o,d,len,noRem){if(noRem)return null;let best=null,bt=len;
     for(const [h,r,sub] of DR_HB){const t=raySph(o,d,D.x,gy+h,D.z,r,bt);if(t>=0&&t<=bt){bt=t;best={point:V(o.x+d.x*t,o.y+d.y*t,o.z+d.z*t),normal:d.clone().negate(),dist:t,object:null,kind:'metal',droid:q,sub};}}}
   return best;}
 function droidHit(q,sub,dist,by){if(!q||q.dead)return;try{flashHit();}catch(e){}if(sub==='head')try{headDing();}catch(e){}   /* the head-shot bell */
-  const base=(DMG.w.rifle.k&&DMG.w.rifle.k.body!=null)?DMG.w.rifle.k.body:70,dm=base*(sub==='head'?2:1);q.hp-=dm;
+  const dm=DMG.w.rifle.u[sub==='head'?'head':'body'];q.hp-=dm;
   try{dmgNum(q.m.D.x,groundH(q.m.D.x,q.m.D.z)+2.6,q.m.D.z,dm,'#ffd25a',dcGet(q.i).dHp);}catch(e){}
   toast('GD01 hit · '+(sub==='head'?'head':'body')+' · '+Math.max(0,Math.round(100*q.hp/Math.max(1,dcGet(q.i).dHp)))+'% armour left · '+Math.round(dist)+' m');
   DRS.lastT[droidTeam(q)]={x:player.pos.x,z:player.pos.z,t:DRS.clock};   // the squad comes to look where the shot came from
