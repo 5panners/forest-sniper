@@ -1883,7 +1883,7 @@ function endAction(){const a=player.action;if(!a)return;
   if(a.name==='death'){if(MPM.on)return;try{spwStart();}catch(e){respawn();}}   // in a match you stay down until the next round
   player.action=null;}
 function snapLayer(k){for(const q in player.lw)player.lw[q]=q===k?1:0;}
-function respawn(){STAM.v=GAME.stStart/100;BOOST.on=false;VIT.lh=-1;VIT.ls=-1;VIT.lk=null;player.pos.copy(SPAWN);player.vel.set(0,0,0);player.stance='stand';snapLayer('idle');player.alive=true;MPM.hp=100;player.ammo=MAG;player.reloadT=-1;player.yaw=0;camYaw=0;camPitch=-0.05;toast('Respawned');}
+function respawn(){STAM.v=GAME.stStart/100;BOOST.on=false;VIT.lh=-1;VIT.ls=-1;VIT.lk=null;player.pos.copy(SPAWN);player.vel.set(0,0,0);player.stance='stand';snapLayer('idle');player.alive=true;MPM.hp=GAME.pHpStart;player.ammo=MAG;player.reloadT=-1;player.yaw=0;camYaw=0;camPitch=-0.05;toast('Respawned');}
 function canFit(h,px,pz){const x=px==null?player.pos.x:px,z=pz==null?player.pos.z:pz,y=player.pos.y;
   for(const c of colliders){if(!c.on||c.max.y<=y+0.05||c.min.y>=y+h)continue;const cx=clamp(x,c.min.x,c.max.x),cz=clamp(z,c.min.z,c.max.z);if((x-cx)**2+(z-cz)**2<PRAD*PRAD*0.8)return false;}
   for(const p of pillarsNear(x,z)){if(p.y1<=y+0.05||p.y0>=y+h)continue;if(Math.hypot(x-p.x,z-p.z)<p.r+PRAD*0.9)return false;}return true;}
@@ -3470,7 +3470,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=538;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=540;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3787,7 +3787,7 @@ window.SNIPER_RES.owlReady=()=>!!SND.ow;
 window.SNIPER_RES.logs=()=>LOGS;window.SNIPER_RES.piles=()=>PILES;window.SNIPER_RES.boost=BOOST;
 
 // ---- foraged food heals slowly, up to 200% of normal health. Raw meat gives nothing until cooking exists.
-const HEAL={pool:0,t:performance.now()},FOOD={get berries(){return +GAME.fBerry||0;},mushroom:0,meat:0},HP_MAX=200,HEAL_RATE=1.5;
+const HEAL={pool:0,t:performance.now()},FOOD={get berries(){return +GAME.fBerry||0;},mushroom:0,meat:0},HEAL_RATE=1.5;let HP_MAX=200;   /* player maximum health: GAME.pHpMax, set from the Health tab */
 function eatFood(k,q){if(k==='mushroom'){const g=GAME.stGain/100;STAM.v=Math.min(1,STAM.v+g);const hh=0;   // mushrooms give stamina only, no health
   if(hh>0)HEAL.pool=Math.min(120,HEAL.pool+hh);return ' · +'+GAME.stGain+'% stamina'+(hh>0?' · +'+hh+' health over time':'');}const v=(FOOD[k]||0);if(v<=0)return '';HEAL.pool=Math.min(120,HEAL.pool+v);return ' · +'+v+' health over time';}
 function healStep(){const now=performance.now(),dt=Math.min(0.25,(now-HEAL.t)/1000);HEAL.t=now;
@@ -3874,14 +3874,7 @@ ${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Hei
 <section class="wc"><div class="wh">${IC.ugv}<div><h3>UGV gadget</h3><p>Pickup (teal glow) · gadget key deploys a Termit robot beside you</p></div><span class="tag">Team robot</span></div>
 <p class="tn">It fires only at the other team, drives to the spot you right-click on the map (the waypoint), and captures sectors for your team while it sits in them. One per team: when it is destroyed the gadget is spent. It can be shot (rifle) or blasted (AT4) by the other side, not by you.</p></section>
 </div>
-<p class="sec" style="margin-top:14px">Targets · hit points</p><table><tr><th>Target</th><th>Hit points</th><th>Hit by</th></tr>
-<tr><td>Player (you or the opponent)</td><td>100 at the start of a round, up to 200 with food</td><td>rifle, AT4 blast, UGV</td></tr>
-<tr><td>Red deer stag</td><td>${num('hp.stag',DMG.hp.stag)}</td><td>every weapon</td></tr>
-<tr><td>Fallow doe</td><td>${num('hp.fallow',DMG.hp.fallow)}</td><td>every weapon</td></tr>
-<tr><td>Roe doe</td><td>${num('hp.roe',DMG.hp.roe)}</td><td>every weapon</td></tr>
-<tr><td>Brown bear</td><td>${num('hp.bear',DMG.hp.bear)}</td><td>every weapon</td></tr>
-<tr><td>Buzzard</td><td>${num('hp.buzzard',DMG.hp.buzzard)}</td><td>every weapon</td></tr>
-<tr><td>Termit UGV</td><td>${GAME.uHp}</td><td>every weapon · set in the Bots tab · optic = head, tracks = limbs, the rest = body</td></tr><tr><td>GD01 droid</td><td>Bots tab</td><td>every weapon · head = head, the rest = body</td></tr><tr><td>Recon drone</td><td>${GAME.uavHp}</td><td>every weapon · set under Recon drone · wings and tail = limbs</td></tr></table>
+<p class="sec" style="margin-top:14px">Targets · hit points</p><p class="tn">Every weapon does the same damage to every target. The hit points of each target (players, deer, bears, buzzards, UGVs, GD01s, drones) are all in the Health tab.</p>
 <p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Magic Mushrooms, ammo boxes, rounds, UGV</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>`;
     {const W=pn.querySelector('.wgrid');if(W){const secs=[...W.querySelectorAll(':scope>section.wc')];const nm=['Bolt rifle','AR-15','AT4','M32','Recon drone','UGV'];
       const tg=document.createElement('div');tg.className='wtg';let n=W.nextSibling;while(n){const nx=n.nextSibling;tg.appendChild(n);n=nx;}W.after(tg);
@@ -3900,8 +3893,9 @@ ${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Hei
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:3,slotG:3,pkM32:6,pkRifle:12,fBerry:2,pkRad:250,n_berries:250,n_mushroom:300,n_at4r:150,n_m32r:50,n_r762:300,n_radio:12,n_scrap:20,n_at4:2,n_ar15:2,n_rifle:2,p_berries:80,p_mushroom:80,p_at4r:80,p_m32r:80,p_r762:80,p_radio:80,m32Spd:76,m32Drop:1.6,m32R:4.5,m32Dmg:110,m32Ugv:160,m32Reload:3.2,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloAcc:0.3,siloEvery:0,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.8,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:100,at4R:6,at4Dmg:200,at4Ugv:300,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:7.5,bInst:1,bears:2,bWalk:1.2,bRear:9,bAtk:1,bTrig:1,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1};
+const GAME_DEF={pHpStart:100,pHpMax:200,arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:3,slotG:3,pkM32:6,pkRifle:12,fBerry:2,pkRad:250,n_berries:250,n_mushroom:300,n_at4r:150,n_m32r:50,n_r762:300,n_radio:12,n_scrap:20,n_at4:2,n_ar15:2,n_rifle:2,p_berries:80,p_mushroom:80,p_at4r:80,p_m32r:80,p_r762:80,p_radio:80,m32Spd:76,m32Drop:1.6,m32R:4.5,m32Dmg:110,m32Ugv:160,m32Reload:3.2,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloAcc:0.3,siloEvery:0,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.8,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:100,at4R:6,at4Dmg:200,at4Ugv:300,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:7.5,bInst:1,bears:2,bWalk:1.2,bRear:9,bAtk:1,bTrig:1,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
+HP_MAX=Math.max(20,GAME.pHpMax);
 try{if(!localStorage.getItem('fsSiloV2')){GAME.siloVol=2;localStorage.setItem('fsSiloV2','1');}}catch(e){}
 function balApply(){V0=GAME.bV0;DRAG=GAME.bDrag;GBUL=9.81*GAME.bDrop;try{setZero(zeroM);}catch(e){}}balApply();
 function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw,CCw)+0.6;}
@@ -3917,8 +3911,6 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
     ['sec','Butchering animals'],['bMeat','Health per meat from a butchered animal (%)',0,10,0.5,1],['bInst','Health instantly (1) or over time (0)',0,1,1,0],
     ['sec','Falling'],['fallOn','Fall damage (1 = on, 0 = off)',0,1,1,0],['fallSafe','Safe drop height (m)',1,30,0.5,1],['fallDmg','Damage per metre above that (hp)',1,50,1,0],
     ['sec','Parachute'],['paraH','Spawn height above home base (m)',10,300,5,0],
-    ['sec','UGV volumes'],['rUGun','UGV gunfire',0,3,0.05,2],['rUMot','UGV motor, tracks and turret',0,3,0.05,2],['rUBeep','UGV alert beep',0,3,0.05,2],
-    ['sec','GD01 volumes'],['rDGun','GD01 gunfire',0,3,0.05,2],['rDVoi','GD01 voice (beeps)',0,3,0.05,2],
     ];
   const build=()=>{pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. In a match the host’s pickup amounts apply to both players.</p>'+ROWS.map(r=>r[0]==='sec'?`<p class="sec" style="margin-top:12px">${r[1]}</p>`:`<div class="gr"><label>${r[1]}</label><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${GAME[r[0]]}" data-k="${r[0]}"><output>${(+GAME[r[0]]).toFixed(r[5])}</output></div>`).join(''); 
     pn.querySelectorAll('input').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;i.nextElementSibling.textContent=v.toFixed(+i.step<1?2:0);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}
@@ -3929,6 +3921,12 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
   tb.onclick=()=>{ids.forEach(n=>{const t=document.getElementById('tab'+n),p=document.getElementById('pane'+n);if(t)t.setAttribute('aria-selected','false');if(p)p.hidden=true;});tb.setAttribute('aria-selected','true');pn.hidden=false;};
   const _st=showTab;showTab=function(w){_st(w);tb.setAttribute('aria-selected','false');pn.hidden=true;};
 })();
+// ---- the UGV and GD01 volume sliders live in the Audio tab
+(function(){const pa=document.getElementById('paneAud');if(!pa)return;const note=[...pa.querySelectorAll('p.note')].pop();
+  const grp=[['UGV volumes',[['rUGun','UGV gunfire'],['rUMot','UGV motor, tracks and turret'],['rUBeep','UGV alert beep']]],['GD01 volumes',[['rDGun','GD01 gunfire'],['rDVoi','GD01 voice (beeps)']]]];
+  for(const [t,rs] of grp){const h=document.createElement('p');h.className='sec';h.style.marginTop='14px';h.textContent=t;pa.insertBefore(h,note||null);
+    for(const [k,l] of rs){const lb=document.createElement('label');lb.className='rng';lb.innerHTML='<span>'+l+'</span><input type="range" min="0" max="3" step="0.05"><output></output>';const i=lb.querySelector('input'),o=lb.querySelector('output');i.value=GAME[k];o.textContent=(+GAME[k]).toFixed(2);
+      i.oninput=()=>{const v=parseFloat(i.value);GAME[k]=v;o.textContent=v.toFixed(2);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}};pa.insertBefore(lb,note||null);}}})();
 // ---- Predators tab: bears now (map count, pace, attacks), wolves later
 (function(){
   const tabs=document.querySelector('.tabs'),gamePn=document.getElementById('paneGame');if(!tabs||!gamePn)return;
@@ -3998,6 +3996,41 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
   tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
 })();
 window.SNIPER_RES.fire=()=>({GAME,SND,playing:()=>playing});
+
+// ---- Health tab: every object that has hit points, with its maximum
+(function(){
+  const tabs=document.querySelector('.tabs'),after=document.getElementById('paneDmg');if(!tabs||!after)return;
+  const css=document.createElement('style');css.textContent='#paneHp table{border-collapse:collapse;width:100%;font-size:13px;margin:6px 0 14px}#paneHp th{font:600 10px var(--f-ui);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);text-align:left;padding:2px 10px 6px 0}#paneHp td{padding:5px 10px 5px 0;vertical-align:middle;border-top:1px solid var(--line)}#paneHp td.nm{font-weight:600;white-space:nowrap}#paneHp td.nt{opacity:.65;font-size:12px}#paneHp input[type=number]{width:74px;background:rgba(255,255,255,.06);color:inherit;border:1px solid var(--line);border-radius:4px;padding:3px 5px;font:inherit}#paneHp .hr{display:flex;align-items:center;gap:10px}#paneHp .hr input[type=range]{width:min(260px,38vw)}#paneHp .hr output{min-width:42px;font-variant-numeric:tabular-nums}';document.head.appendChild(css);
+  const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabHp';tb.setAttribute('aria-selected','false');tb.setAttribute('aria-controls','paneHp');tb.textContent='Health';
+  const dm=document.getElementById('tabDmg');if(dm&&dm.nextSibling)tabs.insertBefore(tb,dm.nextSibling);else tabs.appendChild(tb);
+  const pn=document.createElement('div');pn.id='paneHp';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabHp');pn.hidden=true;after.after(pn);
+  /* each row: label, getter, setter, range, unit note */
+  const UGN=()=>Math.max(1,Math.min(6,Math.round(GAME.uCnt||1)));
+  const ROWS=[
+    ['Players',[
+      ['Player · health at the start of a round',()=>GAME.pHpStart,v=>{GAME.pHpStart=v;},10,600,'you and the opponent; keep both players the same in a match'],
+      ['Player · maximum health',()=>GAME.pHpMax,v=>{GAME.pHpMax=v;HP_MAX=Math.max(20,v);},50,800,'healing and food stop here']]],
+    ['Wildlife',[
+      ['Red deer stag',()=>DMG.hp.stag,v=>{DMG.hp.stag=v;dmgSave();},1,1500,''],
+      ['Fallow doe',()=>DMG.hp.fallow,v=>{DMG.hp.fallow=v;dmgSave();},1,1500,''],
+      ['Roe doe',()=>DMG.hp.roe,v=>{DMG.hp.roe=v;dmgSave();},1,1500,''],
+      ['Brown bear',()=>DMG.hp.bear,v=>{DMG.hp.bear=v;dmgSave();},1,3000,'bears spawned already keep the health they had until the round resets'],
+      ['Buzzard',()=>DMG.hp.buzzard,v=>{DMG.hp.buzzard=v;dmgSave();},1,500,'']]],
+    ['Machines',[
+      ['Termit UGV (all robots, both teams)',()=>ugcGet(0).uHp,v=>{for(let i=0;i<6;i++)ugcGet(i).uHp=v;GAME.uHp=v;ugcSave();try{UGVS.forEach(u=>{if(!u.dead)u.hp=Math.min(u.hp,v);});}catch(e){}},70,3000,'optic hits count as head, tracks as limbs'],
+      ['GD01 droid (every bot)',()=>dcGet(0).dHp,v=>{dcGet(0).dHp=v;dcSave();try{for(const q of DRS)if(q&&!q.dead)q.hp=Math.min(q.hp,v);}catch(e){}},50,2000,'head hits count as head, the rest as body'],
+      ['Recon drone',()=>GAME.uavHp,v=>{GAME.uavHp=v;},10,1000,'wings and tail count as limbs']]]];
+  const save=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}};
+  const build=()=>{let h='<p class="note">Every object that has hit points. Weapons do the same damage to all of them (Weapons tab), so these are the only thing that makes one target tougher than another. Changes save as you make them; health already on the map is only lowered, never raised, until the next respawn or round.</p>';
+    ROWS.forEach(([t,rs],gi)=>{h+='<p class="sec" style="margin-top:12px">'+t+'</p><table><tr><th>Object</th><th>Maximum health</th><th></th><th>Notes</th></tr>';
+      rs.forEach((r,ri)=>{const v=r[1]();h+='<tr><td class="nm">'+r[0]+'</td><td><div class="hr"><input type="range" min="'+r[3]+'" max="'+r[4]+'" step="1" value="'+v+'" data-g="'+gi+'" data-r="'+ri+'"><output>'+Math.round(v)+'</output></div></td><td><input type="number" min="1" step="1" value="'+Math.round(v)+'" data-g="'+gi+'" data-r="'+ri+'"></td><td class="nt">'+(r[5]||'')+'</td></tr>';});h+='</table>';});
+    h+='<p class="sec" style="margin-top:6px">Not damageable</p><p class="note">Trees, rocks, the hut and the ground stop bullets but have no health. Dead animals are butchered, not shot.</p>';
+    pn.innerHTML=h;
+    pn.querySelectorAll('input[data-g]').forEach(i=>i.oninput=()=>{const r=ROWS[+i.dataset.g][1][+i.dataset.r],v=parseFloat(i.value);if(!(v>=1))return;r[2](v);save();
+      pn.querySelectorAll('input[data-g="'+i.dataset.g+'"][data-r="'+i.dataset.r+'"]').forEach(o=>{if(o!==i)o.value=Math.round(v);});const out=pn.querySelector('input[type=range][data-g="'+i.dataset.g+'"][data-r="'+i.dataset.r+'"]');if(out&&out.nextElementSibling)out.nextElementSibling.textContent=Math.round(v);});};
+  tb.onclick=()=>{document.querySelectorAll('[role=tabpanel]').forEach(p=>{p.hidden=p!==pn;});tabs.querySelectorAll('[role=tab]').forEach(t=>t.setAttribute('aria-selected',t===tb?'true':'false'));build();};   /* built when opened: the UGV and GD01 settings it reads are created further down the file */
+  tabs.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(t&&t!==tb){tb.setAttribute('aria-selected','false');pn.hidden=true;}});
+})();
 
 // ---- red edge flash on the screen when you are hurt
 const EDGE={burn:0,fl:0,lt:0,el:null};
@@ -5136,7 +5169,7 @@ function secSpawnFor(team){const opp=(MPM.on&&NT.opp&&RPS.pos)?RPS.pos:null;let 
   if(best!==0&&best!==6){const dx=home.x-d.x,dz=home.z-d.z,L=Math.hypot(dx,dz)||1;x+=dx/L*(d.k==='C'?24:14);z+=dz/L*(d.k==='C'?24:14);}
   return {x,z,i:best};}
 function secPlace(x,z){const c=SEC_DEF[3];const yaw=Math.atan2(-(c.x-x),-(c.z-z));
-  player.action=null;player.slide=null;player.mantle=null;player.pos.set(x,groundH(x,z)+0.05,z);player.vel.set(0,0,0);player.stance='stand';snapLayer('idle');player.alive=true;player.ammo=MAG;player.reloadT=-1;boltT=-1;MPM.hp=100;
+  player.action=null;player.slide=null;player.mantle=null;player.pos.set(x,groundH(x,z)+0.05,z);player.vel.set(0,0,0);player.stance='stand';snapLayer('idle');player.alive=true;player.ammo=MAG;player.reloadT=-1;boltT=-1;MPM.hp=GAME.pHpStart;
   player.yaw=yaw;camYaw=yaw;camPitch=-0.05;camPivot.copy(player.pos).add(V(0,1.68,0));for(const b of bullets){if(b.tr)relP(b.tr);}bullets.length=0;try{NT.pend.clear();}catch(e){}}
 // ---- deploy screen: when you die the map opens and you click any sector your side holds to spawn there
 const SPW={solo:false,open:false,t:0,dl:2.5};   // the map opens 2.5 s after you go down
@@ -6390,7 +6423,7 @@ function mpUI(){const on=!!NT.room,host=NT.role==='h',ph=NT.M.ph;
 function mpAttach(room,kind,role,code,why){
   Object.assign(NT,{room,kind,code,role,opp:null,oppSeen:0,wasOpp:false,myR:0,rosterV:-1,rost:null,M:{ph:'wait',r:0,sc:[0,0],left:0,lw:''}});
   NT.pend.clear();NT.seen.clear();RPS.buf=[];RPS.off=null;RPS.lastT=0;RPS.vis=false;RPS.al=false;
-  MPM.on=true;MPM.guest=role==='g';MPM.hp=100;player.reserve=SPARE;
+  MPM.on=true;MPM.guest=role==='g';MPM.hp=GAME.pHpStart;player.reserve=SPARE;
   room.presence({v:NET_V,role}).catch(()=>{});
   ['shot','hit','ack','wild','need','roster','dhit','bhit','brhit','take','carve','silo','bmaul','ugvf','uhit','at4','uav','drop','dtake','pug'].forEach(t=>room.on(t,m=>{if(m.sameTab||NT.room!==room)return;try{onMsg(t,m.data||{},m);}catch(e){console.warn('net',t,e);}},()=>{}));
   if(MPM.guest)clearWildlife();
@@ -6401,7 +6434,7 @@ function mpAttach(room,kind,role,code,why){
   mpStat((role==='h'?nm+' ready':'Joined · '+nm)+' · '+NT.where+' · '+'connected · waiting for the opponent to appear…');
   mpUI();return true;}
 function mpLeave(quiet){const r=NT.room,wasG=MPM.guest;if(!quiet&&r&&NT.wasOpp)playGoodbye();NT.room=null;try{r&&r.leave();}catch(e){}
-  MPM.on=false;MPM.guest=false;MPM.freeze=false;MPM.hp=100;NT.opp=null;RPS.vis=false;RPS.al=false;NT.M={ph:'wait',r:0,sc:[0,0],left:0,lw:''};NT.myR=0;NT.pend.clear();
+  MPM.on=false;MPM.guest=false;MPM.freeze=false;MPM.hp=GAME.pHpStart;NT.opp=null;RPS.vis=false;RPS.al=false;NT.M={ph:'wait',r:0,sc:[0,0],left:0,lw:''};NT.myR=0;NT.pend.clear();
   if(wasG){for(const d of DEER.slice())removeDeer(d);clearBirds();setDeerCounts(+$('envM').value,+$('envF').value);setBuzzards(+$('envB').value);}
   setLooks(false);p2Idle();player.action=null;respawn();boltT=-1;try{secReset();}catch(e){}
   const b=$('mpBan');b.hidden=true;NT.banTxt='';if(!quiet)mpStat('Left the match');mpUI();}
@@ -6410,7 +6443,7 @@ function hostNextRound(){const M=NT.M;M.r++;M.ph='count';M.left=5;M.why='';M.sd=
 function roundReset(){const r=NT.M.r;NT.myR=r;resReset();try{secReset();}catch(e){}
   const mine=(MPM.guest?(r%2===0):(r%2===1))?P1_SPAWN:P2_SPAWN;   // host starts NE, sides swap every round
   player.action=null;player.slide=null;player.mantle=null;player.pos.set(mine.x,groundH(mine.x,mine.z)+0.05,mine.z);player.vel.set(0,0,0);
-  player.stance='stand';snapLayer('idle');player.alive=true;player.ammo=MAG;player.reserve=SPARE;player.reloadT=-1;boltT=-1;MPM.hp=100;
+  player.stance='stand';snapLayer('idle');player.alive=true;player.ammo=MAG;player.reserve=SPARE;player.reloadT=-1;boltT=-1;MPM.hp=GAME.pHpStart;
   const yaw=Math.atan2(-mine.x,-mine.z);player.yaw=yaw;camYaw=yaw;camPitch=-0.05;camPivot.copy(player.pos).add(V(0,1.68,0));
   for(const b of bullets){if(b.tr)relP(b.tr);}bullets.length=0;NT.pend.clear();
   toast('Round '+r+' · you start '+(mine===P2_SPAWN?'south-west':'north-east'));}
