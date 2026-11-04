@@ -1935,7 +1935,7 @@ function carryOnTank(){const pl=player;
       pl.pos.x=tank.pos.x+ox*c+oz*s;pl.pos.z=tank.pos.z-ox*s+oz*c;pl.yaw+=dy;camYaw+=dy;pl.pos.y=Math.max(pl.pos.y,th);}}
   _tk.x=tank.pos.x;_tk.z=tank.pos.z;_tk.yaw=tank.yaw;_tk.init=true;}
 const _sq=new THREE.Quaternion(),_sq2=new THREE.Quaternion(),_sq3=new THREE.Quaternion(),_sm=new THREE.Matrix4(),_sx=new THREE.Vector3(),_sy=new THREE.Vector3(),_sz=new THREE.Vector3(),_sE=new THREE.Vector3(),_sW=new THREE.Vector3(),_se=new THREE.Euler(0,0,0,'ZYX');
-function _isAR(){return WPN.cur==='ar15';}
+function _isAR(){return WPN.cur==='ar15'||WPN.cur==='m32';}
 function raiseScoped(p,k,ar){   // shouldered: body turns side-on so the butt sits in the shoulder pocket, scope axis through the eye and along the line of sight
   const TW=ar?(window.AR_TW!==undefined?window.AR_TW:-0.5):(window.SC_TW!==undefined?window.SC_TW:-0.9);
   p.spine=[p.spine[0],p.spine[1]+TW*0.45*k,p.spine[2]];p.chest=[p.chest[0],p.chest[1]+TW*0.55*k,p.chest[2]];p.head=[p.head[0],p.head[1]-TW*k,p.head[2]];
@@ -2026,6 +2026,7 @@ function updatePlayer(dt,time){
   if(firing&&pl.alive&&!(A_&&A_.lock)&&pl.reloadT<0&&pl.fireCD<=0){
     if(WPN.cur==='none'){input.lmb=false;}
     else if(WPN.cur==='ar15'){if(pl.ammo<=0){input.lmb=false;startReload();}else if(pl.aimW>0.6||pl.stance==='prone'){shootAR(time);pl.fireCD=60/Math.max(60,GAME.arRpm);}}
+    else if(WPN.cur==='m32'){if(pl.aimW>0.6||pl.stance==='prone'){m32Fire();pl.fireCD=0.45;}}
     else if(WPN.cur==='at4'){if(pl.aimW>0.6||pl.stance==='prone'){at4Fire();pl.fireCD=1.0;}}
     else if(pl.ammo<=0){startReload();}
     else if(pl.aimW>0.6||pl.stance==='prone'){shoot(time);pl.fireCD=BOLT;}
@@ -2067,7 +2068,7 @@ function updatePlayer(dt,time){
   // full-body action
   if(act){const ap=cpose(ACTIONS[act.name].clip,act.t);p=mix(p,ap,clamp(act.w,0,1));p.flash=0;}
   marine.position.copy(pl.pos); marine.rotation.y=pl.yaw;
-  {let want=0;try{want=((scoped||(input.rmb&&WPN.cur==='ar15'&&pl.aimW>0.5&&pl.reloadT<0&&!(pl.action&&ACTIONS[pl.action.name].lock)))&&pl.alive&&!pl.slide)?1:0;}catch(e){}pl.scK=(pl.scK||0)+(want-(pl.scK||0))*Math.min(1,dt*14);if(Math.abs(want-pl.scK)<0.004)pl.scK=want;
+  {let want=0;try{want=((scoped||(input.rmb&&(WPN.cur==='ar15'||WPN.cur==='m32')&&pl.aimW>0.5&&pl.reloadT<0&&!(pl.action&&ACTIONS[pl.action.name].lock)))&&pl.alive&&!pl.slide)?1:0;}catch(e){}pl.scK=(pl.scK||0)+(want-(pl.scK||0))*Math.min(1,dt*14);if(Math.abs(want-pl.scK)<0.004)pl.scK=want;
    if(pl.scK>0.004){p=Object.assign({},p);raiseScoped(p,pl.scK,_isAR());}}
   try{if(TW.climb)p=climbPose(p,pl);else if(ZIP.on)p=zipPose(p,pl);}catch(e){}
   applyPose(p);player.pose=p;
@@ -2170,7 +2171,7 @@ const AT4G=new THREE.Group();AT4G.scale.setScalar(1.4/1.2);AT4G.visible=false;gu
 const AT4_MUZ=new THREE.Object3D();AT4_MUZ.position.set(0,AT4_TY,0.42);AT4G.add(AT4_MUZ);
 const AT4_BACK=new THREE.Object3D();AT4_BACK.position.set(0,AT4_TY,-0.66);AT4G.add(AT4_BACK);
 const RIFLE_MESH=[];gun.traverse(o=>{if(!o.isMesh)return;let p=o;while(p&&p!==gun){if(p===AT4G||p===flashGrp)return;p=p.parent;}RIFLE_MESH.push(o);});
-function setWeapon(w){const prev=WPN.cur;if(w==='at4'&&!WPN.has)w=slotHas('rifle')?'rifle':'none';if(w==='rifle'&&!slotHas('rifle'))w=WPN.has?'at4':'none';if(w==='ar15'&&!slotHas('ar15'))w=slotHas('rifle')?'rifle':WPN.has?'at4':'none';WPN.cur=w;AT4G.visible=w==='at4';for(const m of RIFLE_MESH)m.visible=w==='rifle';try{arSwitch(prev,w);}catch(e){}
+function setWeapon(w){const prev=WPN.cur;if(w==='at4'&&!WPN.has)w=slotHas('rifle')?'rifle':'none';if(w==='rifle'&&!slotHas('rifle'))w=WPN.has?'at4':'none';if(w==='m32'&&!slotHas('m32'))w=slotHas('rifle')?'rifle':WPN.has?'at4':'none';if(w==='ar15'&&!slotHas('ar15'))w=slotHas('rifle')?'rifle':WPN.has?'at4':'none';WPN.cur=w;AT4G.visible=w==='at4';for(const m of RIFLE_MESH)m.visible=w==='rifle';try{arSwitch(prev,w);}catch(e){}try{m32Switch(prev,w);}catch(e){}
   if(w==='at4'){player.reloadT=-1;boltT=-1;}try{EQB.ui(true);}catch(e){}}
 function at4Select(n){slotSelW(n-1);}
 function at4Switch(){slotCycleW();}
@@ -2203,10 +2204,10 @@ function at4Fire(){const pl=player;input.lmb=false;
   try{EQB.ui(true);}catch(e){}if((INV.at4r|0)>0)setTimeout(()=>{if(WPN.cur==='at4'&&!WPN.ld)at4Reload();},700);}
 function at4Reload(){if(!WPN.has||WPN.ld||WPN.rl>=0)return;if(!((INV.at4r|0)>0)){toast('No AT4 rounds · look for the pale pink glow');return;}WPN.rl=0;try{sfx.click();}catch(e){}toast('Loading the AT4…');}
 function at4Step(dt){
-  at4Lights(dt);
+  at4Lights(dt);try{m32Tick(dt);}catch(e){}
   if(WPN.rl>=0){WPN.rl+=dt;if(!player.alive)WPN.rl=-1;else if(WPN.rl>=GAME.at4Reload/1.4){WPN.rl=-1;if((INV.at4r|0)>0){INV.at4r--;WPN.ld=1;try{invUI();sfx.click();}catch(e){}toast('AT4 loaded');try{EQB.ui(true);}catch(e){}}}}
   for(let i=ROCKETS.length-1;i>=0;i--){const r=ROCKETS[i];let done=false;const n=Math.max(1,Math.ceil(dt/0.008));
-    for(let k=0;k<n&&!done;k++){const d=dt/n;r.v.y-=GRAV*GAME.at4Drop*d;const len=r.v.length()*d;const dir=_v9.copy(r.v).normalize();
+    for(let k=0;k<n&&!done;k++){const d=dt/n;r.v.y-=GRAV*(r.drop!=null?r.drop:GAME.at4Drop)*d;const len=r.v.length()*d;const dir=_v9.copy(r.v).normalize();
       let h=castRay(r.p,dir,len,!r.mine);
       if(!r.mine&&player.alive){const ph=rayPlayerZones(r.p,dir,h?Math.min(len,h.dist):len);if(ph)h={point:ph.point,dist:ph.dist,kind:'flesh'};}
       if(h&&r.t<0.04&&h.dist<0.3)h=null;   // never on the launcher itself
@@ -2215,7 +2216,7 @@ function at4Step(dt){
     if(!done&&r.t>7){done=true;}
     if(done){scene.remove(r.g);r.fl.material.dispose();ROCKETS.splice(i,1);continue;}
     r.g.position.copy(r.p);r.g.lookAt(_v9.copy(r.p).add(r.v));r.fl.scale.setScalar(0.7+Math.random()*0.5);
-    r.sm-=dt;if(r.sm<=0){r.sm=0.025;emit(gPuff,matSmoke,r.p.clone().addScaledVector(r.v,-0.004),rv(0.4),1.6,{s:0.1,grow:1.4,drag:1.5});}}}
+    r.sm-=dt;if(r.sm<=0){r.sm=r.g40?0.07:0.025;emit(gPuff,matSmoke,r.p.clone().addScaledVector(r.v,-0.004),rv(0.4),1.6,{s:0.1,grow:1.4,drag:1.5});}}}
 // ---- the burst: fire ball, smoke, a ground shock; damage falls off to nothing at the blast radius
 function at4Blast(p,r){
   BL.t=0;BLL.position.copy(p).y+=1.2;
@@ -2224,25 +2225,25 @@ function at4Blast(p,r){
   for(let i=0;i<10;i++)emit(gSpark,matFire,p,rv(14).add(V(0,5,0)),0.5,{s:1.2,grav:9});
   try{boomAt(p);const c=sp3(p.x,p.y,p.z,2500);if(c){nz(c,c.t0,0.12,2600,0.8,1.6);tn(c,c.t0,160,40,0.5,0.8);}}catch(e){}
   disturb(p.x,p.z,400,1100);{const d=camera.position.distanceTo(p);shake=Math.max(shake,clamp((40-d)/40,0,1.2));}
-  const R=GAME.at4R;
+  const R=r&&r.R?r.R:GAME.at4R,DM=r&&r.dm?r.dm:GAME.at4Dmg,UG=r&&r.ug?r.ug:GAME.at4Ugv,NM=r&&r.g40?'40mm':'AT4';
   // me
   if(player.alive&&MPM.hp>0){let live=true;try{if(MPM.on&&NT.M.ph!=='live')live=false;}catch(e){}
     const d=Math.hypot(player.pos.x-p.x,player.pos.y+1-p.y,player.pos.z-p.z);
-    if(live&&d<R){const dm=GAME.at4Dmg*Math.pow(1-d/R,0.8);MPM.hp-=dm;try{flashHit();edgeFlash();dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,dm,'#ff3a3a');}catch(e){}
-      toast((r&&r.mine?'Caught in your own AT4 blast':'Hit by an AT4 blast')+' · -'+Math.min(100,Math.round(dm))+'%');if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed by an AT4 blast');}}}
-  if(r&&r.mine)try{uavBlast(p,R);}catch(e){}   // drones: the rocket's owner reports the damage
+    if(live&&d<R){const dm=DM*Math.pow(1-d/R,0.8);MPM.hp-=dm;try{flashHit();edgeFlash();dmgNum(player.pos.x,player.pos.y+2.2,player.pos.z,dm,'#ff3a3a');}catch(e){}
+      toast((r&&r.mine?'Caught in your own '+NM+' blast':'Hit by a '+NM+' blast')+' · -'+Math.min(100,Math.round(dm))+'%');if(MPM.hp<=0){MPM.hp=0;startAction('death');toast('Killed by a '+NM+' blast');}}}
+  if(r&&r.mine)try{uavBlast(p,R,UG);}catch(e){}   // drones: the rocket's owner reports the damage
   if(MPM.on&&MPM.guest)return;   // the world is the host's
   const from=r&&r.o?r.o:p,dist=Math.round(Math.hypot(from.x-p.x,from.z-p.z)),mine=r&&r.mine;
   try{for(const u of UGVS){if(u.dead||u.gone||(u.pl&&u.pl===(mine?secTeam():3-secTeam())))continue;const d=Math.hypot(u.x-p.x,u.y+0.8-p.y,u.z-p.z);if(d>R+1.2)continue;
-    const dm=GAME.at4Ugv*(d<2.2?1:Math.pow(1-(d-2.2)/(R-1),1.2));if(dm<=0)continue;u.hp-=dm;try{dmgNum(u.x,u.y+2.2,u.z,dm,'#ffd25a',GAME.uHp);}catch(e){}
+    const dm=UG*(d<2.2?1:Math.pow(1-(d-2.2)/(R-1),1.2));if(dm<=0)continue;u.hp-=dm;try{dmgNum(u.x,u.y+2.2,u.z,dm,'#ffd25a',GAME.uHp);}catch(e){}
     u.lx=from.x;u.lz=from.z;u.ly=from.y+1;u.boost=20;if(u.st==='patrol'||u.st==='return'){u.st='search';u.stT=GAME.uMem+10;}
-    if(u.hp<=0){u.hp=0;ugvWreck(u,true);if(mine)toast('UGV destroyed · AT4 · '+dist+' m');}else if(mine)toast('UGV hit · AT4 · '+Math.round(100*u.hp/Math.max(1,GAME.uHp))+'% armour left · '+dist+' m');}}catch(e){}
+    if(u.hp<=0){u.hp=0;ugvWreck(u,true);if(mine)toast('UGV destroyed · '+NM+' · '+dist+' m');}else if(mine)toast('UGV hit · '+NM+' · '+Math.round(100*u.hp/Math.max(1,GAME.uHp))+'% armour left · '+dist+' m');}}catch(e){}
   if(mine)try{for(const q of DRS){if(!q.m||q.dead||!q.m.root.visible||droidTeam(q)===secTeam())continue;const D=q.m.D,gy=groundH(D.x,D.z)+1.1,d=Math.hypot(D.x-p.x,gy-p.y,D.z-p.z);if(d>R+1.2)continue;   // GD01 bots of the other side
-    const dm=GAME.at4Ugv*(d<2.2?1:Math.pow(1-(d-2.2)/(R-1),1.2));if(dm<=0)continue;q.hp-=dm;try{dmgNum(D.x,gy+1.4,D.z,dm,'#ffd25a',dcGet(q.i).dHp);}catch(e){}
+    const dm=UG*(d<2.2?1:Math.pow(1-(d-2.2)/(R-1),1.2));if(dm<=0)continue;q.hp-=dm;try{dmgNum(D.x,gy+1.4,D.z,dm,'#ffd25a',dcGet(q.i).dHp);}catch(e){}
     DRS.lastT[droidTeam(q)]={x:from.x,z:from.z,t:DRS.clock};
-    if(q.hp<=0)droidKill(q,['Player',secTeam()],false);else{toast('GD01 hit · AT4 · '+Math.max(0,Math.round(100*q.hp/Math.max(1,dcGet(q.i).dHp)))+'% armour left · '+dist+' m');if(!q.tgO){const keep=DR;DR=q;try{droidSay('alert');}finally{DR=keep;}}}}}catch(e){}
-  try{for(const b of BEARS){if(b.dead>0)continue;const d=Math.hypot(b.x-p.x,b.z-p.z);if(d>R)continue;const dm=GAME.at4Dmg*2*Math.pow(1-d/R,0.8);b.hp-=dm;
-    if(b.hp<=0){b.hp=0;b.dead=0.001;b.spd=0;if(mine)toast('Bear down · AT4 · '+dist+' m');}else{b.st='flee';b.stT=10;const a=Math.atan2(b.x-p.x,b.z-p.z);b.tx=b.x+Math.sin(a)*90;b.tz=b.z+Math.cos(a)*90;}}}catch(e){}
+    if(q.hp<=0)droidKill(q,['Player',secTeam()],false);else{toast('GD01 hit · '+NM+' · '+Math.max(0,Math.round(100*q.hp/Math.max(1,dcGet(q.i).dHp)))+'% armour left · '+dist+' m');if(!q.tgO){const keep=DR;DR=q;try{droidSay('alert');}finally{DR=keep;}}}}}catch(e){}
+  try{for(const b of BEARS){if(b.dead>0)continue;const d=Math.hypot(b.x-p.x,b.z-p.z);if(d>R)continue;const dm=DM*2*Math.pow(1-d/R,0.8);b.hp-=dm;
+    if(b.hp<=0){b.hp=0;b.dead=0.001;b.spd=0;if(mine)toast('Bear down · '+NM+' · '+dist+' m');}else{b.st='flee';b.stT=10;const a=Math.atan2(b.x-p.x,b.z-p.z);b.tx=b.x+Math.sin(a)*90;b.tz=b.z+Math.cos(a)*90;}}}catch(e){}
   try{for(const dd of DEER.slice()){if(dd.st==='dead'||dd.st==='dying')continue;const d=Math.hypot(dd.x-p.x,dd.z-p.z);if(d>R*0.8)continue;MPM.mute=true;try{hitDeer(dd,'neck',dist);}finally{MPM.mute=false;}}}catch(e){}}
 // ---- sound: the launch is a hard crack and a deep thump; the burst uses the shared boom
 function at4LaunchSnd(o){const c=sp3(o.x,o.y,o.z,3500);if(!c)return;const t=c.t0,vg=(typeof VOLS!=='undefined'?VOLS.gun:1);
@@ -2298,6 +2299,53 @@ function shootAR(time){const pl=player;pl.ammo--;pl.lastShot=time;pl.kick=0.55;s
   if(pl.ammo<=0){input.lmb=false;pl.arAuto=15;}}
 function arIcon(){return '<svg viewBox="0 0 48 48"><g stroke="#ffcf9a" stroke-width="1.2" stroke-linejoin="round"><path d="M3 21h9v-2h20v3h8v2h5v2h-5v1h-8v2H22l-2 1-1 7h-5l1-8h-3l-1 3H4z" fill="#2e3033"/><path d="M22 28h5l-1 9h-5z" fill="#26272a"/><rect x="19" y="16" width="4" height="3" fill="#55595d"/><rect x="34" y="18" width="2" height="4" fill="#55595d"/></g></svg>';}
 window.SNIPER_AR={ARG,shoot:shootAR,parts:arParts,inp:()=>input};
+
+// ================= M32 multiple grenade launcher: 6-round revolving cylinder, 40 mm grenades =================
+// Part of the start kit (weapon slot 3). LMB lobs a grenade (semi-auto, ~0.45 s between rounds), R refills the cylinder from the spare grenades.
+// Grenades fall under full gravity and burst on impact using the AT4 blast code with a smaller radius and less damage. Single-player feel; other clients see a rifle in your hands.
+var M32S={ld:6,rl:-1};
+function m32Parts(){const BK='#1f2022',GM='#2e3033',ST='#55595d',PL='#26272a',CL='#3b3f43';const c=0.065;const out=[
+  [B(0.046,0.05,0.2),GM,[0,0.035,0.03]],[B(0.05,0.05,0.11),GM,[0,c,-0.05]],                                              // frame, rear receiver
+  [B(0.022,0.012,0.5),ST,[0,0.125,0.15]],[B(0.03,0.008,0.012),ST,[0,0.131,0.0]],[B(0.03,0.008,0.012),ST,[0,0.131,0.07]],[B(0.03,0.008,0.012),ST,[0,0.131,0.14]],[B(0.03,0.008,0.012),ST,[0,0.131,0.21]],[B(0.03,0.008,0.012),ST,[0,0.131,0.28]],[B(0.03,0.008,0.012),ST,[0,0.131,0.35]],   // top rail
+  [B(0.009,0.045,0.012),ST,[0.012,0.15,-0.04]],[B(0.009,0.045,0.012),ST,[-0.012,0.15,-0.04]],[B(0.008,0.04,0.012),ST,[0,0.15,0.4]],       // flip-up sights
+  [CY(0.05,0.05,0.15,18),CL,[0,c,0.14],[HP,0,0]],[CY(0.054,0.054,0.016,18),BK,[0,c,0.063],[HP,0,0]],[CY(0.054,0.054,0.016,18),BK,[0,c,0.215],[HP,0,0]],   // the cylinder and its end plates
+  [CY(0.0215,0.0215,0.22,12),ST,[0,c,0.33],[HP,0,0]],[CY(0.027,0.027,0.03,12),BK,[0,c,0.44],[HP,0,0]],                                  // barrel, muzzle ring
+  [B(0.05,0.03,0.2),PL,[0,c-0.035,0.32]],[B(0.03,0.02,0.05),PL,[0,c-0.06,0.33]],[CY(0.017,0.02,0.1,8),PL,[0,c-0.115,0.33]],              // handguard, vertical foregrip
+  [CY(0.021,0.021,0.2,10),PL,[0,c,-0.2],[HP,0,0]],[B(0.045,0.1,0.14),PL,[0,0.03,-0.34]],[B(0.05,0.12,0.025),BK,[0,0.03,-0.42]],          // stock tube, stock, butt pad
+  [B(0.036,0.115,0.048),PL,[0,-0.035,-0.035],[0.38,0,0]],[B(0.04,0.02,0.055),PL,[0,-0.095,-0.06],[0.38,0,0]],                            // pistol grip
+  [B(0.008,0.006,0.07),GM,[0,-0.002,0.02]],[B(0.008,0.03,0.006),GM,[0,0.01,0.054]],[B(0.006,0.02,0.006),ST,[0,0.012,0.012],[0.3,0,0]]];     // trigger guard, trigger
+  for(let i=0;i<6;i++){const a=i/6*PI*2;out.push([CY(0.0165,0.0165,0.01,8),'#0d0d0e',[Math.sin(a)*0.034,c+Math.cos(a)*0.034,0.224],[HP,0,0]]);}   // the six chambers
+  return out;}
+const M32_C=0.065,M32_MZ=0.47;
+const M32G=new THREE.Group();M32G.visible=false;gun.add(M32G);
+{const m=new THREE.Mesh(build(m32Parts()),envMat);m.castShadow=true;M32G.add(m);}
+const M32_MUZ=new THREE.Object3D();M32_MUZ.position.set(0,M32_C,M32_MZ);M32G.add(M32_MUZ);
+function m32Switch(prev,w){M32G.visible=w==='m32';if(prev==='m32'&&w!=='m32')M32S.rl=-1;
+  if(w==='m32'){try{A.grip.position.set(0,-0.05,-0.05);A.guard.position.set(0,-0.045,0.33);A.fore.position.set(0,-0.045,0.31);}catch(e){}if(!FLASH0)FLASH0=flashGrp.position.clone();flashGrp.position.set(0,M32_C,M32_MZ);}}
+const M32_SH=(()=>build([[CY(0.02,0.02,0.07,10),'#c9a24a',[0,0,-0.05],[HP,0,0]],[CY(0.02,0.02,0.07,10),'#5b6340',[0,0,0.02],[HP,0,0]],[new THREE.ConeGeometry(0.02,0.045,10),'#3d4430',[0,0,0.075],[HP,0,0]]]))();
+function m32Spawn(o,dir,mine){const g=new THREE.Group();g.add(new THREE.Mesh(M32_SH,envMat));
+  const fl=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffd890,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));fl.position.set(0,0,-0.08);fl.scale.setScalar(0.22);g.add(fl);
+  g.position.copy(o);scene.add(g);const r={p:o.clone(),o:o.clone(),v:dir.clone().normalize().multiplyScalar(GAME.m32Spd),t:0,g,fl,mine,sm:0,g40:true,drop:1,R:GAME.m32R,dm:GAME.m32Dmg,ug:GAME.m32Ugv};g.lookAt(_v9.copy(o).add(r.v));ROCKETS.push(r);
+  try{const c=sp3(o.x,o.y,o.z,3000);if(c){const t=c.t0,vg=(typeof VOLS!=='undefined'?VOLS.gun:1);tn(c,t,140,45,0.35,0.9*vg,'sine');nz(c,t,0.35,900,0.6,0.8*vg,'lowpass');nz(c,t,0.12,3000,0.8,0.5*vg,'bandpass');}}catch(e){}
+  emit(gFire,matFire,o,dir.clone().multiplyScalar(3),0.1,{s:0.22,grow:2.2});
+  for(let i=0;i<5;i++)emit(gPuff,i%2?matSmoke:matDust,o,dir.clone().multiplyScalar(2+Math.random()*3).add(rv(1.2)),0.9,{s:0.14,grow:1.4,drag:2});
+  disturb(o.x,o.z,250,700);return r;}
+function m32Fire(){const pl=player;input.lmb=false;
+  if(WPN.cur!=='m32')return;if(M32S.rl>=0){toast('Loading the M32…');return;}if(M32S.ld<=0){if((INV.m32r|0)>0)m32Reload();else toast('M32 empty · no spare grenades');return;}
+  camera.getWorldDirection(_cd);const h=castRay(camera.position,_cd,1500);const aim=h?h.point:camera.position.clone().addScaledVector(_cd,1500);
+  const o=M32_MUZ.getWorldPosition(new THREE.Vector3());const dir=aim.clone().sub(o).normalize();
+  // the grenade lobs: aim the bore up enough to land on the point you are looking at (flat-fire solution, capped), then a little scatter
+  {const dist=Math.min(o.distanceTo(aim),900),v=GAME.m32Spd,t=dist/v;dir.y+=0.5*GRAV*t*t/Math.max(1,dist)*0.98;
+   const mv=Math.hypot(pl.vel.x,pl.vel.z),sp=0.006+Math.min(0.03,mv*0.006);dir.x+=(Math.random()-0.5)*sp;dir.y+=(Math.random()-0.5)*sp;dir.z+=(Math.random()-0.5)*sp;dir.normalize();}
+  M32S.ld--;pl.kick=0.9;shake=Math.max(shake,0.2);camPitch+=0.03;m32Spawn(o,dir,true);
+  try{if(MPM.on&&NT.room)NT.room.emit('at4',{g:1,o:[nr2(o.x),nr2(o.y),nr2(o.z)],v:[+dir.x.toFixed(4),+dir.y.toFixed(4),+dir.z.toFixed(4)]}).catch(()=>{});}catch(e){}
+  try{EQB.ui(true);}catch(e){}if(M32S.ld<=0&&(INV.m32r|0)>0)setTimeout(()=>{if(WPN.cur==='m32'&&M32S.ld<=0)m32Reload();},600);}
+function m32Reload(){if(WPN.cur!=='m32'||M32S.ld>=6||M32S.rl>=0)return;if(!((INV.m32r|0)>0)){toast('No spare grenades');return;}M32S.rl=0;try{sfx.click();}catch(e){}toast('Loading the M32…');}
+function m32Tick(dt){if(M32S.rl<0)return;if(!player.alive||WPN.cur!=='m32'){M32S.rl=-1;return;}M32S.rl+=dt;
+  if(M32S.rl>=GAME.m32Reload){M32S.rl=-1;const n=Math.min(6-M32S.ld,INV.m32r|0);if(n>0){M32S.ld+=n;INV.m32r-=n;try{sfx.click();}catch(e){}toast('M32 loaded · '+M32S.ld+' / 6');}try{EQB.ui(true);invUI();}catch(e){}}}
+function m32Icon(){return '<svg viewBox="0 0 48 48"><g stroke="#bfe6ff" stroke-width="1.2" stroke-linejoin="round"><path d="M3 22h8v-3h22v3h5v2h6v2h-6v1h-6l-1 2h-4l1-3H14l-1 9h-5l1-9H3z" fill="#2e3033"/><circle cx="22" cy="26" r="6.5" fill="#3b3f43"/><circle cx="22" cy="26" r="1.6" fill="#0d0d0e"/><circle cx="22" cy="21.8" r="1.3" fill="#0d0d0e"/><circle cx="22" cy="30.2" r="1.3" fill="#0d0d0e"/><circle cx="18.4" cy="24" r="1.3" fill="#0d0d0e"/><circle cx="25.6" cy="24" r="1.3" fill="#0d0d0e"/><circle cx="18.4" cy="28" r="1.3" fill="#0d0d0e"/><circle cx="25.6" cy="28" r="1.3" fill="#0d0d0e"/><rect x="31" y="31" width="4" height="8" fill="#26272a"/></g></svg>';}
+window.SNIPER_M32={M32G,S:M32S,fire:m32Fire,reload:m32Reload,spawn:m32Spawn};
+
 
 /* ---------------- wildlife: red deer stags, fallow and roe does ---------------- */
 // Each deer is a small rig: root (yaw, slope pitch, death roll) > body pivot at the hind hips > torso, legs (two segments each), neck > head, tail.
@@ -3027,7 +3075,7 @@ function updateCamera(dt){
     {const nb=d<camBoom?damp(camBoom,d,12,dt):damp(camBoom,d,2.5,dt);camBoom+=clamp(nb-camBoom,-16*dt,6*dt);}
     camera.position.copy(piv).addScaledVector(_dir,-camBoom);
     const g=groundH(camera.position.x,camera.position.z)+0.25;if(camera.position.y<g)camera.position.y=g;
-    if(aim)fov=(input.rmb&&WPN.cur==='at4')?56/1.25:(input.rmb&&WPN.cur==='ar15')?56/1.45:56;
+    if(aim)fov=(input.rmb&&WPN.cur==='at4')?56/1.25:(input.rmb&&WPN.cur==='ar15')?56/1.45:(input.rmb&&WPN.cur==='m32')?56/1.3:56;
   }
   if(!(input.rmb&&WPN.cur==='at4'))AT4Z=1;else if(!scoped)fov=(viewFP?62:56)/(1.25*AT4Z);   // aiming the AT4: the sight view, 2x with the wheel
   camera.fov=scoped?fov:damp(camera.fov,fov,12,dt);camera.updateProjectionMatrix();
@@ -3179,7 +3227,7 @@ addEventListener('keydown',e=>{
     case 'KeyC': if(busy)break; if(pl.slide)break; if(pl.stance==='stand'&&Math.hypot(pl.vel.x,pl.vel.z)>(streamAt(pl.pos.x,pl.pos.z)||fallRow(pl.pos.x,pl.pos.z)?2.4:5.2)&&tryStartSlide())break; if(pl.stance==='stand')pl.stance='crouch';else if(pl.stance==='crouch'){if(canFit(HEIGHT.stand))pl.stance='stand';else toast('No headroom');}else if(pl.stance==='prone'){if(canFit(HEIGHT.crouch)){startAction('proneUp',{crouch:true});}else toast('No headroom');} break;
     case 'KeyZ': if(busy||!pl.grounded)break; if(pl.stance==='prone'){if(canFit(HEIGHT.stand))startAction('proneUp');else toast('No headroom');}else{pl.reloadT=-1;startAction('proneDown');} break;
     case 'Space': if(busy)break; if(chuteKey())break; if(pl.slide){endSlide();if(pl.stance==='stand'&&pl.grounded){pl.vel.y=5.6*(BOOST.on?(GAME.bJump||1.4):1);pl.grounded=false;}break;} if(pl.stance==='prone'){if(canFit(HEIGHT.stand))startAction('proneUp');else toast('No headroom');}else if(pl.grounded){if(pl.stance==='crouch'){if(!canFit(HEIGHT.stand))break;pl.stance='stand';}pl.vel.y=5.6*(BOOST.on?(GAME.bJump||1.4):1);pl.grounded=false;} break;
-    case 'KeyR': if(WPN.cur==='at4')at4Reload();else if(WPN.cur==='rifle'||WPN.cur==='ar15')startReload(); break;
+    case 'KeyR': if(WPN.cur==='at4')at4Reload();else if(WPN.cur==='m32')m32Reload();else if(WPN.cur==='rifle'||WPN.cur==='ar15')startReload(); break;
     case 'KeyT': if(busy||pl.stance!=='stand'||!pl.grounded)break; startAction('salute'); break;
     case 'KeyK': if(busy)break; if(pl.stance!=='stand'){pl.stance='stand';snapLayer('idle');} pl.alive=false; startAction('death'); break;
   }
@@ -3411,7 +3459,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=501;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=502;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3459,7 +3507,7 @@ const RES_T=[
   {k:'scrap',   label:'UGV',     cell:17, p:0.05, amt:[1,2], n:0},
   {k:'r762',    label:'7.62 rounds',  cell:13, p:0.25, amt:[1,1], n:300},
   {k:'rifle',   label:'Rifle',        cell:31, p:0.3, amt:[1,1], n:0}];   // weapons (AR-15, AT4, rifle) are placed by hand: two of each within 100 m of every capture point
-const INV={radio:0,berries:0,mushroom:0,at4r:0,scrap:0,meat:0,hide:0};
+const INV={m32r:12,radio:0,berries:0,mushroom:0,at4r:0,scrap:0,meat:0,hide:0};
 const INV_LABEL={radio:'radios',berries:'berries',mushroom:'Magic Mushrooms',at4r:'AT4 rounds',scrap:'UGV',meat:'meat',hide:'hide'};
 const RES_GEO={
   r762:build([[B(0.3,0.17,0.14),'#4e5934',[0,0.085,0]],[B(0.312,0.032,0.152),'#5c683f',[0,0.186,0]],[B(0.13,0.018,0.022),'#2c3120',[0,0.212,0]],[B(0.03,0.06,0.03),'#3a4228',[0.16,0.13,0]],
@@ -3756,8 +3804,8 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
     pn.innerHTML=`<p class="note">Everything about each weapon in one place. Every value saves as you change it. In a 1v1 match damage to a player comes from that player's own settings and damage to animals from the host's, so keep both players the same.</p>
 <div class="wgrid">
 <section class="wc"><div class="wh">${IC.radio}<div><h3>Carry slots</h3><p>What you can carry at once · weapons on the first keys, gadgets after</p></div><span class="key">G drop · F pick up</span></div>
-${sp([['Weapon slots',GAME.slotW+' (keys 1'+(GAME.slotW>1?'–'+GAME.slotW:'')+')'],['Gadget slots',GAME.slotG+' (keys '+(+GAME.slotW+1)+(GAME.slotG>1?'–'+(+GAME.slotW+ +GAME.slotG):'')+')'],['Start kit','rifle'],['Weapons','rifle, AR-15, AT4'],['Gadgets','radio (recon drone)']])}
-${sl('slotW','Weapon slots',1,3,1,0)}${sl('slotG','Gadget slots',1,3,1,0)}
+${sp([['Weapon slots',slotN('w')+' (keys 1–'+slotN('w')+')'],['Gadget slots',GAME.slotG+' (keys '+(slotN('w')+1)+(GAME.slotG>1?'–'+(slotN('w')+ +GAME.slotG):'')+')'],['Start kit','rifle, AT4, M32'],['Weapons','rifle, AR-15, AT4'],['Gadgets','radio (recon drone)']])}
+${sl('slotW','Weapon slots',3,4,1,0)}${sl('slotG','Gadget slots',1,3,1,0)}
 <p class="tn">Picking up a weapon with the weapon slots full swaps it for the one in your hands, which drops at your feet. Dropped items glow and either player can pick them up; an AT4 keeps its loaded round and a rifle the rounds in its magazine. A radio stays in its slot while its drone is up. Each round starts with the rifle only.</p></section>
 <section class="wc"><div class="wh">${IC.rifle}<div><h3>Bolt-action rifle</h3><p>7.62 mm scoped sniper rifle · your starting weapon</p></div><span class="key">LMB fire · R reload · RMB scope</span></div>
 ${sp([['Calibre','7.62 mm'],['Magazine',mag+' rounds'],['Bolt cycle',bolt+' s'],['Muzzle velocity',GAME.bV0+' m/s'],['Drop at 300 m',dropAt(300).y.toFixed(2).replace('-','')+' m'],['Drop at 600 m',dropAt(600).y.toFixed(2).replace('-','')+' m'],['Scope','2× 3× 4× (wheel)'],['Ammo','7.62 boxes']])}
@@ -3809,7 +3857,7 @@ ${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Hei
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:2,slotG:3,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloAcc:0.3,siloEvery:0,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.8,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:100,at4R:6,at4Dmg:200,at4Ugv:300,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:7.5,bInst:1,bears:2,bWalk:1.2,bRear:9,bAtk:1,bTrig:1,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1};
+const GAME_DEF={arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:3,slotG:3,m32Spd:76,m32R:4.5,m32Dmg:110,m32Ugv:160,m32Reload:3.2,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloAcc:0.3,siloEvery:0,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.8,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:100,at4R:6,at4Dmg:200,at4Ugv:300,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:7.5,bInst:1,bears:2,bWalk:1.2,bRear:9,bAtk:1,bTrig:1,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1};
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 try{if(!localStorage.getItem('fsSiloV2')){GAME.siloVol=2;localStorage.setItem('fsSiloV2','1');}}catch(e){}
 function balApply(){V0=GAME.bV0;DRAG=GAME.bDrag;GBUL=9.81*GAME.bDrop;try{setZero(zeroM);}catch(e){}}balApply();
@@ -4258,7 +4306,7 @@ const EQB=(()=>{
     wood:S('<g stroke="#f0d3a2" stroke-width="1.3" stroke-linecap="round"><path d="M6 36 38 12" stroke-width="4.5" stroke="#9a6a3c"/><path d="M8 14 40 34" stroke-width="4" stroke="#a97a46"/><path d="M10 40 42 28" stroke-width="3.5" stroke="#865a30"/></g>'),
     rpg:S('<g stroke="#ffd9b0" stroke-width="1.3" stroke-linejoin="round"><path d="M33 17c5 1 9 4 11 7-2 3-6 6-11 7z" fill="#5d6a3c"/><rect x="21" y="18" width="12" height="12" rx="2" fill="#4f5c33"/><path d="M21 21 13 22.5v3L21 27z" fill="#7a7d72"/><rect x="7" y="22.5" width="7" height="3" fill="#8b8e84"/><path d="M8 22.5 3 17v6zM8 25.5 3 31v-6z" fill="#3d4136"/></g>')};
   const bar=document.createElement('div');bar.id='eqBar';document.body.appendChild(bar);
-  IC.ar15=arIcon();
+  IC.ar15=arIcon();IC.m32=m32Icon();
   const EMPTY=S('<rect x="9" y="13" width="30" height="22" rx="5" fill="none" stroke="#9aa38c" stroke-width="1.4" stroke-dasharray="3 3"/>');
   const $e=id=>document.getElementById(id);let barS='',barN='';
   function layout(){const nw=SLOT.w.length,ng=SLOT.g.length,key=nw+'/'+ng;if(key===barN)return;barN=key;barS='';let h='';
@@ -4272,12 +4320,13 @@ const EQB=(()=>{
   function cell(el,ic,name,sub,act,off){if(el.dataset.ic!==ic){el.dataset.ic=ic;el.querySelector('.ic').outerHTML='<span class="ic">'+(IC[ic]||EMPTY)+'</span>';}
     el.querySelector('b').textContent=name;el.querySelector('i').textContent=sub;el.classList.toggle('act',!!act);el.classList.toggle('off',!!off);}
   function ui(f){if(!SLOT)return;layout();const pl=player,a=INV.at4r|0;
-    const s=(playing?1:0)+'|'+(pl.ammo|0)+'|'+(pl.reserve|0)+'|'+WPN.cur+WPN.ld+(WPN.rl>=0)+a+'|'+SLOT.w.map(q=>q?q.k:'-').join()+'|'+SLOT.g.map(q=>q?q.k+(q.used?'*':'')+(q.k==='ugv'?ugvTxt(q):radioTxt(q)):'-').join();
+    const s=(playing?1:0)+'|'+(pl.ammo|0)+'|'+(pl.reserve|0)+'|'+WPN.cur+WPN.ld+(WPN.rl>=0)+a+'|'+M32S.ld+(M32S.rl>=0)+(INV.m32r|0)+'|'+SLOT.w.map(q=>q?q.k:'-').join()+'|'+SLOT.g.map(q=>q?q.k+(q.used?'*':'')+(q.k==='ugv'?ugvTxt(q):radioTxt(q)):'-').join();
     if(s===barS&&!f)return;barS=s;
     SLOT.w.forEach((it,i)=>{const el=$e('eqW'+i);if(!el)return;
       if(!it)cell(el,'',"Empty",'weapon slot',false,true);
       else if(it.k==='rifle')cell(el,'rifle','Rifle',(WPN.cur==='rifle'?(pl.ammo|0):(it.ammo!=null?it.ammo|0:12))+' · '+(pl.reserve|0)+' spare',WPN.cur==='rifle',false);
       else if(it.k==='ar15')cell(el,'ar15','AR-15',(WPN.cur==='ar15'?(pl.ammo|0):(it.ammo!=null?it.ammo|0:GAME.arMag|0))+' · '+(pl.reserve|0)+' spare',WPN.cur==='ar15',false);
+      else if(it.k==='m32')cell(el,'m32','M32',(M32S.rl>=0?'loading':M32S.ld+' / 6')+' · '+(INV.m32r|0)+' spare',WPN.cur==='m32',false);
       else if(it.k==='at4')cell(el,'at4','AT4',(WPN.rl>=0?'loading':(WPN.ld?'loaded':'empty'))+' · '+a+' spare',WPN.cur==='at4',false);});
     SLOT.g.forEach((it,i)=>{const el=$e('eqG'+i);if(!el)return;
       if(!it)cell(el,'','Empty','gadget slot',false,true);
@@ -4298,8 +4347,8 @@ function eqStep(){try{slotStep();}catch(e){}EQB.ui();}
 // Counts are set on the Weapons tab (Carry slots), 1-3 of each.
 var SLOT={w:[{k:'rifle'},null],g:[null,null]};
 var DROPS=[];
-const ITEM={rifle:{name:'Rifle',kind:'w',col:0xffe08a},ar15:{name:'AR-15',kind:'w',col:0xff8a2a},at4:{name:'AT4',kind:'w',col:0xff2fbf},radio:{name:'Radio',kind:'g',col:0x3ad8ff},ugv:{name:'UGV',kind:'g',col:0x45e6c8}};
-function slotN(t){return Math.max(1,Math.min(3,Math.round(+(t==='w'?GAME.slotW:GAME.slotG))||2));}
+const ITEM={rifle:{name:'Rifle',kind:'w',col:0xffe08a},m32:{name:'M32',kind:'w',col:0x7fd6ff},ar15:{name:'AR-15',kind:'w',col:0xff8a2a},at4:{name:'AT4',kind:'w',col:0xff2fbf},radio:{name:'Radio',kind:'g',col:0x3ad8ff},ugv:{name:'UGV',kind:'g',col:0x45e6c8}};
+function slotN(t){return t==='w'?Math.max(3,Math.min(4,Math.round(+GAME.slotW)||3)):Math.max(1,Math.min(3,Math.round(+GAME.slotG)||2));}
 function slotHas(k){if(!SLOT)return k==='rifle';return SLOT.w.some(i=>i&&i.k===k)||SLOT.g.some(i=>i&&i.k===k);}
 function slotKeyOf(k){if(!SLOT)return '';let j=SLOT.w.findIndex(i=>i&&i.k===k);if(j>=0)return String(j+1);j=SLOT.g.findIndex(i=>i&&i.k===k&&!i.used);return j>=0?String(SLOT.w.length+j+1):'';}
 // fit the slot arrays to the counts set on the Weapons tab; anything that no longer fits drops at your feet
@@ -4308,6 +4357,7 @@ function slotFit(){for(const t of ['w','g']){const n=slotN(t),L=SLOT[t];while(L.
   if(!SLOT.w.some(Boolean))SLOT.w[0]={k:'rifle'};slotSync();}
 function slotSync(){WPN.has=slotHas('at4');INV.radio=SLOT.g.filter(i=>i&&i.k==='radio'&&!i.used).length;
   if(WPN.cur==='at4'&&!WPN.has)setWeapon(slotHas('rifle')?'rifle':'none');
+  else if(WPN.cur==='m32'&&!slotHas('m32'))setWeapon(slotHas('rifle')?'rifle':WPN.has?'at4':'none');
   else if(WPN.cur==='rifle'&&!slotHas('rifle'))setWeapon(WPN.has?'at4':'none');
   else if(WPN.cur==='none'){const it=SLOT.w.find(Boolean);if(it)setWeapon(it.k);}
   try{EQB.ui(true);}catch(e){}}
@@ -4319,10 +4369,10 @@ function slotCanTake(k){const t=ITEM[k].kind,L=SLOT[t];if(L.some(q=>!q))return t
   if(t==='w')return true;return L.some(q=>q&&q.k!==k&&!q.used);}
 // put an item in; returns the name of whatever was swapped out ('' when it went into a free slot), or null when refused
 function slotGive(it){const t=ITEM[it.k].kind,L=SLOT[t];let j=L.indexOf(null),out='';
-  if(t==='w'&&slotHas(it.k)){if(it.k==='at4')INV.at4r=(INV.at4r|0)+(it.ld?1:0);else player.reserve=(player.reserve|0)+(it.ammo|0);slotSync();return '';}   // one of each weapon: a second copy gives up its ammo
+  if(t==='w'&&slotHas(it.k)){if(it.k==='at4')INV.at4r=(INV.at4r|0)+(it.ld?1:0);else if(it.k==='m32')INV.m32r=(INV.m32r|0)+(it.ammo|0);else player.reserve=(player.reserve|0)+(it.ammo|0);slotSync();return '';}   // one of each weapon: a second copy gives up its ammo
   if(j<0){if(t==='w'){j=L.findIndex(q=>q&&q.k===WPN.cur);if(j<0)j=0;}else{j=L.findIndex(q=>q&&q.k!==it.k&&!q.used);if(j<0)return null;}
     out=ITEM[L[j].k].name;dropItem(L[j]);L[j]=null;}
-  L[j]=it;if(it.k==='at4'){WPN.ld=it.ld?1:0;WPN.rl=-1;}
+  L[j]=it;if(it.k==='at4'){WPN.ld=it.ld?1:0;WPN.rl=-1;}if(it.k==='m32'){M32S.ld=it.ammo!=null?it.ammo|0:6;M32S.rl=-1;}
   slotSync();if(out&&t==='w')setWeapon(it.k);try{EQB.pop(t==='w'?'eqW'+j:'eqG'+j);}catch(e){}return out;}
 function slotTip(k){if(k==='at4'&&WPN.has)return 'AT4 launcher (+1 round)';if(k==='rifle'&&slotHas('rifle'))return 'Rifle (+12 rounds)';if(k==='ar15'&&slotHas('ar15'))return 'AR-15 (+'+(GAME.arMag|0)+' rounds)';const t=ITEM[k].kind,L=SLOT[t];
   if(L.some(q=>!q))return 'pick up '+(k==='at4'?'AT4 launcher':k==='ar15'?'AR-15 rifle':ITEM[k].name);
@@ -4331,7 +4381,7 @@ function slotTip(k){if(k==='at4'&&WPN.has)return 'AT4 launcher (+1 round)';if(k=
 // ---- selecting and using
 function slotSelW(i){if(!player.alive)return;const it=SLOT.w[i];if(!it){toast('Weapon slot '+(i+1)+' is empty');return;}if(WPN.cur===it.k)return;
   setWeapon(it.k);try{sfx.click();}catch(e){}
-  toast(it.k==='at4'?'AT4 · '+(WPN.ld?'loaded':'empty')+' · '+(INV.at4r|0)+' spare':ITEM[it.k].name);if(it.k==='at4'&&!WPN.ld)at4Reload();}
+  toast(it.k==='at4'?'AT4 · '+(WPN.ld?'loaded':'empty')+' · '+(INV.at4r|0)+' spare':it.k==='m32'?'M32 · '+M32S.ld+' / 6 · '+(INV.m32r|0)+' spare':ITEM[it.k].name);if(it.k==='at4'&&!WPN.ld)at4Reload();if(it.k==='m32'&&M32S.ld<=0)m32Reload();}
 function slotCycleW(){if(!player.alive)return;const L=SLOT.w,n=L.length;let j=L.findIndex(q=>q&&q.k===WPN.cur);
   for(let s=1;s<=n;s++){const q=L[((j<0?-1:j)+s+n)%n];if(q&&q.k!==WPN.cur){slotSelW(L.indexOf(q));return;}}toast('No other weapon · find one');}
 function slotUseG(i){if(!player.alive)return;const it=SLOT.g[i];if(!it){toast('Gadget slot '+(SLOT.w.length+i+1)+' is empty');return;}
@@ -4342,7 +4392,7 @@ function slotDrop(){if(!player.alive||!playing)return;const k=WPN.cur;if(k==='no
   if(SLOT.w.filter(Boolean).length<=1){toast("You can't drop your last weapon");return;}
   const j=SLOT.w.findIndex(q=>q&&q.k===k);if(j<0)return;dropItem(SLOT.w[j]);SLOT.w[j]=null;slotSync();toast('Dropped the '+ITEM[k].name+' · F picks it up again');try{sfx.click();}catch(e){}}
 // ---- items on the ground
-const DROP_GEO={ar15:(()=>{const g=build(arParts());g.rotateZ(PI/2);g.translate(0.03,0.05,0);return g;})(),rifle:build([[B(0.62,0.07,0.05),'#4a3a2a',[-0.05,0.035,0]],[B(0.2,0.1,0.05),'#4a3a2a',[-0.38,0.05,0]],[CY(0.012,0.012,0.5,6),'#2a2c2e',[0.5,0.045,0],[0,0,HP]],
+const DROP_GEO={m32:(()=>{const g=build(m32Parts());g.rotateZ(PI/2);g.translate(0.03,0.05,0);return g;})(),ar15:(()=>{const g=build(arParts());g.rotateZ(PI/2);g.translate(0.03,0.05,0);return g;})(),rifle:build([[B(0.62,0.07,0.05),'#4a3a2a',[-0.05,0.035,0]],[B(0.2,0.1,0.05),'#4a3a2a',[-0.38,0.05,0]],[CY(0.012,0.012,0.5,6),'#2a2c2e',[0.5,0.045,0],[0,0,HP]],
   [CY(0.026,0.026,0.32,8),'#20262a',[0.04,0.1,0],[0,0,HP]],[B(0.05,0.05,0.02),'#2a2c2e',[0.02,0.06,0]],[B(0.06,0.03,0.04),'#3a3020',[-0.08,0.0,0]]])};
 function dropGeo(k){return DROP_GEO[k]||RES_GEO[k==='ugv'?'scrap':k];}
 function dropMake(id,k,x,y,z,ld,ammo,ry){if(!ITEM[k]||DROPS.some(d=>d.id===id))return null;const m=new THREE.Mesh(dropGeo(k),RES_MAT);m.position.set(x,y,z);m.rotation.y=ry||0;
@@ -4351,7 +4401,7 @@ function dropMake(id,k,x,y,z,ld,ammo,ry){if(!ITEM[k]||DROPS.some(d=>d.id===id))r
 function dropKill(d){scene.remove(d.m);d.gm.material.dispose();}
 function dropItem(it){const pl=player,fx=Math.sin(camYaw),fz=Math.cos(camYaw);const x=pl.pos.x+fx*0.9,z=pl.pos.z+fz*0.9;
   let y=pl.pos.y+0.02;try{const g=groundH(x,z);if(Math.abs(g-pl.pos.y)<0.8)y=g+0.02;}catch(e){}
-  if(it.k==='at4'){it.ld=WPN.ld?1:0;WPN.ld=0;WPN.rl=-1;}if((it.k==='rifle'||it.k==='ar15')&&WPN.cur===it.k){it.ammo=pl.ammo|0;pl.ammo=0;pl.reloadT=-1;}
+  if(it.k==='at4'){it.ld=WPN.ld?1:0;WPN.ld=0;WPN.rl=-1;}if(it.k==='m32'){it.ammo=M32S.ld;M32S.ld=0;M32S.rl=-1;}if((it.k==='rifle'||it.k==='ar15')&&WPN.cur===it.k){it.ammo=pl.ammo|0;pl.ammo=0;pl.reloadT=-1;}
   const id=Math.random().toString(36).slice(2,9),ry=camYaw+HP;dropMake(id,it.k,x,y,z,it.ld,it.ammo,ry);
   try{if(MPM.on&&NT.room)NT.room.emit('drop',{id,k:it.k,x:nr2(x),y:nr2(y),z:nr2(z),ld:it.ld?1:0,am:it.ammo|0,ry:+ry.toFixed(3)}).catch(()=>{});}catch(e){}}
 function dropNearest(){const p=player.pos;let best=null,bd=2.4*2.4;for(const d of DROPS){const dd=(d.x-p.x)**2+(d.z-p.z)**2;if(dd<bd&&Math.abs(d.y-p.y)<2){bd=dd;best=d;}}return best;}
@@ -4368,7 +4418,7 @@ function slotStep(){if(player.arAuto>0&&--player.arAuto===0&&WPN.cur==='ar15'&&p
   if(SLOT.g.some(q=>q&&q.used&&q.k==='ugv'&&performance.now()-(q.t0||0)>5000)&&!ugvMine()){for(let j=0;j<SLOT.g.length;j++)if(SLOT.g[j]&&SLOT.g[j].used&&SLOT.g[j].k==='ugv'&&performance.now()-(SLOT.g[j].t0||0)>5000)SLOT.g[j]=null;slotSync();}
   if(DROPS.length){const o=0.15+0.6*(0.5-0.5*Math.cos(performance.now()/1000*Math.PI*2/3));for(const d of DROPS)d.gm.material.opacity=o;}}
 // start loadout: an AT4 launcher with one round in it and three spare (new game, game reset, each match round)
-function at4Loadout(){try{slotGive({k:'at4',ld:1});INV.at4r=3;invUI();slotSync();}catch(e){console.warn('at4 loadout',e);}}
+function at4Loadout(){try{slotFit();slotGive({k:'at4',ld:1});slotGive({k:'m32',ammo:6});M32S.ld=6;M32S.rl=-1;INV.m32r=12;INV.at4r=3;invUI();slotSync();}catch(e){console.warn('at4 loadout',e);}}
 resReset=(f=>function(){f.apply(this,arguments);at4Loadout();})(resReset);
 at4Loadout();
 window.SNIPER_SLOT={G:GAME,rr:()=>resReset(),SLOT,DROPS,give:slotGive,drop:slotDrop,key:slotKey,reset:slotReset,fit:slotFit,take:dropTake,net:dropNet,get:()=>SLOT};
@@ -4458,7 +4508,7 @@ function uavDamage(u,dm,fromMe,dist){if(u.st==='down'||u.st==='gone'||!(dm>0))re
   if(u.hp<=0)uavDown(u,fromMe?'me':'them');}
 const UAV_MULT={body:1,wing:0.75,tail:0.75};
 function uavShot(u,sub,dist){const base=(DMG.w.rifle.k&&DMG.w.rifle.k.body!=null)?DMG.w.rifle.k.body:70;uavDamage(u,base*(UAV_MULT[sub]||1),true,dist);}
-function uavBlast(p,R){for(const u of UAVS){if(u.st==='down'||u.st==='gone')continue;const d=u.p.distanceTo(p);if(d>R+3.3)continue;uavDamage(u,GAME.at4Ugv*(d<3.3?1:Math.max(0,1-(d-3.3)/R)),true,0);}}
+function uavBlast(p,R,UG0){for(const u of UAVS){if(u.st==='down'||u.st==='gone')continue;const d=u.p.distanceTo(p);if(d>R+3.3)continue;uavDamage(u,(UG0||GAME.at4Ugv)*(d<3.3?1:Math.max(0,1-(d-3.3)/R)),true,0);}}
 const _aRay=new THREE.Raycaster();
 function rayUav(o,dir,len,noRem){if(noRem)return null;let best=null;
   for(const u of UAVS){if(u.st==='gone')continue;const cx=u.p.x-o.x,cy=u.p.y-o.y,cz=u.p.z-o.z;const t=cx*dir.x+cy*dir.y+cz*dir.z;if(t<-4||t>len+4)continue;
@@ -6286,7 +6336,7 @@ function onMsg(t,d,m){
   else if(t==='silo'){try{if(d.ab){siloAbort();}else if(!MPM.guest&&MPM.on&&NT.M.ph==='live'){const tm=3-secHostTeam();if(secArmed(tm)){SECT.launch=tm;siloLaunch(false);}else NT.room.emit('silo',{ab:1}).catch(()=>{});}else siloLaunch(false);}catch(e){}}
   else if(t==='uav'){try{uavNet(d);}catch(e){}}
   else if(t==='drop'||t==='dtake'){try{dropNet(t,d);}catch(e){}}
-  else if(t==='at4'){if(!Array.isArray(d.o)||!Array.isArray(d.v))return;const o=V(+d.o[0],+d.o[1],+d.o[2]),v=V(+d.v[0],+d.v[1],+d.v[2]);if(!isFinite(o.x+o.y+o.z+v.x)||v.lengthSq()<0.5)return;try{at4Spawn(o,v,false);}catch(e){}}
+  else if(t==='at4'){if(!Array.isArray(d.o)||!Array.isArray(d.v))return;const o=V(+d.o[0],+d.o[1],+d.o[2]),v=V(+d.v[0],+d.v[1],+d.v[2]);if(!isFinite(o.x+o.y+o.z+v.x)||v.lengthSq()<0.5)return;try{if(d.g)m32Spawn(o,v,false);else at4Spawn(o,v,false);}catch(e){}}
   else if(t==='pug'){try{ugvNetCmd(d);}catch(e){}}
   else if(t==='ugvf'){if(MPM.guest)try{ugvNetFire(d);}catch(e){}}
   else if(t==='uhit'){if(MPM.guest)return;const u=UGVS[d.i|0];if(!u)return;hitFrom=RPS.pos;MPM.mute=true;try{hitUgv(u,String(d.sub),+d.dist||0,true);}finally{MPM.mute=false;hitFrom=null;}}
