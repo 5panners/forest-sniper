@@ -3471,7 +3471,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=523;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=524;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3492,7 +3492,7 @@ function update(dt){
   hudL.innerHTML='<span>'+player.ammo+' loaded · '+(player.reserve|0)+' spare'+(boltT>=0?' · chambering':'')+'</span><span>grid '+Math.round(player.pos.x)+' E  '+Math.round(-player.pos.z)+' N  ·  '+Math.round(player.pos.y)+' m</span>';
   const edge=PLAY-Math.max(Math.abs(player.pos.x),Math.abs(player.pos.z));warnEl.textContent=edge<20&&!scoped?'Edge of the operating area':'';
   if(mapOpen){drawMap();const g=$('mapGrid');if(g)g.textContent=SPW.open?'You are down · click a sector your side holds to deploy there'+(MPM.on?' · automatic deploy in '+Math.max(0,Math.ceil(SEC_RESPAWN-SPW.t))+' s':''):'You are at grid '+Math.round(player.pos.x)+' E  '+Math.round(-player.pos.z)+' N  ·  '+Math.round(player.pos.y)+' m';}
-  cmp.style.display=playing?'block':'none';if(playing)drawCompass();
+  cmp.style.display='none';   // compass removed
   drawMini();try{secHudDraw();}catch(e){}
 }
 let paused=false;
@@ -5207,7 +5207,7 @@ function secDrawCompass(c,W,H,brg,SPAN,ppd){SEC_DEF.forEach((d,i)=>{const dx=d.x
     c.fillStyle=col;c.font='700 10px "IBM Plex Mono", monospace';c.textAlign='center';c.textBaseline='middle';c.fillText(d.k,0,0.5);c.restore();});}
 // top strip: seven pips in the layout of the map, my home on the left
 const secCv=document.createElement('canvas');secCv.width=300;secCv.height=88;secCv.id='secHud';document.body.appendChild(secCv);const secx=secCv.getContext('2d');
-{const st=document.createElement('style');st.textContent='#secHud{position:fixed;left:50%;top:calc(72px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:240px;height:70px;z-index:3;pointer-events:none;display:none}';document.head.appendChild(st);}
+{const st=document.createElement('style');st.textContent='#secHud{position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:240px;height:70px;z-index:3;pointer-events:none;display:none}';document.head.appendChild(st);}
 const SEC_POS=[[0,0.5],[1,0.2],[1,0.8],[2,0.5],[3,0.8],[3,0.2],[4,0.5]];   // column, row (east team's view)
 // ticket bar: yours fills leftwards from the centre, theirs rightwards; a small arrow shows which side is bleeding
 const tkEl=(()=>{const st=document.createElement('style');st.textContent='#tkHud{position:fixed;left:50%;top:calc(46px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:260px;z-index:3;pointer-events:none;display:none;align-items:center;gap:6px;font:700 12px var(--f-mono);color:#f1e6c0;text-shadow:0 1px 3px #000}#tkHud .tb{flex:1;height:8px;background:rgba(12,18,10,.7);border:1px solid rgba(255,255,255,.3);border-radius:2px;overflow:hidden;display:flex}#tkHud .tb i{display:block;height:100%;width:100%}#tkHud .n{min-width:22px;text-align:center}#tkHud .t{position:absolute;left:0;right:0;top:12px;text-align:center;font-size:9px;letter-spacing:.14em;opacity:.7}';document.head.appendChild(st);
