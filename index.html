@@ -3471,7 +3471,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=535;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=536;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4005,7 +4005,21 @@ const EDGE={burn:0,fl:0,lt:0,el:null};
   const st2=document.createElement('style');st2.textContent='#edgeDir{position:fixed;inset:0;pointer-events:none;z-index:6;--t:0;--r:0;--b:0;--l:0;background:linear-gradient(180deg,rgba(255,20,10,var(--t)) 0,rgba(255,20,10,0) 34%),linear-gradient(270deg,rgba(255,20,10,var(--r)) 0,rgba(255,20,10,0) 34%),linear-gradient(0deg,rgba(255,20,10,var(--b)) 0,rgba(255,20,10,0) 34%),linear-gradient(90deg,rgba(255,20,10,var(--l)) 0,rgba(255,20,10,0) 34%)}';document.head.appendChild(st2);const e2=document.createElement('div');e2.id='edgeDir';document.body.appendChild(e2);EDGE.dl=e2;})();
 // a hit lights the screen edge on the side the shot came from (relative to where you are looking); without a source both sides flash
 EDGE.d=[0,0,0,0];   // front, right, behind, left
-function edgeFlash(src){if(!src||src.x==null||src.z==null){EDGE.fl=1;return;}
+/* a short pained grunt, "uhh-mmp", every time the player takes a hit: a falling voiced buzz through two vowel formants, closing to a nasal hum, ending in a lip-pop */
+let _pgT=0;
+function painGrunt(){if(!AC||!soundOn)return;const now=performance.now();if(now-_pgT<350)return;_pgT=now;
+  try{const t=AC.currentTime,f0=118*(0.9+Math.random()*0.2),out=AC.createGain();out.gain.value=0.85;out.connect(AC.destination);
+    const src=AC.createOscillator();src.type='sawtooth';src.frequency.setValueAtTime(f0*1.12,t);src.frequency.exponentialRampToValueAtTime(f0*0.8,t+0.34);
+    const lfo=AC.createOscillator(),lg=AC.createGain();lfo.frequency.value=22;lg.gain.value=3;lfo.connect(lg);lg.connect(src.frequency);   /* a rough, strained voice */
+    const env=AC.createGain();env.gain.setValueAtTime(0,t);env.gain.linearRampToValueAtTime(0.55,t+0.03);env.gain.setValueAtTime(0.5,t+0.17);env.gain.linearRampToValueAtTime(0.32,t+0.2);env.gain.exponentialRampToValueAtTime(0.001,t+0.36);
+    const mk=(f,q,g)=>{const b=AC.createBiquadFilter();b.type='bandpass';b.frequency.value=f;b.Q.value=q;const k=AC.createGain();k.gain.value=g;src.connect(env);env.connect(b);b.connect(k);k.connect(out);return b;};
+    const f1=mk(560,4,1.6),f2=mk(1150,5,1.0);
+    f1.frequency.setValueAtTime(560,t);f1.frequency.linearRampToValueAtTime(520,t+0.17);f1.frequency.linearRampToValueAtTime(260,t+0.24);   /* "uh" closing to "mm" */
+    f2.frequency.setValueAtTime(1150,t);f2.frequency.linearRampToValueAtTime(1050,t+0.17);f2.frequency.linearRampToValueAtTime(420,t+0.24);
+    const nb=AC.createBuffer(1,Math.ceil(AC.sampleRate*0.06),AC.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=(Math.random()*2-1)*Math.pow(1-i/nd.length,3);
+    const ns=AC.createBufferSource();ns.buffer=nb;const nf=AC.createBiquadFilter();nf.type='bandpass';nf.frequency.value=1400;nf.Q.value=0.9;const ng=AC.createGain();ng.gain.value=0.5;ns.connect(nf);nf.connect(ng);ng.connect(out);   /* the "p" */
+    src.start(t);lfo.start(t);src.stop(t+0.4);lfo.stop(t+0.4);ns.start(t+0.36);}catch(e){}}
+function edgeFlash(src){painGrunt();if(!src||src.x==null||src.z==null){EDGE.fl=1;return;}
   const dx=src.x-player.pos.x,dz=src.z-player.pos.z,L=Math.hypot(dx,dz);if(L<0.5){EDGE.fl=1;return;}
   /* a faded sector on a ring round the crosshair, pointing at where the shot came from; it turns with your view and fades out */
   const b=Math.atan2(dx,dz);let h=null;for(const q of HITI)if(Math.abs(Math.atan2(Math.sin(q.b-b),Math.cos(q.b-b)))<0.2){h=q;break;}
