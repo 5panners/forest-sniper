@@ -3471,7 +3471,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=524;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=525;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5055,7 +5055,7 @@ function kfeed(kn,kt,vn,vt,head,mach){if(MPM.mute)return;
   KF.el.appendChild(d);KF.L.push({d,t:7});while(KF.L.length>5){const o=KF.L.shift();o.d.remove();}
   try{const hr=document.getElementById('hudR');KF.el.style.top=((hr?hr.getBoundingClientRect().bottom:60)+8)+'px';}catch(e){}}
 setInterval(()=>{for(let i=KF.L.length-1;i>=0;i--){const o=KF.L[i];o.t-=0.5;if(o.t<=0.6)o.d.style.opacity=0;if(o.t<=0){o.d.remove();KF.L.splice(i,1);}}},500);
-function kfDroid(q){return (droidTeam(q)===1?'Red':'Blue')+' GD01 '+(q.i<6?q.i+1:q.i-5);}
+function kfDroid(q){return (droidTeam(q)===1?'Red':'Blue')+' GD01 '+(q.i<10?q.i+1:q.i-9);}
 function kfBy(b){if(!b)return ['Player',secTeam()];const tm=b.tm||secTeam();return b.ugv?[(tm===1?'Red':'Blue')+' UGV',tm]:b.dr?[(tm===1?'Red':'Blue')+' GD01',tm]:['Player',secTeam()];}
 function secUnitDown(team){if(MPM.on)return;SECT.tk[team-1]=Math.max(0,SECT.tk[team-1]-TK_DEATH);SECT.tk[2-team]+=TK_KILL;}   // a droid or UGV is destroyed (single player)
 const SEC_CAP=35, SEC_RESPAWN=30, SEC_ARM=5, SEC_CT=30;
@@ -5195,7 +5195,7 @@ function secDrawMap(c,S,N){SEC_DEF.forEach(d=>{});const sc=N/(FE*2);
     c.textBaseline='alphabetic';c.lineWidth=3;c.strokeStyle='rgba(0,0,0,0.8)';c.font='600 10px "IBM Plex Mono", monospace';c.strokeText(d.nm,x,y+r+12);c.fillStyle='#fff';c.fillText(d.nm,x,y+r+12);});
   c.restore();}
 // your own team's GD01 bots on the map and minimap: a blue disc with a tick for the way it faces
-function droidMapMarks(c,P,k){if(typeof DRS==='undefined'||MPM.on)return;for(const q of DRS){if(!q.m||q.i<6||q.dead||!q.m.root.visible)continue;const D=q.m.D,[x,y]=P(D.x,D.z);
+function droidMapMarks(c,P,k){if(typeof DRS==='undefined'||MPM.on)return;for(const q of DRS){if(!q.m||q.i<10||q.dead||!q.m.root.visible)continue;const D=q.m.D,[x,y]=P(D.x,D.z);
   c.save();c.translate(x,y);c.lineWidth=1.6*k;c.strokeStyle='#04122a';c.fillStyle='#3d8bff';c.beginPath();c.arc(0,0,6*k,0,PI*2);c.fill();c.stroke();
   c.strokeStyle='#ffffff';c.lineWidth=2*k;c.beginPath();c.moveTo(0,0);c.lineTo(Math.sin(D.yaw)*10*k,Math.cos(D.yaw)*10*k);c.stroke();c.restore();}}
 function secDrawMini(c,p,ppm,k,th){SEC_DEF.forEach((d,i)=>{const s=SECT.s[i],col=SEC_COL[secRel(s.own)],x=(d.x-p.x)*ppm,y=(d.z-p.z)*ppm,r=d.r*ppm;
@@ -5715,7 +5715,7 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
   const tb=document.createElement('button');tb.setAttribute('role','tab');tb.id='tabCg';tb.setAttribute('aria-selected','true');tb.setAttribute('aria-controls','paneCg');tb.textContent='Create Game';tabs.insertBefore(tb,tabs.firstChild);
   const pn=document.createElement('div');pn.id='paneCg';pn.setAttribute('role','tabpanel');pn.setAttribute('aria-labelledby','tabCg');first.before(pn);
   const save=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}};
-  const MAXB=4;
+  const MAXB=10;
   const build=()=>{const on=GAME.gMode===1,ne=DR_NE(),nf=DR_NF();
     pn.innerHTML='<div class="seg"><button type="button" data-m="0" aria-pressed="'+(!on)+'"><b>Solo</b><small>You and GD01 bots, offline</small></button><button type="button" data-m="1" aria-pressed="'+on+'"><b>Online 1v1</b><small>You against a friend, set up in the Multiplayer tab</small></button></div>'
       +'<p class="sec" style="margin-top:16px">GD01 bots</p>'
@@ -5753,8 +5753,8 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
   const dim=()=>{pn.querySelectorAll('[data-u]').forEach(e=>e.classList.toggle('off',DR_NE()+DR_NF()===0));};
   const WORDS=['hi','yes','no','excited','alert','sad','curious','thanks'];
   const respawn=()=>{try{const q=DRS[sel];if(q)q.tele=true;}catch(e){}};
-  const slots=()=>{const L=[];for(let i=0;i<DR_NE();i++)L.push(i);for(let j=0;j<DR_NF();j++)L.push(6+j);return L;};
-  const nm=i=>i<6?'Red GD01 '+(i+1):'Blue GD01 '+(i-5);
+  const slots=()=>{const L=[];for(let i=0;i<DR_NE();i++)L.push(i);for(let j=0;j<DR_NF();j++)L.push(10+j);return L;};
+  const nm=i=>i<10?'Red GD01 '+(i+1):'Blue GD01 '+(i-9);
   const build=()=>{const L=slots(),n=L.length;if(!L.includes(sel))sel=L.length?L[0]:0;const c=dcGet(sel);
     pn.innerHTML='<p class="note">Developer options. Every value saves as you move it. GD01 is the one-wheeled gunner droid. How many play, and for which side, is set in the Create Game tab. Red droids spawn at the red base and work against you; blue droids spawn at your base and fight for you. Both sides take flags and shoot the other side; shoot the head for double damage. Sounds fade out with distance.</p>'
       +(n===0?'<p class="note"><b>No droids in this game.</b> Add some under Create Game.</p>':'')
@@ -6082,12 +6082,12 @@ function droidBulletVsUgv(b,d,len){
       if(q.hp<=0){droidKill(q,_kb,_kh);}else{const keep=DR;DR=q;try{if(!q.tgO)droidSay('alert');}finally{DR=keep;}}return true;}}
   return false;}
 // ---- brain
-function droidTeam(q){return q.i>=6?secTeam():3-secTeam();}   // slots 0-5 work for the red team, 6-11 for yours
+function droidTeam(q){return q.i>=10?secTeam():3-secTeam();}   // slots 0-9 work for the red team, 10-19 for yours
 function DR_TEAM(){return droidTeam(DR);}
-function DR_NE(){return Math.max(0,Math.min(4,Math.round(GAME.dCnt||0)));}
-function DR_NF(){return Math.max(0,Math.min(4,Math.round(GAME.dFr||0)));}
+function DR_NE(){return Math.max(0,Math.min(10,Math.round(GAME.dCnt||0)));}
+function DR_NF(){return Math.max(0,Math.min(10,Math.round(GAME.dFr||0)));}
 function droidBase(t){return SEC_DEF[(t||DR_TEAM())===2?6:0];}   // the enemy's home sector: the red base (west) in solo
-function droidSpot(i){const red=i<6,b=droidBase(red?3-secTeam():secTeam()),n=Math.max(1,red?DR_NE():DR_NF()),a0=(i%6)/n*PI*2+0.5;for(let k=0;k<40;k++){const a=a0+(k%2?1:-1)*Math.floor(k/2)*0.4,r=9+Math.floor(k/6)*3,x=b.x+Math.sin(a)*r,z=b.z+Math.cos(a)*r;if(!ugvBlocked(x,z))return {x,z};}return {x:b.x,z:b.z};}
+function droidSpot(i){const red=i<10,b=droidBase(red?3-secTeam():secTeam()),n=Math.max(1,red?DR_NE():DR_NF()),a0=(i%10)/n*PI*2+0.5;for(let k=0;k<40;k++){const a=a0+(k%2?1:-1)*Math.floor(k/2)*0.4,r=9+Math.floor(k/6)*3,x=b.x+Math.sin(a)*r,z=b.z+Math.cos(a)*r;if(!ugvBlocked(x,z))return {x,z};}return {x:b.x,z:b.z};}
 function droidFlag(m,blue){const fl=new THREE.Mesh(new THREE.PlaneGeometry(0.26,0.15),new THREE.MeshBasicMaterial({color:blue?0x1f5fd0:0xb00d18,side:THREE.DoubleSide}));fl.position.set(-0.3,1.74,-0.35);fl.rotation.y=PI/2;m.hull.add(fl);}   // a red pennant on the antenna
 function droidEnemies(team){const L=[];   // everything on the other side that a droid of this team may shoot
   const red=team!==secTeam();
@@ -6127,11 +6127,11 @@ function droidStepAll(){
   const nE=DR_NE(),nF=DR_NF(),n=nE+nF;
   if(!DRL.parent)scene.add(DRL);DRL.t-=dt;if(DRL.t<=0)DRL.intensity=0;
   const enR=nE>0?droidEnemies(3-secTeam()):[],enB=nF>0?droidEnemies(secTeam()):[];
-  for(let i=0;i<12;i++){const q=DRS[i]||(DRS[i]=mkDR());q.i=i;if(!(i<6?i<nE:i-6<nF)){if(q.m)q.m.root.visible=false;try{droidHBStep(q,false);}catch(e){}continue;}DR=q;droidW(q,()=>droidStep1(dt,n,i<6?enR:enB));try{droidHBStep(q,!q.dead);}catch(e){}}}
+  for(let i=0;i<20;i++){const q=DRS[i]||(DRS[i]=mkDR());q.i=i;if(!(i<10?i<nE:i-10<nF)){if(q.m)q.m.root.visible=false;try{droidHBStep(q,false);}catch(e){}continue;}DR=q;droidW(q,()=>droidStep1(dt,n,i<10?enR:enB));try{droidHBStep(q,!q.dead);}catch(e){}}}
 // everything a droid must not drive into besides trees, rocks, water and steep ground: UGVs and the other droids
 function droidDyn(self){DR_DYN=[];for(const u of UGVS)if(!u.gone)DR_DYN.push({x:u.x,z:u.z,r:2.8});for(const q of DRS)if(q!==self&&q.m&&q.m.root.visible)DR_DYN.push({x:q.m.D.x,z:q.m.D.z,r:2.2});}
 function droidStep1(dt,nD,enem){
-  if(!DR.m){DR.m=makeDroidGD(THREE,groundH,{shot:droidShot,rate:()=>Math.max(2,GAME.dRate)});scene.add(DR.m.root);droidFlag(DR.m,DR.i>=6);DR.tele=true;}
+  if(!DR.m){DR.m=makeDroidGD(THREE,groundH,{shot:droidShot,rate:()=>Math.max(2,GAME.dRate)});scene.add(DR.m.root);droidFlag(DR.m,DR.i>=10);DR.tele=true;}
   const m=DR.m,D=m.D;m.root.visible=true;droidDyn(DR);const team=DR_TEAM();
   if(DR.tele){DR.tele=false;DR.dead=false;DR.deadT=0;DR.hp=GAME.dHp;const s=droidSpot(DR.i),b=droidBase();D.x=s.x;D.z=s.z;D.yaw=Math.atan2(-b.x,-b.z);D.v=D.vT=0;D.yawRate=0;D.hJ=0;D.slR=0;D.slP=0;DR.slR=0;DR.slP=0;DR.tgO=null;DR.tgI=null;DR.path=null;DR.obj=-1;DR.stuck=0;DR.rev=0;DR.react=0;D.fire=false;m.setMood('neutral');D.colT.setHex(0xe01410);D.col.setHex(0xe01410);m.stepSim(0.016);}
   if(DR.dead){DR.deadT+=dt;D.vT=0;D.yawT=0;D.fire=false;DR.slR+=(1.35-DR.slR)*Math.min(1,dt*2.5);D.slR=DR.slR;D.slP=0;D.vis=true;m.stepSim(dt);
