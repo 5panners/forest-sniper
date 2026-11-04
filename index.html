@@ -3459,7 +3459,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=503;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=504;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3775,6 +3775,7 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
 (function(){
   const tabs=document.querySelector('.tabs'),paneMp=document.getElementById('paneMp');if(!tabs||!paneMp)return;
   const css=document.createElement('style');css.textContent=`
+#paneDmg .wsub{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}#paneDmg .wsub button{font:inherit;font-size:12px;padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:inherit;cursor:pointer}#paneDmg .wsub button[aria-selected=true]{background:rgba(227,163,59,.25);border-color:#e3a33b}
 #paneDmg .wgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;margin:10px 0 6px}
 #paneDmg .wc{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:12px;padding:14px 16px 12px;display:flex;flex-direction:column;gap:10px}
 #paneDmg .wc.wide{grid-column:1/-1}
@@ -3830,6 +3831,11 @@ ${sp([['Rocket speed',GAME.at4Spd+' m/s'],['Blast radius',GAME.at4R+' m'],['Pers
 <h4>Rocket and blast</h4>${sl('at4Spd','Rocket speed (m/s)',60,300,10,0)}${sl('at4R','Blast radius (m)',2,15,0.5,1)}${sl('at4Drop','Rocket drop (1 = full gravity)',0,1,0.05,2)}${sl('at4Reload','Reload time (s)',0.5,8,0.5,1)}
 <h4>Damage</h4>${sl('at4Dmg','Person at the centre (hp)',20,300,10,0)}${sl('at4Ugv','UGV, direct hit (hp)',100,1500,20,0)}
 <p class="tn">Holding the right mouse button aims and zooms the view by 25%. Damage falls off to nothing at the blast radius, and you can hurt yourself. Deer within 80% of the radius die. The launcher is a rare pink pickup; rounds are the pale pink glow.</p></section>
+<section class="wc"><div class="wh">${m32Icon()}<div><h3>M32 grenade launcher</h3><p>6-round revolving cylinder · 40 mm grenades · start kit, slot 3</p></div><span class="key">LMB fire · R reload · RMB sights</span></div>
+${sp([['Grenade speed',GAME.m32Spd+' m/s'],['Blast radius',GAME.m32R+' m'],['Person, centre',GAME.m32Dmg+' hp'],['UGV / GD01 / drone, direct',GAME.m32Ugv+' hp'],['Reload',GAME.m32Reload+' s'],['Cylinder','6 loaded + 12 spare']])}
+<h4>Grenade and blast</h4>${sl('m32Spd','Grenade speed (m/s)',30,150,2,0)}${sl('m32R','Blast radius (m)',1,12,0.5,1)}${sl('m32Reload','Reload time (s)',0.5,8,0.1,1)}
+<h4>Damage</h4>${sl('m32Dmg','Person at the centre (hp)',10,300,5,0)}${sl('m32Ugv','UGV, direct hit (hp)',20,1000,10,0)}
+<p class="tn">Grenades fall under full gravity, so the bore is lifted to land on the point you look at. They burst on impact with the AT4 blast code; damage falls off to nothing at the radius, you can hurt yourself, bears take double. In multiplayer your opponent sees a rifle in your hands.</p></section>
 <section class="wc"><div class="wh">${IC.radio}<div><h3>Recon drone</h3><p>Radio call-in · 6.5 m span, unarmed · marks the other player on your map</p></div><span class="key">gadget key calls in</span></div>
 ${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Height above the highest ground',GAME.uavAlt+' m'],['Speed',GAME.uavSpd+' m/s'],['Toughness',GAME.uavHp+' hp'],['Rifle hits to down it',Math.ceil(GAME.uavHp/Math.max(1,(DMG.w.rifle.k&&DMG.w.rifle.k.body)||70))]])}
 <h4>Flight</h4>${sl('uavDur','Time on station (s)',15,180,5,0)}${sl('uavR','Orbit radius (m)',100,460,10,0)}${sl('uavAlt','Height above the highest ground (m)',20,250,5,0)}${sl('uavSpd','Speed (m/s)',15,80,1,0)}
@@ -3847,6 +3853,13 @@ ${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Hei
 <tr><td>Buzzard</td><td>${num('hp.buzzard',DMG.hp.buzzard)}</td><td>rifle</td></tr>
 <tr><td>Termit UGV</td><td>${GAME.uHp}</td><td>rifle (sensors, optic, hull), AT4</td></tr></table>
 <p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Magic Mushrooms, ammo boxes, rounds, UGV</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>`;
+    {const W=pn.querySelector('.wgrid');if(W){const secs=[...W.querySelectorAll(':scope>section.wc')];const nm=['Carry slots','Bolt rifle','AR-15','AT4','M32','Recon drone','UGV'];
+      const tg=document.createElement('div');tg.className='wtg';let n=W.nextSibling;while(n){const nx=n.nextSibling;tg.appendChild(n);n=nx;}W.after(tg);
+      const panes=secs.concat([tg]);const names=secs.map((q,i)=>nm[i]||q.querySelector('h3').textContent).concat(['Targets']);
+      const bar=document.createElement('div');bar.className='wsub';let cur=Math.min(window.__wsub|0,panes.length-1);
+      const show=i=>{cur=i;window.__wsub=i;panes.forEach((q,j)=>{q.style.display=j===i?'':'none';});[...bar.children].forEach((b,j)=>b.setAttribute('aria-selected',j===i?'true':'false'));};
+      names.forEach((t,i)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.onclick=()=>show(i);bar.appendChild(b);});
+      W.before(bar);W.style.display='block';show(cur);}}
     pn.querySelectorAll('input[data-p]').forEach(i=>i.oninput=()=>{const v=parseFloat(i.value);if(!(v>=0))return;const ks=i.dataset.p.split('.');let o=DMG;for(let j=0;j<ks.length-1;j++)o=o[ks[j]];o[ks[ks.length-1]]=v;dmgSave();});
     pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;if(k==='bDrop'||k==='bV0'||k==='bDrag')balApply();if(k==='slotW'||k==='slotG')try{slotFit();}catch(e){}i.nextElementSibling.textContent=v.toFixed(+i.dataset.dp);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}});
     pn.querySelectorAll('input[data-k]').forEach(i=>i.addEventListener('change',()=>{const keep=pn.scrollTop;build();}));
