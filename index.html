@@ -3460,7 +3460,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=507;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=509;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3813,10 +3813,6 @@ function dmgSave(){try{localStorage.setItem('fsDmg',JSON.stringify(DMG));}catch(
   const build=()=>{const W=DMG.w.rifle,mag=typeof MAG!=='undefined'?MAG:5,bolt=typeof BOLT!=='undefined'?BOLT:1.35,v0=typeof V0!=='undefined'?V0:850;
     pn.innerHTML=`<p class="note">Everything about each weapon in one place. Every value saves as you change it. In a 1v1 match damage to a player comes from that player's own settings and damage to animals from the host's, so keep both players the same.</p>
 <div class="wgrid">
-<section class="wc"><div class="wh">${IC.radio}<div><h3>Carry slots</h3><p>What you can carry at once · weapons on the first keys, gadgets after</p></div><span class="key">G drop · F pick up</span></div>
-${sp([['Weapon slots',slotN('w')+' (keys 1–'+slotN('w')+')'],['Gadget slots',GAME.slotG+' (keys '+(slotN('w')+1)+(GAME.slotG>1?'–'+(slotN('w')+ +GAME.slotG):'')+')'],['Start kit','rifle, AT4, M32'],['Weapons','rifle, AR-15, AT4'],['Gadgets','radio (recon drone)']])}
-${sl('slotW','Weapon slots',3,4,1,0)}${sl('slotG','Gadget slots',1,3,1,0)}
-<p class="tn">Picking up a weapon with the weapon slots full swaps it for the one in your hands, which drops at your feet. Dropped items glow and either player can pick them up; an AT4 keeps its loaded round and a rifle the rounds in its magazine. A radio stays in its slot while its drone is up. Each round starts with the rifle only.</p></section>
 <section class="wc"><div class="wh">${IC.rifle}<div><h3>Bolt-action rifle</h3><p>7.62 mm scoped sniper rifle · your starting weapon</p></div><span class="key">LMB fire · R reload · RMB scope</span></div>
 ${sp([['Calibre','7.62 mm'],['Magazine',mag+' rounds'],['Bolt cycle',bolt+' s'],['Muzzle velocity',GAME.bV0+' m/s'],['Drop at 300 m',dropAt(300).y.toFixed(2).replace('-','')+' m'],['Drop at 600 m',dropAt(600).y.toFixed(2).replace('-','')+' m'],['Scope','2× 3× 4× (wheel)'],['Ammo','7.62 boxes']])}
 <h4>Pickups</h4>${sl('pk762','Rounds per ammo box',1,60,1,0)}
@@ -3862,7 +3858,7 @@ ${sp([['Time on station',GAME.uavDur+' s'],['Orbit radius',GAME.uavR+' m'],['Hei
 <tr><td>Buzzard</td><td>${num('hp.buzzard',DMG.hp.buzzard)}</td><td>rifle</td></tr>
 <tr><td>Termit UGV</td><td>${GAME.uHp}</td><td>rifle (sensors, optic, hull), AT4</td></tr></table>
 <p class="sec" style="margin-top:12px">Cannot be damaged</p><table class="nd"><tr><td>Trees and logs</td><td>bullets stop and leave a mark</td></tr><tr><td>Rocks, the hut, the ground, water</td><td>bullets stop or splash</td></tr><tr><td>Magic Mushrooms, ammo boxes, rounds, UGV</td><td>bullets pass over</td></tr><tr><td>Dead animals</td><td>can be butchered, not shot again</td></tr></table>`;
-    {const W=pn.querySelector('.wgrid');if(W){const secs=[...W.querySelectorAll(':scope>section.wc')];const nm=['Carry slots','Bolt rifle','AR-15','AT4','M32','Recon drone','UGV'];
+    {const W=pn.querySelector('.wgrid');if(W){const secs=[...W.querySelectorAll(':scope>section.wc')];const nm=['Bolt rifle','AR-15','AT4','M32','Recon drone','UGV'];
       const tg=document.createElement('div');tg.className='wtg';let n=W.nextSibling;while(n){const nx=n.nextSibling;tg.appendChild(n);n=nx;}W.after(tg);
       const panes=secs.concat([tg]);const names=secs.map((q,i)=>nm[i]||q.querySelector('h3').textContent).concat(['Targets']);
       const bar=document.createElement('div');bar.className='wsub';let cur=Math.min(window.__wsub|0,panes.length-1);
@@ -3948,11 +3944,15 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
     r762:['7.62 ammo box',()=>'+'+Math.max(1,GAME.pk762|0)+' rounds (rifle and AR-15)'],at4:['AT4 launcher','Loaded AT4, or +1 round if you carry one'],ar15:['AR-15','Full magazine, or its rounds as spare 7.62'],rifle:['Rifle','12 rounds, or +12 spare 7.62'],
     radio:['Radio','Gadget: calls in the recon drone'],scrap:['UGV','Gadget: deploys a Termit robot']};
   const sl=(k,label,mn,mx,st)=>`<div class="gr"><label>${label}</label><input type="range" min="${mn}" max="${mx}" step="${st}" value="${GAME[k]}" data-k="${k}"><output>${GAME[k]}</output></div>`;
+  const QTY={berries:[1,'berries','+'+(typeof FOOD!=='undefined'&&FOOD.berries||0)+' health each'],mushroom:[2,'mushrooms','1–3 per pickup · +'+GAME.stGain+'% stamina each'],at4r:[Math.max(1,GAME.pkAt4|0),'AT4 rounds',''],m32r:[Math.max(1,GAME.pkM32|0),'40 mm grenades',''],r762:[Math.max(1,GAME.pk762|0),'7.62 rounds',''],
+    at4:[1,'AT4 (1 loaded round)',''],ar15:[Math.max(1,GAME.arMag|0),'rounds in the AR-15',''],rifle:[12,'rounds in the rifle',''],radio:[1,'drone call-in',''],scrap:[1,'UGV','']};
   const build=()=>{const CP=CTRL_PTS();const near=n=>CP.some(q=>Math.hypot(n.x-q.x,n.z-q.z)<PK_R);
     const rows=RES_T.map(R=>{const L=RES_NODES.filter(n=>n.t===R.k),nn=L.filter(near).length,I=INFO[R.k]||[R.label,''];const col='#'+(GLOWC[R.k]||0xffffff).toString(16).padStart(6,'0');
-      return `<tr><td><span class="dot" style="background:${col}"></span>${I[0]}</td><td>${L.length}</td><td>${L.length?Math.round(100*nn/L.length)+'%':'–'}</td><td>${typeof I[1]==='function'?I[1]():I[1]}</td></tr>`;}).join('');
+      const Q=QTY[R.k]||[1,'',''],tot=R.k==='mushroom'?'about '+L.length*2:L.length*Q[0];
+      return `<tr><td><span class="dot" style="background:${col}"></span>${I[0]}</td><td>${L.length}</td><td>${Q[0]===1&&R.k!=='mushroom'?'1':R.k==='mushroom'?'1–3':Q[0]}</td><td>${tot} ${Q[1]}</td><td>${L.length?Math.round(100*nn/L.length)+'%':'–'}</td><td>${typeof I[1]==='function'?I[1]():I[1]}</td></tr>`;}).join('');
     pn.innerHTML='<p class="note">Everything lying on the map. Counts are what was placed this session; the placement bias applies when the map is generated.</p>'
-      +'<table><tr><th>Pickup</th><th>On map</th><th>Within '+PK_R+' m of a control point</th><th>Gives</th></tr>'+rows+'</table>'
+      +'<table><tr><th>Pickup</th><th>On map</th><th>Per pickup</th><th>Total supply</th><th>Within '+PK_R+' m of a control point</th><th>Gives</th></tr>'+rows+'</table>'
+      +'<p class="sec" style="margin-top:14px">Start kit</p><table><tr><th>Item</th><th>You start with</th></tr><tr><td>Rifle</td><td>12 in the magazine</td></tr><tr><td>AT4</td><td>1 loaded + 3 spare rounds</td></tr><tr><td>M32</td><td>6 loaded + 12 spare grenades</td></tr></table>'
       +'<p class="tn">Berries, mushrooms, ammo, AT4 and M32 rounds and radios are placed '+Math.round(PK_NEAR*100)+'% within '+PK_R+' m of a control point, the rest anywhere. Weapons lie within 100 m of each point and UGVs within 150 m. Spare weapons you drop show a glow on the ground.</p>'
       +'<p class="sec" style="margin-top:14px">Amounts</p>'+sl('pk762','7.62 rounds per ammo box',1,60,1)+sl('pkAt4','AT4 rounds per pickup',1,10,1)+sl('pkM32','M32 grenades per pickup',1,12,1);
     pn.querySelectorAll('input[type=range]').forEach(i=>i.oninput=()=>{const k=i.dataset.k,v=parseFloat(i.value);GAME[k]=v;i.nextElementSibling.textContent=v;try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}});
@@ -4394,7 +4394,7 @@ function eqStep(){try{slotStep();}catch(e){}EQB.ui();}
 var SLOT={w:[{k:'rifle'},null],g:[null,null]};
 var DROPS=[];
 const ITEM={rifle:{name:'Rifle',kind:'w',col:0xffe08a},m32:{name:'M32',kind:'w',col:0x7fd6ff},ar15:{name:'AR-15',kind:'w',col:0xff8a2a},at4:{name:'AT4',kind:'w',col:0xff2fbf},radio:{name:'Radio',kind:'g',col:0x3ad8ff},ugv:{name:'UGV',kind:'g',col:0x45e6c8}};
-function slotN(t){return t==='w'?Math.max(3,Math.min(4,Math.round(+GAME.slotW)||3)):Math.max(1,Math.min(3,Math.round(+GAME.slotG)||2));}
+function slotN(t){return 3;}   // fixed: three weapon slots (keys 1-3) and three gadget slots (keys 4-6)
 function slotHas(k){if(!SLOT)return k==='rifle';return SLOT.w.some(i=>i&&i.k===k)||SLOT.g.some(i=>i&&i.k===k);}
 function slotKeyOf(k){if(!SLOT)return '';let j=SLOT.w.findIndex(i=>i&&i.k===k);if(j>=0)return String(j+1);j=SLOT.g.findIndex(i=>i&&i.k===k&&!i.used);return j>=0?String(SLOT.w.length+j+1):'';}
 // fit the slot arrays to the counts set on the Weapons tab; anything that no longer fits drops at your feet
