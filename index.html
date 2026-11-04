@@ -97,7 +97,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 <div id="miniW"><canvas id="miniCv" width="400" height="400"></canvas><div id="miniT"></div></div>
 <div id="perf" class="chip" hidden></div>
 <div id="sndDbg" class="chip" hidden></div>
-<div id="mapPanel" hidden><div class="chip"><div id="mapWrap"><canvas id="mapCv" width="1260" height="1260"></canvas></div><p id="mapGrid" style="font:600 14px var(--f-mono);margin:6px 0 2px"></p><p>1 km playable square · grid 100 m · L weapon locations · north up · P1 / P2 spawns · click to teleport (development) · scroll to zoom · drag to pan · right-click your UGV to select it, then right-click its destination (or yourself, to make it follow you)</p></div></div>
+<div id="mapPanel" hidden><div class="chip"><div id="mapWrap"><canvas id="mapCv" width="1260" height="1260"></canvas></div><p id="mapGrid" style="font:600 14px var(--f-mono);margin:6px 0 2px"></p><p>1 km playable square · grid 100 m · L weapon locations · north up · P1 / P2 spawns · hold Alt (Option) to free the mouse · click to teleport (development) · scroll to zoom · drag to pan · right-click your UGV to select it, then right-click its destination (or yourself, to make it follow you)</p></div></div>
 <div id="overlay"><div class="card">
   <h1 aria-label="FOrest Sniper">F<svg class="scopeO" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="33" fill="none" stroke="currentColor" stroke-width="8"/><g stroke="currentColor" stroke-width="5" stroke-linecap="butt"><line x1="50" y1="0" x2="50" y2="38"/><line x1="50" y1="62" x2="50" y2="100"/><line x1="0" y1="50" x2="38" y2="50"/><line x1="62" y1="50" x2="100" y2="50"/></g><circle cx="50" cy="50" r="4" fill="#d4552e"/></svg>rest Sniper</h1>
   <div class="tabs" role="tablist">
@@ -3164,8 +3164,12 @@ function wptDist(){return Math.hypot(WPT.x-player.pos.x,WPT.z-player.pos.z);}
 function wptBrg(){return ((Math.atan2(WPT.x-player.pos.x,-(WPT.z-player.pos.z))*180/PI)+360)%360;}
 function wptPin(c,x,y,k){c.save();c.translate(x,y);c.scale(k,k);c.lineWidth=2.2;c.strokeStyle='#04202a';c.fillStyle='#35d6ff';c.beginPath();c.moveTo(0,0);c.bezierCurveTo(-9,-9,-8,-20,0,-20);c.bezierCurveTo(8,-20,9,-9,0,0);c.closePath();c.fill();c.stroke();c.fillStyle='#04202a';c.beginPath();c.arc(0,-13,3,0,PI*2);c.fill();c.restore();}
 mapCv.addEventListener('contextmenu',e=>{e.preventDefault();});   // the map no longer commands your UGV: it works by itself
+let MAPALT=false;   // hold Alt (Option) with the map open to free the mouse: click to teleport (development), drag to pan, right-click the UGV
+addEventListener('keydown',e=>{if((e.code==='AltLeft'||e.code==='AltRight')&&mapOpen&&document.pointerLockElement){e.preventDefault();MAPALT=true;try{document.exitPointerLock();}catch(err){}}});
+addEventListener('keyup',e=>{if((e.code==='AltLeft'||e.code==='AltRight')&&MAPALT){MAPALT=false;if(mapOpen&&playing&&!SPW.open&&!document.pointerLockElement)requestLock();}});
 var WPNMAP=false;try{WPNMAP=localStorage.getItem('fsWpnMap')==='1';}catch(e){}
 function drawMap(){if(!mapBase)buildMap();const W=mapCv.width,Z=MZ.k,N=MAPL*Z;
+  if(SPW.open&&document.pointerLockElement)try{document.exitPointerLock();}catch(e){}   // the spawn picker always needs the mouse
   if(document.pointerLockElement&&!SPW.open&&Z>1){const p=player.pos;MZ.x=W/2-(W/MAPL)*N*(p.x+FE)/(FE*2);MZ.y=W/2-(W/MAPL)*N*(p.z+FE)/(FE*2);mzClamp();}   // locked mouse: a zoomed map follows you   // zoom: the terrain is drawn bigger, positions use the zoomed S, but icons and text keep their size
   if(!mapBaseCv){mapBaseCv=document.createElement('canvas');mapBaseCv.width=mapBaseCv.height=W;mapBaseCv.getContext('2d').putImageData(mapBase,0,0);}
   mctx.setTransform(1,0,0,1,0,0);mctx.imageSmoothingEnabled=true;mctx.fillStyle='#0b0f10';mctx.fillRect(0,0,W,W);mctx.drawImage(mapBaseCv,MZ.x,MZ.y,W*Z,W*Z);mctx.setTransform(W/MAPL,0,0,W/MAPL,MZ.x,MZ.y);const S=v=>(v+FE)/(FE*2)*N;
@@ -3467,7 +3471,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=521;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=522;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
