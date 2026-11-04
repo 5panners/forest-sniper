@@ -2983,6 +2983,7 @@ const _cp=V(0,0,0),_dir=V(0,0,0),_eye=V(0,0,0),_rt=V(0,0,0), camRay=new THREE.Ra
 let breath=6, breathLock=0, swayT=0, range=null, rangeT=0;
 let camBoom=3;
 const DEVFACE={on:false};
+let SCOPE_TP=false;
 let aimYawV=null,aimPitchV=null,aimPtTP=null,_wasScoped=false;const SAL={on:false,t:0,yaw:0,pit:0,p0:new THREE.Vector3()};
 function gunYaw(){return aimYawV!=null?aimYawV:camYaw;}
 function gunPitch(){return aimPitchV!=null?aimPitchV:camPitch;}
@@ -3038,7 +3039,9 @@ function updateCamera(dt){
     const ox=pl.pos.x,oy=pl.pos.y+(pl.stance==='prone'?0.35:pl.stance==='crouch'?1.0:1.4),oz=pl.pos.z;
     aimPtTP=(aimPtTP||V(0,0,0)).copy(ap);const dx=ap.x-ox,dy=ap.y-oy,dz=ap.z-oz,hz=Math.hypot(dx,dz);
     if(hz>4){aimYawV=camYaw+clamp(wrapA(Math.atan2(dx,dz)-camYaw),-0.35,0.35);aimPitchV=camPitch+clamp(Math.atan2(dy,hz)-camPitch,-0.35,0.35);}}
-  if(viewFP)aimPtTP=null;_wasScoped=scoped;
+  if(viewFP)aimPtTP=null;
+  if(scoped&&!viewFP){SCOPE_TP=true;viewFP=true;}else if(!scoped&&_wasScoped&&SCOPE_TP){SCOPE_TP=false;viewFP=false;}   // scoping from the third-person view switches to first person, and unscoping goes back
+  _wasScoped=scoped;
   // dev: H flips the third-person camera round to the front of the player (looking back at him); aiming and controls are unchanged
   if(DEVFACE.on&&!scoped&&!viewFP){camera.position.copy(camPivot).addScaledVector(_dir,Math.max(camBoom,2.2));const gg=groundH(camera.position.x,camera.position.z)+0.25;if(camera.position.y<gg)camera.position.y=gg;
     camera.lookAt(camPivot);camera.updateMatrixWorld();marine.visible=true;J.head.visible=true;}
@@ -3408,7 +3411,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=500;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=501;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
