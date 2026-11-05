@@ -3335,7 +3335,6 @@ addEventListener('keydown',e=>{
     case 'Space': if(busy)break; if(chuteKey())break; if(pl.slide){endSlide();if(pl.stance==='stand'&&pl.grounded){pl.vel.y=5.6*(BOOST.on?(GAME.bJump||1.4):1);pl.grounded=false;}break;} if(pl.stance==='prone'){if(canFit(HEIGHT.stand))startAction('proneUp');else toast('No headroom');}else if(pl.grounded){if(pl.stance==='crouch'){if(!canFit(HEIGHT.stand))break;pl.stance='stand';}pl.vel.y=5.6*(BOOST.on?(GAME.bJump||1.4):1);pl.grounded=false;} break;
     case 'KeyR': if(WPN.cur==='at4')at4Reload();else if(WPN.cur==='m32')m32Reload();else if(WPN.cur==='rifle'||WPN.cur==='ar15')startReload(); break;
     case 'KeyT': if(busy||pl.stance!=='stand'||!pl.grounded)break; startAction('salute'); break;
-    case 'KeyK': if(busy)break; if(pl.stance!=='stand'){pl.stance='stand';snapLayer('idle');} pl.alive=false; startAction('death'); break;
   }
 });
 addEventListener('keyup',e=>{keys[e.code]=false;});
@@ -3566,7 +3565,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=572;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=573;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
