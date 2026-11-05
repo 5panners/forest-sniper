@@ -1469,23 +1469,29 @@ let TF_STICKS=0;const _zm=new THREE.Matrix4().makeScale(0,0,0),_tfc=new THREE.Co
 function removeLos(o){if(!o)return;const c=LGRID.get(pkey(Math.floor(o.x/PCELL),Math.floor(o.z/PCELL)));if(c){const i=c.list.indexOf(o);if(i>=0)c.list.splice(i,1);}}
 function _tfPose(o,T){o.position.set(T.x,T.y,T.z);o.rotation.set(T.it[7],T.it[5],T.it[7]*0.7);o.scale.set(T.sc,T.sy,T.sc);}
 function treeFinish(S){const T=S.T;if(!T)return;S.root.visible=false;S.T=null;const m=new THREE.Mesh(TF_STK,TF_CHAR);_tfPose(m,T);m.castShadow=true;m.receiveShadow=true;scene.add(m);TF_STICKS++;removeLos(T.los);}
+/* online matches: both games must burn the same trees at about the same time. The shooter alone decides which trees a round ignites and sends one small 'tf' message (the impact point); the spread afterwards is worked out from the trees' positions alone (no random numbers), so nothing else is sent. The host's burn rules (below) travel in its presence, so both players run the same rules. */
+const TFSYNC=['tfOn','tfDur','tfReach','tfMax','tfSim','tfChain','tfChainDist','tfChainMax','tfChainDelay','tfSpread'];
+function tfv(k){try{if(MPM.on&&NT.role==='g'&&NT.opp){const c=NT.opp.presence&&NT.opp.presence.tf;if(Array.isArray(c)){const i=TFSYNC.indexOf(k);if(i>=0&&isFinite(c[i]))return +c[i];}}}catch(e){}return GAME[k];}
+function tfPub(){try{if(NT.room&&NT.role==='h')NT.room.presence({tf:TFSYNC.map(k=>+GAME[k])}).catch(()=>{});}catch(e){}}
+function treeBlastNet(p,r){if(MPM.on&&r&&r.mine===false)return;   // the opponent's rounds wait for their message
+  const q=V(nr1(p.x),nr1(p.y),nr1(p.z));treeBurnAt(q);try{if(MPM.on&&NT.room&&r&&r.mine)NT.room.emit('tf',{p:[q.x,q.y,q.z]}).catch(()=>{});}catch(e){}}
 const TF_PEND=[];let TF_CLK=0;   // trees the fire is about to jump to: {T, g (the blast's group: n lit so far, max), from, at}
 function treeIgnite(T,g,chain){if(T.dead)return false;
-  const _pool=TFS.slice(0,Math.max(1,Math.min(8,GAME.tfSim|0)));let S=_pool.find(q=>!q.T);if(!S){if(chain)return false;S=_pool.reduce((a,b)=>a.t>b.t?a:b);treeFinish(S);}   // a jump waits for a free fire slot; a direct hit takes over the oldest
-  T.dead=1;T.pend=0;const mh=T.c.mh&&T.c.mh[T.t];if(mh)for(const m of mh)if(m){m.setMatrixAt(T.i,_zm);m.instanceMatrix.needsUpdate=true;}
+  const _pool=TFS.slice(0,Math.max(1,Math.min(8,tfv('tfSim')|0)));let S=_pool.find(q=>!q.T);if(!S){if(chain)return false;S=_pool.reduce((a,b)=>a.t>b.t?a:b);treeFinish(S);}   // a jump waits for a free fire slot; a direct hit takes over the oldest
+  T.dead=1;T.pend=0;try{window.__tfLog.push([Math.round(T.x*10),Math.round(T.z*10),Math.round(TF_CLK*20)]);}catch(e){}const mh=T.c.mh&&T.c.mh[T.t];if(mh)for(const m of mh)if(m){m.setMatrixAt(T.i,_zm);m.instanceMatrix.needsUpdate=true;}
   S.T=T;S.t=0;S.acc=0;S.sm=0;S.sp=0;_tfPose(S.root,T);S.root.visible=true;const A=T.t==='spruceA';S.cA.visible=A;S.cB.visible=!A;
   const cr=A?S.cA:S.cB;cr.scale.set(1,1,1);S.cr=cr;for(const m of [S.tr,cr]){m.material.color.copy(T.it[6]);m.material.emissiveIntensity=0;}
   // the fire will jump to conifers within reach, a while from now, until the blast has lit its maximum number of trees
-  if(g&&GAME.tfChain){const D=Math.max(1,GAME.tfChainDist),dl=Math.max(1,GAME.tfChainDelay);for(const U of CON){if(U.dead||U.pend)continue;const dx=U.x-T.x,dz=U.z-T.z;if(Math.abs(dx)>D||Math.abs(dz)>D)continue;const d=Math.hypot(dx,dz);if(d>D)continue;
-      U.pend=1;TF_PEND.push({T:U,g,from:T,at:TF_CLK+dl*(0.5+Math.random()*0.9)*(0.5+0.5*d/D)});}}
+  if(g&&tfv('tfChain')){const D=Math.max(1,tfv('tfChainDist')),dl=Math.max(1,tfv('tfChainDelay'));for(const U of CON){if(U.dead||U.pend)continue;const dx=U.x-T.x,dz=U.z-T.z;if(Math.abs(dx)>D||Math.abs(dz)>D)continue;const d=Math.hypot(dx,dz);if(d>D)continue;
+      U.pend=1;TF_PEND.push({T:U,g,from:T,at:TF_CLK+dl*(0.5+hsh(U.x*12.9+T.x*0.7,U.z*7.3+T.z*1.1)*0.9)*(0.5+0.5*d/D)});}}
   return true;}
 function treeSpreadStep(dt){TF_CLK+=dt;for(let i=TF_PEND.length-1;i>=0;i--){const q=TF_PEND[i];if(q.T.dead||q.g.n>=q.g.max||!TFS.some(S=>S.T===q.from)){if(!q.T.dead)q.T.pend=0;TF_PEND.splice(i,1);continue;}   // dropped when the tree is already alight, the blast is at its maximum, or the source fire has burnt out
     if(TF_CLK<q.at)continue;if(treeIgnite(q.T,q.g,true)){q.g.n++;TF_PEND.splice(i,1);}else q.at=TF_CLK+2;}}
-function treeBurnAt(p){if(!GAME.tfOn)return;const hit=[];for(const T of CON){if(T.dead)continue;const dx=T.x-p.x,dz=T.z-p.z,r=3.4*T.sc+GAME.tfReach,d2=dx*dx+dz*dz;if(d2>r*r||p.y>T.y+24*T.sy)continue;hit.push([d2,T]);}
-  hit.sort((a,b)=>a[0]-b[0]);const g={n:0,max:Math.max(1,GAME.tfChainMax|0)};for(let i=0;i<Math.min(GAME.tfMax|0,hit.length);i++)if(treeIgnite(hit[i][1],g))g.n++;}
-function treeFireStep(dt){try{treeSpreadStep(dt);}catch(e){}let act=null;for(const S of TFS){const T=S.T;if(!T)continue;(act||(act=[])).push(S);S.t+=dt;const t=S.t,DUR=Math.max(5,GAME.tfDur),tn=t*60/DUR;
+function treeBurnAt(p){if(!tfv('tfOn'))return;const hit=[];for(const T of CON){if(T.dead)continue;const dx=T.x-p.x,dz=T.z-p.z,r=3.4*T.sc+tfv('tfReach'),d2=dx*dx+dz*dz;if(d2>r*r||p.y>T.y+24*T.sy)continue;hit.push([d2,T]);}
+  hit.sort((a,b)=>a[0]-b[0]);const g={n:0,max:Math.max(1,tfv('tfChainMax')|0)};for(let i=0;i<Math.min(tfv('tfMax')|0,hit.length);i++)if(treeIgnite(hit[i][1],g))g.n++;}
+function treeFireStep(dt){try{treeSpreadStep(dt);}catch(e){}let act=null;for(const S of TFS){const T=S.T;if(!T)continue;(act||(act=[])).push(S);S.t+=dt;const t=S.t,DUR=Math.max(5,tfv('tfDur')),tn=t*60/DUR;
     if(t>=DUR){treeFinish(S);continue;}
-    const SP=Math.min(Math.max(0,GAME.tfSpread),DUR*0.8),SPn=SP*60/DUR,p=SP>0?Math.min(1,t/SP):1;   // p: how far up the tree the fire has climbed (0 = a small fire on the ground, 1 = the whole tree)
+    const SP=Math.min(Math.max(0,tfv('tfSpread')),DUR*0.8),SPn=SP*60/DUR,p=SP>0?Math.min(1,t/SP):1;   // p: how far up the tree the fire has climbed (0 = a small fire on the ground, 1 = the whole tree)
     const ramp=Math.min(1,t/3),fade=tn>48?Math.max(0,(60-tn)/12):1,fire=ramp*fade,k=Math.min(1,Math.max(0,tn-0.3*SPn)/26),pc=Math.min(1,Math.max(0,(p-0.3)/0.7));
     const cr=S.cr;_tfc.setRGB(0.1,0.085,0.075);cr.material.color.copy(T.it[6]).lerp(_tfc,k);S.tr.material.color.copy(T.it[6]).lerp(_tfc,Math.min(1,k*1.2));
     const fl=0.75+0.25*Math.sin(t*23+T.x)+0.15*Math.random();cr.material.emissiveIntensity=1.1*fire*fl*GAME.tfFlame*(1-0.5*k)*pc;S.tr.material.emissiveIntensity=0.5*fire*fl*GAME.tfFlame*Math.min(1,0.25+p);
@@ -1500,7 +1506,7 @@ function treeFireStep(dt){try{treeSpreadStep(dt);}catch(e){}let act=null;for(con
         emit(gSpark,TF_SPK,_pv,V((Math.random()-0.3)*3.2,2.5+Math.random()*4.5,(Math.random()-0.5)*3.2),1.2+Math.random()*1.6,{s:2.4,grav:1.2,drag:0.25});}}}
   TF_LIGHTS.forEach(l=>l.intensity=0);if(act)act=act.filter(q=>q.T);if(!(act&&act.length)){try{treeFireSound(null);}catch(e){}}if(act&&act.length){act.sort((a,b)=>a.root.position.distanceToSquared(camera.position)-b.root.position.distanceToSquared(camera.position));
     try{treeFireSound(act);}catch(e){}
-    for(let i=0;i<Math.min(2,act.length);i++){const S=act[i],t=S.t,DUR=Math.max(5,GAME.tfDur),tn2=t*60/DUR,SP=Math.min(Math.max(0,GAME.tfSpread),DUR*0.8),p=SP>0?Math.min(1,t/SP):1,fire=Math.min(1,t/3)*(tn2>48?Math.max(0,(60-tn2)/12):1),l=TF_LIGHTS[i];l.position.set(S.T.x,S.T.y+(1.5+8.5*p)*S.T.sy,S.T.z);l.intensity=PL_K*0.02*3.2*400*GAME.tfLight*fire*(0.3+0.7*p)*(0.8+0.25*Math.sin(t*17+i)+0.1*Math.random());}}}
+    for(let i=0;i<Math.min(2,act.length);i++){const S=act[i],t=S.t,DUR=Math.max(5,tfv('tfDur')),tn2=t*60/DUR,SP=Math.min(Math.max(0,tfv('tfSpread')),DUR*0.8),p=SP>0?Math.min(1,t/SP):1,fire=Math.min(1,t/3)*(tn2>48?Math.max(0,(60-tn2)/12):1),l=TF_LIGHTS[i];l.position.set(S.T.x,S.T.y+(1.5+8.5*p)*S.T.sy,S.T.z);l.intensity=PL_K*0.02*3.2*400*GAME.tfLight*fire*(0.3+0.7*p)*(0.8+0.25*Math.sin(t*17+i)+0.1*Math.random());}}}
 
 /* the fire's own recorded crackle loop (from the ring-of-fire build): one looping 3D voice for each of the two nearest burning trees */
 const TFV=[null,null];
@@ -1508,10 +1514,10 @@ function treeFireSound(act){if(!AC||!soundOn)return;
   for(let i=0;i<2;i++){const S=act&&act[i]&&act[i].T?act[i]:null;let v=TFV[i];
     if(!v){if(!SND.fr||!S)continue;const o=AC.createGain();o.gain.value=0;const pn=AC.createPanner();pn.panningModel='HRTF';pn.distanceModel='linear';pn.refDistance=6;pn.maxDistance=110;pn.rolloffFactor=1;o.connect(pn);pn.connect(AC.destination);
       const src=AC.createBufferSource();src.buffer=SND.fr;src.loop=true;const dr=AC.createGain();dr.gain.value=2.2;const ws=AC.createWaveShaper(),cv=new Float32Array(2049);for(let k=0;k<2049;k++){const x=k/1024-1;cv[k]=Math.tanh(2.2*x)/Math.tanh(2.2);}ws.curve=cv;src.connect(dr);dr.connect(ws);ws.connect(o);src.start(0,Math.random()*SND.fr.duration);v=TFV[i]={o,pn};}
-    let lvl=0;if(S){const T=S.T,t=S.t,DUR=Math.max(5,GAME.tfDur),tn=t*60/DUR,SP=Math.min(Math.max(0,GAME.tfSpread),DUR*0.8),p=SP>0?Math.min(1,t/SP):1,fire=Math.min(1,t/3)*(tn>48?Math.max(0,(60-tn)/12):1);lvl=GAME.tfVol*0.9*fire*(0.25+0.75*p);
+    let lvl=0;if(S){const T=S.T,t=S.t,DUR=Math.max(5,tfv('tfDur')),tn=t*60/DUR,SP=Math.min(Math.max(0,tfv('tfSpread')),DUR*0.8),p=SP>0?Math.min(1,t/SP):1,fire=Math.min(1,t/3)*(tn>48?Math.max(0,(60-tn)/12):1);lvl=GAME.tfVol*0.9*fire*(0.25+0.75*p);
       const x=T.x,y=T.y+(1.5+8*p)*T.sy,z=T.z;if(v.pn.positionX){v.pn.positionX.value=x;v.pn.positionY.value=y;v.pn.positionZ.value=z;}else v.pn.setPosition(x,y,z);}
     v.o.gain.setTargetAtTime(lvl,AC.currentTime,0.3);}}
-window.__tfSnd=()=>({ac:!!AC,on:soundOn,fr:!!SND.fr,dur:SND.fr&&SND.fr.duration,v:TFV.map(v=>v?v.o.gain.value:null)});window.__conList=()=>CON.filter(t=>!t.dead).map(t=>[t.x,t.z,t.y]);window.__partStep=dt=>stepParts(dt);window.__clrParts=()=>{for(const q of parts)relP(q.m);parts.length=0;};window.__tfReset=()=>{TF_PEND.length=0;for(const t of CON)t.pend=0;for(const S of TFS){if(S.T){S.T.dead=0;S.root.visible=false;S.T=null;}}};window.__tfStep=dt=>treeFireStep(dt);window.__tfPos=()=>{const S=TFS.find(q=>q.T);return S?[S.T.x,S.T.y,S.T.z]:null;};window.__treeBurn=(x,z,y)=>treeBurnAt(V(x,y==null?groundH(x,z)+0.5:y,z));window.__treeInfo=()=>({burning:TFS.filter(q=>q.T).length,sticks:TF_STICKS,con:CON.length,lit:TF_LIGHTS.map(l=>l.intensity)});
+window.__tfSnd=()=>({ac:!!AC,on:soundOn,fr:!!SND.fr,dur:SND.fr&&SND.fr.duration,v:TFV.map(v=>v?v.o.gain.value:null)});window.__blast=(x,y,z)=>at4Blast(V(x,y,z),{mine:true});window.__conList=()=>CON.filter(t=>!t.dead).map(t=>[t.x,t.z,t.y]);window.__partStep=dt=>stepParts(dt);window.__clrParts=()=>{for(const q of parts)relP(q.m);parts.length=0;};window.__tfLog=[];window.__tfReset=()=>{TF_PEND.length=0;TF_CLK=0;for(const t of CON){t.pend=0;t.dead=0;}for(const S of TFS){if(S.T){S.T.dead=0;S.root.visible=false;S.T=null;}}};window.__tfStep=dt=>treeFireStep(dt);window.__tfPos=()=>{const S=TFS.find(q=>q.T);return S?[S.T.x,S.T.y,S.T.z]:null;};window.__treeBurn=(x,z,y)=>treeBurnAt(V(x,y==null?groundH(x,z)+0.5:y,z));window.__treeInfo=()=>({burning:TFS.filter(q=>q.T).length,sticks:TF_STICKS,con:CON.length,lit:TF_LIGHTS.map(l=>l.intensity)});
 
 
 /* ---------------- rocks, fallen logs, structures ---------------- */
@@ -2287,7 +2293,7 @@ function at4Step(dt){
     r.sm-=dt;if(r.sm<=0){r.sm=r.g40?0.07:0.025;emit(gPuff,matSmoke,r.p.clone().addScaledVector(r.v,-0.004),rv(0.4),1.6,{s:0.1,grow:1.4,drag:1.5});}}}
 // ---- the burst: fire ball, smoke, a ground shock; damage falls off to nothing at the blast radius
 function at4Blast(p,r){
-  BL.t=0;BLL.position.copy(p).y+=1.2;try{treeBurnAt(p);}catch(e){}
+  BL.t=0;BLL.position.copy(p).y+=1.2;try{treeBlastNet(p,r);}catch(e){}
   emit(gFire,matFire,p,V(0,1,0),0.45,{s:0.7,grow:5});emit(gFire,matFire,p,V(0,2,0),0.3,{s:0.4,grow:3.5});
   for(let i=0;i<16;i++){const a=Math.random()*PI*2;emit(gPuff,i%3?matSmoke:matDust,p,V(Math.cos(a)*4,1.5+Math.random()*4.5,Math.sin(a)*4),2.2,{s:0.35,grow:1.6,drag:1.6});}
   for(let i=0;i<10;i++)emit(gSpark,matFire,p,rv(14).add(V(0,5,0)),0.5,{s:1.2,grav:9});
@@ -3542,7 +3548,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=560;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=561;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4007,7 +4013,7 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
   const R=[['tfOn','Trees catch fire (1 = on, 0 = off)',0,1,1,0],['tfDur','Burn time (seconds)',10,300,5,0],['tfReach','Ignition reach beyond the crown (m)',0,10,0.5,1],['tfMax','Trees lit per blast',1,8,1,0],['tfSim','Trees burning at once',1,8,1,0],['tfChain','Fire spreads to nearby trees (1 = on, 0 = off)',0,1,1,0],['tfChainDist','Spread distance (m)',2,25,1,0],['tfChainMax','Most trees one blast can burn in total',1,30,1,0],['tfChainDelay','Time before it jumps to a neighbour (seconds)',3,120,1,0],['tfSpread','Fire climbs the tree over (seconds, 0 = whole tree at once)',0,120,5,0],['tfFlame','Flames',0,3,0.1,1],['tfSparks','Sparks (0 = none)',0,3,0.1,1],['tfSmoke','Smoke',0,3,0.1,1],['tfLight','Firelight',0,3,0.1,1]];
   const h=document.createElement('p');h.className='sec';h.style.marginTop='14px';h.textContent='Burning trees (AT4 and M32 rounds under a conifer)';pe.insertBefore(h,note||null);
   for(const [k,l,mn,mx,st,dp] of R){const lb=document.createElement('label');lb.className='rng';lb.innerHTML='<span>'+l+'</span><input type="range" min="'+mn+'" max="'+mx+'" step="'+st+'"><output></output>';const i=lb.querySelector('input'),o=lb.querySelector('output');i.value=GAME[k];o.textContent=(+GAME[k]).toFixed(dp);
-    i.oninput=()=>{const v=parseFloat(i.value);GAME[k]=v;o.textContent=v.toFixed(dp);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}};pe.insertBefore(lb,note||null);}})();
+    i.oninput=()=>{const v=parseFloat(i.value);GAME[k]=v;o.textContent=v.toFixed(dp);try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}if(TFSYNC.includes(k))tfPub();};pe.insertBefore(lb,note||null);}})();
 // ---- Predators tab: bears now (map count, pace, attacks), wolves later
 (function(){
   const tabs=document.querySelector('.tabs'),gamePn=document.getElementById('paneGame');if(!tabs||!gamePn)return;
@@ -6521,7 +6527,7 @@ function mpAttach(room,kind,role,code,why){
   Object.assign(NT,{room,kind,code,role,opp:null,oppSeen:0,wasOpp:false,myR:0,rosterV:-1,rost:null,M:{ph:'wait',r:0,sc:[0,0],left:0,lw:''}});
   NT.pend.clear();NT.seen.clear();RPS.buf=[];RPS.off=null;RPS.lastT=0;RPS.vis=false;RPS.al=false;
   MPM.on=true;MPM.guest=role==='g';MPM.hp=GAME.pHpStart;player.reserve=SPARE;
-  room.presence({v:NET_V,role,nm:myName()}).catch(()=>{});
+  room.presence({v:NET_V,role,nm:myName(),tf:role==='h'?TFSYNC.map(k=>+GAME[k]):undefined}).catch(()=>{});
   ['shot','hit','ack','wild','need','roster','dhit','bhit','brhit','take','carve','silo','bmaul','ugvf','uhit','at4','uav','drop','dtake','pug'].forEach(t=>room.on(t,m=>{if(m.sameTab||NT.room!==room)return;try{onMsg(t,m.data||{},m);}catch(e){console.warn('net',t,e);}},()=>{}));
   if(MPM.guest)clearWildlife();
   setLooks(MPM.guest);
@@ -6626,6 +6632,7 @@ function onMsg(t,d,m){
   else if(t==='silo'){try{if(d.ab){siloAbort();}else if(!MPM.guest&&MPM.on&&NT.M.ph==='live'){const tm=3-secHostTeam();if(secArmed(tm)){SECT.launch=tm;siloLaunch(false);}else NT.room.emit('silo',{ab:1}).catch(()=>{});}else siloLaunch(false);}catch(e){}}
   else if(t==='uav'){try{uavNet(d);}catch(e){}}
   else if(t==='drop'||t==='dtake'){try{dropNet(t,d);}catch(e){}}
+  else if(t==='tf'){if(!Array.isArray(d.p))return;const p=V(+d.p[0],+d.p[1],+d.p[2]);if(!isFinite(p.x+p.y+p.z))return;try{treeBurnAt(p);}catch(e){}}
   else if(t==='at4'){if(!Array.isArray(d.o)||!Array.isArray(d.v))return;const o=V(+d.o[0],+d.o[1],+d.o[2]),v=V(+d.v[0],+d.v[1],+d.v[2]);if(!isFinite(o.x+o.y+o.z+v.x)||v.lengthSq()<0.5)return;try{if(d.g)m32Spawn(o,v,false);else at4Spawn(o,v,false);}catch(e){}}
   else if(t==='pug'){try{ugvNetCmd(d);}catch(e){}}
   else if(t==='ugvf'){if(MPM.guest)try{ugvNetFire(d);}catch(e){}}
