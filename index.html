@@ -3565,7 +3565,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=576;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=577;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5386,7 +5386,7 @@ function spwFrame(dt){const dead=playing&&(!player.alive||MPM.hp<=0);
   else{if(SPW.open){SPW.open=false;if(mapOpen)setMap(false);}SPW.t=0;if(!dead)SPW.solo=false;}}
 function secRespawn(){const sp=secSpawnFor(secTeam());secPlace(sp.x,sp.z);toast('Respawned at '+SEC_DEF[sp.i].n);}
 function secNotify(){const prev=SECT.prevOwn;if(!prev){SECT.prevOwn=SECT.s.map(s=>s.own);return;}
-  SECT.s.forEach((s,i)=>{if(prev[i]!==s.own){const rel=secRel(s.own);if(rel===1){try{SB.caps++;}catch(e){}toast(SEC_DEF[i].n+' captured');try{playCaptured();}catch(e){}}
+  SECT.s.forEach((s,i)=>{if(prev[i]!==s.own){const rel=secRel(s.own);if(rel===1){try{SB.caps++;const d=SEC_DEF[i];if(player.alive&&Math.hypot(player.pos.x-d.x,player.pos.z-d.z)<d.r+6){SB.mine++;sbPulse('pf');}}catch(e){}toast(SEC_DEF[i].n+' captured');try{playCaptured();}catch(e){}}
       else if(rel===2){toast(SEC_DEF[i].n+' lost');try{playLost();}catch(e){}}
       prev[i]=s.own;}});}
 // every client, every frame
@@ -5431,12 +5431,12 @@ function secFrame(dt){
   else{SECT.deadT=-1;SECT.rsp=-1;if(MPM.on)SECT.dh=SECT.dg=1;}
   secWorldStep(dt);}
 // ================= scoreboard: kills / deaths on screen, hold K for the table, a results screen when a round ends =================
-const SB={rows:{},t:0,caps:0,dead:0,oDead:0,was:false,lastR:-1,hold:false,html:'',draw:0,pulse:0};
+const SB={rows:{},t:0,caps:0,mine:0,dead:0,oDead:0,was:false,lastR:-1,hold:false,html:'',draw:0,pulse:0};
 function sbMe(){const r=SB.rows['#me']||(SB.rows['#me']={k:0,d:0,hs:0,me:1});r.name=myName()||'You';return r;}
 function sbOpp(){const r=SB.rows['#opp']||(SB.rows['#opp']={k:0,d:0,hs:0,opp:1});r.name=oppName();return r;}
 function sbRowFor(name,team){if(name==='Player')return sbMe();if(name==='Opponent')return sbOpp();const r=SB.rows[name]||(SB.rows[name]={name,team:team||0,k:0,d:0,hs:0,bot:1});if(team)r.team=team;return r;}
-function sbReset(){SB.rows={};SB.t=0;SB.caps=0;SB.dead=0;SB.oDead=0;SB.html='';sbPillDraw(true);}
-function sbPulse(c){const p=SB.pill;if(!p)return;p.classList.remove('pk','pd');void p.offsetWidth;p.classList.add(c);}
+function sbReset(){SB.rows={};SB.t=0;SB.caps=0;SB.mine=0;SB.dead=0;SB.oDead=0;SB.html='';sbPillDraw(true);}
+function sbPulse(c){const p=SB.pill;if(!p)return;p.classList.remove('pk','pd','pf');void p.offsetWidth;p.classList.add(c);}
 function sbKill(kn,kt,vn,vt,head){if(MPM.on||soloOver())return;const k=sbRowFor(kn,kt);k.k++;if(head)k.hs++;const v=sbRowFor(vn,vt);if(vn!=='Player')v.d++;if(kn==='Player')sbPulse('pk');}
 function sbDroidName(o,tm){let best=null,bd=16;if(o)for(const q of DRS){if(!q.m||q.dead||droidTeam(q)!==tm)continue;const D=q.m.D,dx=D.x-o.x,dz=D.z-o.z,d=dx*dx+dz*dz;if(d<bd){bd=d;best=q;}}return best?kfDroid(best):(tm===1?'Red':'Blue')+' GD01';}
 function sbRows(){const me=sbMe();if(MPM.on)sbOpp();
@@ -5447,13 +5447,15 @@ const sbEsc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;
 const sbKD=(k,d)=>d?(k/d).toFixed(2):k.toFixed(2);
 const sbTime=s=>{s=Math.max(0,Math.floor(s));return (s/60|0)+':'+String(s%60).padStart(2,'0');};
 const SB_SKULL='<svg viewBox="0 0 16 16" width="15" height="15"><path fill="currentColor" fill-rule="evenodd" d="M8 1.2c-3.4 0-5.7 2.2-5.7 5.1 0 1.7.8 3 2.1 3.8V13h2v-1.3h1.2V13h2v-1.3h.6V13H12V10.1c1.3-.8 2.1-2.100 2.100-3.800C14.100 3.400 11.400 1.200 8 1.200zM5.600 5.600a1.400 1.400 0 100 2.800 1.400 1.400 0 000-2.800zm4.800 0a1.400 1.400 0 100 2.800 1.400 1.400 0 000-2.800z"/></svg>';
+const SB_FLAG='<svg viewBox="0 0 16 16" width="15" height="15"><path fill="currentColor" d="M3 1.5h1.4v13H3zM5.200 2.200c2-.9 3.300.9 5.300 0 .9-.4 1.800-.5 2.500-.2v5.600c-.8-.3-1.600-.2-2.500.2-2 .9-3.300-.9-5.300 0z"/></svg>';
 const SB_CROSS='<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="4.6"/><path d="M8 .8v3.2M8 12v3.2M.8 8H4M12 8h3.200"/><circle cx="8" cy="8" r=".9" fill="currentColor" stroke="none"/></svg>';
 (function sbBuild(){const st=document.createElement('style');st.textContent=`
 #sbPill{position:fixed;left:50%;top:calc(82px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:3;pointer-events:none;display:none;align-items:center;gap:0;font:600 13px var(--f-mono);color:var(--ink);background:linear-gradient(180deg,rgba(24,31,20,.66),rgba(10,14,8,.7));border:1px solid var(--line);border-radius:999px;padding:4px 4px;backdrop-filter:blur(6px);box-shadow:0 4px 18px rgba(0,0,0,.35);text-shadow:0 1px 2px #000}
 #sbPill span{display:flex;align-items:center;gap:6px;padding:2px 12px;position:relative}
 #sbPill span+span::before{content:"";position:absolute;left:0;top:20%;bottom:20%;width:1px;background:var(--line)}
 #sbPill b{font-weight:700;font-size:15px;min-width:10px;text-align:left}
-#sbPill .k{color:#9be36a}#sbPill .d{color:#ff8a6a}#sbPill .r{color:var(--muted);font-size:11px;letter-spacing:.1em}#sbPill .r b{color:var(--ink);font-size:13px}
+#sbPill .f{color:#e3a33b}#sbPill .k{color:#9be36a}#sbPill .d{color:#ff8a6a}#sbPill .r{color:var(--muted);font-size:11px;letter-spacing:.1em}#sbPill .r b{color:var(--ink);font-size:13px}
+#sbPill.pf{animation:sbPf .8s ease-out}@keyframes sbPf{0%{box-shadow:0 0 0 0 rgba(227,163,59,.8);transform:translateX(-50%) scale(1.16)}100%{box-shadow:0 0 0 20px rgba(227,163,59,0);transform:translateX(-50%) scale(1)}}
 #sbPill.pk{animation:sbPk .7s ease-out}#sbPill.pd{animation:sbPd .7s ease-out}
 @keyframes sbPk{0%{box-shadow:0 0 0 0 rgba(155,227,106,.7);transform:translateX(-50%) scale(1.14)}100%{box-shadow:0 0 0 18px rgba(155,227,106,0);transform:translateX(-50%) scale(1)}}
 @keyframes sbPd{0%{box-shadow:0 0 0 0 rgba(255,106,90,.7);transform:translateX(-50%) scale(1.14)}100%{box-shadow:0 0 0 18px rgba(255,106,90,0);transform:translateX(-50%) scale(1)}}
@@ -5479,21 +5481,21 @@ const SB_CROSS='<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stro
 #sbCard .rw.dead{opacity:.55}
 #sbCard .k{color:#9be36a}#sbCard .d{color:#ff8a6a}#sbCard .z{opacity:.35}
 #sbCard .bar{position:absolute;left:14px;right:14px;bottom:0;height:2px;background:rgba(238,240,228,.05)}#sbCard .bar u{display:block;height:100%;background:var(--tc);opacity:.8;border-radius:2px}
-#sbCard .ft{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 18px 0}
+#sbCard .ft{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 18px 0}
 #sbCard .tl{padding:6px 6px;text-align:center;border:1px solid var(--line);border-radius:10px;background:rgba(0,0,0,.2)}
 #sbCard .tl b{display:block;font:700 19px/1.1 var(--f-mono);color:var(--ink)}#sbCard .tl small{display:block;margin-top:3px;font:600 9px var(--f-mono);letter-spacing:.16em;color:var(--muted);text-transform:uppercase}
 #sbCard .nt{padding:9px 18px 11px;text-align:center;font:600 12px var(--f-mono);letter-spacing:.1em;color:var(--muted);text-transform:uppercase}#sbCard .nt b{color:var(--ac)}
 #sbCard.st,#sbCard.st .rw{animation:none}
 #sbCard .nt button{pointer-events:auto;cursor:pointer;font:700 14px var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:#10150b;background:var(--ac);border:0;border-radius:8px;padding:9px 20px;box-shadow:0 0 22px color-mix(in srgb,var(--ac) 45%,transparent)}
 #sbCard .nt button:hover{filter:brightness(1.1)}#sbCard .nt kbd{font:600 10px var(--f-mono);margin-left:8px;padding:2px 6px;border-radius:5px;background:rgba(0,0,0,.25)}
-@media(max-width:560px){#sbCard .rw{grid-template-columns:minmax(0,1fr) 40px 40px 52px}#sbCard .rw>span:nth-child(5){display:none}#sbCard .ft{grid-template-columns:repeat(2,1fr)}}`;
+@media(max-width:560px){#sbCard .rw{grid-template-columns:minmax(0,1fr) 40px 40px 52px}#sbCard .rw>span:nth-child(5){display:none}#sbCard .ft{grid-template-columns:repeat(3,1fr)}}`;
   document.head.appendChild(st);
-  const p=document.createElement('div');p.id='sbPill';p.innerHTML='<span class="k">'+SB_CROSS+'<b id="sbK">0</b></span><span class="d">'+SB_SKULL+'<b id="sbD">0</b></span><span class="r">K/D <b id="sbR">0.0</b></span>';document.body.appendChild(p);SB.pill=p;
+  const p=document.createElement('div');p.id='sbPill';p.innerHTML='<span class="k">'+SB_CROSS+'<b id="sbK">0</b></span><span class="d">'+SB_SKULL+'<b id="sbD">0</b></span><span class="f">'+SB_FLAG+'<b id="sbF">0</b></span><span class="r">K/D <b id="sbR">0.0</b></span>';document.body.appendChild(p);SB.pill=p;
   const w=document.createElement('div');w.id='sbWrap';w.innerHTML='<div id="sbCard"></div>';document.body.appendChild(w);SB.wrap=w;SB.card=w.firstChild;})();
 function sbPillDraw(force){const p=SB.pill;if(!p)return;const m=sbMe();
   const on=playing&&!mapOpen&&!(SB.wrap&&SB.wrap.classList.contains('on'))&&(!MPM.on||(NT.room&&(NT.M.ph==='live'||NT.M.ph==='end')));
   if(p.style.display!==(on?'flex':'none'))p.style.display=on?'flex':'none';if(!on&&!force)return;
-  const set=(id,t)=>{const e=document.getElementById(id);if(e&&e.textContent!==t)e.textContent=t;};set('sbK',''+m.k);set('sbD',''+m.d);set('sbR',m.d?(m.k/m.d).toFixed(1):m.k.toFixed(1));}
+  const set=(id,t)=>{const e=document.getElementById(id);if(e&&e.textContent!==t)e.textContent=t;};set('sbK',''+m.k);set('sbD',''+m.d);set('sbF',''+SB.mine);set('sbR',m.d?(m.k/m.d).toFixed(1):m.k.toFixed(1));}
 // what the big panel shows right now: null (hidden), or {title, sub, cls, note}
 function sbState(){
   if(!playing)return null;
@@ -5521,7 +5523,8 @@ function sbCardHtml(S){
   return '<div class="hd" style="--ac:'+ac+'"><h2>'+S.title+'</h2><div class="sub">'+sbEsc(S.sub)+'</div></div>'
     +band(G.a,'#3d9bff',mp?'You':'Your team',tkA)+band(G.b,'#ff5a4a',mp?'Opponent':'Enemy team',tkB)+band(G.c,'#e3a33b','Wildcards',null)
     +'<div class="ft"><div class="tl"><b>'+sbTime(SB.t)+'</b><small>Time</small></div><div class="tl"><b>'+sbKD(m.k,m.d)+'</b><small>Your K/D</small></div>'
-    +'<div class="tl"><b>'+(mp?(NT.role==='h'?NT.M.sc[0]:NT.M.sc[1])+'–'+(NT.role==='h'?NT.M.sc[1]:NT.M.sc[0]):SB.caps)+'</b><small>'+(mp?'Rounds':'Sectors taken')+'</small></div>'
+    +'<div class="tl"><b>'+SB.mine+'</b><small>Flags captured</small></div>'
+    +'<div class="tl"><b>'+(mp?(NT.role==='h'?NT.M.sc[0]:NT.M.sc[1])+'–'+(NT.role==='h'?NT.M.sc[1]:NT.M.sc[0]):SB.caps)+'</b><small>'+(mp?'Rounds':'Team sectors')+'</small></div>'
     +'<div class="tl"><b>'+(mp?'–':m.hs)+'</b><small>Headshots</small></div></div>'
     ;}
 function sbNext(){if(soloOver()){soloNext();return;}if(MPM.on&&NT.room&&NT.role==='h'){const M=NT.M;if(M.ph==='end')M.go=1;else if(M.ph==='over')mpStart();}}
