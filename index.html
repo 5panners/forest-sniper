@@ -205,7 +205,8 @@ const csm=new CSM_LIB.CSM({camera,parent:scene,cascades:3,maxFar:50,mode:'custom
 csm.lights.forEach(l=>{l.shadow.bias=-0.00015;l.shadow.normalBias=0.02;});
 let _csmFov=0,_csmAsp=0;
 const _csmLit=m=>m&&(m.isMeshStandardMaterial||m.isMeshLambertMaterial||m.isMeshPhongMaterial||m.isMeshToonMaterial);
-function csmSetup(){scene.traverse(o=>{const M=o.material;if(!M)return;(Array.isArray(M)?M:[M]).forEach(m=>{if(_csmLit(m)&&!m.userData.csm){m.userData.csm=1;csm.setupMaterial(m);m.needsUpdate=true;}});});}
+let _csmN=-1,_csmT=0;
+function csmSetup(){const n=scene.children.length,now=performance.now();if(n===_csmN&&now-_csmT<400)return;_csmN=n;_csmT=now;scene.traverse(o=>{const M=o.material;if(!M)return;(Array.isArray(M)?M:[M]).forEach(m=>{if(_csmLit(m)&&!m.userData.csm){m.userData.csm=1;csm.setupMaterial(m);m.needsUpdate=true;}});});}
 const SUN_OFF=V(-55,120,80);let SUN_R=150;
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/Math.max(1,h);camera.updateProjectionMatrix();const sc=$('scopeCv');sc.width=w;sc.height=h;}
 addEventListener('resize',resize); resize();
@@ -1533,7 +1534,7 @@ function treeFireSound(act){if(!AC||!soundOn)return;
     let lvl=0;if(S){const T=S.T,t=S.t,DUR=Math.max(5,tfv('tfDur')),tn=t*60/DUR,SP=Math.min(Math.max(0,tfv('tfSpread')),DUR*0.8),p=SP>0?Math.min(1,t/SP):1,fire=Math.min(1,t/3)*(tn>48?Math.max(0,(60-tn)/12):1);lvl=GAME.tfVol*0.9*fire*(0.25+0.75*p);
       const x=T.x,y=T.y+(1.5+8*p)*T.sy,z=T.z;if(v.pn.positionX){v.pn.positionX.value=x;v.pn.positionY.value=y;v.pn.positionZ.value=z;}else v.pn.setPosition(x,y,z);}
     v.o.gain.setTargetAtTime(lvl,AC.currentTime,0.3);}}
-window.__tfSnd=()=>({ac:!!AC,on:soundOn,fr:!!SND.fr,dur:SND.fr&&SND.fr.duration,v:TFV.map(v=>v?v.o.gain.value:null)});window.__blast=(x,y,z)=>at4Blast(V(x,y,z),{mine:true});window.__pp=()=>[player.pos.x,player.pos.z,secTeam()];window.__hp=()=>MPM.hp;window.__dSees=(D,e)=>droidSees(D,e);window.__conList=()=>CON.filter(t=>!t.dead).map(t=>[t.x,t.z,t.y]);window.__partStep=dt=>stepParts(dt);window.__clrParts=()=>{for(const q of parts)relP(q.m);parts.length=0;};window.__tfLog=[];window.__tfReset=()=>{TF_PEND.length=0;TF_CLK=0;for(const t of CON){t.pend=0;t.dead=0;}for(const S of TFS){if(S.T){S.T.dead=0;S.root.visible=false;S.T=null;}}};window.__tfStep=dt=>treeFireStep(dt);window.__tfPos=()=>{const S=TFS.find(q=>q.T);return S?[S.T.x,S.T.y,S.T.z]:null;};window.__treeBurn=(x,z,y)=>treeBurnAt(V(x,y==null?groundH(x,z)+0.5:y,z));window.__treeInfo=()=>({burning:TFS.filter(q=>q.T).length,sticks:TF_STICKS,con:CON.length,lit:TF_LIGHTS.map(l=>l.intensity)});
+window.__tfSnd=()=>({ac:!!AC,on:soundOn,fr:!!SND.fr,dur:SND.fr&&SND.fr.duration,v:TFV.map(v=>v?v.o.gain.value:null)});window.__blast=(x,y,z)=>at4Blast(V(x,y,z),{mine:true});window.__pp=()=>[player.pos.x,player.pos.z,secTeam()];window.__hp=()=>MPM.hp;window.__dSees=(D,e)=>droidSees(D,e);window.__scene=scene;window.__rend=renderer;window.__cam=camera;window.__conList=()=>CON.filter(t=>!t.dead).map(t=>[t.x,t.z,t.y]);window.__partStep=dt=>stepParts(dt);window.__clrParts=()=>{for(const q of parts)relP(q.m);parts.length=0;};window.__tfLog=[];window.__tfReset=()=>{TF_PEND.length=0;TF_CLK=0;for(const t of CON){t.pend=0;t.dead=0;}for(const S of TFS){if(S.T){S.T.dead=0;S.root.visible=false;S.T=null;}}};window.__tfStep=dt=>treeFireStep(dt);window.__tfPos=()=>{const S=TFS.find(q=>q.T);return S?[S.T.x,S.T.y,S.T.z]:null;};window.__treeBurn=(x,z,y)=>treeBurnAt(V(x,y==null?groundH(x,z)+0.5:y,z));window.__treeInfo=()=>({burning:TFS.filter(q=>q.T).length,sticks:TF_STICKS,con:CON.length,lit:TF_LIGHTS.map(l=>l.intensity)});
 
 
 /* ---------------- rocks, fallen logs, structures ---------------- */
@@ -3440,12 +3441,13 @@ function drawCompass(){const W=cmp.width,H=cmp.height,c=cctx;c.clearRect(0,0,W,H
 const mini=$('miniCv'),mx=mini.getContext('2d'),baseCv=document.createElement('canvas');
 const MINI_R=[60,120,250,500];let miniOn=true,miniZ=2,baseOK=false;
 function miniTxt(){$('miniT').textContent=miniOn?(MINI_R[miniZ]*2)+' m across · + / − zoom · N hide':'';}
-function drawMini(){mini.parentNode.style.display=miniOn?'':'none';if(!miniOn)return;
+let _miniT=0;
+function drawMini(){mini.parentNode.style.display=miniOn?'':'none';if(!miniOn)return;{const n=performance.now();if(n-_miniT<30)return;_miniT=n;}   // 30 Hz is plenty for a corner map
   if(!mapBase)buildMap();if(!baseOK){baseCv.width=baseCv.height=mapCv.width;baseCv.getContext('2d').putImageData(mapBase,0,0);baseOK=true;}
   const W=mini.width,R=MINI_R[miniZ],ppm=mapCv.width/(FE*2),sc=(W/2)/R/ppm,p=player.pos,th=camYaw-PI;
   mx.clearRect(0,0,W,W);mx.save();mx.beginPath();mx.arc(W/2,W/2,W/2-3,0,PI*2);mx.clip();mx.fillStyle='#0c120a';mx.fillRect(0,0,W,W);
   mx.translate(W/2,W/2);mx.rotate(th);mx.scale(sc,sc);mx.drawImage(baseCv,-(p.x+FE)*ppm,-(p.z+FE)*ppm);
-  if($('optDeerMap').checked){const k=1/sc;DEER.forEach(d=>drawDeerMark(mx,(d.x-p.x)*ppm,(d.z-p.z)*ppm,d,k*1.2,th));BEARS.forEach(b=>drawBearMark(mx,(b.x-p.x)*ppm,(b.z-p.z)*ppm,b,k*1.5,th));if(typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mx,(u.x-p.x)*ppm,(u.z-p.z)*ppm,u,k*1.5));}
+  if($('optDeerMap').checked){const k=1/sc;const R2=R*R*1.5;DEER.forEach(d=>{const dx=d.x-p.x,dz=d.z-p.z;if(dx*dx+dz*dz<R2)drawDeerMark(mx,dx*ppm,dz*ppm,d,k*1.2,th);});BEARS.forEach(b=>drawBearMark(mx,(b.x-p.x)*ppm,(b.z-p.z)*ppm,b,k*1.5,th));if(typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mx,(u.x-p.x)*ppm,(u.z-p.z)*ppm,u,k*1.5));}
   try{secDrawMini(mx,p,ppm,1/sc,th);}catch(e){}
   try{droidMapMarks(mx,(x,z)=>[(x-p.x)*ppm,(z-p.z)*ppm],1/sc*1.5);}catch(e){}
   SILO_SITES.forEach(q=>drawSiloMark(mx,(q.x-p.x)*ppm,(q.z-p.z)*ppm,1/sc*1.5,th,false));
@@ -3564,7 +3566,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=566;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=568;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6103,10 +6105,12 @@ for(const s of [-1,1]){
   const link=new T.InstancedMesh(new T.BoxGeometry(0.075,0.012,0.012),MAT.steel,N);
   casing.castShadow=tip.castShadow=true;hull.add(casing);hull.add(tip);hull.add(link);BELT.push({s,curve,len,N,casing,tip,link,feed:0});}
 const _m=new T.Matrix4(),_q=new T.Quaternion(),_v=new T.Vector3(),_t=new T.Vector3(),_u=new T.Vector3(0,1,0),_x=new T.Vector3(),_zv=new T.Vector3(),_yv=new T.Vector3();
-function beltStep(){for(const b of BELT){for(let i=0;i<b.N;i++){const u=((i/b.N)+b.feed)%1;b.curve.getPointAt(u,_v);b.curve.getTangentAt(u,_t);
-    _zv.copy(_t).normalize();_x.copy(_u).cross(_zv).normalize();_yv.copy(_zv).cross(_x);_m.makeBasis(_x,_yv,_zv);_m.setPosition(_v);
-    // the links hang with the casings lying across the belt: x axis across
-    const mm=_m.clone();b.casing.setMatrixAt(i,mm);b.tip.setMatrixAt(i,mm);b.link.setMatrixAt(i,mm);}
+function beltStep(){for(const b of BELT){if(b.lf===b.feed)continue;b.lf=b.feed;
+    if(!b.tab){const K=b.N*6;b.K=K;b.tab=new Float32Array(K*16);for(let k=0;k<K;k++){const u=k/K;b.curve.getPointAt(u,_v);b.curve.getTangentAt(u,_t);
+      _zv.copy(_t).normalize();_x.copy(_u).cross(_zv).normalize();_yv.copy(_zv).cross(_x);_m.makeBasis(_x,_yv,_zv);_m.setPosition(_v);_m.toArray(b.tab,k*16);}}
+    const K=b.K,tab=b.tab,ca=b.casing.instanceMatrix.array,ta=b.tip.instanceMatrix.array,la=b.link.instanceMatrix.array;
+    for(let i=0;i<b.N;i++){const u=((i/b.N)+b.feed)%1;const k=((u*K)|0)%K*16,o=i*16;   // the links hang with the casings lying across the belt
+      for(let j=0;j<16;j++){const e=tab[k+j];ca[o+j]=e;ta[o+j]=e;la[o+j]=e;}}
     b.casing.instanceMatrix.needsUpdate=b.tip.instanceMatrix.needsUpdate=b.link.instanceMatrix.needsUpdate=true;}}
 
 /* ---------- the head: a small squared helmet set into the chest between the huge shoulders, with ONE big red eye ---------- */
