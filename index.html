@@ -3567,7 +3567,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=591;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=592;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6116,7 +6116,7 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
       +`<div class="gr"><label>Enemy bots (red team)</label><input type="range" min="0" max="${MAXB}" step="1" value="${ne}" data-k="dCnt"><output>${ne}</output></div>`
       +`<div class="gr"><label>Friendly bots (your team)</label><input type="range" min="0" max="${MAXB}" step="1" value="${nf}" data-k="dFr"><output>${nf}</output></div>`
       +'<div class="sum">'+('You'+(nf?' + <b>'+nf+' bot'+(nf>1?'s':'')+'</b>':'')+' <b>vs</b> '+(ne?'<i>'+ne+' bot'+(ne>1?'s':'')+'</i>':'nobody on the red team'))+'</div>'
-      +'<div class="note" style="margin:8px 0 16px">'+(on?'Online: the host runs the bots for both sides and the guest sees and shoots the same ones, so the host bot settings apply. Enemy bots fight for your opponent, friendly bots for you. Guests damage bots with rifle shots only. Host or join below, then press Deploy.':'Red bots start at the red base and friendly bots at yours. Both sides take flags and shoot the other side, and every kill and death moves the tickets. Fine-tune each bot in the <b>GD01</b> tab. You can change the numbers mid-game from the menu.')+'</div>'
+      +'<div class="note" style="margin:8px 0 16px">'+(on?'':'Red bots start at the red base and friendly bots at yours. Both sides take flags and shoot the other side, and every kill and death moves the tickets. Fine-tune each bot in the <b>GD01</b> tab. You can change the numbers mid-game from the menu.')+'</div>'
       ;
     pn.querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>{GAME.gMode=+b.dataset.m;save();build();});
     pn.querySelectorAll('button[data-b]').forEach(b=>b.onclick=()=>{GAME.sBase=+b.dataset.b;save();build();try{if(CHUTE.dropped)toast('Press Apply & reload to start from the other base');}catch(e){}});
