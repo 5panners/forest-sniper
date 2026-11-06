@@ -3687,10 +3687,19 @@ function heliInit(){
     const rg=new THREE.Mesh(new THREE.RingGeometry(5.7,6.1,40),wm);rg.rotation.x=-Math.PI/2;rg.position.y=py+0.02;pad.add(rg);
     pad.position.set(sp.x,0,sp.z);scene.add(pad);HELI.pads.push({x:sp.x,z:sp.z,y:py,r:7});
     const g=tm.clone(true);scene.add(g);const fm=new HeliFM.FM(HELI_ADV);const e={g,fm,key,pad:{x:sp.x,z:sp.z,y:py},wreck:0,padG:pad,head:Math.atan2(-sp.x,-sp.z)};
-    fm.on('crash',d=>heliCrash(e,d));fm.on('hardLanding',d=>{if(HELI.pilot===e)toast('Hard landing · damage '+Math.round(d.damage*100)+'%');});
+    e.hb=heliHB(fm);g.add(e.hb);fm.on('crash',d=>heliCrash(e,d));fm.on('hardLanding',d=>{if(HELI.pilot===e)toast('Hard landing · damage '+Math.round(d.damage*100)+'%');});
     heliPlace(e);HELI.ents.push(e);}
   heliUiInit();
 }
+function heliHB(fm){   // hit boxes: what the flight model collides with (skids, rotor tips, tail) plus the body and the rotor disc
+  const g=new THREE.Group(),mat=new THREE.LineBasicMaterial({color:0x42ff7a,depthTest:false,transparent:true});
+  const box=(w,h,d,x,y,z)=>{const l=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w,h,d)),mat);l.position.set(x,y,z);l.renderOrder=999;g.add(l);};
+  box(2.2,2.0,4.6,0,1.1,0.4);box(0.5,0.6,4.4,0,1.6,-3.2);
+  for(const p of fm.t.skidPoints)box(0.3,0.3,0.3,p[0],p[1],p[2]);
+  for(const p of fm.t.strikePoints)box(0.4,0.4,0.4,p[0],p[1],p[2]);
+  const pts=[];for(let i=0;i<=48;i++){const a=i/48*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a)*4.15,2.6,Math.sin(a)*4.15));}
+  const ring=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),mat);ring.renderOrder=999;g.add(ring);
+  g.visible=false;return g;}
 function heliPlace(e){e.fm.reset(new THREE.Vector3(e.pad.x,e.pad.y,e.pad.z),e.head,false);e.wreck=0;e.fm.applyTo(e.g);
   const t=e.g.getObjectByName('MainRotorBlur');if(t)t.visible=false;}
 function heliUiInit(){
@@ -3749,7 +3758,7 @@ function heliStep(dt){
         const L=PLAY-6,p=fm.position;if(Math.abs(p.x)>L||Math.abs(p.z)>L){p.x=clamp(p.x,-L,L);p.z=clamp(p.z,-L,L);fm.velocity.x*=0.5;fm.velocity.z*=0.5;if(!HELI._lt||clockT-HELI._lt>4){HELI._lt=clockT;toast('Edge of the operations area');}}
         const cap=heliGH(p.x,p.z)+260;if(p.y>cap){p.y=cap;if(fm.velocity.y>0)fm.velocity.y=0;}}
     } else fm.update(dt,HELI.zero,{groundHeight:heliGH});
-    fm.applyTo(e.g);fm.animateRotors(e.g,dt);
+    fm.applyTo(e.g);fm.animateRotors(e.g,dt);if(e.hb.visible!==hbShown)e.hb.visible=hbShown;
     if(fm.crashed){e.wreck-=dt;if(e.wreck>0){if(Math.random()<dt*28&&parts.length<3000){const p=fm.position;_pv.set(p.x+(Math.random()-0.5)*1.5,p.y+1.2,p.z+(Math.random()-0.5)*1.5);
         emit(gPuff,TF_SMK,_pv,V((Math.random()-0.5)*0.8,2.6+Math.random()*1.6,(Math.random()-0.5)*0.8),2.6+Math.random()*1.8,{s:0.9,grow:2.4,drag:0.5});
         if(Math.random()<0.6)emit(gFire,TF_FIRE,_pv,V((Math.random()-0.5)*0.8,2+Math.random()*2,(Math.random()-0.5)*0.8),0.5+Math.random()*0.4,{s:0.8,grow:1.2});}}
@@ -3786,7 +3795,7 @@ addEventListener('keydown',e=>{
 window.SNIPER_HELI=HELI;
 function heliReset(){if(!HELI.ents)return;if(HELI.pilot)heliExit(true);for(const e of HELI.ents)heliPlace(e);}
 
-const BUILD=580;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=581;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();try{heliStep(dt);}catch(e){if(!window._heliErr){window._heliErr=1;console.warn('heli',e);}}if(HELI.pilot)player.vel.set(0,0,0);else updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
