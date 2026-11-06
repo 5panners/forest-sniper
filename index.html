@@ -3706,7 +3706,7 @@ function heliBoard(e){
   HELI.pilot=e;e.fm.setEngine(true);HELI.mx=HELI.my=0;input.lmb=input.rmb=false;
   e.fm.update(0.0001,HELI.zero,{groundHeight:heliGH});
   const f=_v9.set(0,0,1).applyQuaternion(e.fm.quaternion);HELI.cy=Math.atan2(f.x,f.z);camYaw=HELI.cy;HELI.fp=false;
-  document.body.classList.add('heli');HELI.hud.classList.add('on');HELI.keys.classList.add('on');HELI.prompt.classList.remove('on');
+  document.body.classList.add('heli');HELI.prompt.classList.remove('on');
   player.vel.set(0,0,0);toast('Little Bird · rotor spooling up — hold W for power');
 }
 function heliExit(force){
@@ -3786,7 +3786,7 @@ addEventListener('keydown',e=>{
 window.SNIPER_HELI=HELI;
 function heliReset(){if(!HELI.ents)return;if(HELI.pilot)heliExit(true);for(const e of HELI.ents)heliPlace(e);}
 
-const BUILD=579;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=580;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();try{heliStep(dt);}catch(e){if(!window._heliErr){window._heliErr=1;console.warn('heli',e);}}if(HELI.pilot)player.vel.set(0,0,0);else updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
