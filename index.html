@@ -3668,6 +3668,7 @@ function lbBuild(){
 }
 
 // --- the helicopters: one on a pad at each home base, flown in single player ---
+const HELI_ADV={selfLevelRoll:0,selfLevelPitch:0,tiltCompensation:0,neutralDamping:0.2,torqueKick:0.9,vortexRing:0.6,rateResponse:5};   // advanced handling: no self-levelling, banking costs height, strong torque kick
 const HELI={ents:null,pilot:null,mx:0,my:0,cy:0,fp:false,prompt:null,hud:null,wreckT:45,pads:[],snd:null,tmpV:new THREE.Vector3(),tmpQ:new THREE.Quaternion(),zero:{collective:0,pitch:0,roll:0,yaw:0}};
 function heliGH(x,z){let g=supportAt(x,z,1e4,0.3);for(const p of HELI.pads){const d=Math.hypot(x-p.x,z-p.z);if(d<p.r&&p.y>g)g=p.y;}return g;}
 function heliPadSpot(hx,hz){   // a flat clearing with no trees, a little way in from the base towards the middle of the map
@@ -3685,7 +3686,7 @@ function heliInit(){
     const wm=new THREE.MeshBasicMaterial({color:0xe8e8e0});for(const [w,h,x] of [[0.55,4.4,-1.4],[0.55,4.4,1.4],[2.9,0.55,0]]){const b=new THREE.Mesh(new THREE.BoxGeometry(w,0.02,h),wm);b.position.set(x,py+0.02,0);pad.add(b);}
     const rg=new THREE.Mesh(new THREE.RingGeometry(5.7,6.1,40),wm);rg.rotation.x=-Math.PI/2;rg.position.y=py+0.02;pad.add(rg);
     pad.position.set(sp.x,0,sp.z);scene.add(pad);HELI.pads.push({x:sp.x,z:sp.z,y:py,r:7});
-    const g=tm.clone(true);scene.add(g);const fm=new HeliFM.FM();const e={g,fm,key,pad:{x:sp.x,z:sp.z,y:py},wreck:0,padG:pad,head:Math.atan2(-sp.x,-sp.z)};
+    const g=tm.clone(true);scene.add(g);const fm=new HeliFM.FM(HELI_ADV);const e={g,fm,key,pad:{x:sp.x,z:sp.z,y:py},wreck:0,padG:pad,head:Math.atan2(-sp.x,-sp.z)};
     fm.on('crash',d=>heliCrash(e,d));fm.on('hardLanding',d=>{if(HELI.pilot===e)toast('Hard landing · damage '+Math.round(d.damage*100)+'%');});
     heliPlace(e);HELI.ents.push(e);}
   heliUiInit();
@@ -3785,7 +3786,7 @@ addEventListener('keydown',e=>{
 window.SNIPER_HELI=HELI;
 function heliReset(){if(!HELI.ents)return;if(HELI.pilot)heliExit(true);for(const e of HELI.ents)heliPlace(e);}
 
-const BUILD=578;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=579;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();try{heliStep(dt);}catch(e){if(!window._heliErr){window._heliErr=1;console.warn('heli',e);}}if(HELI.pilot)player.vel.set(0,0,0);else updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
