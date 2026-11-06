@@ -3567,7 +3567,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=593;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=594;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3697,7 +3697,7 @@ window.__bn={BN,show:bnShow};bnShow();
 
 const genMs=Math.round(performance.now()-T0);
 $('deployBtn').disabled=false;$('deployBtn').textContent='Deploy';
-$('stats').textContent=nTrees.toLocaleString()+' trees · '+nPlants.toLocaleString()+' shrubs and ferns · '+ROCKS.length+' rocks · generated in '+(genMs/1000).toFixed(1)+' s';
+$('stats').textContent='';
 
 /* ================= resources: Magic Mushrooms, wood, 7.62 ammo boxes, RPG rounds and UGV =================
    Nodes are placed from a position hash only (no random numbers), so both players get exactly the same ones.
