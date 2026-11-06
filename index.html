@@ -143,7 +143,6 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <label class="rng"><span>Item pick-up</span><input type="range" id="audPk" min="0" max="200" step="1"><output id="audPkv"></output></label>
     <label class="rng"><span>Bullet-hit thud</span><input type="range" id="audT" min="0" max="200" step="1"><output id="audTv"></output></label>
     <label class="rng"><span>Footsteps</span><input type="range" id="audS" min="0" max="200" step="1"><output id="audSv"></output></label>
-    <label class="opt"><input type="checkbox" id="optSndDbg"><span><b>Show playing sounds</b><small>Development: lists each sound as it plays, with its distance, plus the looping ambience levels.</small></span></label>
     <p class="sec" style="margin-top:14px">Sound schedule (game clock)</p>
     <label class="rng"><span>Day sounds on</span><input type="range" id="audDs" min="0" max="1435" step="5"><output id="audDsv"></output></label>
     <label class="rng"><span>Day sounds off</span><input type="range" id="audDe" min="0" max="1435" step="5"><output id="audDev"></output></label>
@@ -2923,7 +2922,7 @@ for(const k of Object.keys(dvox)){const f=dvox[k];dvox[k]=function(d,...a){if(d&
 {const f=boomAt;boomAt=function(p){snd('distant boom',1.4,_dc3(p.x,p.y,p.z));return f(p);};}
 {const f=buzzCry;buzzCry=function(b){snd('buzzard call',2.4,_dc3(b.x,b.y,b.z));return f(b);};}
 {const f=playSample;playSample=function(k,...a){const ok=f(k,...a);if(ok)snd('sample: '+k,SND[k]?SND[k].duration:1,0);return ok;};}
-function dbgSounds(){const el=$('sndDbg');if(!$('optSndDbg').checked){el.hidden=true;return;}el.hidden=false;
+function dbgSounds(){const el=$('sndDbg');if(true){el.hidden=true;return;}el.hidden=false;
   const now=performance.now(),L=[];
   if(AC)L.push('audio '+AC.state+(soundOn?'':' · MUTED'));
   if(amb){const lv=(g)=>g?g.gain.value:0,row=(n,v,x)=>{if(v>0.002)L.push('loop: '+n+'  '+(v*100).toFixed(0)+'%'+(x||''));};
@@ -3406,8 +3405,6 @@ $('audB').value=Math.round(VOLS.bz*100);$('audBv').textContent=Math.round(VOLS.b
 $('audB').oninput=()=>{VOLS.bz=$('audB').value/100;$('audBv').textContent=$('audB').value+'%';audSave();};
 $('audB').onchange=()=>{if(AC&&soundOn&&SND.bz)playSample('bz',0.9*VOLS.bz,1);};
 $('audA').oninput=()=>{VOLS.amb=$('audA').value/100;$('audAv').textContent=$('audA').value+'%';audSave();};
-try{$('optSndDbg').checked=localStorage.getItem('sniperSndDbg')!=='0';}catch(e){}
-$('optSndDbg').onchange=()=>{try{localStorage.setItem('sniperSndDbg',$('optSndDbg').checked?'1':'0');}catch(e){}};
 $('audG').oninput=()=>{VOLS.gun=$('audG').value/100;$('audGv').textContent=$('audG').value+'%';audSave();};
 $('audG').onchange=()=>{if(AC&&soundOn)sfx.shot();};   // preview the level when the slider is released
 function gfxSave(){try{localStorage.setItem('sniperGfx2',JSON.stringify({fps:$('optFps').checked,geo:$('optGeo').checked,sh:renderer.shadowMap.enabled,res:$('optRes').value,shd:$('optShD').value}));}catch(e){}}
@@ -3567,7 +3564,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=594;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=595;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
