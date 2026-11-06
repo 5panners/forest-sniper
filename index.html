@@ -3567,7 +3567,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=584;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=585;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4512,13 +4512,13 @@ function bearGuestAudio(b){const now=performance.now();if(b.st!==b.pst){if(b.st=
 function bearStep(dt){
   const gst=!!(MPM&&MPM.on&&MPM.guest),on=playing&&!gst;
   if(BEARS.length!==Math.round(GAME.bears||0)){bearReset();}
-  for(const b of BEARS){b.root.visible=true;
+  for(const b of BEARS){b.root.visible=!(b.dead>=2);   // dead 2 = the carcass has gone (one minute after it fell)
     if(gst){const n=b.net;if(n){const age=Math.min(0.5,(performance.now()-n.at)/1000),tx=n.x+Math.sin(n.yaw)*n.spd*age,tz=n.z+Math.cos(n.yaw)*n.spd*age;
         if(Math.hypot(tx-b.x,tz-b.z)>12){b.x=tx;b.z=tz;b.yaw=n.yaw;}else{const k=Math.min(1,dt*8);b.x+=(tx-b.x)*k;b.z+=(tz-b.z)*k;b.yaw+=wrapA(n.yaw-b.yaw)*k;}
-        b.spd=n.spd;b.st=n.st;b.dead=n.dead;try{bearGuestAudio(b);}catch(e){}}
+        b.spd=n.spd;b.st=n.st;b.dead=n.dead;b.root.visible=!(b.dead>=2);try{bearGuestAudio(b);}catch(e){}}
       if(!(b.dead>0))bearPose(b,dt);bearPlace(b,dt);continue;}
     if(!on)continue;
-    if(b.dead>0){if(b.dead<1){b.dead+=dt*0.6;bearKick(b,dt,2.2);bearPlace(b,dt);}continue;}
+    if(b.dead>0){if(b.dead<1){b.dead+=dt*0.6;bearKick(b,dt,2.2);bearPlace(b,dt);}else if(b.dead<2){b.dT=(b.dT||0)+dt;if(b.dT>=60){b.dead=2;b.root.visible=false;}}continue;}
     bearKick(b,dt);b.stT-=dt;b.rearCD-=dt;b.cool=(b.cool||0)-dt;let want=0;
     {const H=bearHuman(b),pd=H.d;
      if(player.alive&&pd<GAME.bRear&&b.st!=='flee'&&b.st!=='rear'&&b.st!=='charge'&&b.st!=='swipe'&&b.rearCD<=0){b.st='rear';b.stT=2.8+Math.random()*1.8;b.rearCD=14;b.spd=0;}
@@ -4548,7 +4548,7 @@ function bearStep(dt){
     bearPlace(b,dt);}}
 const _bRay=new THREE.Raycaster();
 function rayBear(o,dir,len){let best=null;
-  for(const b of BEARS){const cx=b.x-o.x,cy=b.y+1-o.y,cz=b.z-o.z;const t=cx*dir.x+cy*dir.y+cz*dir.z;if(t<-3||t>len+3)continue;const tt=clamp(t,0,len);
+  for(const b of BEARS){if(b.dead>=2)continue;const cx=b.x-o.x,cy=b.y+1-o.y,cz=b.z-o.z;const t=cx*dir.x+cy*dir.y+cz*dir.z;if(t<-3||t>len+3)continue;const tt=clamp(t,0,len);
     const ex=cx-dir.x*tt,ey=cy-dir.y*tt,ez=cz-dir.z*tt;if(ex*ex+ey*ey+ez*ez>2.6*2.6)continue;
     _bRay.set(o,dir);_bRay.near=0;_bRay.far=best?best.dist:len;const hs=_bRay.intersectObjects(b.hb,false);if(!hs.length)continue;
     let h=hs[0];for(const q of hs){if(q.object.userData.sub==='head'&&q.distance<h.distance+0.05)h=q;}
@@ -4567,7 +4567,7 @@ function bearNetApply(arr){if(!Array.isArray(arr))return;if(arr.length!==Math.ro
   const now=performance.now();arr.forEach((a,i)=>{const b=BEARS[i];if(b)b.net={x:+a[0],z:+a[1],yaw:+a[2],st:BST2[a[3]]||'walk',spd:+a[4]||0,dead:+a[5]||0,at:now};});}
 function netBearHit(b,sub,dist){flashHit();b.fl=1;try{const dm=(DMG.w.rifle.k&&DMG.w.rifle.k[sub]!=null)?DMG.w.rifle.k[sub]:25;dmgNum(b.x,b.y+2.4,b.z,dm,null,DMG.hp.bear);animalCry('bear',b.x,b.y+1.2,b.z,false);}catch(e){}toast('Bear hit · '+sub+' · '+Math.round(dist)+' m');const i=BEARS.indexOf(b);if(i<0||!NT.room)return;NT.room.emit('brhit',{i,sub,dist:Math.round(dist)}).catch(()=>{});}
 // bear marker for the map and minimap: dark brown head with round ears, cream outline; a cross when dead
-function drawBearMark(c,x,y,b,k,th){c.save();c.translate(x,y);c.rotate(-th);c.scale(k,k);c.lineWidth=2.5;
+function drawBearMark(c,x,y,b,k,th){if(b.dead>=2)return;c.save();c.translate(x,y);c.rotate(-th);c.scale(k,k);c.lineWidth=2.5;
   if(b.dead){c.strokeStyle='#e8e2d4';c.beginPath();c.moveTo(-7,-7);c.lineTo(7,7);c.moveTo(7,-7);c.lineTo(-7,7);c.stroke();}
   else{c.fillStyle=b.st==='rear'||b.st==='flee'||b.st==='charge'||b.st==='swipe'?'#ff5a3c':'#4a2a14';c.strokeStyle='#f3e6c8';
     c.beginPath();c.arc(-6,-6,3.2,0,Math.PI*2);c.arc(6,-6,3.2,0,Math.PI*2);c.fill();c.stroke();
