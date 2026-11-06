@@ -2332,7 +2332,7 @@ function at4Blast(p,r){
     u.lx=from.x;u.lz=from.z;u.ly=from.y+1;u.boost=20;if(u.st==='patrol'||u.st==='return'){u.st='search';u.stT=GAME.uMem+10;}
     if(u.hp<=0){u.hp=0;ugvWreck(u,true);if(mine)toast('UGV destroyed · '+NM+' · '+dist+' m');}else if(mine)toast('UGV hit · '+NM+' · '+Math.round(100*u.hp/Math.max(1,GAME.uHp))+'% armour left · '+dist+' m');}}catch(e){}
   if(mine)try{for(const q of DRS){if(!q.m||q.dead||!q.m.root.visible||droidTeam(q)===secTeam())continue;const D=q.m.D,gy=groundH(D.x,D.z)+1.1,d=Math.hypot(D.x-p.x,gy-p.y,D.z-p.z);if(d>R+1.2)continue;   // GD01 bots of the other side
-    const dm=UG*(d<2.2?1:Math.pow(1-(d-2.2)/(R-1),1.2));if(dm<=0)continue;q.hp-=dm;try{dmgNum(D.x,gy+1.4,D.z,dm,'#ffd25a',dcGet(q.i).dHp);}catch(e){}
+    const dm=UG*(d<2.2?1:Math.pow(1-(d-2.2)/(R-1),1.2));if(dm<=0)continue;if(MPM.guest){try{dmgNum(D.x,gy+1.4,D.z,dm,'#ffd25a',dcGet(q.i).dHp);toast('GD01 hit · '+NM+' · '+dist+' m');if(NT.room)NT.room.emit('drh',{i:q.i,dm:Math.round(dm),dist:+dist||0}).catch(()=>{});}catch(e){}continue;}q.hp-=dm;try{dmgNum(D.x,gy+1.4,D.z,dm,'#ffd25a',dcGet(q.i).dHp);}catch(e){}
     DRS.lastT[droidTeam(q)]={x:from.x,z:from.z,t:DRS.clock};
     if(q.hp<=0)droidKill(q,['Player',secTeam()],false);else{toast('GD01 hit · '+NM+' · '+Math.max(0,Math.round(100*q.hp/Math.max(1,dcGet(q.i).dHp)))+'% armour left · '+dist+' m');if(!q.tgO){const keep=DR;DR=q;try{droidSay('alert');}finally{DR=keep;}}}}}catch(e){}
   try{for(const b of BEARS){if(b.dead>0)continue;const d=Math.hypot(b.x-p.x,b.z-p.z);if(d>R)continue;const dm=DM*Math.pow(1-d/R,0.8);b.hp-=dm;
@@ -3567,7 +3567,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=586;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=587;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6454,7 +6454,7 @@ function droidShot(g){const T=DR.tgI;if(!T||!DR.m)return;DR.m.root.updateMatrixW
   dir.addScaledVector(s1,gs()*sd).addScaledVector(s2,gs()*sd).normalize();DR.shots++;droidRound(o,dir,DR.shots%3===1);DRL.position.copy(o);DRL.intensity=3;DRL.t=0.06;}
 // ---- the droids as targets: ray test against a few spheres (head, chest, hull, wheel)
 // GD01 hit spheres, heights above the ground: red head (double damage), yellow body. B shows them with the other hit boxes.
-const DR_HB=[[2.22,0.38,'head',0xff3030],[1.6,0.5,'body',0xffd030],[1.1,0.55,'body',0xffd030],[0.55,0.55,'body',0xffd030]];
+const DR_HB=[[2.2,0.42,'head',0xff3030],[1.75,0.62,'body',0xffd030],[1.3,0.66,'body',0xffd030],[0.85,0.66,'body',0xffd030],[0.4,0.62,'body',0xffd030]];
 function droidHBStep(q,vis){if(!q.hbm){if(!vis)return;q.hbm=DR_HB.map(h=>{const m=new THREE.Mesh(new THREE.SphereGeometry(h[1],12,8),new THREE.MeshBasicMaterial({color:h[3],wireframe:true,transparent:true,opacity:0.8,depthTest:false}));m.renderOrder=9;scene.add(m);return m;});}
   const on=vis&&hbShown&&q.m;q.hbm.forEach((m,i)=>{m.visible=!!on;if(on){const D=q.m.D;m.position.set(D.x,groundH(D.x,D.z)+(D.hJ||0)+DR_HB[i][0],D.z);}});}
 function raySph(o,d,cx,cy,cz,r,len){const ox=o.x-cx,oy=o.y-cy,oz=o.z-cz,b=ox*d.x+oy*d.y+oz*d.z,c=ox*ox+oy*oy+oz*oz-r*r,disc=b*b-c;if(disc<0)return -1;const t=-b-Math.sqrt(disc);if(t>=0&&t<=len)return t;if(c<0)return 0;return -1;}
@@ -6584,7 +6584,7 @@ function droidGuestStep(dt){
       for(const g of m.GUNS){g.pivot.rotation.order='YXZ';const kg=Math.min(1,dt*14);g.pivot.rotation.y+=(s.gy-g.pivot.rotation.y)*kg;g.pivot.rotation.x+=(s.gx-g.pivot.rotation.x)*kg;}
     }
     q.hp=s.hp;try{droidHBStep(q,!q.dead);}catch(e){}}}
-window.__DRN={bullets:()=>bullets.length,hit:(q,sub,d)=>droidHit(q,sub,d)};
+window.__DRN={ray:rayDroid,bullets:()=>bullets.length,hit:(q,sub,d)=>droidHit(q,sub,d)};
 // everything a droid must not drive into besides trees, rocks, water and steep ground: UGVs and the other droids
 /* draw-call level of detail: a GD01 is ~180 meshes (~110 casting shadows). Beyond ~45 m the whole detailed model is switched off (object layers: the
    camera only sees layer 0, so this never fights the droid's own .visible toggles) and a 4-box stand-in, sized from the real model's bounds, is drawn
@@ -6925,7 +6925,7 @@ function onMsg(t,d,m){
   else if(t==='pug'){try{ugvNetCmd(d);}catch(e){}}
   else if(t==='drs'){if(MPM.guest)droidNetApply(d);}
   else if(t==='drf'){if(MPM.guest)droidNetFire(d);}
-  else if(t==='drh'){if(MPM.guest||NT.M.ph!=='live')return;const q=DRS[d.i|0];if(!q||!q.m||q.dead)return;droidHit(q,String(d.sub),+d.dist||0,['Opponent',3-secTeam()],true);}
+  else if(t==='drh'){if(MPM.guest||NT.M.ph!=='live')return;const q=DRS[d.i|0];if(!q||!q.m||q.dead)return;if(d.dm>0){const dm=Math.min(400,+d.dm);q.hp-=dm;try{dmgNum(q.m.D.x,groundH(q.m.D.x,q.m.D.z)+2.6,q.m.D.z,dm,'#ffd25a',dcGet(q.i).dHp);}catch(e){}if(RPS.pos)DRS.lastT[droidTeam(q)]={x:RPS.pos.x,z:RPS.pos.z,t:DRS.clock};if(q.hp<=0)droidKill(q,['Opponent',3-secTeam()],false);return;}droidHit(q,String(d.sub),+d.dist||0,['Opponent',3-secTeam()],true);}
   else if(t==='drk'){if(MPM.guest)droidNetKill(d);}
   else if(t==='ugvf'){if(MPM.guest)try{ugvNetFire(d);}catch(e){}}
   else if(t==='uhit'){if(MPM.guest)return;const u=UGVS[d.i|0];if(!u)return;hitFrom=RPS.pos;MPM.mute=true;try{hitUgv(u,String(d.sub),+d.dist||0,true);}finally{MPM.mute=false;hitFrom=null;}}
