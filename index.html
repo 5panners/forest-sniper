@@ -3565,7 +3565,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=582;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=583;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4811,8 +4811,8 @@ function uavStep(dt){if(!UAVS.length)return;
       const gy=groundH(u.p.x,u.p.z);if(u.p.y<=gy+0.4){u.p.y=gy+0.4;uavCrash(u);UAVS.splice(i,1);continue;}}
     else{u.acc+=dt;while(u.acc>=1/30){u.acc-=1/30;uavSim(u,1/30);}
       if(u.st==='gone'){uavSndStop(u);scene.remove(u.g);UAVS.splice(i,1);if(u.mine)toast('Recon drone has left the area');try{EQB.ui(true);}catch(e){}continue;}
-      if(u.st==='loiter'&&!u.ann){u.ann=true;if(u.mine){const has=MPM.on&&NT.opp&&RPS.pos&&RPS.al;toast(has?'Drone on station · the other player is marked on your map (Tab)':'Drone on station · no other player in the area');}else toast('Enemy drone overhead · your position is exposed. Shoot it down!');}
-      if(u.st==='out'&&u.ann!=='out'){u.ann='out';toast(u.mine?'Recon drone leaving · the mark is gone':'The enemy drone is leaving');}}
+      if(u.st==='loiter'&&!u.ann){u.ann=true;if(u.mine){const has=MPM.on&&NT.opp&&RPS.pos&&RPS.al;toast(has?'Drone on station · the other player is marked on your map (Tab)':'Drone on station · no other player in the area');}}
+      if(u.st==='out'&&u.ann!=='out'){u.ann='out';if(u.mine)toast('Recon drone leaving · the mark is gone');}}
     u.g.position.copy(u.p);u.g.rotation.y=u.hd;u.g.rotation.z=-Math.max(-0.6,Math.min(0.6,u.bank));u.prop.rotation.z+=dt*(u.st==='down'?18:70);u.g.updateMatrixWorld(true);
     uavSnd(u,dt);}
   try{EQB.ui();}catch(e){}}
@@ -4842,7 +4842,7 @@ function uavCrash(u){const p=u.p.clone();uavSndStop(u);scene.remove(u.g);
   for(let i=0;i<8;i++)emit(gSpark,matFire,p,rv(10).add(V(0,5,0)),0.5,{s:1.2,grav:9});
   try{boomAt(p);}catch(e){}disturb(p.x,p.z,300,900);{const d=camera.position.distanceTo(p);shake=Math.max(shake,Math.max(0,(60-d)/60)*0.8);}}
 function uavDown(u,by){if(u.st==='down'||u.st==='gone')return;u.st='down';u.hp=0;u.v=V(Math.sin(u.hd)*GAME.uavSpd,-2,Math.cos(u.hd)*GAME.uavSpd);
-  toast(by==='me'?(u.mine?'You shot down your own drone':'Enemy drone shot down!'):(u.mine?'Your recon drone was shot down':'The enemy drone is down'));try{EQB.ui(true);}catch(e){}}
+  if(u.mine)toast(by==='me'?'You shot down your own drone':'Your recon drone was shot down');try{EQB.ui(true);}catch(e){}}
 // damage: from me (rifle or my AT4) is applied here and sent; from the other player arrives as a message
 function uavDamage(u,dm,fromMe,dist){if(u.st==='down'||u.st==='gone'||!(dm>0))return;u.hp-=dm;try{dmgNum(u.p.x,u.p.y+1.2,u.p.z,dm,'#ffd25a',GAME.uavHp);}catch(e){}
   if(fromMe){try{flashHit();}catch(e){}try{if(MPM.on&&NT.room)NT.room.emit('uav',{k:'hit',own:u.mine?1:0,dm:Math.round(dm)}).catch(()=>{});}catch(e){}
@@ -4860,14 +4860,14 @@ function rayUav(o,dir,len,noRem){if(noRem)return null;let best=null;
   return best;}
 // calling it in
 function uavCall(gs){if(!playing||!player.alive)return;if(UAVS.some(u=>u.mine&&u.st!=='gone')){toast('Your drone is already up');return;}
-  if(UAVS.some(u=>!u.mine&&u.st!=='gone')){toast("Enemy drone is up · wait until it leaves");return;}
+  if(UAVS.some(u=>!u.mine&&u.st!=='gone')){toast("A drone is already up · wait until it leaves");return;}
   const gi=typeof gs==='number'?gs:SLOT.g.findIndex(q=>q&&q.k==='radio'&&!q.used);if(gi<0||!SLOT.g[gi]||SLOT.g[gi].k!=='radio'||SLOT.g[gi].used){toast('No radio · find one (cyan glow)');return;}
   SLOT.g[gi].used=true;const a=Math.random()*PI*2,dir=Math.random()<0.5?-1:1;uavMake(true,a,dir);
   try{tone(1650,0.06,0.06,'square');setTimeout(()=>{try{tone(1250,0.08,0.05,'square');tone(900,0.25,0.025,'sawtooth');}catch(e){}},90);}catch(e){}
   const C=['east','south-east','south','south-west','west','north-west','north','north-east'];toast('Recon drone requested · inbound from the '+C[((Math.round(a/(PI/4))%8)+8)%8]);
   try{if(MPM.on&&NT.room)NT.room.emit('uav',{k:'call',a:+a.toFixed(4),dir}).catch(()=>{});}catch(e){}try{EQB.ui(true);}catch(e){}}
 function uavNet(d){if(d.k==='call'){const a=+d.a;if(!isFinite(a))return;{const mu=UAVS.find(q=>q.mine&&q.st!=='gone');if(mu){if(mu.t<3&&mu.a<=a)return;if(mu.t<3){uavSndStop(mu);scene.remove(mu.g);UAVS.splice(UAVS.indexOf(mu),1);{const r=SLOT.g.find(q=>q&&q.k==='radio'&&q.used);if(r)r.used=false;slotSync();}toast('Both called at once · enemy drone has priority, radio returned');}else return;}}
-  for(const u of UAVS.filter(u=>!u.mine)){uavSndStop(u);scene.remove(u.g);UAVS.splice(UAVS.indexOf(u),1);}uavMake(false,a,d.dir<0?-1:1);toast('Enemy recon drone inbound!');}
+  for(const u of UAVS.filter(u=>!u.mine)){uavSndStop(u);scene.remove(u.g);UAVS.splice(UAVS.indexOf(u),1);}uavMake(false,a,d.dir<0?-1:1);}
   else if(d.k==='hit'){const u=UAVS.find(q=>q.mine===!d.own&&q.st!=='gone');if(u)uavDamage(u,+d.dm||0,false);}}
 function uavReset(){for(const u of UAVS){uavSndStop(u);scene.remove(u.g);}UAVS.length=0;}
 // what my drone sees: the other player, live, while it is on station
@@ -6812,7 +6812,7 @@ function mpAttach(room,kind,role,code,why){
   NT.pend.clear();NT.seen.clear();RPS.buf=[];RPS.off=null;RPS.lastT=0;RPS.vis=false;RPS.al=false;
   MPM.on=true;MPM.guest=role==='g';MPM.hp=GAME.pHpStart;player.reserve=SPARE;
   room.presence({v:NET_V,role,nm:myName(),tf:role==='h'?TFSYNC.map(k=>+GAME[k]):undefined}).catch(()=>{});
-  ['shot','hit','ack','wild','need','roster','dhit','bhit','brhit','take','carve','silo','bmaul','ugvf','uhit','at4','uav','drop','dtake','pug','drs','drf','drh','drk'].forEach(t=>room.on(t,m=>{if(m.sameTab||NT.room!==room)return;try{onMsg(t,m.data||{},m);}catch(e){console.warn('net',t,e);}},()=>{}));
+  ['shot','hit','ack','wild','need','roster','dhit','bhit','brhit','take','carve','silo','bmaul','ugvf','uhit','at4','uav','drop','dtake','pug','drs','drf','drh','drk','tf'].forEach(t=>room.on(t,m=>{if(m.sameTab||NT.room!==room)return;try{onMsg(t,m.data||{},m);}catch(e){console.warn('net',t,e);}},()=>{}));
   if(MPM.guest)clearWildlife();
   setLooks(MPM.guest);
   if(P2M)P2M.visible=false;
@@ -6828,6 +6828,8 @@ function mpLeave(quiet){const r=NT.room,wasG=MPM.guest;if(!quiet&&r&&NT.wasOpp)p
 function mpStart(){if(NT.role!=='h'||!NT.opp)return;const M=NT.M;if(M.ph!=='wait'&&M.ph!=='over')return;M.sc=[0,0];M.r=0;M.lw='';hostNextRound();mpUI();}
 function hostNextRound(){const M=NT.M;M.go=0;M.r++;M.ph='count';M.left=5;M.why='';M.sd=(Math.random()*1e9|0)+1;roundReset();}
 function roundReset(){const r=NT.M.r;NT.myR=r;resReset();try{secReset();}catch(e){}
+  try{if(CHUTE.on)chuteLand();if(ZIP.on){if(ZIP.lift)liftEnd(false);else zipEnd(false);}SPW.open=false;SPW.t=0;if(mapOpen)setMap(false);}catch(e){}   // nobody carries a zip line, lift, parachute or open map into the new round
+  RPS.buf=[];RPS.vis=false;   // and the opponent's old pose must not be drawn gliding to the base
   const mine=(MPM.guest?(r%2===0):(r%2===1))?P1_SPAWN:P2_SPAWN;   // host starts NE, sides swap every round
   player.action=null;player.slide=null;player.mantle=null;player.pos.set(mine.x,groundH(mine.x,mine.z)+0.05,mine.z);player.vel.set(0,0,0);
   player.stance='stand';snapLayer('idle');player.alive=true;player.ammo=MAG;player.reserve=SPARE;player.reloadT=-1;boltT=-1;MPM.hp=GAME.pHpStart;
@@ -7062,8 +7064,8 @@ function netStep(dt){farFlashStep(dt);
   const mine=host?M.sc[0]:M.sc[1],theirs=host?M.sc[1]:M.sc[0],sc='You '+mine+' – '+theirs+' Opponent';let txt='';
   if(!NT.opp&&NT.wasOpp&&M.ph!=='wait'&&M.ph!=='over')txt='Opponent connection lost · waiting for them · '+sc;
   else if(M.ph==='wait')txt=NT.opp?(host?oppName()+' here · Esc → Start match':oppName()+' here · waiting for the host to start'):'Direct match'+' · waiting for the opponent';
-  else if(M.ph==='count')txt='Round '+M.r+' · '+sc+' · starts in '+Math.max(1,Math.ceil(M.left));
-  else if(M.ph==='live')txt='Round '+M.r+' · '+sc+' · '+Math.round(MPM.hp)+' hp'+(SECT.rsp>=0?' · respawn in '+Math.ceil(SECT.rsp):'');
+  else if(M.ph==='count')txt='Round '+M.r+' starts in '+Math.max(1,Math.ceil(M.left));
+  else if(M.ph==='live')txt=SECT.rsp>=0?'Respawn in '+Math.ceil(SECT.rsp):'';   // no score line while playing: the scoreboard (hold K) has it
   else if(M.ph==='end'){const won=M.lw===(host?'h':'g');txt=(M.lw?(won?'Round won':'Round lost'):'Round drawn')+(M.why?' · '+M.why:'')+' · '+sc+' · '+(host?'Enter → next round':'waiting for the host to start the next round');}
   else if(M.ph==='over'){const won=mine>theirs;txt=(won?'You win the match ':'You lose the match ')+mine+'–'+theirs+(host?' · Esc → Rematch':' · waiting for a rematch');}
   if(txt!==NT.banTxt){NT.banTxt=txt;const e=$('mpBan');e.textContent=txt;e.hidden=!txt;}
