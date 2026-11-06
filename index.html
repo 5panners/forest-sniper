@@ -26,7 +26,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-ui);o
 #hudL b{color:var(--amber);font-weight:600}
 #hudR{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));z-index:3;pointer-events:none;font:13px/1.5 var(--f-mono);text-align:right}
 #warn{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:4;font:600 18px var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--warn);text-shadow:0 1px 3px #000;pointer-events:none}
-#toast{position:fixed;top:calc(62px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:4;opacity:0;transition:opacity .25s;pointer-events:none;font:14px var(--f-mono)}
+#toast{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:4;opacity:0;transition:opacity .25s;pointer-events:none;font:14px var(--f-mono)}
 #hit{position:fixed;left:50%;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;border:2px solid #fff;border-radius:50%;opacity:0;pointer-events:none;z-index:4}
 #cross{position:fixed;left:50%;top:50%;width:25px;height:25px;margin:-12px 0 0 -12px;z-index:3;pointer-events:none;background:linear-gradient(#000,#000) 50% 0/1px 6px no-repeat,linear-gradient(#000,#000) 50% 100%/1px 6px no-repeat,linear-gradient(#000,#000) 0 50%/6px 1px no-repeat,linear-gradient(#000,#000) 100% 50%/6px 1px no-repeat;filter:drop-shadow(0 0 0.7px rgba(255,255,255,.9))}#cross::after{content:'';position:absolute;left:11px;top:11px;width:3px;height:3px;border-radius:50%;background:#fff;box-shadow:0 0 1px .5px rgba(0,0,0,.9)}
 #mapPanel{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;pointer-events:none;padding:46px 0 96px;box-sizing:border-box}   /* leaves the compass above and the hotbar below clear */
@@ -82,7 +82,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 #mpDx{flex-basis:100%;background:#252c1d;color:inherit;border:1px solid #435034;border-radius:4px;padding:6px 8px;font:12px var(--f-mono);resize:vertical;word-break:break-all}
 .mpsep{flex-basis:100%;height:0}
 .mpsub{font:600 12px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-#mpBan{position:fixed;left:50%;top:calc(98px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:4;pointer-events:none;font:600 14px var(--f-mono);text-align:center;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+#mpBan{position:fixed;left:50%;top:calc(46px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:4;pointer-events:none;font:600 14px var(--f-mono);text-align:center;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
 #pingEl{position:fixed;left:max(16px,env(safe-area-inset-left,0px));top:calc(50px + env(safe-area-inset-top,0px));z-index:3;pointer-events:none;font:12px/1.5 var(--f-mono);white-space:pre}
 #netDbg{position:fixed;left:max(16px,env(safe-area-inset-left,0px));top:calc(190px + env(safe-area-inset-top,0px));z-index:3;pointer-events:none;font:11px/1.45 var(--f-mono);white-space:pre}
 #resetBtn:disabled{opacity:.4;cursor:default}
@@ -2343,9 +2343,11 @@ function at4LaunchSnd(o){const c=sp3(o.x,o.y,o.z,3500);if(!c)return;const t=c.t0
   if(SND.rifle){const s=AC.createBufferSource();s.buffer=SND.rifle;s.playbackRate.value=0.5;const g=AC.createGain();g.gain.value=2.2*vg;s.connect(g);g.connect(c.inp);s.start(t);}
   tn(c,t,90,30,0.6,1.1*vg,'sine');nz(c,t,0.9,500,0.5,1.0*vg,'lowpass');nz(c,t+0.05,1.4,1800,0.7,0.35*vg);}
 // ---- the opponent holds whatever they hold
-const P2_RIFLE=[],P2_AT4=[];let _p2w=null;
-function at4P2Vis(w){if(!P2PAIRS.length)return;if(!P2_RIFLE.length){const rs=new Set(RIFLE_MESH);for(const [s,t] of P2PAIRS){if(rs.has(s))P2_RIFLE.push(t);if(s===AT4G)P2_AT4.push(t);}}
-  for(const t of P2_RIFLE)t.visible=!w;for(const t of P2_AT4)t.visible=!!w;}
+const P2_RIFLE=[],P2_AT4=[],P2_AR=[],P2_M32=[];let _p2w=null;
+window.__P2W=()=>[P2_RIFLE,P2_AT4,P2_AR,P2_M32].map(a=>a.length?a.every(t=>t.visible):null);
+function netWcode(){const c=WPN.cur;return c==='at4'?1:c==='ar15'?2:c==='m32'?3:c==='none'?4:0;}   // what is in your hands, as the one digit that already travels in every state packet
+function at4P2Vis(w){if(!P2PAIRS.length)return;if(!P2_RIFLE.length){const rs=new Set(RIFLE_MESH);for(const [s,t] of P2PAIRS){if(rs.has(s))P2_RIFLE.push(t);if(s===AT4G)P2_AT4.push(t);if(s===ARG)P2_AR.push(t);if(s===M32G)P2_M32.push(t);}}
+  w=w===true?1:(w|0);for(const t of P2_RIFLE)t.visible=w===0;for(const t of P2_AT4)t.visible=w===1;for(const t of P2_AR)t.visible=w===2;for(const t of P2_M32)t.visible=w===3;}
 function at4Reset(){try{uavReset();}catch(e){}WPN.has=false;WPN.ld=0;WPN.rl=-1;setWeapon('rifle');for(const r of ROCKETS){scene.remove(r.g);r.fl.material.dispose();}ROCKETS.length=0;}
 window.SNIPER_AT4={AT4L,WPN,ROCKETS,fire:at4Fire,step:at4Step,set:setWeapon,blast:at4Blast,spawn:at4Spawn,reload:at4Reload,switch:at4Switch};
 // ================= AR-15: semi-automatic / automatic carbine in 7.62, 30-round magazine, iron sights =================
@@ -3565,7 +3567,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=583;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=584;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -7009,7 +7011,7 @@ function applyRemote(dt){const B=RPS.buf;if(!B.length||!P2M)return;const rt=perf
   const pose=(a.p&&b.p)?(u<=0?a.p:u>=1?b.p:mix(a.p,b.p,u)):(b.p||a.p);
   if(pose&&pose.hipsP&&pose.gunR){const sv=boltT;boltT=typeof (u<0.5?a:b).b==='number'?(u<0.5?a:b).b:-1;
     try{poseBolt();applyPose(pose);}catch(e){}boltT=sv;
-    for(const [s,t] of P2PAIRS){t.position.copy(s.position);t.quaternion.copy(s.quaternion);t.scale.copy(s.scale);if(P2VIS.has(s))t.visible=s.visible;if(s.isLight)t.intensity=s.intensity;}try{at4P2Vis((u<0.5?a:b).w===1);}catch(e){}}
+    for(const [s,t] of P2PAIRS){t.position.copy(s.position);t.quaternion.copy(s.quaternion);t.scale.copy(s.scale);if(P2VIS.has(s))t.visible=s.visible;if(s.isLight)t.intensity=s.intensity;}try{at4P2Vis((u<0.5?a:b).w|0);}catch(e){}}
   if(RFL>0){RFL-=dt;if(!P2FL.g)for(const [s,t] of P2PAIRS){if(s===flashGrp)P2FL.g=t;else if(s===flashLight)P2FL.l=t;}   // the opponent's muzzle flash and the light it throws, driven by the shot event so none are missed between state packets
     if(P2FL.g){P2FL.g.visible=true;P2FL.g.scale.setScalar(1.6+Math.random()*0.7);}if(P2FL.l){if(P2FL.l.parent!==scene)scene.add(P2FL.l);if(P2FL.g)P2FL.g.getWorldPosition(P2FL.l.position);P2FL.l.intensity=3*PL_K;}}
   try{liftRemote(a,b,u);}catch(e){}
@@ -7055,7 +7057,7 @@ function netStep(dt){farFlashStep(dt);
   for(const [n,p] of NT.pend){p.next-=dt;if(p.next<=0){p.next=0.25;p.tries++;NT.room.emit('hit',p.msg).catch(()=>{});if(p.tries>16)NT.pend.delete(n);}}
   // send my state
   NT.sendAcc+=dt;if(NT.sendAcc>=1/SEND_HZ){NT.sendAcc=0;const pl=player;
-    const s={q:++NT.seq,t:Math.round(now),x:nr2(pl.pos.x),y:nr2(pl.pos.y),z:nr2(pl.pos.z),yw:nr3(wrapA(pl.yaw)),p:pl.pose?packPose(pl.pose):null,b:nr2(boltT),hp:Math.round(MPM.hp),al:pl.alive?1:0,r:NT.myR,sp:nr1(Math.hypot(pl.vel.x,pl.vel.z)),st:pl.stance[0],w:WPN.cur==='at4'?1:0,lf:(ZIP.lift&&LIFT.ride)?[LIFTS.indexOf(ZIP.lift),nr3(LIFT.ride.u)]:0,cp:CHUTE.on?[nr2(CHUTE.open),nr2(CHUTE.bank)]:0};
+    const s={q:++NT.seq,t:Math.round(now),x:nr2(pl.pos.x),y:nr2(pl.pos.y),z:nr2(pl.pos.z),yw:nr3(wrapA(pl.yaw)),p:pl.pose?packPose(pl.pose):null,b:nr2(boltT),hp:Math.round(MPM.hp),al:pl.alive?1:0,r:NT.myR,sp:nr1(Math.hypot(pl.vel.x,pl.vel.z)),st:pl.stance[0],w:netWcode(),lf:(ZIP.lift&&LIFT.ride)?[LIFTS.indexOf(ZIP.lift),nr3(LIFT.ride.u)]:0,cp:CHUTE.on?[nr2(CHUTE.open),nr2(CHUTE.bank)]:0};
     const patch={s};if(host)patch.m={ph:M.ph,r:M.r,sd:M.sd|0,sc:M.sc.slice(),left:nr2(M.left),lw:M.lw,wy:M.why||'',tod:nr3(DAY.tod),ri:DAY.rateI,gm:[GAME.pk762],sec:SECT.s.map(s=>[s.own,Math.round(s.cap*100)/100,s.by,s.in|0]),ln:SECT.launch|0,tk:SECT.tk.map(v=>Math.round(v*10)/10)};
     NT.lastSize=JSON.stringify(patch).length;NT.room.presence(patch).catch(()=>{});}
   if(host&&NT.opp){NT.wildAcc+=dt;if(NT.wildAcc>=1/WILD_HZ){NT.wildAcc=0;sendWild();}}
