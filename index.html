@@ -1472,6 +1472,13 @@ let TF_STICKS=0;const _zm=new THREE.Matrix4().makeScale(0,0,0),_tfc=new THREE.Co
 function removeLos(o){if(!o)return;const c=LGRID.get(pkey(Math.floor(o.x/PCELL),Math.floor(o.z/PCELL)));if(c){const i=c.list.indexOf(o);if(i>=0)c.list.splice(i,1);}}
 function _tfPose(o,T){o.position.set(T.x,T.y,T.z);o.rotation.set(T.it[7],T.it[5],T.it[7]*0.7);o.scale.set(T.sc,T.sy,T.sc);}
 function treeFinish(S){const T=S.T;if(!T)return;S.root.visible=false;S.T=null;const m=new THREE.Mesh(TF_STK,TF_CHAR);_tfPose(m,T);m.castShadow=true;m.receiveShadow=true;scene.add(m);TF_STICKS++;removeLos(T.los);}
+/* 155 mm: a blast does not only light trees, it blows some of them straight to a charred stump (no fire) and sets others alight. Which is which comes from the tree's position alone, so both players see the same result without any message. */
+function treeCharNow(T){if(T.dead)return;T.dead=1;T.pend=0;const mh=T.c.mh&&T.c.mh[T.t];if(mh)for(const m of mh)if(m){m.setMatrixAt(T.i,_zm);m.instanceMatrix.needsUpdate=true;}
+  const m=new THREE.Mesh(TF_STK,TF_CHAR);_tfPose(m,T);m.castShadow=true;m.receiveShadow=true;scene.add(m);TF_STICKS++;try{removeLos(T.los);}catch(e){}}
+function treeArty(p,K){if(!tfv('tfOn'))return;const R=K*1.8,g={n:0,max:Math.max(1,tfv('tfChainMax')|0)};let fires=0;
+  for(const T of CON){if(T.dead)continue;const dx=T.x-p.x,dz=T.z-p.z;if(Math.abs(dx)>R||Math.abs(dz)>R)continue;const d=Math.hypot(dx,dz);if(d>R)continue;
+    const u=hsh(T.x*3.17+11.3,T.z*2.71+5.9),f=1-d/R,cp=0.25+0.6*Math.pow(f,0.7),fp=cp+0.12+0.12*f;   // charred: most near the centre, thinning out; alight: a further slice of the rest
+    if(u<cp)treeCharNow(T);else if(u<fp&&fires<8){if(treeIgnite(T,g,false))fires++;}}}
 /* online matches: both games must burn the same trees at about the same time. The shooter alone decides which trees a round ignites and sends one small 'tf' message (the impact point); the spread afterwards is worked out from the trees' positions alone (no random numbers), so nothing else is sent. The host's burn rules (below) travel in its presence, so both players run the same rules. */
 const TFSYNC=['tfOn','tfDur','tfReach','tfMax','tfSim','tfChain','tfChainDist','tfChainMax','tfChainDelay','tfSpread','tfHurt','tfDps','tfHurtR'];
 function tfv(k){try{if(MPM.on&&NT.role==='g'&&NT.opp){const c=NT.opp.presence&&NT.opp.presence.tf;if(Array.isArray(c)){const i=TFSYNC.indexOf(k);if(i>=0&&isFinite(c[i]))return +c[i];}}}catch(e){}return GAME[k];}
@@ -2420,7 +2427,7 @@ function artFireSnd(x,y,z){const c=sp3(x,y,z,6000);if(!c)return;const t=AC.curre
   tn(c,t,85,32,0.6,1.0*vg*B,'sine');nz(c,t,0.8,300,0.6,1.2*vg*B,'lowpass');nz(c,t,0.12,1500,0.8,0.5*vg*B,'bandpass');}
 function artBlast(p,S,h){
   BL.t=0;BL.k=6;BLL.position.copy(p).y+=3;
-  {const idx=S.sh.indexOf(h);if(idx%2===0)try{treeBlastNet(p,{mine:S.mine});}catch(e){}}
+  try{treeArty(p,S.K);}catch(e){}
   emit(gFire,matFire,V(p.x,p.y+1.5,p.z),V(0,3,0),0.6,{s:2.4,grow:9});emit(gFire,matFire,V(p.x,p.y+2.5,p.z),V(0,5,0),0.45,{s:1.5,grow:6});
   for(let i=0;i<34;i++){const a=Math.random()*PI*2,k=2.5+Math.random()*8;emit(gPuff,i%2?UGV_SMK:matSmoke,p,V(Math.cos(a)*k,2+Math.random()*9,Math.sin(a)*k),3.4,{s:0.8,grow:3.4,drag:1.2});}
   for(let i=0;i<34;i++)emit(gSpark,matFire,p,rv(22).add(V(0,9,0)),0.8,{s:1.8,grav:9});
@@ -3672,7 +3679,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=617;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=618;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -7041,7 +7048,7 @@ function playLost(){const C=AC;if(!C||!soundOn)return;const K=synthKit(null,null
 window.__boom=(d,r)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();const p=camera.position.clone().addScaledVector(f,d||25);p.y=groundH(p.x,p.z)+1;at4Blast(p,r||8);};
 window.__bl=()=>[BLL.intensity,BL.t,BLL.position.x,BLL.position.y,BLL.position.z,camera.position.x,camera.position.y,camera.position.z];
 window.__wn=t=>{const CP=CTRL_PTS();const L=RES_NODES.filter(n=>n.t===t);return [L.length,L.filter(n=>CP.some(q=>Math.hypot(n.x-q.x,n.z-q.z)<250)).length];};
-window.__art={land:()=>{player.pos.y=groundH(player.pos.x,player.pos.z)+0.05;player.vel.set(0,0,0);},hp:()=>[MPM.hp,player.alive],fwd:(d)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();return [camera.position.x+f.x*d,camera.position.z+f.z*d];},ART,SLOT,aim:artAim,call:artCall,give:()=>{SLOT.g[0]={k:"arty"};slotSync();}};
+window.__art={mid:()=>{const T=CON[CON.length>>1];return [T.x,T.z]},tree:()=>({st:TF_STICKS,dead:CON.filter(t=>t.dead).length}),blast:(x,z,K)=>treeArty(V(x,groundH(x,z),z),K),land:()=>{player.pos.y=groundH(player.pos.x,player.pos.z)+0.05;player.vel.set(0,0,0);},hp:()=>[MPM.hp,player.alive],fwd:(d)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();return [camera.position.x+f.x*d,camera.position.z+f.z*d];},ART,SLOT,aim:artAim,call:artCall,give:()=>{SLOT.g[0]={k:"arty"};slotSync();}};
 window.__acState=()=>AC?AC.state:"none";
 window.__hurt=()=>[!!SND.hurt,SND.hurt&&SND.hurt.duration];
 window.__capSnd=()=>{audioUnlock();playCaptured();return "ok";};
