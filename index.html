@@ -2412,12 +2412,12 @@ function artVoice(h,P,dt,stop){const dc=camera.position.distanceTo(P);
   v.g.gain.setTargetAtTime(Math.min(1,dc/150)*1.4*vol,t,0.05);}
 // the same recorded burst as a GD01 going up, slowed so it is deeper, much louder and carried a long way; the distance filter muffles it the further away you are
 function artBoomSnd(p){const c=sp3(p.x,p.y,p.z,9000);if(!c)return;const t=c.t0,vg=(typeof VOLS!=='undefined'?VOLS.gun*VOLS.art:1),B=Math.min(10,1+c.dist/120);
-  if(SND.m32x){const sx=AC.createBufferSource();sx.buffer=SND.m32x;sx.playbackRate.value=0.55;const gx=AC.createGain();gx.gain.value=3.2*vg*B*GAME.rDBoom;sx.connect(gx);gx.connect(c.inp);sx.start(t);}
-  tn(c,t,72,13,2.4,2.4*vg*B,'sine');tn(c,t,48,12,3.0,1.6*vg*B,'triangle');nz(c,t,3.2,190,0.5,2.6*vg*B,'lowpass');nz(c,t,0.2,2000,0.8,0.7*vg*B,'bandpass');}
+  if(SND.m32x){const sx=AC.createBufferSource();sx.buffer=SND.m32x;sx.playbackRate.value=0.72;const gx=AC.createGain();gx.gain.value=3.0*vg*B*GAME.rDBoom;sx.connect(gx);gx.connect(c.inp);sx.start(t);}
+  tn(c,t,100,30,1.3,1.5*vg*B,'sine');nz(c,t,2.6,420,0.6,2.2*vg*B,'lowpass');nz(c,t,0.6,1100,0.7,0.9*vg*B,'bandpass');nz(c,t,0.15,2300,0.8,0.8*vg*B,'bandpass');}   // a full-bodied boom with a crack and body in the mids, not a pure sub-bass
 // the battery firing, far off beyond the map edge: a deep muffled thud the moment each shell leaves (not delayed by the speed of sound, so you hear the firing and then the scream coming in)
 function artFireSnd(x,y,z){const c=sp3(x,y,z,6000);if(!c)return;const t=AC.currentTime+0.04,vg=(typeof VOLS!=='undefined'?VOLS.gun*VOLS.art:1),B=Math.min(10,1+c.dist/120)*(0.8+Math.random()*0.4);
-  if(SND.m32x){const sx=AC.createBufferSource();sx.buffer=SND.m32x;sx.playbackRate.value=0.42+Math.random()*0.06;const gx=AC.createGain();gx.gain.value=0.9*vg*B;sx.connect(gx);gx.connect(c.inp);sx.start(t);}
-  tn(c,t,64,20,0.9,1.3*vg*B,'sine');nz(c,t,0.9,170,0.5,1.1*vg*B,'lowpass');}
+  if(SND.m32x){const sx=AC.createBufferSource();sx.buffer=SND.m32x;sx.playbackRate.value=0.66+Math.random()*0.08;const gx=AC.createGain();gx.gain.value=1.2*vg*B;sx.connect(gx);gx.connect(c.inp);sx.start(t);}
+  tn(c,t,85,32,0.6,1.0*vg*B,'sine');nz(c,t,0.8,300,0.6,1.2*vg*B,'lowpass');nz(c,t,0.12,1500,0.8,0.5*vg*B,'bandpass');}
 function artBlast(p,S,h){
   BL.t=0;BL.k=1.1;BLL.position.copy(p).y+=3;
   {const idx=S.sh.indexOf(h);if(idx%2===0)try{treeBlastNet(p,{mine:S.mine});}catch(e){}}
@@ -3672,7 +3672,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=613;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=614;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
