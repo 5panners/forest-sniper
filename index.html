@@ -3564,7 +3564,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=597;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=599;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5403,6 +5403,7 @@ addEventListener('keydown',e=>{if(e.code!=='KeyY'||e.repeat||!playing||MPM.on)re
 // single player: a side whose tickets reach 0 loses the round; a banner shows, then the round restarts
 const SOLO_END={t:-1,el:null};
 function soloNext(){if(SOLO_END.t<0)return;SOLO_END.t=-1;if(SOLO_END.el)SOLO_END.el.style.display='none';
+  GAME.sBase=secTeam()===1?2:1;try{save();}catch(e){}   // sides switch ends after every game
   secReset();try{sbReset();}catch(e){}try{resReset();}catch(e){console.warn('round reset',e);}try{for(const q of DRS)q.tele=true;}catch(e){}try{respawn();}catch(e){}const sp=secSpawnFor(secTeam());secPlace(sp.x,sp.z);toast('New game');}
 function soloOver(){return !MPM.on&&playing&&SOLO_END.t>=0;}
 function soloEnd(dt){
@@ -6108,7 +6109,7 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
   css.textContent+=`#paneCg .cgname{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px}#paneCg .cgname label{font:600 13px var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}#paneCg .cgname input{width:200px;max-width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:rgba(0,0,0,.35);color:inherit;font:600 14px var(--f-ui)}#paneCg .cgname small{opacity:.65;font-size:12px}`;
   const build=()=>{const on=GAME.gMode===1,ne=DR_NE(),nf=DR_NF();
     pn.innerHTML='<div class="seg"><button type="button" data-m="0" aria-pressed="'+(!on)+'"><b>Solo</b><small>You and GD01 bots, offline</small></button><button type="button" data-m="1" aria-pressed="'+on+'"><b>Online 1v1</b><small>You against a friend, set up below</small></button>'
-      +(on?'':'<button type="button" data-b="1" style="margin-left:14px" aria-pressed="'+(GAME.sBase!==2)+'"><b>Base 1</b><small>Start north-east</small></button><button type="button" data-b="2" aria-pressed="'+(GAME.sBase===2)+'"><b>Base 2</b><small>Start south-west</small></button>')+'</div>'
+      +'</div>'
       +'<p class="sec" style="margin-top:16px">GD01 bots</p>'
       +`<div class="gr"><label>Enemy bots (red team)</label><input type="range" min="0" max="${MAXB}" step="1" value="${ne}" data-k="dCnt"><output>${ne}</output></div>`
       +`<div class="gr"><label>Friendly bots (your team)</label><input type="range" min="0" max="${MAXB}" step="1" value="${nf}" data-k="dFr"><output>${nf}</output></div>`
@@ -6116,7 +6117,6 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
       +'<div class="note" style="margin:8px 0 16px">'+(on?'':'Red bots start at the red base and friendly bots at yours. Both sides take flags and shoot the other side, and every kill and death moves the tickets. Fine-tune each bot in the <b>GD01</b> tab. You can change the numbers mid-game from the menu.')+'</div>'
       ;
     pn.querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>{GAME.gMode=+b.dataset.m;save();build();});
-    pn.querySelectorAll('button[data-b]').forEach(b=>b.onclick=()=>{GAME.sBase=+b.dataset.b;save();build();try{if(CHUTE.dropped)toast('Press Apply & reload to start from the other base');}catch(e){}});
     pn.querySelectorAll('input[data-k]').forEach(i=>i.oninput=()=>{GAME[i.dataset.k]=parseFloat(i.value);save();build2(i.dataset.k);});
     // the player name, then the online match controls (moved here from the old Multiplayer tab, shown in Online 1v1)
     const nm=document.createElement('div');nm.className='cgname';nm.innerHTML='<label for="cgName">Your name</label><input type="text" id="cgName" maxlength="16" placeholder="Player" autocomplete="off" spellcheck="false"><small>Shown to your opponent in online matches</small>';
@@ -6877,8 +6877,8 @@ function synthKit(ctx,dest,level){const C=ctx||AC;const t0=C.currentTime+0.06;
     const g=C.createGain();g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(0.0001,t+1.1);o.connect(g);g.connect(out);o.start(t);o.stop(t+1.2);
     const n=C.createBufferSource();n.buffer=nb;const f=C.createBiquadFilter();f.type='lowpass';f.frequency.value=380;const ng=C.createGain();ng.gain.setValueAtTime(v*0.9,t);ng.gain.exponentialRampToValueAtTime(0.0001,t+0.25);n.connect(f);f.connect(ng);ng.connect(out);n.start(t);n.stop(t+0.3);};
   const crash=(t,v)=>{const n=C.createBufferSource();n.buffer=nb;const f=C.createBiquadFilter();f.type='highpass';f.frequency.value=5200;const g=C.createGain();g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(0.0001,t+1.8);n.connect(f);f.connect(g);g.connect(out);g.connect(dl);n.start(t);n.stop(t+1);};
-  const snare=(t,v)=>{const n=C.createBufferSource();n.buffer=nb;const f=C.createBiquadFilter();f.type='bandpass';f.frequency.value=1500;f.Q.value=0.6;const lp=C.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3800;const g=C.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(v*0.55,t+0.012);g.gain.exponentialRampToValueAtTime(0.0001,t+0.26);n.connect(f);f.connect(lp);lp.connect(g);g.connect(out);n.start(t);n.stop(t+0.3);   // a soft, rounded drum head, not a crack
-    const o=C.createOscillator();o.type='sine';o.frequency.setValueAtTime(230,t);o.frequency.exponentialRampToValueAtTime(140,t+0.12);const og=C.createGain();og.gain.setValueAtTime(v*0.9,t);og.gain.exponentialRampToValueAtTime(0.0001,t+0.2);o.connect(og);og.connect(out);o.start(t);o.stop(t+0.25);};
+  const snare=(t,v)=>{const n=C.createBufferSource();n.buffer=nb;const f=C.createBiquadFilter();f.type='bandpass';f.frequency.value=2600;f.Q.value=0.8;const lp=C.createBiquadFilter();lp.type='lowpass';lp.frequency.value=7500;const g=C.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(v*1.0,t+0.004);g.gain.exponentialRampToValueAtTime(0.0001,t+0.22);n.connect(f);f.connect(lp);lp.connect(g);g.connect(out);n.start(t);n.stop(t+0.3);   // a soft, rounded drum head, not a crack
+    const o=C.createOscillator();o.type='triangle';o.frequency.setValueAtTime(260,t);o.frequency.exponentialRampToValueAtTime(160,t+0.1);const og=C.createGain();og.gain.setValueAtTime(v*0.6,t);og.gain.exponentialRampToValueAtTime(0.0001,t+0.2);o.connect(og);og.connect(out);o.start(t);o.stop(t+0.25);};
   return {t0,brass,timp,crash,snare};}
 // connected: drone, timpani, a rising motif D F A D' ... C Bb A, then a held Dm chord and a crash
 function playFanfare(ctx,dest){const C=ctx||AC;if(!C||(!ctx&&!soundOn))return;const K=synthKit(ctx,dest,0.5),t0=K.t0,{brass,timp,crash}=K;
