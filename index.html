@@ -1478,14 +1478,20 @@ let TF_STICKS=0;const _zm=new THREE.Matrix4().makeScale(0,0,0),_tfc=new THREE.Co
 function removeLos(o){if(!o)return;const c=LGRID.get(pkey(Math.floor(o.x/PCELL),Math.floor(o.z/PCELL)));if(c){const i=c.list.indexOf(o);if(i>=0)c.list.splice(i,1);}}
 function _tfPose(o,T){o.position.set(T.x,T.y,T.z);o.rotation.set(T.it[7],T.it[5],T.it[7]*0.7);o.scale.set(T.sc,T.sy,T.sc);}
 /* every burnt stick lives in ONE instanced mesh (one draw call, one shadow draw) instead of a mesh each */
-const TF_CAP=3000,_tfO=new THREE.Object3D();let TF_IM=null;
+const TF_EXTRA=[],TF_CAP=3000,_tfO=new THREE.Object3D();let TF_IM=null;
 function tfStickAdd(T){if(!TF_IM){TF_IM=new THREE.InstancedMesh(TF_STK,TF_CHAR,TF_CAP);TF_IM.count=0;TF_IM.frustumCulled=false;TF_IM.castShadow=true;TF_IM.receiveShadow=true;scene.add(TF_IM);}
-  if(TF_IM.count>=TF_CAP){const m=new THREE.Mesh(TF_STK,TF_CHAR);_tfPose(m,T);m.castShadow=true;m.receiveShadow=true;scene.add(m);return;}
+  if(TF_IM.count>=TF_CAP){const m=new THREE.Mesh(TF_STK,TF_CHAR);_tfPose(m,T);m.castShadow=true;m.receiveShadow=true;scene.add(m);TF_EXTRA.push(m);return;}
   _tfPose(_tfO,T);_tfO.updateMatrix();TF_IM.setMatrixAt(TF_IM.count++,_tfO.matrix);TF_IM.instanceMatrix.needsUpdate=true;}
 function treeFinish(S){const T=S.T;if(!T)return;S.root.visible=false;S.T=null;tfStickAdd(T);TF_STICKS++;removeLos(T.los);}
 /* 155 mm: a blast does not only light trees, it blows some of them straight to a charred stump (no fire) and sets others alight. Which is which comes from the tree's position alone, so both players see the same result without any message. */
 function treeCharNow(T){if(T.dead)return;T.dead=1;T.pend=0;const mh=T.c.mh&&T.c.mh[T.t];if(mh)for(const m of mh)if(m){m.setMatrixAt(T.i,_zm);m.instanceMatrix.needsUpdate=true;}
   tfStickAdd(T);TF_STICKS++;try{removeLos(T.los);}catch(e){}}
+/* a new game / round: every burnt, burning or charred tree grows back, the fires go out, the sticks are removed */
+function treeReset(){try{for(const S of TFS)if(S.T){S.root.visible=false;S.T=null;}TF_PEND.length=0;
+  if(TF_IM){TF_IM.count=0;TF_IM.instanceMatrix.needsUpdate=true;}for(const m of TF_EXTRA)scene.remove(m);TF_EXTRA.length=0;TF_STICKS=0;
+  for(const T of CON){if(!T.dead&&!T.pend)continue;T.dead=0;T.pend=0;const it=T.it,mh=T.c.mh&&T.c.mh[T.t];
+    if(mh){_eu.set(it[7],it[5],it[7]*0.7);_qq.setFromEuler(_eu);_m4.compose(_pv.set(it[0],it[1],it[2]),_qq,_sv.set(it[3],it[4],it[3]));for(const m of mh)if(m){m.setMatrixAt(T.i,_m4);m.instanceMatrix.needsUpdate=true;}}
+    if(T.los){const c=LGRID.get(pkey(Math.floor(T.los.x/PCELL),Math.floor(T.los.z/PCELL)));if(!c||c.list.indexOf(T.los)<0)addLos(T.los);}}}catch(e){console.warn('tree reset',e);}}
 function treeArty(p,K){if(!tfv('tfOn'))return;const R=K*1.8,g={n:0,max:Math.max(1,tfv('tfChainMax')|0)};let fires=0;
   for(const T of CON){if(T.dead)continue;const dx=T.x-p.x,dz=T.z-p.z;if(Math.abs(dx)>R||Math.abs(dz)>R)continue;const d=Math.hypot(dx,dz);if(d>R)continue;
     const u=hsh(T.x*3.17+11.3,T.z*2.71+5.9),f=1-d/R,cp=0.25+0.6*Math.pow(f,0.7),fp=cp+0.12+0.12*f;   // charred: most near the centre, thinning out; alight: a further slice of the rest
@@ -3690,7 +3696,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=621;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=622;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3938,7 +3944,7 @@ function resBake(CL,glowM,mat){const parts=CL.map(n=>{const g=RES_GEO[n.t];retur
 function resSetRange(mesh,n,v){if(!mesh||n.vs==null)return;const a=mesh.geometry.attributes.position,s3=n.vs*3,e3=(n.vs+n.vc)*3;
   if(v){for(let i=s3;i<e3;i+=3){a.array[i]=n.x;a.array[i+1]=n.y;a.array[i+2]=n.z;}}else a.array.set(mesh.userData.orig.subarray(s3,e3),s3);a.needsUpdate=true;}
 function resSetGot(n,v){n.got=v;resSetRange(n.cm,n,v);resSetRange(n.gim,n,v);}
-function resReset(){try{bearReset();}catch(e){}STAM.v=GAME.stStart/100;BOOST.on=false;HEAL.pool=0;STAM.lock=false;for(const n of RES_NODES)if(n.got)resSetGot(n,false);for(const k in INV)INV[k]=0;invUI();try{at4Reset();}catch(e){}try{slotReset();}catch(e){console.warn('slots',e);}}
+function resReset(){try{treeReset();}catch(e){}try{bearReset();}catch(e){}STAM.v=GAME.stStart/100;BOOST.on=false;HEAL.pool=0;STAM.lock=false;for(const n of RES_NODES)if(n.got)resSetGot(n,false);for(const k in INV)INV[k]=0;invUI();try{at4Reset();}catch(e){}try{slotReset();}catch(e){console.warn('slots',e);}}
 function resRemoteTake(i){const n=RES_NODES[i];if(n&&!n.got)resSetGot(n,true);}
 function resNearest(){const p=player.pos;let best=null,bd=2.7*2.7;const cx=Math.floor(p.x/8),cz=Math.floor(p.z/8);
   for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const L=RES_CELLS.get((cx+a)+','+(cz+b));if(!L)continue;
@@ -7060,7 +7066,7 @@ window.__boom=(d,r)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.
 window.__bl=()=>[BLL.intensity,BL.t,BLL.position.x,BLL.position.y,BLL.position.z,camera.position.x,camera.position.y,camera.position.z];
 window.__wn=t=>{const CP=CTRL_PTS();const L=RES_NODES.filter(n=>n.t===t);return [L.length,L.filter(n=>CP.some(q=>Math.hypot(n.x-q.x,n.z-q.z)<250)).length];};
 window.__scn=()=>({scene,renderer,camera});
-window.__art={mid:()=>{const T=CON[CON.length>>1];return [T.x,T.z]},tree:()=>({st:TF_STICKS,dead:CON.filter(t=>t.dead).length}),blast:(x,z,K)=>treeArty(V(x,groundH(x,z),z),K),land:()=>{player.pos.y=groundH(player.pos.x,player.pos.z)+0.05;player.vel.set(0,0,0);},hp:()=>[MPM.hp,player.alive],fwd:(d)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();return [camera.position.x+f.x*d,camera.position.z+f.z*d];},ART,SLOT,aim:artAim,call:artCall,give:()=>{SLOT.g[0]={k:"arty"};slotSync();}};
+window.__art={rr:()=>resReset(),mid:()=>{const T=CON[CON.length>>1];return [T.x,T.z]},tree:()=>({st:TF_STICKS,dead:CON.filter(t=>t.dead).length}),blast:(x,z,K)=>treeArty(V(x,groundH(x,z),z),K),land:()=>{player.pos.y=groundH(player.pos.x,player.pos.z)+0.05;player.vel.set(0,0,0);},hp:()=>[MPM.hp,player.alive],fwd:(d)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();return [camera.position.x+f.x*d,camera.position.z+f.z*d];},ART,SLOT,aim:artAim,call:artCall,give:()=>{SLOT.g[0]={k:"arty"};slotSync();}};
 window.__acState=()=>AC?AC.state:"none";
 window.__hurt=()=>[!!SND.hurt,SND.hurt&&SND.hurt.duration];
 window.__capSnd=()=>{audioUnlock();playCaptured();return "ok";};
