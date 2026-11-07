@@ -1200,7 +1200,13 @@ function terrainMesh(H,dSA,dRA,LeA,CwA,n,step,o,lowerInside,skirt){
   return {g,VC};}
 const terrMat=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:1,metalness:0});
 const fineT=terrainMesh(FH,FdS,FdR,FLe,FCw,FN,FS,-FE,false,true);
-const fineMesh=new THREE.Mesh(fineT.g,terrMat);fineMesh.receiveShadow=true;scene.add(fineMesh);
+/* the fine terrain is one 350k-triangle soup; cut into square tiles so the camera only draws (and the sun only shades) the ones in view */
+function terrTiles(g,ext,nt){const P=g.attributes.position.array,C=g.attributes.color.array,N=g.attributes.normal.array,T=P.length/9,cnt=new Uint32Array(nt*nt),tid=new Uint16Array(T),sz=ext*2/nt;
+  for(let t=0;t<T;t++){const b=t*9,cx=(P[b]+P[b+3]+P[b+6])/3,cz=(P[b+2]+P[b+5]+P[b+8])/3;const ix=Math.min(nt-1,Math.max(0,Math.floor((cx+ext)/sz))),iz=Math.min(nt-1,Math.max(0,Math.floor((cz+ext)/sz)));const k=iz*nt+ix;tid[t]=k;cnt[k]++;}
+  const pa=[],ca=[],na=[],fill=new Uint32Array(nt*nt);for(let k=0;k<nt*nt;k++){pa.push(new Float32Array(cnt[k]*9));ca.push(new Float32Array(cnt[k]*9));na.push(new Float32Array(cnt[k]*9));}
+  for(let t=0;t<T;t++){const k=tid[t],o=fill[k]++*9,b=t*9;for(let q=0;q<9;q++){pa[k][o+q]=P[b+q];ca[k][o+q]=C[b+q];na[k][o+q]=N[b+q];}}
+  const out=[];for(let k=0;k<nt*nt;k++){if(!cnt[k])continue;const tg=new THREE.BufferGeometry();tg.setAttribute('position',new THREE.BufferAttribute(pa[k],3));tg.setAttribute('color',new THREE.BufferAttribute(ca[k],3));tg.setAttribute('normal',new THREE.BufferAttribute(na[k],3));tg.computeBoundingSphere();tg.computeBoundingBox();out.push(tg);}return out;}
+const fineTiles=terrTiles(fineT.g,FE+2,8).map(tg=>{const m=new THREE.Mesh(tg,terrMat);m.receiveShadow=true;scene.add(m);return m;});
 const coarseT=terrainMesh(CH,CdS,CdR,CLe,CCw,CN,CS,-HALF,true,false);
 const coarseMesh=new THREE.Mesh(coarseT.g,terrMat);coarseMesh.receiveShadow=true;scene.add(coarseMesh);
 
@@ -1471,10 +1477,15 @@ for(let k=0;k<8;k++)mkTfSlot();
 let TF_STICKS=0;const _zm=new THREE.Matrix4().makeScale(0,0,0),_tfc=new THREE.Color();
 function removeLos(o){if(!o)return;const c=LGRID.get(pkey(Math.floor(o.x/PCELL),Math.floor(o.z/PCELL)));if(c){const i=c.list.indexOf(o);if(i>=0)c.list.splice(i,1);}}
 function _tfPose(o,T){o.position.set(T.x,T.y,T.z);o.rotation.set(T.it[7],T.it[5],T.it[7]*0.7);o.scale.set(T.sc,T.sy,T.sc);}
-function treeFinish(S){const T=S.T;if(!T)return;S.root.visible=false;S.T=null;const m=new THREE.Mesh(TF_STK,TF_CHAR);_tfPose(m,T);m.castShadow=true;m.receiveShadow=true;scene.add(m);TF_STICKS++;removeLos(T.los);}
+/* every burnt stick lives in ONE instanced mesh (one draw call, one shadow draw) instead of a mesh each */
+const TF_CAP=3000,_tfO=new THREE.Object3D();let TF_IM=null;
+function tfStickAdd(T){if(!TF_IM){TF_IM=new THREE.InstancedMesh(TF_STK,TF_CHAR,TF_CAP);TF_IM.count=0;TF_IM.frustumCulled=false;TF_IM.castShadow=true;TF_IM.receiveShadow=true;scene.add(TF_IM);}
+  if(TF_IM.count>=TF_CAP){const m=new THREE.Mesh(TF_STK,TF_CHAR);_tfPose(m,T);m.castShadow=true;m.receiveShadow=true;scene.add(m);return;}
+  _tfPose(_tfO,T);_tfO.updateMatrix();TF_IM.setMatrixAt(TF_IM.count++,_tfO.matrix);TF_IM.instanceMatrix.needsUpdate=true;}
+function treeFinish(S){const T=S.T;if(!T)return;S.root.visible=false;S.T=null;tfStickAdd(T);TF_STICKS++;removeLos(T.los);}
 /* 155 mm: a blast does not only light trees, it blows some of them straight to a charred stump (no fire) and sets others alight. Which is which comes from the tree's position alone, so both players see the same result without any message. */
 function treeCharNow(T){if(T.dead)return;T.dead=1;T.pend=0;const mh=T.c.mh&&T.c.mh[T.t];if(mh)for(const m of mh)if(m){m.setMatrixAt(T.i,_zm);m.instanceMatrix.needsUpdate=true;}
-  const m=new THREE.Mesh(TF_STK,TF_CHAR);_tfPose(m,T);m.castShadow=true;m.receiveShadow=true;scene.add(m);TF_STICKS++;try{removeLos(T.los);}catch(e){}}
+  tfStickAdd(T);TF_STICKS++;try{removeLos(T.los);}catch(e){}}
 function treeArty(p,K){if(!tfv('tfOn'))return;const R=K*1.8,g={n:0,max:Math.max(1,tfv('tfChainMax')|0)};let fires=0;
   for(const T of CON){if(T.dead)continue;const dx=T.x-p.x,dz=T.z-p.z;if(Math.abs(dx)>R||Math.abs(dz)>R)continue;const d=Math.hypot(dx,dz);if(d>R)continue;
     const u=hsh(T.x*3.17+11.3,T.z*2.71+5.9),f=1-d/R,cp=0.25+0.6*Math.pow(f,0.7),fp=cp+0.12+0.12*f;   // charred: most near the centre, thinning out; alight: a further slice of the rest
@@ -3679,7 +3690,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=620;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=621;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -7048,6 +7059,7 @@ function playLost(){const C=AC;if(!C||!soundOn)return;const K=synthKit(null,null
 window.__boom=(d,r)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();const p=camera.position.clone().addScaledVector(f,d||25);p.y=groundH(p.x,p.z)+1;at4Blast(p,r||8);};
 window.__bl=()=>[BLL.intensity,BL.t,BLL.position.x,BLL.position.y,BLL.position.z,camera.position.x,camera.position.y,camera.position.z];
 window.__wn=t=>{const CP=CTRL_PTS();const L=RES_NODES.filter(n=>n.t===t);return [L.length,L.filter(n=>CP.some(q=>Math.hypot(n.x-q.x,n.z-q.z)<250)).length];};
+window.__scn=()=>({scene,renderer,camera});
 window.__art={mid:()=>{const T=CON[CON.length>>1];return [T.x,T.z]},tree:()=>({st:TF_STICKS,dead:CON.filter(t=>t.dead).length}),blast:(x,z,K)=>treeArty(V(x,groundH(x,z),z),K),land:()=>{player.pos.y=groundH(player.pos.x,player.pos.z)+0.05;player.vel.set(0,0,0);},hp:()=>[MPM.hp,player.alive],fwd:(d)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();return [camera.position.x+f.x*d,camera.position.z+f.z*d];},ART,SLOT,aim:artAim,call:artCall,give:()=>{SLOT.g[0]={k:"arty"};slotSync();}};
 window.__acState=()=>AC?AC.state:"none";
 window.__hurt=()=>[!!SND.hurt,SND.hurt&&SND.hurt.duration];
