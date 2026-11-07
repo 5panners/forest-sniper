@@ -2282,7 +2282,7 @@ const ROCKETS=[];
 const RKL=new THREE.PointLight(0xffa24a,0,45,2),BLL=new THREE.PointLight(0xffc070,0,150,2);scene.add(RKL);scene.add(BLL);const BL={t:9,k:1},AT4L={k:0.02};
 function at4Lights(dt){try{treeFireStep(dt);}catch(e){}let best=null,bd=1e9;for(const r of ROCKETS){const d=r.p.distanceToSquared(camera.position);if(d<bd){bd=d;best=r;}}
   if(best){RKL.position.copy(best.p).addScaledVector(best.v,-0.012);RKL.intensity=PL_K*AT4L.k*(best.mine?1.2:1.5)*(0.8+Math.random()*0.4);}else RKL.intensity=0;
-  BL.t+=dt;BLL.distance=BL.k>3?300:150;BLL.intensity=BL.t<1.4?BL.k*3500*Math.exp(-BL.t*(BL.k>3?5.5:4.5))*(BL.t<0.03?BL.t/0.03:1):0;}   // physical lights: a candela figure has to be in the thousands to light trees 30 m away as a real flash would
+  BL.t+=dt;BLL.distance=BL.k>3?450:150;BLL.intensity=BL.t<1.4?BL.k*3500*Math.exp(-BL.t*(BL.k>3?5.5:4.5))*(BL.t<0.03?BL.t/0.03:1):0;}   // physical lights: a candela figure has to be in the thousands to light trees 30 m away as a real flash would
 function at4Spawn(o,dir,mine){const g=new THREE.Group();const m=new THREE.Mesh(AT4_RK,envMat);g.add(m);
   const fl=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xffb050,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));fl.position.set(0,0,-0.32);fl.scale.setScalar(0.9);g.add(fl);
   g.position.copy(o);scene.add(g);const r={p:o.clone(),o:o.clone(),v:dir.clone().normalize().multiplyScalar(GAME.at4Spd),t:0,g,fl,mine,sm:0};g.lookAt(_v9.copy(o).add(r.v));ROCKETS.push(r);
@@ -2426,7 +2426,7 @@ function artFireSnd(x,y,z){const c=sp3(x,y,z,6000);if(!c)return;const t=AC.curre
   if(SND.m32x){const sx=AC.createBufferSource();sx.buffer=SND.m32x;sx.playbackRate.value=0.66+Math.random()*0.08;const gx=AC.createGain();gx.gain.value=1.2*vg*B;sx.connect(gx);gx.connect(c.inp);sx.start(t);}
   tn(c,t,85,32,0.6,1.0*vg*B,'sine');nz(c,t,0.8,300,0.6,1.2*vg*B,'lowpass');nz(c,t,0.12,1500,0.8,0.5*vg*B,'bandpass');}
 function artBlast(p,S,h){
-  BL.t=0;BL.k=6;BLL.position.copy(p).y+=3;
+  BL.t=0;BL.k=14;BLL.position.copy(p).y+=3;
   try{treeArty(p,S.K);}catch(e){}
   emit(gFire,matFire,V(p.x,p.y+1.5,p.z),V(0,3,0),0.6,{s:2.4,grow:9});emit(gFire,matFire,V(p.x,p.y+2.5,p.z),V(0,5,0),0.45,{s:1.5,grow:6});
   for(let i=0;i<34;i++){const a=Math.random()*PI*2,k=2.5+Math.random()*8;emit(gPuff,i%2?UGV_SMK:matSmoke,p,V(Math.cos(a)*k,2+Math.random()*9,Math.sin(a)*k),3.4,{s:0.8,grow:3.4,drag:1.2});}
@@ -3679,7 +3679,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=619;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=620;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
