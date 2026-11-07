@@ -2386,13 +2386,28 @@ function artStep(dt){
     for(const h of S.sh){if(h.done)continue;const tl=h.t-ART_FL;
       if(S.t>=tl){const u=Math.min(1,(S.t-tl)/ART_FL);
         if(!h.m){h.m=artMesh();scene.add(h.m);
-          try{const c0=sp3(h.tx,groundH(h.tx,h.tz),h.tz,2500);if(c0){tn(c0,c0.t0+Math.max(0,ART_FL-2.2),2600,700,2.2,0.28*(VOLS.gun||1),'sawtooth');}   // the whistle, timed to end at the impact
-            const lc=sp3(h.tx+S.dx*ART_RG*0.8,60,h.tz+S.dz*ART_RG*0.8,4500);if(lc){tn(lc,lc.t0,80,30,0.5,0.35*(VOLS.gun||1),'sine');}}catch(e){}}   // and a faint thump from the battery far away
+          try{const lc=sp3(h.tx+S.dx*ART_RG*0.8,60,h.tz+S.dz*ART_RG*0.8,4500);if(lc){tn(lc,lc.t0,80,30,0.5,0.35*(VOLS.gun||1),'sine');}}catch(e){}}   // and a faint thump from the battery far away
         artPos(S,h,u,_artP);artPos(S,h,Math.min(1,u+0.01),_artP2);_artD.copy(_artP2).sub(_artP);if(_artD.lengthSq()>1e-9){_artD.normalize();_artQ.setFromUnitVectors(_artX,_artD);h.m.quaternion.copy(_artQ);}
-        h.m.position.copy(_artP);
+        h.m.position.copy(_artP);try{artVoice(h,_artP,u<1?dt:0,u>=1);}catch(e){}
         if(u<1){const dc=camera.position.distanceTo(_artP),ts=clamp(dc*0.0035,0.5,7);for(let k=0;k<3;k++){_artP2.copy(_artP).addScaledVector(_artD,-k*dc*0.004);emit(gFire,matFire,_artP2,V(0,0,0),0.28,{s:ts*(1-k*0.2)});}}   // a bright tracer streak, no smoke
         if(u>=1){h.done=true;scene.remove(h.m);h.m=null;const gp=V(h.tx,groundH(h.tx,h.tz)+0.4,h.tz);artBlast(gp,S,h);}}}
     if(S.t>S.end&&S.sh.every(h=>h.done))ART.list.splice(li,1);}}
+// the incoming round: a rising scream and a rush of air that follow it through the sky, pitch shifted by how fast it closes on you (Doppler)
+function artVoice(h,P,dt,stop){const dc=camera.position.distanceTo(P);
+  if(stop||dc>3600||!AC||!soundOn){if(h.v){const v=h.v,t=AC.currentTime;try{v.g.gain.cancelScheduledValues(t);v.g.gain.setTargetAtTime(0,t,0.03);v.o1.stop(t+0.3);v.o2.stop(t+0.3);v.n.stop(t+0.3);}catch(e){}h.v=null;}return;}
+  if(!h.v){if(dc>3200||!noiseBuf)return;const o1=AC.createOscillator(),o2=AC.createOscillator(),n=AC.createBufferSource(),g=AC.createGain(),gs=AC.createGain(),gw=AC.createGain(),bp=AC.createBiquadFilter(),bs=AC.createBiquadFilter(),lfo=AC.createOscillator(),lg=AC.createGain();
+    o1.type='sawtooth';o2.type='square';n.buffer=noiseBuf;n.loop=true;bp.type='bandpass';bp.Q.value=0.9;bs.type='bandpass';bs.Q.value=2.2;
+    lfo.frequency.value=17;lg.gain.value=22;lfo.connect(lg);lg.connect(o1.frequency);lfo.start();   // a slight tremble in the scream
+    o1.connect(bs);o2.connect(bs);bs.connect(gs);n.connect(bp);bp.connect(gw);gs.connect(g);gw.connect(g);g.gain.value=0;
+    const pn=AC.createPanner();pn.panningModel='HRTF';pn.distanceModel='inverse';pn.refDistance=60;pn.rolloffFactor=0.8;pn.maxDistance=20000;g.connect(pn);pn.connect(AC.destination);
+    o1.start();o2.start();n.start();h.v={o1,o2,n,g,gs,gw,bp,bs,pn,pd:dc,lfo};}
+  const v=h.v,t=AC.currentTime,pn=v.pn;if(pn.positionX){pn.positionX.setValueAtTime(P.x,t);pn.positionY.setValueAtTime(P.y,t);pn.positionZ.setValueAtTime(P.z,t);}else pn.setPosition(P.x,P.y,P.z);
+  const vr=dt>0.0005?clamp((v.pd-dc)/dt,-230,230):0;v.pd=dc;const ratio=343/(343-vr),near=1-clamp(dc/2200,0,1),f=(420+520*near)*ratio;
+  const vol=(VOLS.gun||1);
+  v.o1.frequency.setTargetAtTime(f,t,0.04);v.o2.frequency.setTargetAtTime(f*1.51,t,0.04);v.bs.frequency.setTargetAtTime(f*1.4,t,0.05);
+  v.bp.frequency.setTargetAtTime(500*ratio+900*near,t,0.05);
+  v.gs.gain.setTargetAtTime(0.9*Math.pow(near,1.2),t,0.05);v.gw.gain.setTargetAtTime(1.8*Math.pow(near,1.8)+0.15*near,t,0.05);
+  v.g.gain.setTargetAtTime(Math.min(1,dc/150)*1.4*vol,t,0.05);}
 function artBlast(p,S,h){
   BL.t=0;BL.k=1.1;BLL.position.copy(p).y+=3;
   {const idx=S.sh.indexOf(h);if(idx%2===0)try{treeBlastNet(p,{mine:S.mine});}catch(e){}}
@@ -2421,7 +2436,7 @@ function artDrawMap(c,S,N){const K2=N/(FE*2);
       c.setLineDash([4,4]);c.beginPath();c.arc(x,y,Math.max(3,GAME.artK*K2),0,PI*2);c.stroke();c.setLineDash([]);c.beginPath();c.moveTo(x-9,y);c.lineTo(x+9,y);c.moveTo(x,y-9);c.lineTo(x,y+9);c.stroke();c.restore();}
     c.save();c.setTransform(W/MAPL,0,0,W/MAPL,0,0);c.fillStyle='rgba(10,12,10,0.8)';c.fillRect(MAPL/2-190,24,380,24);c.fillStyle='#ffc060';c.font='600 12px "IBM Plex Mono", monospace';c.textAlign='center';
     c.fillText('155 mm · click the target · '+GAME.artN+' shells over '+GAME.artDur+' s · Tab cancels',MAPL/2,40);c.restore();}}
-function artReset(){for(const S of ART.list)for(const h of S.sh)if(h.m){scene.remove(h.m);h.m=null;}ART.list.length=0;ART.aim=null;}
+function artReset(){for(const S of ART.list)for(const h of S.sh){if(h.m){scene.remove(h.m);h.m=null;}try{artVoice(h,camera.position,0,true);}catch(e){}}ART.list.length=0;ART.aim=null;}
 // ================= AR-15: semi-automatic / automatic carbine in 7.62, 30-round magazine, iron sights =================
 // Picked up (orange glow) into a weapon slot. Shares the 7.62 reserve with the bolt rifle; each rifle keeps the rounds in its own magazine.
 // Hold LMB for automatic fire; RMB aims down the iron sights (no scope). Lower damage per hit than the bolt rifle, more spread and recoil.
@@ -3640,7 +3655,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=604;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=605;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
