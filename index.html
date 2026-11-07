@@ -3396,7 +3396,7 @@ let everLocked=false;
 function goFallback(){if(fallback)return;if(everLocked){toast('Click the game to capture the mouse');return;}   // after Esc the browser refuses a re-lock for about a second: never give up on lock once it has worked
   if(MPM.on&&(MPM.lf=(MPM.lf||0)+1)<4){toast('Click the game to capture the mouse');return;}   // in a match, keep trying the lock rather than dropping to drag-to-look
   fallback=true;toast('Mouse lock unavailable here · hold a mouse button and drag to look');}
-$('deployBtn').addEventListener('click',()=>{initAudio();if(AC&&AC.state==='suspended')AC.resume();startAmbience();try{chuteInitialDrop();}catch(e){console.warn('drop',e);}setPlaying(true);cv.focus();requestLock();});
+$('deployBtn').addEventListener('click',()=>{initAudio();if(AC&&AC.state==='suspended'&&soundOn)AC.resume();startAmbience();try{chuteInitialDrop();}catch(e){console.warn('drop',e);}setPlaying(true);cv.focus();requestLock();});
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===cv;if(locked){everLocked=true;fallback=false;}if(!locked&&playing&&!fallback&&!mapOpen){if(MPM.on){for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;toast('Mouse released · click the game to capture it · Esc for the menu');}else setPlaying(false);}else if(locked)MPM.lf=0;});   // in a match the game stays up when the mouse is released (switching tabs): click to take it back
 document.addEventListener('pointerlockerror',()=>goFallback());
 cv.addEventListener('contextmenu',e=>e.preventDefault());
@@ -3418,7 +3418,7 @@ addEventListener('keydown',e=>{
     case 'KeyW': wTap(); break;
     case 'KeyV': viewFP=!viewFP; break;
     case 'KeyH': DEVFACE.on=!DEVFACE.on;toast(DEVFACE.on?'Dev camera: facing the player · mouse wheel = orbit radius (H again to return)':'Dev camera: normal');break;
-    case 'KeyM': soundOn=!soundOn;toast(soundOn?'Sound on':'Sound muted'); break;
+    case 'KeyM': soundOn=!soundOn;toast(soundOn?'Sound on':'Sound muted');try{if(AC){if(soundOn)AC.resume();else AC.suspend();}}catch(err){} break;   // muting suspends the whole audio engine: nothing already playing (ambience, hums, falling shells) is left running
     case 'KeyB': setHB(!hbShown);toast(hbShown?'Hit boxes shown · red head, yellow torso, blue limbs':'Hit boxes hidden'); break;
     case 'KeyE': setZero(zeroM+50);toast('Zero '+zeroM+' m'); break;
     case 'KeyQ': setZero(zeroM-50);toast('Zero '+zeroM+' m'); break;
@@ -3667,7 +3667,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=610;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=611;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3938,7 +3938,7 @@ function carve(c){goneCarcass(c.o,c.k);let m,h=0;
   if(c.k==='d'){const y=CARVE[c.o.kind]||CARVE.roe;m=y.meat;h=y.hide;}else{m=1;}
   INV.meat+=m;INV.hide+=h;invUI();const bh=m*GAME.bMeat;if(bh>0){if(GAME.bInst)MPM.hp=Math.min(HP_MAX,MPM.hp+bh);else HEAL.pool=Math.min(120,HEAL.pool+bh);}toast('Butchered '+carcassName(c)+' · +'+m+' meat'+(h?' · +'+h+' hide':'')+(bh>0?' · +'+bh+'% health':''));try{sfx.click();}catch(e){}
   if(NT.room&&MPM.on)NT.room.emit('carve',{k:c.k,i:c.i,v:MPM.guest?NT.rosterV:deerVer}).catch(()=>{});}
-function nullSnd(){try{initAudio();if(AC&&AC.state==='suspended')AC.resume();tone(210,0.1,0.28,'triangle',190);}catch(e){}}   // two short falling blips, loud enough for laptop speakers   // a small dull 'nothing happens' sound
+function nullSnd(){try{initAudio();if(AC&&AC.state==='suspended'&&soundOn)AC.resume();tone(210,0.1,0.28,'triangle',190);}catch(e){}}   // two short falling blips, loud enough for laptop speakers   // a small dull 'nothing happens' sound
 function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();if(c){carve(c);return;}if(zipTryMount())return;{const d=dropNearest();if(d){dropTake(d);return;}}const i=resNearest();if(i==null)return;const n=RES_NODES[i],R=RES_T[n.ti];
   if(R.k==='radio'&&slotHas('radio')){nullSnd();toast('You already carry a radio');return;}
   if((R.k==='radio'||R.k==='scrap'||(R.k==='at4'&&!WPN.has))&&!slotCanTake(R.k==='scrap'?'arty':R.k)){toast('Gadget slots full · drop or use one first');return;}
@@ -6971,7 +6971,7 @@ function p2Idle(){if(!P2M)return;try{if(CHR.m){CHR.m.grp.visible=false;CHR.m.bl.
 
 // both players drop straight into the game when the connection is made (a first click then captures the mouse and turns the sound on)
 function mpAutoDeploy(){if(!playing){try{setPlaying(true);cv.focus();}catch(e){}}
-  const go=()=>{try{initAudio();if(AC&&AC.state==='suspended')AC.resume();startAmbience();if(!locked&&!fallback)requestLock();if(NT.fan&&AC){NT.fan=false;playFanfare();}}catch(e){}};
+  const go=()=>{try{initAudio();if(AC&&AC.state==='suspended'&&soundOn)AC.resume();startAmbience();if(!locked&&!fallback)requestLock();if(NT.fan&&AC){NT.fan=false;playFanfare();}}catch(e){}};
   const once=()=>{removeEventListener('mousedown',once,true);removeEventListener('keydown',once,true);go();};
   addEventListener('mousedown',once,true);addEventListener('keydown',once,true);}
 // ---- short melodies, synthesized (D minor): timpani, low drone, brass, a held chord. Played on connect and on disconnect ----
@@ -7030,8 +7030,9 @@ window.__boom=(d,r)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.
 window.__bl=()=>[BLL.intensity,BL.t,BLL.position.x,BLL.position.y,BLL.position.z,camera.position.x,camera.position.y,camera.position.z];
 window.__wn=t=>{const CP=CTRL_PTS();const L=RES_NODES.filter(n=>n.t===t);return [L.length,L.filter(n=>CP.some(q=>Math.hypot(n.x-q.x,n.z-q.z)<250)).length];};
 window.__art={land:()=>{player.pos.y=groundH(player.pos.x,player.pos.z)+0.05;player.vel.set(0,0,0);},hp:()=>[MPM.hp,player.alive],fwd:(d)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();return [camera.position.x+f.x*d,camera.position.z+f.z*d];},ART,SLOT,aim:artAim,call:artCall,give:()=>{SLOT.g[0]={k:"arty"};slotSync();}};
+window.__acState=()=>AC?AC.state:"none";
 window.__capSnd=()=>{audioUnlock();playCaptured();return "ok";};
-function audioUnlock(){try{initAudio();if(AC&&AC.state==='suspended')AC.resume();}catch(e){}}
+function audioUnlock(){try{initAudio();if(AC&&AC.state==='suspended'&&soundOn)AC.resume();}catch(e){}}
 // ---- messages ----
 function onMsg(t,d,m){
   if(t==='shot'){if(!Array.isArray(d.o)||!Array.isArray(d.v))return;const o=V(+d.o[0],+d.o[1],+d.o[2]),dir=V(+d.v[0],+d.v[1],+d.v[2]);if(!isFinite(o.x+o.y+o.z)||dir.lengthSq()<0.5)return;dir.normalize();
