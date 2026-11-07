@@ -2397,8 +2397,8 @@ function artStep(dt){
 function artVoice(h,P,dt,stop){const dc=camera.position.distanceTo(P);
   if(stop||dc>3600||!AC||!soundOn){if(h.v){const v=h.v,t=AC.currentTime;try{v.g.gain.cancelScheduledValues(t);v.g.gain.setTargetAtTime(0,t,0.03);v.o1.stop(t+0.3);v.o2.stop(t+0.3);v.n.stop(t+0.3);}catch(e){}h.v=null;}return;}
   if(!h.v){if(dc>3200||!noiseBuf)return;const o1=AC.createOscillator(),o2=AC.createOscillator(),n=AC.createBufferSource(),g=AC.createGain(),gs=AC.createGain(),gw=AC.createGain(),bp=AC.createBiquadFilter(),bs=AC.createBiquadFilter(),lfo=AC.createOscillator(),lg=AC.createGain();
-    o1.type='sawtooth';o2.type='square';n.buffer=noiseBuf;n.loop=true;bp.type='bandpass';bp.Q.value=0.9;bs.type='lowpass';bs.Q.value=1.2;
-    lfo.frequency.value=17;lg.gain.value=22;lfo.connect(lg);lg.connect(o1.frequency);lfo.start();   // a slight tremble in the scream
+    o1.type='sawtooth';o2.type='square';n.buffer=noiseBuf;n.loop=true;bp.type='bandpass';bp.Q.value=0.45;bs.type='lowpass';bs.Q.value=1.2;
+    lfo.frequency.value=6;lg.gain.value=4;lfo.connect(lg);lg.connect(o1.frequency);lfo.start();   // a slight tremble in the scream
     o1.connect(bs);o2.connect(bs);bs.connect(gs);n.connect(bp);bp.connect(gw);gs.connect(g);gw.connect(g);g.gain.value=0;
     const pn=AC.createPanner();pn.panningModel='HRTF';pn.distanceModel='inverse';pn.refDistance=60;pn.rolloffFactor=0.8;pn.maxDistance=20000;g.connect(pn);pn.connect(AC.destination);
     o1.start();o2.start();n.start();h.v={o1,o2,n,g,gs,gw,bp,bs,pn,pd:dc,lfo};}
@@ -2406,8 +2406,8 @@ function artVoice(h,P,dt,stop){const dc=camera.position.distanceTo(P);
   const vr=dt>0.0005?clamp((v.pd-dc)/dt,-230,230):0;v.pd=dc;const ratio=343/(343-vr),near=1-clamp(dc/2200,0,1),f=(130+210*near)*ratio;
   const vol=(VOLS.gun||1)*VOLS.art;
   v.o1.frequency.setTargetAtTime(f,t,0.04);v.o2.frequency.setTargetAtTime(f*0.5,t,0.04);v.bs.frequency.setTargetAtTime(f*1.6,t,0.05);
-  v.bp.frequency.setTargetAtTime(170*ratio+330*near,t,0.05);
-  v.gs.gain.setTargetAtTime(0.9*Math.pow(near,1.2),t,0.05);v.gw.gain.setTargetAtTime(1.8*Math.pow(near,1.8)+0.15*near,t,0.05);
+  v.bp.frequency.setTargetAtTime(230*ratio+520*near,t,0.07);
+  v.gs.gain.setTargetAtTime(0.14*Math.pow(near,1.2),t,0.08);v.gw.gain.setTargetAtTime(3.6*Math.pow(near,1.5)+0.3*near,t,0.07);   // mostly a deep rush of air; the tone is only a low rumble underneath
   v.g.gain.setTargetAtTime(Math.min(1,dc/150)*1.4*vol,t,0.05);}
 // the same recorded burst as a GD01 going up, slowed so it is deeper, much louder and carried a long way; the distance filter muffles it the further away you are
 function artBoomSnd(p){const c=sp3(p.x,p.y,p.z,9000);if(!c)return;const t=c.t0,vg=(typeof VOLS!=='undefined'?VOLS.gun*VOLS.art:1),B=Math.min(10,1+c.dist/120);
@@ -3667,7 +3667,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=609;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=610;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
