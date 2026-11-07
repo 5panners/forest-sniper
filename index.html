@@ -2396,25 +2396,29 @@ function artStep(dt){
 function artVoice(h,P,dt,stop){const dc=camera.position.distanceTo(P);
   if(stop||dc>3600||!AC||!soundOn){if(h.v){const v=h.v,t=AC.currentTime;try{v.g.gain.cancelScheduledValues(t);v.g.gain.setTargetAtTime(0,t,0.03);v.o1.stop(t+0.3);v.o2.stop(t+0.3);v.n.stop(t+0.3);}catch(e){}h.v=null;}return;}
   if(!h.v){if(dc>3200||!noiseBuf)return;const o1=AC.createOscillator(),o2=AC.createOscillator(),n=AC.createBufferSource(),g=AC.createGain(),gs=AC.createGain(),gw=AC.createGain(),bp=AC.createBiquadFilter(),bs=AC.createBiquadFilter(),lfo=AC.createOscillator(),lg=AC.createGain();
-    o1.type='sawtooth';o2.type='square';n.buffer=noiseBuf;n.loop=true;bp.type='bandpass';bp.Q.value=0.9;bs.type='bandpass';bs.Q.value=2.2;
+    o1.type='sawtooth';o2.type='square';n.buffer=noiseBuf;n.loop=true;bp.type='bandpass';bp.Q.value=0.9;bs.type='lowpass';bs.Q.value=1.2;
     lfo.frequency.value=17;lg.gain.value=22;lfo.connect(lg);lg.connect(o1.frequency);lfo.start();   // a slight tremble in the scream
     o1.connect(bs);o2.connect(bs);bs.connect(gs);n.connect(bp);bp.connect(gw);gs.connect(g);gw.connect(g);g.gain.value=0;
     const pn=AC.createPanner();pn.panningModel='HRTF';pn.distanceModel='inverse';pn.refDistance=60;pn.rolloffFactor=0.8;pn.maxDistance=20000;g.connect(pn);pn.connect(AC.destination);
     o1.start();o2.start();n.start();h.v={o1,o2,n,g,gs,gw,bp,bs,pn,pd:dc,lfo};}
   const v=h.v,t=AC.currentTime,pn=v.pn;if(pn.positionX){pn.positionX.setValueAtTime(P.x,t);pn.positionY.setValueAtTime(P.y,t);pn.positionZ.setValueAtTime(P.z,t);}else pn.setPosition(P.x,P.y,P.z);
-  const vr=dt>0.0005?clamp((v.pd-dc)/dt,-230,230):0;v.pd=dc;const ratio=343/(343-vr),near=1-clamp(dc/2200,0,1),f=(420+520*near)*ratio;
+  const vr=dt>0.0005?clamp((v.pd-dc)/dt,-230,230):0;v.pd=dc;const ratio=343/(343-vr),near=1-clamp(dc/2200,0,1),f=(130+210*near)*ratio;
   const vol=(VOLS.gun||1);
-  v.o1.frequency.setTargetAtTime(f,t,0.04);v.o2.frequency.setTargetAtTime(f*1.51,t,0.04);v.bs.frequency.setTargetAtTime(f*1.4,t,0.05);
-  v.bp.frequency.setTargetAtTime(500*ratio+900*near,t,0.05);
+  v.o1.frequency.setTargetAtTime(f,t,0.04);v.o2.frequency.setTargetAtTime(f*0.5,t,0.04);v.bs.frequency.setTargetAtTime(f*1.6,t,0.05);
+  v.bp.frequency.setTargetAtTime(170*ratio+330*near,t,0.05);
   v.gs.gain.setTargetAtTime(0.9*Math.pow(near,1.2),t,0.05);v.gw.gain.setTargetAtTime(1.8*Math.pow(near,1.8)+0.15*near,t,0.05);
   v.g.gain.setTargetAtTime(Math.min(1,dc/150)*1.4*vol,t,0.05);}
+// the same recorded burst as a GD01 going up, slowed so it is deeper, much louder and carried a long way; the distance filter muffles it the further away you are
+function artBoomSnd(p){const c=sp3(p.x,p.y,p.z,9000);if(!c)return;const t=c.t0,vg=(typeof VOLS!=='undefined'?VOLS.gun:1),B=Math.min(10,1+c.dist/120);
+  if(SND.m32x){const sx=AC.createBufferSource();sx.buffer=SND.m32x;sx.playbackRate.value=0.55;const gx=AC.createGain();gx.gain.value=3.2*vg*B*GAME.rDBoom;sx.connect(gx);gx.connect(c.inp);sx.start(t);}
+  tn(c,t,72,13,2.4,2.4*vg*B,'sine');tn(c,t,48,12,3.0,1.6*vg*B,'triangle');nz(c,t,3.2,190,0.5,2.6*vg*B,'lowpass');nz(c,t,0.2,2000,0.8,0.7*vg*B,'bandpass');}
 function artBlast(p,S,h){
   BL.t=0;BL.k=1.1;BLL.position.copy(p).y+=3;
   {const idx=S.sh.indexOf(h);if(idx%2===0)try{treeBlastNet(p,{mine:S.mine});}catch(e){}}
   emit(gFire,matFire,V(p.x,p.y+1.5,p.z),V(0,3,0),0.6,{s:2.4,grow:9});emit(gFire,matFire,V(p.x,p.y+2.5,p.z),V(0,5,0),0.45,{s:1.5,grow:6});
   for(let i=0;i<34;i++){const a=Math.random()*PI*2,k=2.5+Math.random()*8;emit(gPuff,i%2?UGV_SMK:matSmoke,p,V(Math.cos(a)*k,2+Math.random()*9,Math.sin(a)*k),3.4,{s:0.8,grow:3.4,drag:1.2});}
   for(let i=0;i<34;i++)emit(gSpark,matFire,p,rv(22).add(V(0,9,0)),0.8,{s:1.8,grav:9});
-  try{const c=sp3(p.x,p.y,p.z,4000);if(c){nz(c,c.t0,1.1,420,0.5,1.1*(VOLS.gun||1),'lowpass');tn(c,c.t0,65,22,1.0,1.0*(VOLS.gun||1),'sine');nz(c,c.t0,0.25,2400,0.6,0.5*(VOLS.gun||1));}boomAt(p);}catch(e){}
+  try{artBoomSnd(p);}catch(e){}
   disturb(p.x,p.z,700,1800);{const d=camera.position.distanceTo(p);shake=Math.max(shake,clamp((110-d)/110,0,1)*1.1);}
   const K=S.K;
   // me: inside the kill radius is death, outside it the blast still hurts out to twice that
@@ -3655,7 +3659,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=606;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=607;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
