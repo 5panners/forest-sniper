@@ -3420,6 +3420,7 @@ addEventListener('keydown',e=>{
     case 'KeyV': viewFP=!viewFP; break;
     case 'KeyH': DEVFACE.on=!DEVFACE.on;toast(DEVFACE.on?'Dev camera: facing the player · mouse wheel = orbit radius (H again to return)':'Dev camera: normal');break;
     case 'KeyM': soundOn=!soundOn;toast(soundOn?'Sound on':'Sound muted');try{if(AC){if(soundOn)AC.resume();else AC.suspend();}}catch(err){} break;   // muting suspends the whole audio engine: nothing already playing (ambience, hums, falling shells) is left running
+    case 'KeyJ': {if(!pl.alive)break;let gi=SLOT.g.findIndex(q=>q&&q.k==='arty');if(gi<0){gi=SLOT.g.findIndex(q=>!q);if(gi<0)gi=0;SLOT.g[gi]={k:'arty'};slotSync();}artAim(gi);break;}   // dev: a 155 mm strike on demand (gives you the gadget if you have none, then opens the map to aim)
     case 'KeyB': setHB(!hbShown);toast(hbShown?'Hit boxes shown · red head, yellow torso, blue limbs':'Hit boxes hidden'); break;
     case 'KeyE': setZero(zeroM+50);toast('Zero '+zeroM+' m'); break;
     case 'KeyQ': setZero(zeroM-50);toast('Zero '+zeroM+' m'); break;
@@ -3446,7 +3447,7 @@ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.r
 const KB_ACT=[
   ['Movement',[['fwd','Forward','KeyW'],['back','Back','KeyS'],['left','Strafe left','KeyA'],['right','Strafe right','KeyD'],['jump','Jump · parachute · let go of the zip line','Space'],['crouch','Crouch','KeyC'],['prone','Prone / get up (WASD crawls)','KeyZ']]],
   ['Weapons and gear',[['reload','Reload','KeyR'],['zup','Zero +50 m','KeyE'],['zdn','Zero −50 m','KeyQ'],['s1','Weapon slot 1','Digit1'],['s2','Weapon slot 2','Digit2'],['s3','Gadget slot 3 (radio: recon drone)','Digit3'],['s4','Gadget slot 4','Digit4'],['gather','Gather / pick up · zip line','KeyF'],['launch','Launch the missile (silo)','KeyL']]],
-  ['Interface',[['mzin','Mini map zoom in','Equal'],['mzout','Mini map zoom out','Minus'],['mini','Mini map on / off','KeyN'],['wpnmap','Show weapon locations on the map','KeyL'],['view','1st / 3rd person','KeyV'],['mute','Mute','KeyM'],['hb','Show hit boxes','KeyB']]]];
+  ['Interface',[['mzin','Mini map zoom in','Equal'],['mzout','Mini map zoom out','Minus'],['mini','Mini map on / off','KeyN'],['wpnmap','Show weapon locations on the map','KeyL'],['view','1st / 3rd person','KeyV'],['mute','Mute','KeyM'],['hb','Show hit boxes','KeyB'],['arty','Dev: call a 155 mm strike','KeyJ']]]];
 const KB_FIXED=[['Look','Mouse'],['Scoreboard (hold)','K'],['Scope on / off','Right mouse'],['Fire (hold for automatic with the AR-15)','Left mouse'],['Scope zoom 2 / 3 / 4 / 5×','Wheel'],['Hold breath (scoped) · sprint','Shift'],['Boost run (uses stamina)','Double-tap forward, keep holding'],['Slide (while running)','Ctrl'],['Full map','Tab'],['Menu / release the mouse','Esc']];
 const KB={user:{},inj:false,listen:null,M:{}};
 try{const v=JSON.parse(localStorage.getItem('fsKeys')||'null');if(v&&typeof v==='object')for(const k in v)if(typeof v[k]==='string')KB.user[k]=v[k];}catch(e){}
@@ -3671,7 +3672,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=612;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=613;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
