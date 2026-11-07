@@ -3655,7 +3655,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=605;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=606;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4187,7 +4187,7 @@ ${sp([['Shells',GAME.artN],['Duration',GAME.artDur+' s'],['Kill radius',GAME.art
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
 const GAME_DEF={rDBoom:1,rM32Fire:1,rM32Boom:1,pHpStart:100,pHpMax:200,arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:3,slotG:3,pkM32:6,pkRifle:12,fBerry:2,pkRad:250,n_berries:250,n_mushroom:300,n_at4r:150,n_m32r:50,n_r762:300,n_radio:12,n_scrap:12,n_at4:2,n_ar15:2,n_rifle:2,p_berries:80,p_mushroom:80,p_at4r:80,p_m32r:80,p_r762:80,p_radio:80,m32Spd:76,m32Drop:1.6,m32R:4.5,m32Dmg:110,m32Ugv:160,m32Reload:3.2,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloAcc:0.3,siloEvery:0,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.8,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:100,at4R:6,at4Dmg:200,at4Ugv:300,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:7.5,bInst:1,bears:2,bWalk:1.2,bRear:9,bAtk:1,bTrig:1,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1,tfOn:1,tfDur:60,tfReach:1.6,tfMax:3,tfSim:6,tfFlame:1,tfSmoke:1,tfLight:1,tfSpread:30,tfSparks:1,tfVol:1,tfChain:1,tfChainDist:10,tfChainMax:6,tfChainDelay:20,tfHurt:1,tfDps:12,tfHurtR:3,tfBlock:1,sBase:1};
-Object.assign(GAME_DEF,{artN:24,artDur:25,artK:30,artSpread:55});
+Object.assign(GAME_DEF,{artN:24,artDur:25,artK:30,artSpread:55,p_at4:100,p_ar15:100,p_rifle:100});
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 HP_MAX=Math.max(20,GAME.pHpMax);
 try{if(!localStorage.getItem('fsSiloV2')){GAME.siloVol=2;localStorage.setItem('fsSiloV2','1');}}catch(e){}
