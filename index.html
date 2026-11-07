@@ -3564,7 +3564,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=599;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=600;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3749,7 +3749,7 @@ function resAdd(t,x,z,salt){const ti=RES_T.findIndex(r=>r.k===t);const h=groundH
   const n=RES_NODES.length-1,key=Math.floor(x/8)+','+Math.floor(z/8);let L=RES_CELLS.get(key);if(!L){L=[];RES_CELLS.set(key,L);}L.push(n);return n;}
 const CTRL_PTS=()=>[SEC_HOME.e,TWPOS,TWPOS4,SILO_POS,TWPOS3,TWPOS2,SEC_HOME.w];
 // pickup quantity / placement settings are read straight from the saved settings (GAME is created later); they apply when the map is generated, i.e. on the next load
-const PKD={pkRad:250,n_berries:250,n_mushroom:300,n_at4r:150,n_m32r:50,n_r762:300,n_radio:12,n_scrap:20,n_at4:2,n_ar15:2,n_rifle:2,p_berries:80,p_mushroom:80,p_at4r:80,p_m32r:80,p_r762:80,p_radio:80};
+const PKD={pkRad:250,n_berries:250,n_mushroom:300,n_at4r:150,n_m32r:50,n_r762:300,n_radio:12,n_scrap:20,n_at4:2,n_ar15:2,n_rifle:2,p_berries:80,p_mushroom:80,p_at4r:80,p_m32r:80,p_r762:80,p_radio:80,p_at4:100,p_ar15:100,p_rifle:100};
 const PKS=(()=>{try{return JSON.parse(localStorage.getItem('fsGame')||'{}')||{};}catch(e){return {};}})();
 const PK=k=>{const v=PKS[k];return v!=null&&isFinite(+v)&&+v>=0?+v:PKD[k];};
 const PK_R=Math.max(10,PK('pkRad'));
@@ -3762,8 +3762,13 @@ const PK_R=Math.max(10,PK('pkRad'));
   near({x:P1_SPAWN.x,z:P1_SPAWN.z},starts);near({x:P2_SPAWN.x,z:P2_SPAWN.z},starts);
   // weapons: two AR-15s, two AT4s and two rifles within 100 m of each of the seven capture points (14 of each)
   {const pts=[SEC_HOME.e,TWPOS,TWPOS4,SILO_POS,TWPOS3,TWPOS2,SEC_HOME.w],placed=[];
-   pts.forEach((c,si)=>['ar15','at4','rifle'].forEach((t,ti)=>{for(let k=0,kn=Math.round(PK('n_'+t));k<kn;k++){for(let a=0;a<120;a++){const ang=hsh(si*17+ti*5+k*3,a+3)*PI*2,r=(si===6&&k===0)?10+hsh(si*7+ti*11+k,a*3+1)*26:16+hsh(si*7+ti*11+k,a*3+1)*80,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
-        if(!resOK(x,z,t)||placed.some(q=>Math.hypot(q[0]-x,q[1]-z)<7))continue;placed.push([x,z]);resAdd(t,x,z,si*131+ti*37+k*11+a);break;}}}));window._wpnPlaced=placed.length;}
+   pts.forEach((c,si)=>['ar15','at4','rifle'].forEach((t,ti)=>{const WT=Math.round(PK('n_'+t))*7,WN=Math.round(WT*Math.min(100,PK('p_'+t))/100);for(let k=0,kn=Math.floor(WN/7)+(si<WN%7?1:0);k<kn;k++){for(let a=0;a<120;a++){const ang=hsh(si*17+ti*5+k*3,a+3)*PI*2,r=(si===6&&k===0)?10+hsh(si*7+ti*11+k,a*3+1)*26:16+hsh(si*7+ti*11+k,a*3+1)*80,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
+        if(!resOK(x,z,t)||placed.some(q=>Math.hypot(q[0]-x,q[1]-z)<7))continue;placed.push([x,z]);resAdd(t,x,z,si*131+ti*37+k*11+a);break;}}}));
+   // the rest of each weapon (when less than 100 % are set near the points) lies anywhere on the map outside the pickup radius of every point
+   const RAD=Math.max(10,PK('pkRad'));['ar15','at4','rifle'].forEach((t,ti)=>{const WT=Math.round(PK('n_'+t))*7,far=WT-Math.round(WT*Math.min(100,PK('p_'+t))/100);
+     for(let k=0;k<far;k++){for(let a=0;a<300;a++){const x=(hsh(ti*911+k*7,a*3+5)*2-1)*PLAY*0.92,z=(hsh(ti*577+k*13,a*5+9)*2-1)*PLAY*0.92;
+       if(pts.some(c=>Math.hypot(c.x-x,c.z-z)<RAD)||!resOK(x,z,t)||placed.some(q=>Math.hypot(q[0]-x,q[1]-z)<7))continue;placed.push([x,z]);resAdd(t,x,z,ti*337+k*19+a);break;}}});
+   window._wpnPlaced=placed.length;}
   // UGV: 20, spread over the seven capture points, each somewhere random within 150 m of its point and well apart from the others
   {const pts=[SEC_HOME.e,TWPOS,TWPOS4,SILO_POS,TWPOS3,TWPOS2,SEC_HOME.w],put=[];
    for(let k=0,kn=Math.round(PK('n_scrap'));k<kn;k++){const c=pts[k%7];for(let a=0;a<200;a++){const ang=hsh(k*13+5,a+11)*PI*2,r=20+Math.sqrt(hsh(k*7+3,a*5+2))*130,x=c.x+Math.cos(ang)*r,z=c.z+Math.sin(ang)*r;
@@ -4172,9 +4177,9 @@ function inWater(x,z){return lakeE(x,z)<1.04||fieldF(x,z,FdS,CdS)<fieldF(x,z,FCw
     {k:'at4r',name:'AT4 rounds',n:'n_at4r',p:'p_at4r',g:['pkAt4','AT4 rounds']},
     {k:'m32r',name:'M32 rounds',n:'n_m32r',p:'p_m32r',g:['pkM32','40 mm grenades']},
     {k:'radio',name:'Radio',n:'n_radio',p:'p_radio',eff:'Gadget: calls in the recon drone'},
-    {k:'at4',name:'AT4 launcher',n:'n_at4',pt:1,fixp:'within 100 m of every point',eff:'Loaded AT4, or +1 round if you carry one'},
-    {k:'ar15',name:'AR-15',n:'n_ar15',pt:1,fixp:'within 100 m of every point',g:['arMag','rounds in the magazine']},
-    {k:'rifle',name:'Rifle',n:'n_rifle',pt:1,fixp:'within 100 m of every point',g:['pkRifle','rounds']},
+    {k:'at4',name:'AT4 launcher',n:'n_at4',pt:1,p:'p_at4',eff:'Loaded AT4, or +1 round if you carry one'},
+    {k:'ar15',name:'AR-15',n:'n_ar15',pt:1,p:'p_ar15',g:['arMag','rounds in the magazine']},
+    {k:'rifle',name:'Rifle',n:'n_rifle',pt:1,p:'p_rifle',g:['pkRifle','rounds']},
     {k:'scrap',name:'UGV',n:'n_scrap',fixp:'spread over the points, ≤150 m',eff:'Gadget: deploys a Termit robot'}];
   const inp=(k,w)=>`<input type="number" min="0" step="1" data-k="${k}" value="${GAME[k]}"${w?` style="width:${w}px"`:''}>`;
   const build=()=>{const CP=CTRL_PTS(),RAD=Math.max(10,+GAME.pkRad||250);const near=n=>CP.some(q=>Math.hypot(n.x-q.x,n.z-q.z)<RAD);
@@ -6917,6 +6922,7 @@ function playLost(){const C=AC;if(!C||!soundOn)return;const K=synthKit(null,null
   for(const f of [110,130.81,164.81])brass(f,t0+1.5,1.5,0.18,650,0.12);}
 window.__boom=(d,r)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();const p=camera.position.clone().addScaledVector(f,d||25);p.y=groundH(p.x,p.z)+1;at4Blast(p,r||8);};
 window.__bl=()=>[BLL.intensity,BL.t,BLL.position.x,BLL.position.y,BLL.position.z,camera.position.x,camera.position.y,camera.position.z];
+window.__wn=t=>{const CP=CTRL_PTS();const L=RES_NODES.filter(n=>n.t===t);return [L.length,L.filter(n=>CP.some(q=>Math.hypot(n.x-q.x,n.z-q.z)<250)).length];};
 window.__capSnd=()=>{audioUnlock();playCaptured();return "ok";};
 function audioUnlock(){try{initAudio();if(AC&&AC.state==='suspended')AC.resume();}catch(e){}}
 // ---- messages ----
