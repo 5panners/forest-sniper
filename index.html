@@ -2356,7 +2356,7 @@ window.SNIPER_AT4={AT4L,WPN,ROCKETS,fire:at4Fire,step:at4Step,set:setWeapon,blas
 // kills anything living inside its kill radius, shakes the screen and sets trees alight. Both players run the same shells (the strike is one small message
 // with a seed), each player's own blast damage is applied on their own machine, and the host kills the bots, bears and deer.
 const ART={list:[],aim:null,hov:null,shells:[],geo:null,mat:null};
-const ART_FL=5.2, ART_RG=1150;   // flight time of a shell (s) and how far outside the map it starts (m)
+const ART_FL=7, ART_RG=2000, ART_HI=1100;   // flight time of a shell (s) and how far outside the map it starts (m)
 function artRnd(seed){let a=(seed|0)||1;return()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
 function artAim(gi){if(!playing||!player.alive)return;const it=SLOT.g[gi];if(!it||it.k!=='arty')return;
   if(MPM.on&&NT.M&&NT.M.ph!=='live'){toast('Wait for the round to start');return;}
@@ -2378,7 +2378,7 @@ function artStart(q,mine){if(!isFinite(q.x+q.z+q.s)||!(q.n>0))return;const n=Mat
 function artMesh(){if(!ART.geo){ART.geo=build([[CY(0.085,0.085,0.55,8),'#6a7a44',[0,0,0],[0,0,PI/2]],[CY(0.02,0.085,0.26,8),'#8a9a56',[0.4,0,0],[0,0,-PI/2]],[CY(0.093,0.093,0.04,8),'#b87333',[-0.14,0,0],[0,0,PI/2]]]);ART.geo.scale(5,5,5);}
   const m=new THREE.Mesh(ART.geo,RES_MAT);return m;}
 const _artQ=new THREE.Quaternion(),_artX=new THREE.Vector3(1,0,0),_artD=new THREE.Vector3();
-function artPos(S,h,u,out){const sx=h.tx+S.dx*ART_RG,sz=h.tz+S.dz*ART_RG,gy=groundH(h.tx,h.tz);out.set(sx+(h.tx-sx)*u,60+(gy-60)*u+4*620*u*(1-u),sz+(h.tz-sz)*u);return out;}
+function artPos(S,h,u,out){const sx=h.tx+S.dx*ART_RG,sz=h.tz+S.dz*ART_RG,gy=groundH(h.tx,h.tz);out.set(sx+(h.tx-sx)*u,60+(gy-60)*u+4*ART_HI*u*(1-u),sz+(h.tz-sz)*u);return out;}
 const _artP=new THREE.Vector3(),_artP2=new THREE.Vector3();
 function artStep(dt){
   if(ART.aim&&(!mapOpen||!playing||!player.alive))artCancel();
@@ -2390,19 +2390,17 @@ function artStep(dt){
             const lc=sp3(h.tx+S.dx*ART_RG*0.8,60,h.tz+S.dz*ART_RG*0.8,4500);if(lc){tn(lc,lc.t0,80,30,0.5,0.35*(VOLS.gun||1),'sine');}}catch(e){}}   // and a faint thump from the battery far away
         artPos(S,h,u,_artP);artPos(S,h,Math.min(1,u+0.01),_artP2);_artD.copy(_artP2).sub(_artP);if(_artD.lengthSq()>1e-9){_artD.normalize();_artQ.setFromUnitVectors(_artX,_artD);h.m.quaternion.copy(_artQ);}
         h.m.position.copy(_artP);
-        if(u<1&&camera.position.distanceToSquared(_artP)<1600*1600){emit(gPuff,matSmoke,_artP,V(0,0,0),1.6,{s:1.2,grow:5,drag:1});emit(gFire,matFire,_artP,V(0,0,0),0.12,{s:1.0,grow:1});}
+        if(u<1){const dc=camera.position.distanceTo(_artP),ts=clamp(dc*0.0035,0.5,7);for(let k=0;k<3;k++){_artP2.copy(_artP).addScaledVector(_artD,-k*dc*0.004);emit(gFire,matFire,_artP2,V(0,0,0),0.28,{s:ts*(1-k*0.2)});}}   // a bright tracer streak, no smoke
         if(u>=1){h.done=true;scene.remove(h.m);h.m=null;const gp=V(h.tx,groundH(h.tx,h.tz)+0.4,h.tz);artBlast(gp,S,h);}}}
     if(S.t>S.end&&S.sh.every(h=>h.done))ART.list.splice(li,1);}}
 function artBlast(p,S,h){
-  const sc=1;BL.t=0;BL.k=4;BLL.position.copy(p).y+=6;
+  BL.t=0;BL.k=1.1;BLL.position.copy(p).y+=3;
   {const idx=S.sh.indexOf(h);if(idx%2===0)try{treeBlastNet(p,{mine:S.mine});}catch(e){}}
-  for(let i=0;i<5;i++){const a=Math.random()*PI*2,k=Math.random()*7;emit(gFire,matFire,V(p.x+Math.cos(a)*k,p.y+2+Math.random()*5,p.z+Math.sin(a)*k),V(0,3+Math.random()*4,0),1.1,{s:5+Math.random()*3,grow:14});}
-  emit(gFire,matFire,V(p.x,p.y+3,p.z),V(0,2,0),0.8,{s:9,grow:22});
-  for(let i=0;i<36;i++){const a=Math.random()*PI*2,k=6+Math.random()*16;emit(gPuff,i%3?matSmoke:matDust,p,V(Math.cos(a)*k,3+Math.random()*16,Math.sin(a)*k),5.5,{s:1.4,grow:6.5,drag:1.1});}
-  for(let i=0;i<14;i++){emit(gPuff,matSmoke,V(p.x,p.y+3+i*2.8,p.z),V((Math.random()-0.5)*3,6+Math.random()*4,(Math.random()-0.5)*3),6.5,{s:2.6,grow:7,drag:0.8});}   // the rising column
-  for(let i=0;i<60;i++)emit(gSpark,matFire,p,rv(34).add(V(0,16,0)),1.1,{s:2.2,grav:11});
-  try{const c=sp3(p.x,p.y,p.z,4500);if(c){nz(c,c.t0,1.6,380,0.5,1.8*(VOLS.gun||1),'lowpass');tn(c,c.t0,55,18,1.6,1.5*(VOLS.gun||1),'sine');nz(c,c.t0,0.35,2400,0.6,0.9*(VOLS.gun||1));nz(c,c.t0+0.25,2.8,260,0.4,0.9*(VOLS.gun||1),'lowpass');}boomAt(p);}catch(e){}
-  disturb(p.x,p.z,900,2200);{const d=camera.position.distanceTo(p);shake=Math.max(shake,clamp((260-d)/260,0,1)*3.2);}
+  emit(gFire,matFire,V(p.x,p.y+1.5,p.z),V(0,3,0),0.6,{s:2.4,grow:9});emit(gFire,matFire,V(p.x,p.y+2.5,p.z),V(0,5,0),0.45,{s:1.5,grow:6});
+  for(let i=0;i<34;i++){const a=Math.random()*PI*2,k=2.5+Math.random()*8;emit(gPuff,i%2?UGV_SMK:matSmoke,p,V(Math.cos(a)*k,2+Math.random()*9,Math.sin(a)*k),3.4,{s:0.8,grow:3.4,drag:1.2});}
+  for(let i=0;i<34;i++)emit(gSpark,matFire,p,rv(22).add(V(0,9,0)),0.8,{s:1.8,grav:9});
+  try{const c=sp3(p.x,p.y,p.z,4000);if(c){nz(c,c.t0,1.1,420,0.5,1.1*(VOLS.gun||1),'lowpass');tn(c,c.t0,65,22,1.0,1.0*(VOLS.gun||1),'sine');nz(c,c.t0,0.25,2400,0.6,0.5*(VOLS.gun||1));}boomAt(p);}catch(e){}
+  disturb(p.x,p.z,700,1800);{const d=camera.position.distanceTo(p);shake=Math.max(shake,clamp((110-d)/110,0,1)*1.1);}
   const K=S.K;
   // me: inside the kill radius is death, outside it the blast still hurts out to twice that
   if(player.alive&&MPM.hp>0){let live=true;try{if(MPM.on&&NT.M.ph!=='live')live=false;}catch(e){}
@@ -3642,7 +3640,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=603;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=604;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
