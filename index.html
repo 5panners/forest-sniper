@@ -3696,7 +3696,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=625;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=626;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -3970,6 +3970,7 @@ function carve(c){goneCarcass(c.o,c.k);let m,h=0;
 function nullSnd(){try{initAudio();if(AC&&AC.state==='suspended'&&soundOn)AC.resume();tone(210,0.1,0.28,'triangle',190);}catch(e){}}   // two short falling blips, loud enough for laptop speakers   // a small dull 'nothing happens' sound
 function resGather(){if(!player.alive||mapOpen)return;const c=carcassNearest();if(c){carve(c);return;}if(zipTryMount())return;{const d=dropNearest();if(d){dropTake(d);return;}}const i=resNearest();if(i==null)return;const n=RES_NODES[i],R=RES_T[n.ti];
   if(R.k==='radio'&&slotHas('radio')){nullSnd();toast('You already carry a radio');return;}
+  if(R.k==='scrap'&&slotHas('arty')){nullSnd();toast('You already carry a 155 mm round');return;}   // one of each gadget
   if((R.k==='radio'||R.k==='scrap'||(R.k==='at4'&&!WPN.has))&&!slotCanTake(R.k==='scrap'?'arty':R.k)){toast('Gadget slots full · drop or use one first');return;}
   if(((R.k==='rifle'||R.k==='ar15')&&slotHas(R.k))||(R.k==='at4'&&WPN.has)){nullSnd();toast('You already carry '+(R.k==='at4'?'an AT4':'a'+(R.k==='ar15'?'n ':' ')+ITEM[R.k].name));return;}   // no taking ammo from a weapon you already have
   if(R.k==='berries'&&MPM.hp>=HP_MAX){nullSnd();return;}
@@ -4897,7 +4898,7 @@ function dropNearest(){const p=player.pos;let best=null,bd=2.4*2.4;for(const d o
 function dropTake(d){
   if(d.k==='radio'&&slotHas('radio')){nullSnd();toast('You already carry a radio');return;}
   if((d.k==='at4'&&WPN.has)||((d.k==='rifle'||d.k==='ar15')&&slotHas(d.k))){nullSnd();toast('You already carry '+(d.k==='at4'?'an AT4':'a'+(d.k==='ar15'?'n ':' ')+ITEM[d.k].name));return;}   // no taking ammo from a weapon you already have
-  {if(!slotCanTake(d.k)){toast('Gadget slots full');return;}const it={k:d.k,ld:d.ld,ammo:d.ammo};const out=slotGive(it);if(out===null){toast('Gadget slots full');return;}
+  {if(ITEM[d.k]&&ITEM[d.k].kind==='g'&&slotHas(d.k)){nullSnd();toast('You already carry '+ITEM[d.k].name);return;}if(!slotCanTake(d.k)){toast('Gadget slots full');return;}const it={k:d.k,ld:d.ld,ammo:d.ammo};const out=slotGive(it);if(out===null){toast('Gadget slots full');return;}
     toast((out?'Swapped your '+out+' for the '+ITEM[d.k].name:'Picked up the '+ITEM[d.k].name+(d.k==='at4'?(d.ld?' · loaded':' · empty'):''))+' · '+slotKeyOf(d.k));}
   DROPS.splice(DROPS.indexOf(d),1);dropKill(d);try{pickSnd();}catch(e){}try{invUI();}catch(e){}
   try{if(MPM.on&&NT.room)NT.room.emit('dtake',{id:d.id}).catch(()=>{});}catch(e){}}
