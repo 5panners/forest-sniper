@@ -154,7 +154,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <p class="note">Day sounds are the forest birds and wind; night sounds are the owls. Each fades in after its start time and fades out after its stop time, over the fade length in game minutes. Time flow above sets how quickly game minutes pass.</p>
     <p class="note">100% is the recording at its original level. Press M in game to mute everything.</p>
   </div>
-  <div id="paneMp" role="tabpanel" aria-labelledby="tabMp" hidden><div id="mpBox"><b>1v1 match</b><button id="mpStart" type="button" hidden>Start match</button><button id="mpLeave" type="button" hidden>Leave</button><button id="mpDHost" type="button">Host match</button><button id="mpDJoin" type="button">Join match</button><textarea id="mpDx" rows="6" style="min-height:8em;resize:vertical" hidden spellcheck="false" aria-label="Connection code"></textarea><button id="mpDgo" type="button" hidden>Connect</button><div id="mpStat" class="note">Host a match and send the code to your opponent. They paste it and press Join match, then send you their reply code to paste back and Connect. One life per round, first to 3 rounds; 5 rounds loaded plus 15 spare.</div></div><label class="opt"><input type="checkbox" id="optNet" checked><span><b>Show network stats</b><small>While connected: round-trip time, connection path, data rates, lost packets, buffering and wildlife sync, top left.</small></span></label></div>
+  <div id="paneMp" role="tabpanel" aria-labelledby="tabMp" hidden><div id="mpBox"><b>1v1 match</b><button id="mpStart" type="button" hidden>Start match</button><button id="mpLeave" type="button" hidden>Leave</button><input id="mpPw" type="text" maxlength="40" placeholder="Password" autocomplete="off" spellcheck="false" aria-label="Match password" style="width:150px;text-transform:none"><button id="mpDHost" type="button">Host match</button><button id="mpDJoin" type="button">Join match</button><textarea id="mpDx" rows="6" style="min-height:8em;resize:vertical" hidden spellcheck="false" aria-label="Connection code"></textarea><button id="mpDgo" type="button" hidden>Connect</button><div id="mpStat" class="note">Type the same password on both sides, then one presses Host match and the other Join match. (Leave the password empty to swap connection codes by hand instead: host a match and send the code to your opponent. They paste it and press Join match, then send you their reply code to paste back and Connect.) One life per round, first to 3 rounds; 5 rounds loaded plus 15 spare.</div></div><label class="opt"><input type="checkbox" id="optNet" checked><span><b>Show network stats</b><small>While connected: round-trip time, connection path, data rates, lost packets, buffering and wildlife sync, top left.</small></span></label></div>
   <button id="deployBtn" disabled>Generating forest…</button><button id="cfgBtn" type="button">Copy settings</button><button id="applyBtn" type="button" title="Save the settings and reload the page so map pickup quantities and placement take effect">Apply &amp; reload</button>
   <div class="note" id="stats"></div>
 </div></div>
@@ -3696,7 +3696,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=627;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=628;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6922,7 +6922,7 @@ async function unpackDesc(code,kind){UNPACK_ERR='';code=String(code||'').replace
 const gathered=(pc,ms)=>new Promise(res=>{if(pc.iceGatheringState==='complete')return res();const t=setTimeout(res,ms||5000);pc.addEventListener('icegatheringstatechange',()=>{if(pc.iceGatheringState==='complete'){clearTimeout(t);res();}});});
 let DX=null;   // the direct connection being set up
 function dxStat(t){mpStat(t);}
-function dxReset(){if(DX){try{DX.pc.close();}catch(e){}DX=null;}$('mpDx').value='';$('mpDx').hidden=true;$('mpDgo').hidden=true;$('mpDgo').disabled=false;mpUI();}
+function dxReset(){try{if(PW&&!PW.got)pwStop(true);}catch(e){}if(DX){try{DX.pc.close();}catch(e){}DX=null;}$('mpDx').value='';$('mpDx').hidden=true;$('mpDgo').hidden=true;$('mpDgo').disabled=false;mpUI();}
 function dxWatch(pc,dc,role){let done=false;
   const open=()=>{if(done||dc.readyState!=='open')return;done=true;const r=rtcRoom(pc,dc);DX=null;$('mpDx').value='';$('mpDx').hidden=true;$('mpDgo').hidden=true;
     if(NT.room)mpLeave(true);mpAttach(r,'direct',role,'direct','');};
@@ -6953,10 +6953,46 @@ async function dxFinish(){if(!DX||DX.role!=='h')return;
   dxStat('Connecting…');const me=DX;
   setTimeout(()=>{if(DX===me&&!NT.room)dxStat('Still connecting… if nothing happens in a few more seconds the connection is blocked: press Host match to try again, and make sure you are both on the GitHub Pages link.');},10000);}
 
+// ---- password matches: both players type the same password; public BitTorrent WebSocket trackers (no account, nothing of ours) pass the two WebRTC handshakes between them, then play is direct ----
+const PW_TRK=['wss://tracker.openwebtorrent.com','wss://tracker.webtorrent.dev','wss://tracker.btorrent.xyz','wss://tracker.files.fm:7073/announce'];
+let PW=null;
+const pwId=n=>{const a=crypto.getRandomValues(new Uint8Array(n)),c='abcdefghijklmnopqrstuvwxyz0123456789';let t='';for(const b of a)t+=c[b%36];return t;};
+async function pwHash(pw){const h=new Uint8Array(await crypto.subtle.digest('SHA-1',new TextEncoder().encode('forest-sniper-1v1:'+pw.trim().toLowerCase())));let t='';for(const b of h)t+=String.fromCharCode(b);return t;}
+function pwStop(quiet){const S=PW;PW=null;if(!S)return;S.dead=true;clearInterval(S.timer);clearTimeout(S.to);for(const w of S.ws){try{w.onclose=null;w.close();}catch(e){}}for(const o of S.offers.values()){if(o.pc!==S.keep)try{o.pc.close();}catch(e){}}for(const pc of S.ans)if(pc!==S.keep)try{pc.close();}catch(e){}if(!quiet)mpStat('Cancelled.');}
+function pwWatch(S,pc,dc){let sent=0,iv=null;const hi=()=>{if(dc.readyState==='open'&&sent++<24){try{dc.send(JSON.stringify({k:'hi',r:S.role}));}catch(e){}}else clearInterval(iv);};
+  const go=()=>{if(S.dead||S.got)return;iv=setInterval(hi,250);hi();};
+  dc.onmessage=e=>{let m;try{m=JSON.parse(e.data);}catch(_){return;}if(!m||m.k!=='hi'||S.dead||S.got)return;
+    if(m.r===S.role){S.got=1;mpStat('You both pressed '+(S.role==='h'?'Host':'Join')+' match with that password. One of you must press the other button.');pwStop(true);try{pc.close();}catch(e){}return;}
+    S.got=1;S.keep=pc;const r=rtcRoom(pc,dc);const role=S.role;pwStop(true);mpUI();if(NT.room)mpLeave(true);mpAttach(r,'direct',role,'direct','');};
+  dc.onopen=go;if(dc.readyState==='open')go();}
+async function pwStart(pw,role){pwStop(true);if(NT.room)mpLeave(true);dxReset();
+  if(!window.RTCPeerConnection||!window.crypto||!crypto.subtle){mpStat('This browser cannot make a direct connection');return;}
+  const S=PW={ih:await pwHash(pw),me:pwId(20),role,pw:pw.trim(),ws:[],offers:new Map(),ans:[],seen:new Set(),n:0,t0:Date.now(),dead:false,got:0,keep:null};
+  const open=()=>S.ws.filter(w=>w.readyState===1);
+  const status=()=>{if(S.dead||S.got)return;const n=open().length;mpStat(n?'Waiting for your opponent to '+(role==='h'?'join':'host')+' with the password “'+S.pw+'”… (reached '+n+' of '+PW_TRK.length+' relays)':'Reaching the matchmaking relays…');};
+  const send=(w,o)=>{try{if(w.readyState===1)w.send(JSON.stringify(o));}catch(e){}};
+  const onMsg=(w,ev)=>{if(S.dead||S.got)return;let m;try{m=JSON.parse(ev.data);}catch(_){return;}if(!m||m.peer_id===S.me)return;
+    if(m.offer&&m.offer_id&&m.peer_id){if(S.seen.has(m.offer_id))return;S.seen.add(m.offer_id);
+      (async()=>{const pc=new RTCPeerConnection(RTC_CFG);S.ans.push(pc);pc.ondatachannel=e=>pwWatch(S,pc,e.channel);
+        try{await pc.setRemoteDescription(m.offer);await pc.setLocalDescription(await pc.createAnswer());await gathered(pc,4000);}catch(e){return;}
+        if(S.dead||S.got)return;send(w,{action:'announce',info_hash:S.ih,peer_id:S.me,to_peer_id:m.peer_id,offer_id:m.offer_id,answer:{type:'answer',sdp:pc.localDescription.sdp}});})();}
+    else if(m.answer&&m.offer_id){const o=S.offers.get(m.offer_id);if(o&&!o.used&&o.pc.signalingState==='have-local-offer'){o.used=1;o.pc.setRemoteDescription(m.answer).catch(()=>{});}}};
+  const conn=i=>{if(S.dead||S.got)return;let w;try{w=new WebSocket(PW_TRK[i]);}catch(e){return;}S.ws[i]=w;
+    w.onopen=()=>{status();announce(w);};w.onmessage=ev=>onMsg(w,ev);w.onerror=()=>{};w.onclose=()=>{status();if(!S.dead&&!S.got)setTimeout(()=>conn(i),4000);};};
+  const fresh=async()=>{const pc=new RTCPeerConnection(RTC_CFG),dc=pc.createDataChannel('fs',{ordered:false,maxRetransmits:2}),id=pwId(20);
+    await pc.setLocalDescription(await pc.createOffer());await gathered(pc,3000);if(S.dead||S.got){try{pc.close();}catch(e){}return null;}
+    const o={id,pc,dc,sdp:pc.localDescription.sdp};S.offers.set(id,o);pwWatch(S,pc,dc);
+    if(S.offers.size>6){const k=S.offers.keys().next().value,old=S.offers.get(k);S.offers.delete(k);try{old.pc.close();}catch(e){}}return o;};
+  const ann=(w,o)=>send(w,{action:'announce',info_hash:S.ih,peer_id:S.me,numwant:5,uploaded:0,downloaded:0,left:0,event:'started',offers:o?[{offer_id:o.id,offer:{type:'offer',sdp:o.sdp}}]:[]});
+  let cur=null;const announce=w=>{if(cur)ann(w,cur);};
+  const round=async()=>{if(S.dead||S.got)return;if(Date.now()-S.t0>5*60*1000){mpStat('Nobody joined with that password in 5 minutes. Press Host match or Join match to try again.');pwStop(true);return;}
+    const o=await fresh();if(!o)return;cur=o;for(const w of open())ann(w,o);status();};
+  status();for(let i=0;i<PW_TRK.length;i++)conn(i);
+  round();S.timer=setInterval(round,7000);}
 // ---- lobby ----
 function mpStat(s){const e=$('mpStat');if(e)e.textContent=s;}
 function mpUI(){const on=!!NT.room,host=NT.role==='h',ph=NT.M.ph;
-  $('mpDHost').hidden=on;$('mpDJoin').hidden=on;if(on){$('mpDx').hidden=true;$('mpDgo').hidden=true;}$('mpLeave').hidden=!on;
+  $('mpDHost').hidden=on;$('mpDJoin').hidden=on;$('mpPw').hidden=on;if(on){$('mpDx').hidden=true;$('mpDgo').hidden=true;}$('mpLeave').hidden=!on;
   $('mpStart').hidden=!(on&&host);$('mpStart').disabled=!(NT.opp&&(ph==='wait'||ph==='over'));$('mpStart').textContent=ph==='over'?'Rematch':'Start match';}
 function mpAttach(room,kind,role,code,why){
   Object.assign(NT,{room,kind,code,role,opp:null,oppSeen:0,wasOpp:false,myR:0,rosterV:-1,rost:null,M:{ph:'wait',r:0,sc:[0,0],left:0,lw:''}});
@@ -7237,8 +7273,9 @@ function netStep(dt){farFlashStep(dt);
   else if(M.ph==='over'){const won=mine>theirs;txt=(won?'You win the match ':'You lose the match ')+mine+'–'+theirs+(host?' · Esc → Rematch':' · waiting for a rematch');}
   if(txt!==NT.banTxt){NT.banTxt=txt;const e=$('mpBan');e.textContent=txt;e.hidden=!txt;}
 }
-$('mpDHost').onclick=()=>{audioUnlock();dxHost().catch(e=>{console.error(e);dxStat('Something went wrong: '+(e&&e.message||e));});};
-$('mpDJoin').onclick=()=>{audioUnlock();dxJoin().catch(e=>{console.error(e);dxStat('Something went wrong: '+(e&&e.message||e));});};
+$('mpPw').addEventListener('keydown',e=>e.stopPropagation());
+$('mpDHost').onclick=()=>{audioUnlock();const pw=$('mpPw').value.trim();if(pw){pwStart(pw,'h').catch(e=>mpStat('Something went wrong: '+(e&&e.message||e)));return;}dxHost().catch(e=>{console.error(e);dxStat('Something went wrong: '+(e&&e.message||e));});};
+$('mpDJoin').onclick=()=>{audioUnlock();const pw=$('mpPw').value.trim();if(pw){pwStart(pw,'g').catch(e=>mpStat('Something went wrong: '+(e&&e.message||e)));return;}dxJoin().catch(e=>{console.error(e);dxStat('Something went wrong: '+(e&&e.message||e));});};
 $('mpDgo').onclick=()=>{audioUnlock();dxFinish().catch(e=>{console.error(e);dxStat('Something went wrong: '+(e&&e.message||e));});};
 $('mpDx').addEventListener('keydown',e=>e.stopPropagation());
 $('mpStart').onclick=()=>mpStart();
