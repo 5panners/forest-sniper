@@ -3696,7 +3696,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=633;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=634;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6275,7 +6275,7 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
     const mode=!on?'Solo against bots':rs[0]==='b'?'1v1 online'+(nf||ne?' with bots':''):'Co-op online against '+(ne?ne+' bot'+(ne>1?'s':''):'nobody');
     pn.innerHTML='<div class="cgrow"><div class="teams">'+col('a','Your team','#3d9bff')+col('b','Enemy team','#ff5a4a')+'</div>'
       +'<div class="cgbox"><div class="sum"><b>'+mode+'</b> · '+A+' vs '+B+'</div>'
-      +'<div class="note">Pick Player in one slot to play a friend online: on the enemy team for a 1v1, on your team for co-op. Bots fight for the side they are on. Fine-tune each bot in the <b>GD01</b> tab.</div></div></div>';
+      +'<div class="note">Pick Player in one slot to play a friend online: on the enemy team for a 1v1, on your team for co-op. Bots fight for the side they are on.</div></div></div>';
     pn.querySelectorAll('select[data-t]').forEach(x=>x.onchange=()=>{const t=x.dataset.t,i=+x.dataset.i;TM[t][i]=x.value;
       if(x.value==='P'){for(const u of ['a','b'])for(let k=(u==='a'?1:0);k<6;k++)if(TM[u][k]==='P'&&!(u===t&&k===i))TM[u][k]='N';}   // only one other human
       derive();build();});
