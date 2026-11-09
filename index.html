@@ -3696,7 +3696,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=629;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=630;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5498,15 +5498,15 @@ function secPlayers(){const out=[],t=secTeam();out.push({team:t,x:player.pos.x,z
   return out;}
 // the host (or single player) runs the capture
 function secSim(dt){const P=secPlayers();
-  SEC_DEF.forEach((d,i)=>{const s=SECT.s[i],inn=[false,false,false];for(const p of P)if(p.al&&Math.hypot(p.x-d.x,p.z-d.z)<d.r)inn[p.team]=true;
+  SEC_DEF.forEach((d,i)=>{const s=SECT.s[i],inn=[false,false,false],cn=[0,0,0];for(const p of P)if(p.al&&Math.hypot(p.x-d.x,p.z-d.z)<d.r){inn[p.team]=true;cn[p.team]++;}
     s.in=(inn[1]?1:0)+(inn[2]?2:0);
     if(inn[1]&&inn[2])return;   // contested: the bar freezes
-    const T=inn[1]?1:inn[2]?2:0;
+    const T=inn[1]?1:inn[2]?2:0,spd=T?Math.min(3,1+0.6*(cn[T]-1)):1;   // each extra player or bot on the point speeds the capture up (to 3x)
     if(!T){s.cap=Math.max(0,s.cap-dt/(SEC_CAP*3));if(s.cap===0)s.by=0;return;}
-    if(s.own===T){s.cap=Math.max(0,s.cap-dt/SEC_CAP*2);if(s.cap===0)s.by=0;return;}
+    if(s.own===T){s.cap=Math.max(0,s.cap-dt/SEC_CAP*2*spd);if(s.cap===0)s.by=0;return;}
     if(!secAttackable(i,T))return;
-    if(s.by!==T&&s.cap>0){s.cap=Math.max(0,s.cap-dt/SEC_CAP);if(s.cap===0)s.by=T;return;}
-    s.by=T;s.cap+=dt/SEC_CAP;if(s.cap>=1){s.own=T;s.cap=0;s.by=0;}});}
+    if(s.by!==T&&s.cap>0){s.cap=Math.max(0,s.cap-dt/SEC_CAP*spd);if(s.cap===0)s.by=T;return;}
+    s.by=T;s.cap+=dt/SEC_CAP*spd;if(s.cap>=1){s.own=T;s.cap=0;s.by=0;}});}
 function secWin(team,why){const M=NT.M;if(M.ph!=='live')return;const hostWins=team===secHostTeam();if(hostWins){M.sc[0]++;M.lw='h';}else{M.sc[1]++;M.lw='g';}M.ph='end';M.left=6;M.why=why;try{mpUI();}catch(e){}}
 function siloAbort(){const S=SILO;if(!S.built||S.st!=='count')return;S.st='idle';S.t=0;S.hx=0;S.sfx=0;siloPose();SECT.launch=0;toast('Launch aborted · the silo is no longer armed');}
 // who spawns where: the held sector (or home) nearest to where you died
