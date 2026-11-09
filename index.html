@@ -3696,7 +3696,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=632;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=633;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6279,7 +6279,7 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
     pn.querySelectorAll('select[data-t]').forEach(x=>x.onchange=()=>{const t=x.dataset.t,i=+x.dataset.i;TM[t][i]=x.value;
       if(x.value==='P'){for(const u of ['a','b'])for(let k=(u==='a'?1:0);k<6;k++)if(TM[u][k]==='P'&&!(u===t&&k===i))TM[u][k]='N';}   // only one other human
       derive();build();});
-    const nm=document.createElement('div');nm.className='cgname';nm.innerHTML='<label for="cgName">Your name</label><input type="text" id="cgName" maxlength="16" placeholder="Player" autocomplete="off" spellcheck="false"><small>Shown to your opponent in online matches</small>';
+    const nm=document.createElement('div');nm.className='cgname';nm.innerHTML='<label for="cgName">Your name</label><input type="text" id="cgName" maxlength="16" placeholder="Player" autocomplete="off" spellcheck="false">';
     pn.insertBefore(nm,pn.firstChild);const ni=nm.querySelector('input');ni.value=myName();ni.oninput=()=>{const c=cleanName(ni.value);try{localStorage.setItem('fsName',c);}catch(e){}try{if(NT&&NT.room)NT.room.presence({nm:c}).catch(()=>{});}catch(e){}
       const o=pn.querySelector('.teams select[disabled] option');if(o)o.textContent=(c?c+' (you)':'You');};
     mpWrap.hidden=false;pn.appendChild(mpWrap);};
