@@ -57,7 +57,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 .tabs button[aria-selected=true]{color:var(--amber);border-bottom-color:var(--amber)}
 .tabs button:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
 .opts{display:grid;gap:10px;margin:10px 0 14px}
-.opt{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.opt{display:flex;gap:12px;align-items:flex-start;cursor:pointer}.opt>span{flex:1;min-width:0}.opt>select{flex:none;width:130px;margin-top:2px}
 .opt input{margin-top:3px;accent-color:var(--moss);width:16px;height:16px;flex:none}
 .opt b{display:block;font-weight:600}
 .opt small{display:block;color:var(--muted);font-size:13px}
@@ -65,7 +65,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
 #compass{display:none;position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:min(620px,calc(100vw - 340px));height:28.5px;z-index:3;pointer-events:none}
 #miniW{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:3;pointer-events:none;text-align:center;font:11px var(--f-mono);color:var(--muted)}
 #miniCv{display:block;width:min(200px,30vmin);height:min(200px,30vmin);border-radius:50%;border:2px solid var(--line);background:#0c120a}
-.rng{display:grid;grid-template-columns:110px 1fr 92px;gap:12px;align-items:center;margin:6px 0}
+.rng{display:grid;grid-template-columns:minmax(110px,230px) 1fr 64px;gap:12px;align-items:center;margin:6px 0}
 .rng input{accent-color:var(--moss);width:100%}
 .rng output{font:600 14px var(--f-mono);color:var(--amber);text-align:right}
 .sec{margin:4px 0 0;font:600 12px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
@@ -3704,7 +3704,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=656;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=658;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6167,7 +6167,7 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
   const MAXB=10;
   const mpWrap=document.createElement('div');mpWrap.id='cgMpWrap';{const h=document.createElement('p');h.className='sec';h.style.marginTop='16px';h.textContent='Play online';mpWrap.appendChild(h);
     const box=document.getElementById('mpBox'),net=document.getElementById('optNet'),nl=net&&net.closest('label');if(box)mpWrap.appendChild(box);if(nl)mpWrap.appendChild(nl);
-    {const st=document.createElement('style');st.textContent='.tabs.nodev button:not(#tabCg):not(#tabBrief):not(#tabGfx):not(#tabAud){display:none}';document.head.appendChild(st);
+    {const st=document.createElement('style');st.textContent='.tabs.nodev button:not(#tabCg):not(#tabBrief):not(#tabGfx):not(#tabAud){display:none}.card:has(.tabs.nodev){width:min(780px,100%)}.card:has(.tabs.nodev) #paneCg .teams,.card:has(.tabs.nodev) #paneCg .cgbox{width:100%}';document.head.appendChild(st);
      const lb=document.createElement('label');lb.className='opt';lb.style.marginBottom='0';lb.innerHTML='<input type="checkbox" id="optDev"><span><b>Show developer tabs</b></span>';{const row=document.createElement('div');row.style.cssText='display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-bottom:22px';if(nl){nl.style.marginBottom='0';row.appendChild(nl);}row.appendChild(lb);mpWrap.appendChild(row);}
      const cb=lb.querySelector('input');let on=false;try{on=localStorage.getItem('sniperDev')==='1';}catch(e){}
      const ap=()=>{tabs.classList.toggle('nodev',!on);cb.checked=on;if(!on){const a=tabs.querySelector('[aria-selected="true"]');if(a&&a.offsetParent===null){const c=document.getElementById('tabCg');if(c)c.click();}}};
