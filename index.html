@@ -3696,7 +3696,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=637;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=638;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6253,6 +6253,12 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
   const MAXB=10;
   const mpWrap=document.createElement('div');mpWrap.id='cgMpWrap';{const h=document.createElement('p');h.className='sec';h.style.marginTop='16px';h.textContent='Play online';mpWrap.appendChild(h);
     const box=document.getElementById('mpBox'),net=document.getElementById('optNet'),nl=net&&net.closest('label');if(box)mpWrap.appendChild(box);if(nl)mpWrap.appendChild(nl);
+    {const st=document.createElement('style');st.textContent='.tabs.nodev button:not(#tabCg):not(#tabBrief):not(#tabGfx):not(#tabAud){display:none}';document.head.appendChild(st);
+     const lb=document.createElement('label');lb.className='opt';lb.style.marginBottom='22px';lb.innerHTML='<input type="checkbox" id="optDev"><span><b>Show developer tabs</b></span>';mpWrap.appendChild(lb);
+     const cb=lb.querySelector('input');let on=false;try{on=localStorage.getItem('sniperDev')==='1';}catch(e){}
+     const ap=()=>{tabs.classList.toggle('nodev',!on);cb.checked=on;if(!on){const a=tabs.querySelector('[aria-selected="true"]');if(a&&a.offsetParent===null){const c=document.getElementById('tabCg');if(c)c.click();}}};
+     cb.onchange=()=>{on=cb.checked;try{localStorage.setItem('sniperDev',on?'1':'0');}catch(e){}ap();};
+     ap();}
     const tm=document.getElementById('tabMp');if(tm){tm.hidden=true;tm.style.display='none';}}
   css.textContent+=`#paneCg .cgname{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px}#paneCg .cgname label{font:600 13px var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}#paneCg .cgname input{width:200px;max-width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:rgba(0,0,0,.35);color:inherit;font:600 14px var(--f-ui)}#paneCg .cgname small{opacity:.65;font-size:12px}`;
   /* Teams: six slots a side, each Player / Bot / NA. Your own slot is the first one on your team and carries your name.
