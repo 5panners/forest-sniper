@@ -3704,7 +3704,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=653;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=654;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5339,25 +5339,25 @@ function siloStep(){const S=SILO;const now=performance.now(),dt=Math.min(0.1,(no
   if(f>110||S.pos.y>S.y0+9000){if(S.fl2)S.fl2.intensity=0;S.st='gone';siloVoiceStop();S.mis.visible=false;S.flame.visible=false;if(S.glow)S.glow.visible=false;}}
 function siloStrikeFx(mine,pts){
   if(!document.getElementById('strikeCss')){const st=document.createElement('style');st.id='strikeCss';st.textContent=
-   '#strikeFx{position:fixed;inset:0;z-index:30;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:17vh;font-family:"IBM Plex Mono",monospace}'
-  +'#strikeFx .fl{position:absolute;inset:0;animation:stFl 1.3s ease-out forwards}'
-  +'#strikeFx .ring{position:absolute;left:50%;top:26vh;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;border:4px solid var(--c);box-shadow:0 0 30px var(--c),inset 0 0 30px var(--c);opacity:0;animation:stRing 1.5s ease-out forwards}'
+   '#strikeFx{position:fixed;inset:0;z-index:30;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:calc(104px + env(safe-area-inset-top,0px));font-family:"IBM Plex Mono",monospace}'
+  +'#strikeFx .fl{position:absolute;inset:0;animation:stFl .9s ease-out forwards}'
+  +'#strikeFx .ring{position:absolute;left:50%;top:70px;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:2px solid var(--c);opacity:0;animation:stRing 1s ease-out forwards}'
   +'#strikeFx .ring.b{animation-delay:.25s}'
-  +'#strikeFx .n{position:relative;font-weight:800;font-size:min(22vw,150px);line-height:1;color:var(--c);text-shadow:0 0 28px var(--c),0 0 70px var(--c),0 4px 0 rgba(0,0,0,.6);animation:stN 3.4s cubic-bezier(.2,.9,.25,1) forwards}'
-  +'#strikeFx .t{position:relative;margin-top:8px;font-weight:700;font-size:min(4.6vw,22px);letter-spacing:.32em;text-transform:uppercase;color:#fff;text-shadow:0 0 12px var(--c),0 2px 0 rgba(0,0,0,.7);animation:stT 3.4s ease-out forwards}'
-  +'@keyframes stN{0%{transform:scale(3.2);opacity:0;filter:blur(14px)}12%{transform:scale(.92);opacity:1;filter:blur(0)}20%{transform:scale(1.08)}30%{transform:scale(1)}78%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-34px) scale(.9)}}'
+  +'#strikeFx .n{position:relative;font-weight:800;font-size:min(9vw,54px);line-height:1;color:var(--c);text-shadow:0 0 14px var(--c),0 2px 0 rgba(0,0,0,.6);animation:stN 2.6s cubic-bezier(.2,.9,.25,1) forwards}'
+  +'#strikeFx .t{position:relative;margin-top:4px;font-weight:700;font-size:min(3vw,11px);letter-spacing:.22em;text-transform:uppercase;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.8);animation:stT 2.6s ease-out forwards}'
+  +'@keyframes stN{0%{transform:scale(1.8);opacity:0}14%{transform:scale(.95);opacity:1}24%{transform:scale(1)}72%{opacity:1}100%{opacity:0;transform:translateY(-12px)}}'
   +'@keyframes stT{0%,10%{opacity:0;letter-spacing:.9em}28%{opacity:1;letter-spacing:.32em}78%{opacity:1}100%{opacity:0}}'
-  +'@keyframes stFl{0%{background:radial-gradient(circle at 50% 26vh,var(--c) 0,rgba(255,255,255,.5) 8%,transparent 60%);opacity:.95}100%{opacity:0}}'
-  +'@keyframes stRing{0%{opacity:.95;transform:scale(1)}100%{opacity:0;transform:scale(22)}}'
+  +'@keyframes stFl{0%{background:radial-gradient(ellipse at 50% 70px,var(--c) 0,transparent 32%);opacity:.38}100%{opacity:0}}'
+  +'@keyframes stRing{0%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(5)}}'
   +'#tkHud.hit{animation:tkHit 2.6s ease-out}'
   +'@keyframes tkHit{0%{transform:translateX(-50%) scale(1.5);filter:drop-shadow(0 0 16px var(--hc)) brightness(2)}14%{transform:translateX(-56%) scale(1.35)}28%{transform:translateX(-44%) scale(1.35)}42%{transform:translateX(-52%) scale(1.25)}60%{transform:translateX(-50%) scale(1.15);filter:drop-shadow(0 0 12px var(--hc)) brightness(1.5)}100%{transform:translateX(-50%) scale(1);filter:none}}';
    document.head.appendChild(st);}
   const old=document.getElementById('strikeFx');if(old)old.remove();
   const c=mine?'#ffc23d':'#ff4a3a',d=document.createElement('div');d.id='strikeFx';d.style.setProperty('--c',c);
-  d.innerHTML='<div class="fl"></div><div class="ring"></div><div class="ring b"></div><div class="n">−'+pts+'</div><div class="t">'+(mine?'Missile strike · enemy tickets':'Enemy missile · your tickets')+'</div>';
-  document.body.appendChild(d);setTimeout(()=>{try{d.remove();}catch(e){}},3600);
+  d.innerHTML='<div class="fl"></div><div class="ring"></div><div class="ring b"></div><div class="n">−'+pts+'</div><div class="t">'+(mine?'Enemy tickets':'Your tickets')+'</div>';
+  document.body.appendChild(d);setTimeout(()=>{try{d.remove();}catch(e){}},2800);
   const hud=document.getElementById('tkHud');if(hud){hud.style.setProperty('--hc',c);hud.classList.remove('hit');void hud.offsetWidth;hud.classList.add('hit');setTimeout(()=>hud.classList.remove('hit'),2700);}
-  try{if(AC&&soundOn){tone(55,0.9,0.5,'sine',30);noise(1.2,300,0.8,0.5,'lowpass');}}catch(e){}}
+  try{if(AC&&soundOn){tone(55,0.7,0.25,'sine',30);}}catch(e){}}
 const LH={on:false,t:0};   // hold L at the missile control point to launch (once per game)
 function siloHoldDone(){const S=SILO;if(S.st!=='idle')return;SECT.launch=secTeam();SECT.hit=0;siloLaunch(true);}
 addEventListener('keydown',e=>{if(!playing||e.repeat||e.ctrlKey||e.metaKey||e.code!=='KeyL')return;const S=SILO;if(!S.built||!player.alive)return;
