@@ -3423,7 +3423,7 @@ function goFallback(){if(fallback)return;if(everLocked){toast('Click the game to
   if(MPM.on&&(MPM.lf=(MPM.lf||0)+1)<4){toast('Click the game to capture the mouse');return;}   // in a match, keep trying the lock rather than dropping to drag-to-look
   fallback=true;toast('Mouse lock unavailable here · hold a mouse button and drag to look');}
 $('deployBtn').addEventListener('click',()=>{initAudio();if(AC&&AC.state==='suspended'&&soundOn)AC.resume();startAmbience();try{chuteInitialDrop();}catch(e){console.warn('drop',e);}setPlaying(true);cv.focus();requestLock();});
-document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===cv;if(locked){everLocked=true;fallback=false;}if(!locked&&playing&&!fallback&&!mapOpen){if(MPM.on){for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;toast('Mouse released · click the game to capture it · Esc for the menu');}else setPlaying(false);}else if(locked)MPM.lf=0;});   // in a match the game stays up when the mouse is released (switching tabs): click to take it back
+document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===cv;if(locked){everLocked=true;fallback=false;}if(!locked&&playing&&!fallback&&!mapOpen&&!window.SB_END){if(MPM.on){for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;toast('Mouse released · click the game to capture it · Esc for the menu');}else setPlaying(false);}else if(locked)MPM.lf=0;});   // in a match the game stays up when the mouse is released (switching tabs): click to take it back
 document.addEventListener('pointerlockerror',()=>goFallback());
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('mousedown',e=>{if(!playing)return;if(!locked&&(!fallback||everLocked))requestLock();if(e.button===0)input.lmb=true;if(e.button===2)input.rmb=!input.rmb;});
@@ -3699,7 +3699,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=660;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=661;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5595,15 +5595,17 @@ function sbFrame(dt){
     if(dead&&!SB.dead){SB.dead=1;sbMe().d++;if(MPM.on)sbOpp().k++;sbPulse('pd');}else if(!dead)SB.dead=0;
     if(MPM.on){const od=RPS.hp!=null&&RPS.hp<=0&&RPS.r===M.r;if(od&&!SB.oDead){SB.oDead=1;sbMe().k++;sbOpp().d++;sbPulse('pk');}else if(!od)SB.oDead=0;}}
   SB.draw-=dt;if(SB.draw>0)return;SB.draw=0.2;
-  const S=sbState();if(!S){if(SB.wrap.classList.contains('on'))SB.wrap.classList.remove('on');SB.html='';sbPillDraw();return;}
-  const ended=S.cls!=='live',key=S.title;if(!SB.wrap.classList.contains('on')){SB.wrap.classList.add('on');SB.html='';SB.key='';}
+  const S=sbState();if(!S){window.SB_END=false;if(SB.wrap.classList.contains('on'))SB.wrap.classList.remove('on');SB.html='';sbPillDraw();return;}
+  const ended=S.cls!=='live',key=S.title;
+  if(ended&&!window.SB_END){window.SB_END=true;try{if(document.pointerLockElement)document.exitPointerLock();}catch(e){}}else if(!ended)window.SB_END=false;   // the end screen frees the mouse so its buttons can be clicked
+ if(!SB.wrap.classList.contains('on')){SB.wrap.classList.add('on');SB.html='';SB.key='';}
   const nt=S.note?'<div class="nt" style="--ac:'+({win:'#9be36a',lose:'#ff6a5a',draw:'#e3a33b',live:'#e3a33b'}[S.cls])+'">'+S.note+'</div>':'';
   if(ended&&SB.key===key){}   // the final table is drawn once and never touched again, so it cannot flicker
   else{const h=sbCardHtml(S);if(h!==SB.html){SB.card.className=SB.key===key?'st':'';SB.html=h;SB.card.innerHTML='<div id="sbMain">'+h+'</div><div id="sbNt"></div>';}SB.key=key;}
   const ne=document.getElementById('sbNt');if(ne&&ne.dataset.v!==nt){ne.dataset.v=nt;ne.innerHTML=nt;}
   sbPillDraw();}
-addEventListener('keydown',e=>{if(e.code==='Enter'&&!e.repeat&&playing){const t=e.target&&e.target.tagName;if(t!=='INPUT'&&t!=='TEXTAREA'&&t!=='SELECT'&&t!=='BUTTON'&&sbState()&&sbState().cls!=='live')sbNext();}});
-SB.wrap.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#sbNext'))sbNext();if(e.target.closest&&e.target.closest('#sbQuit'))sbQuit();});
+addEventListener('keydown',e=>{if(e.code==='Enter'&&!e.repeat&&playing){const t=e.target&&e.target.tagName;if(t!=='INPUT'&&t!=='TEXTAREA'&&t!=='SELECT'&&t!=='BUTTON'&&sbState()&&sbState().cls!=='live'){sbNext();window.SB_END=false;try{if(!document.pointerLockElement)requestLock();}catch(err){}}}});
+SB.wrap.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#sbNext')){sbNext();window.SB_END=false;try{if(playing&&!document.pointerLockElement)requestLock();}catch(err){}}if(e.target.closest&&e.target.closest('#sbQuit'))sbQuit();});
 function sbQuit(){try{sessionStorage.removeItem('fsIntro');}catch(e){}try{if(document.pointerLockElement)document.exitPointerLock();}catch(e){}try{if(typeof mpLeave==='function'&&MPM.on)mpLeave();}catch(e){}location.reload();}   // a clean reload resets every game state and shows the title screen again
 addEventListener('keydown',e=>{if(e.code!=='KeyK'||e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target&&e.target.tagName;if(t==='INPUT'||t==='TEXTAREA')return;SB.hold=true;});
 addEventListener('keyup',e=>{if(e.code==='KeyK')SB.hold=false;});addEventListener('blur',()=>{SB.hold=false;});
