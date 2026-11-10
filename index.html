@@ -104,8 +104,8 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
   <div class="tabs" role="tablist">
     <button role="tab" id="tabBrief" aria-selected="true" aria-controls="paneBrief">Controls</button>
     <button role="tab" id="tabGfx" aria-selected="false" aria-controls="paneGfx">Graphics</button>
-    <button role="tab" id="tabEnv" aria-selected="false" aria-controls="paneEnv">Environment</button>
     <button role="tab" id="tabAud" aria-selected="false" aria-controls="paneAud">Audio</button>
+    <button role="tab" id="tabEnv" aria-selected="false" aria-controls="paneEnv">Environment</button>
     <button role="tab" id="tabMp" aria-selected="false" aria-controls="paneMp">Multiplayer</button>
   </div>
   <div id="paneBrief" role="tabpanel" aria-labelledby="tabBrief"><div class="grid" id="keyList"></div></div>
@@ -3696,7 +3696,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=636;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=637;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
