@@ -134,7 +134,9 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <label class="opt"><input type="checkbox" id="optDeerMap" checked><span><b>Show deer on the maps</b><small>For testing: stags as dark triangles, does as light dots, dead deer as crosses, on the mini map and the Tab map.</small></span></label>
   </div>
   <div id="paneAud" role="tabpanel" aria-labelledby="tabAud" hidden>
-    <p class="sec">Volume</p>
+    <p class="sec">Master volume</p>
+    <label class="rng"><span>Master (everything)</span><input type="range" id="audM" min="0" max="200" step="1"><output id="audMv"></output></label>
+    <p class="sec" style="margin-top:14px">Volume</p>
     <label class="rng"><span>Gunshot</span><input type="range" id="audG" min="0" max="200" step="1"><output id="audGv"></output></label>
     <label class="rng"><span>Forest ambience</span><input type="range" id="audA" min="0" max="200" step="1"><output id="audAv"></output></label>
     <label class="rng"><span>Buzzard</span><input type="range" id="audB" min="0" max="200" step="1"><output id="audBv"></output></label>
@@ -1859,7 +1861,9 @@ const SND={},SND_B64={dr:"SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYwLjE2LjEwMAAAAAAAAA
 function loadSamples(){if(!AC||SND._started)return;SND._started=true;
   for(const k in SND_B64){try{const bin=atob(SND_B64[k]),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
     const r=AC.decodeAudioData(u.buffer,b=>{SND[k]=b;},()=>{});if(r&&r.catch)r.catch(()=>{});}catch(e){}}}
-{const _ia=initAudio;initAudio=function(){_ia();loadSamples();};}
+let MASTER=1;try{const m=localStorage.getItem('sniperMaster');if(m!=null)MASTER=Math.max(0,Math.min(2,+m||0));}catch(e){}
+let masterG=null;
+{const _ia=initAudio;initAudio=function(){_ia();if(AC&&!masterG){try{const real=AC.destination;masterG=AC.createGain();masterG.gain.value=MASTER;masterG.connect(real);Object.defineProperty(AC,'destination',{get:()=>masterG,configurable:true});}catch(e){masterG=null;}}loadSamples();};}
 // schedule window: silent before start, fades in over `fade` game minutes, full until stop, then fades out over the same time
 function sched(startM,stopM,fadeM,todH){const t=todH*60,len=((stopM-startM)%1440+1440)%1440;if(len===0)return 1;
   const a=((t-startM)%1440+1440)%1440,sm=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
@@ -3515,6 +3519,9 @@ function setShadows(on){renderer.shadowMap.enabled=on;sun.castShadow=on;csm.ligh
 function showTab(w){[['brief','Brief'],['gfx','Gfx'],['env','Env'],['aud','Aud'],['mp','Mp']].forEach(([k,n])=>{$('tab'+n).setAttribute('aria-selected',k===w);$('pane'+n).hidden=k!==w;});}
 $('tabBrief').onclick=()=>showTab('brief');$('tabGfx').onclick=()=>showTab('gfx');$('tabEnv').onclick=()=>showTab('env');$('tabAud').onclick=()=>showTab('aud');$('tabMp').onclick=()=>showTab('mp');
 const perfEl=$('perf');
+$('audM').value=Math.round(MASTER*100);$('audMv').textContent=Math.round(MASTER*100)+'%';
+$('audM').oninput=()=>{MASTER=$('audM').value/100;$('audMv').textContent=$('audM').value+'%';if(masterG)masterG.gain.value=MASTER;try{localStorage.setItem('sniperMaster',String(MASTER));}catch(e){}};
+$('audM').onchange=()=>{if(AC&&soundOn)sfx.shot();};
 $('audG').value=Math.round(VOLS.gun*100);$('audGv').textContent=Math.round(VOLS.gun*100)+'%';
 const audSave=()=>{try{localStorage.setItem('sniperAudio',JSON.stringify({gun:VOLS.gun,art:VOLS.art,hurt:VOLS.hurt,amb:VOLS.amb,bz:VOLS.bz,dr:VOLS.dr,fs:VOLS.fs,ds:VOLS.ds,de:VOLS.de,ns:VOLS.ns,ne:VOLS.ne,fade:VOLS.fade}));}catch(e){}};
 const hm=m=>String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(Math.round(m%60)).padStart(2,'0');
@@ -3696,7 +3703,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=638;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=639;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -6254,7 +6261,7 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
   const mpWrap=document.createElement('div');mpWrap.id='cgMpWrap';{const h=document.createElement('p');h.className='sec';h.style.marginTop='16px';h.textContent='Play online';mpWrap.appendChild(h);
     const box=document.getElementById('mpBox'),net=document.getElementById('optNet'),nl=net&&net.closest('label');if(box)mpWrap.appendChild(box);if(nl)mpWrap.appendChild(nl);
     {const st=document.createElement('style');st.textContent='.tabs.nodev button:not(#tabCg):not(#tabBrief):not(#tabGfx):not(#tabAud){display:none}';document.head.appendChild(st);
-     const lb=document.createElement('label');lb.className='opt';lb.style.marginBottom='22px';lb.innerHTML='<input type="checkbox" id="optDev"><span><b>Show developer tabs</b></span>';mpWrap.appendChild(lb);
+     const lb=document.createElement('label');lb.className='opt';lb.style.marginBottom='0';lb.innerHTML='<input type="checkbox" id="optDev"><span><b>Show developer tabs</b></span>';{const row=document.createElement('div');row.style.cssText='display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-bottom:22px';if(nl){nl.style.marginBottom='0';row.appendChild(nl);}row.appendChild(lb);mpWrap.appendChild(row);}
      const cb=lb.querySelector('input');let on=false;try{on=localStorage.getItem('sniperDev')==='1';}catch(e){}
      const ap=()=>{tabs.classList.toggle('nodev',!on);cb.checked=on;if(!on){const a=tabs.querySelector('[aria-selected="true"]');if(a&&a.offsetParent===null){const c=document.getElementById('tabCg');if(c)c.click();}}};
      cb.onchange=()=>{on=cb.checked;try{localStorage.setItem('sniperDev',on?'1':'0');}catch(e){}ap();};
@@ -7337,7 +7344,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&NT.room&&
 
 try{const t=document.querySelector('.tabs'),mp=$('tabMp');if(t&&mp&&t.children[0]!==mp)t.children[0].after(mp);}catch(e){}   // Multiplayer is the second tab
 {const ab=$('applyBtn');if(ab)ab.onclick=()=>{try{localStorage.setItem('fsGame',JSON.stringify(GAME));}catch(e){}location.reload();};}
-{const b=$('cfgBtn');b.onclick=()=>{const o={};for(const k of['fsGame','fsDgc','fsDmg','fsUgc','sniperTime','sniperGfx2','sniperAudio','fsPick','fsKeys','fsSens','fsName']){try{const v=localStorage.getItem(k);if(v!=null)o[k]=v;}catch(e){}}
+{const b=$('cfgBtn');b.onclick=()=>{const o={};for(const k of['fsGame','fsDgc','fsDmg','fsUgc','sniperTime','sniperGfx2','sniperAudio','sniperMaster','fsPick','fsKeys','fsSens','fsName']){try{const v=localStorage.getItem(k);if(v!=null)o[k]=v;}catch(e){}}
   const t=JSON.stringify(o);const done=()=>{b.textContent='Copied ✓';setTimeout(()=>{b.textContent='Copy settings';},2000);};
   const fb=()=>{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;left:10%;top:30%;width:80%;height:30%;z-index:99';document.body.appendChild(a);a.select();try{document.execCommand('copy');done();}catch(e){}a.onblur=()=>a.remove();};
   try{navigator.clipboard.writeText(t).then(done,fb);}catch(e){fb();}};}
