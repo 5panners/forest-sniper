@@ -3704,7 +3704,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=654;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=656;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -5563,9 +5563,9 @@ function sbPillDraw(force){const p=SB.pill;if(!p)return;const m=sbMe();
 function sbState(){
   if(!playing)return null;
   if(MPM.on&&NT.room){const M=NT.M,host=NT.role==='h',ph0=host||MPM.coop,mine=ph0?M.sc[0]:M.sc[1],theirs=ph0?M.sc[1]:M.sc[0],sc=mine+' – '+theirs;
-    if(M.ph==='end'){const won=M.lw===((host||MPM.coop)?'h':'g'),dec=Math.max(M.sc[0],M.sc[1])>=ROUNDS_WIN;return {title:M.lw?(won?'Round won':'Round lost'):'Round drawn',sub:(M.why?M.why+' · ':'')+'Score '+sc,cls:M.lw?(won?'win':'lose'):'draw',note:dec?'':host?'<button id="sbNext">Start next round <kbd>Enter</kbd></button>':'Waiting for the host to start the next round'};}
-    if(M.ph==='over'){const won=mine>theirs;return {title:won?'Match won':'Match lost',sub:'Final score '+sc,cls:won?'win':'lose',note:host?'<button id="sbNext">Rematch <kbd>Enter</kbd></button>':'Waiting for the host to start a rematch'};}}
-  else if(!MPM.on&&SOLO_END.t>=0){const win=SB.soloWin;return {title:win?'Victory':'Defeat',sub:win?'The red team is out of tickets':'Your team is out of tickets',cls:win?'win':'lose',note:'<button id="sbNext">Start next game <kbd>Enter</kbd></button>'};}
+    if(M.ph==='end'){const won=M.lw===((host||MPM.coop)?'h':'g'),dec=Math.max(M.sc[0],M.sc[1])>=ROUNDS_WIN;return {title:M.lw?(won?'Round won':'Round lost'):'Round drawn',sub:(M.why?M.why+' · ':'')+'Score '+sc,cls:M.lw?(won?'win':'lose'):'draw',note:dec?'':host?'<button id="sbNext">Start next round <kbd>Enter</kbd></button> <button id="sbQuit" type="button" style="margin-left:10px">Quit</button>':'Waiting for the host to start the next round'+' <button id="sbQuit" type="button" style="margin-left:10px">Quit</button>'};}
+    if(M.ph==='over'){const won=mine>theirs;return {title:won?'Match won':'Match lost',sub:'Final score '+sc,cls:won?'win':'lose',note:host?'<button id="sbNext">Rematch <kbd>Enter</kbd></button> <button id="sbQuit" type="button" style="margin-left:10px">Quit</button>':'Waiting for the host to start a rematch'+' <button id="sbQuit" type="button" style="margin-left:10px">Quit</button>'};}}
+  else if(!MPM.on&&SOLO_END.t>=0){const win=SB.soloWin;return {title:win?'Victory':'Defeat',sub:win?'The red team is out of tickets':'Your team is out of tickets',cls:win?'win':'lose',note:'<button id="sbNext">Start next game <kbd>Enter</kbd></button>'+' <button id="sbQuit" type="button" style="margin-left:10px">Quit</button>'};}
   if(SB.hold)return {title:'Scoreboard',sub:'Round time '+sbTime(SB.t),cls:'live',note:'Release <b>K</b> to close'};
   return null;}
 function sbCardHtml(S){
@@ -5608,7 +5608,8 @@ function sbFrame(dt){
   const ne=document.getElementById('sbNt');if(ne&&ne.dataset.v!==nt){ne.dataset.v=nt;ne.innerHTML=nt;}
   sbPillDraw();}
 addEventListener('keydown',e=>{if(e.code==='Enter'&&!e.repeat&&playing){const t=e.target&&e.target.tagName;if(t!=='INPUT'&&t!=='TEXTAREA'&&t!=='SELECT'&&t!=='BUTTON'&&sbState()&&sbState().cls!=='live')sbNext();}});
-SB.wrap.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#sbNext'))sbNext();});
+SB.wrap.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#sbNext'))sbNext();if(e.target.closest&&e.target.closest('#sbQuit'))sbQuit();});
+function sbQuit(){try{sessionStorage.removeItem('fsIntro');}catch(e){}try{if(document.pointerLockElement)document.exitPointerLock();}catch(e){}try{if(typeof mpLeave==='function'&&MPM.on)mpLeave();}catch(e){}location.reload();}   // a clean reload resets every game state and shows the title screen again
 addEventListener('keydown',e=>{if(e.code!=='KeyK'||e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target&&e.target.tagName;if(t==='INPUT'||t==='TEXTAREA')return;SB.hold=true;});
 addEventListener('keyup',e=>{if(e.code==='KeyK')SB.hold=false;});addEventListener('blur',()=>{SB.hold=false;});
 window.__sb={SB,state:sbState,html:sbCardHtml,kill:sbKill,reset:sbReset,frame:sbFrame};
@@ -7028,7 +7029,7 @@ function playLost(){const C=AC;if(!C||!soundOn)return;const K=synthKit(null,null
 window.__boom=(d,r)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();const p=camera.position.clone().addScaledVector(f,d||25);p.y=groundH(p.x,p.z)+1;at4Blast(p,r||8);};
 window.__bl=()=>[BLL.intensity,BL.t,BLL.position.x,BLL.position.y,BLL.position.z,camera.position.x,camera.position.y,camera.position.z];
 window.__wn=t=>{const CP=CTRL_PTS();const L=RES_NODES.filter(n=>n.t===t);return [L.length,L.filter(n=>CP.some(q=>Math.hypot(n.x-q.x,n.z-q.z)<250)).length];};
-window.__BUILD=BUILD;window.__deer={siloStrikeFx,DEER,disturb,scare,deerAI,player,SECT,SILO,LH:()=>LH,GAME};window.__scn=()=>({scene,renderer,camera});
+window.__BUILD=BUILD;window.__deer={sbQuit,siloStrikeFx,DEER,disturb,scare,deerAI,player,SECT,SILO,LH:()=>LH,GAME};window.__scn=()=>({scene,renderer,camera});
 window.__art={team:()=>secTeam(),coop:()=>MPM.coop,rr:()=>resReset(),mid:()=>{const T=CON[CON.length>>1];return [T.x,T.z]},tree:()=>({st:TF_STICKS,dead:CON.filter(t=>t.dead).length}),blast:(x,z,K)=>treeArty(V(x,groundH(x,z),z),K),land:()=>{player.pos.y=groundH(player.pos.x,player.pos.z)+0.05;player.vel.set(0,0,0);},hp:()=>[MPM.hp,player.alive],fwd:(d)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();return [camera.position.x+f.x*d,camera.position.z+f.z*d];},ART,SLOT,aim:artAim,call:artCall,give:()=>{SLOT.g[0]={k:"arty"};slotSync();}};
 window.__acState=()=>AC?AC.state:"none";
 window.__hurt=()=>[!!SND.hurt,SND.hurt&&SND.hurt.duration];
