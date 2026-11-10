@@ -3699,7 +3699,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=661;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=663;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
@@ -4112,7 +4112,7 @@ ${sp([['Shells',GAME.artN],['Duration',GAME.artDur+' s'],['Kill radius',GAME.art
 })();
 
 // ---- gameplay settings (dev tab "Gameplay"): stamina, butchering, falling, pickups
-const GAME_DEF={rDBoom:1,rM32Fire:1,rM32Boom:1,pHpStart:100,pHpMax:200,arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:3,slotG:3,pkM32:6,pkRifle:12,fBerry:2,pkRad:250,n_berries:250,n_mushroom:300,n_at4r:150,n_m32r:50,n_r762:300,n_radio:12,n_scrap:12,n_at4:2,n_ar15:2,n_rifle:2,p_berries:80,p_mushroom:80,p_at4r:80,p_m32r:80,p_r762:80,p_radio:80,m32Spd:76,m32Drop:1.6,m32R:4.5,m32Dmg:110,m32Ugv:160,m32Reload:3.2,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloHold:8,siloPts:5,siloAcc:0.3,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.8,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:100,at4R:6,at4Dmg:200,at4Ugv:300,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:7.5,bInst:1,bears:2,bWalk:1.2,bRear:9,bAtk:1,bTrig:1,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1,tfOn:1,tfDur:60,tfReach:1.6,tfMax:3,tfSim:6,tfFlame:1,tfSmoke:1,tfLight:1,tfSpread:30,tfSparks:1,tfVol:1,tfChain:1,tfChainDist:10,tfChainMax:6,tfChainDelay:20,tfHurt:1,tfDps:12,tfHurtR:3,tfBlock:1,sBase:1};
+const GAME_DEF={tkStart:15,rDBoom:1,rM32Fire:1,rM32Boom:1,pHpStart:100,pHpMax:200,arMag:30,arRpm:700,arSpread:3,arRecoil:1,slotW:3,slotG:3,pkM32:6,pkRifle:12,fBerry:2,pkRad:250,n_berries:250,n_mushroom:300,n_at4r:150,n_m32r:50,n_r762:300,n_radio:12,n_scrap:12,n_at4:2,n_ar15:2,n_rifle:2,p_berries:80,p_mushroom:80,p_at4r:80,p_m32r:80,p_r762:80,p_radio:80,m32Spd:76,m32Drop:1.6,m32R:4.5,m32Dmg:110,m32Ugv:160,m32Reload:3.2,uavDur:125,uavR:300,uavAlt:70,uavSpd:36,uavHp:140,uavVol:1.2,siloHold:8,siloPts:5,siloAcc:0.3,siloShake:1,siloVol:1,siloVK:1,siloVG:1,siloVR:1,at4Drop:0.8,bDrop:1,bV0:850,bDrag:0.28,mHeal:0,pk762:10,pkAt4:1,at4Spd:100,at4R:6,at4Dmg:200,at4Ugv:300,at4Reload:1.5,stStart:50,stGain:25,stDrain:10,stMult:2,bMeat:7.5,bInst:1,bears:2,bWalk:1.2,bRear:9,bAtk:1,bTrig:1,bFight:70,bChance:80,bSense:80,bChSpd:11,bReach:2.8,bDmg:35,bRate:1,bChase:25,bCool:25,fallOn:1,fallSafe:4,fallDmg:10,paraH:100,dCnt:4,dFr:3,gMode:0,rUGun:0.5,rUMot:0.05,rUBeep:0.7,rDGun:0.5,rDVoi:1.2,dHunt:1,dSpd:7,dSee:140,dChase:5.5,dMem:20,dEng:110,dReact:0.7,dDmg:10,dHp:250,dRespawn:45,dRate:14,dBurst:0.65,dPause:2,dSpread:10,dTalk:1,tfOn:1,tfDur:60,tfReach:1.6,tfMax:3,tfSim:6,tfFlame:1,tfSmoke:1,tfLight:1,tfSpread:30,tfSparks:1,tfVol:1,tfChain:1,tfChainDist:10,tfChainMax:6,tfChainDelay:20,tfHurt:1,tfDps:12,tfHurtR:3,tfBlock:1,sBase:1};
 Object.assign(GAME_DEF,{artN:24,artDur:25,artK:30,artSpread:55,p_at4:100,p_ar15:100,p_rifle:100});
 const GAME=Object.assign({},GAME_DEF);try{const v=JSON.parse(localStorage.getItem('fsGame')||'null');if(v)for(const k in GAME_DEF)if(v[k]!=null&&isFinite(+v[k]))GAME[k]=+v[k];}catch(e){}
 HP_MAX=Math.max(20,GAME.pHpMax);
@@ -5361,7 +5361,7 @@ addEventListener('keyup',e=>{if(e.code==='KeyL'){LH.on=false;LH.t=0;}},true);add
 resReset=(f=>function(){f.apply(this,arguments);try{siloReset();}catch(e){}})(resReset);
 // ================= sector capture: seven sectors in two lanes (east home · Tower 1 / Tower 4 · centre silo · Tower 3 / Tower 2 · west home) =================
 // The host decides who owns what (it knows both positions); the guest just draws the state it is sent. Sides swap every round, so sectors are coloured by "mine / theirs", not by east / west.
-const TK_START=20, TK_DEATH=1, TK_KILL=1, TK_BLEED=0.1;   // tickets (Battlefield 1942 style): 100 each; a death costs the dead side TK_DEATH, a kill earns the killer's side TK_KILL; a side also bleeds TK_BLEED/s for every sector the enemy holds beyond 3 of 7; 0 loses the round
+let TK_START=Math.max(1,Math.round(+GAME.tkStart)||15); const TK_DEATH=1, TK_KILL=1, TK_BLEED=0.1;   // tickets (Battlefield 1942 style): 100 each; a death costs the dead side TK_DEATH, a kill earns the killer's side TK_KILL; a side also bleeds TK_BLEED/s for every sector the enemy holds beyond 3 of 7; 0 loses the round
 // ---- kill feed (top right): who dealt with whom, in a few words
 const KF={el:null,L:[],last:''};
 const KF_HEAD=['{K} exterminates {V} with a headshot.','{K} turns off {V}\'s lights. Headshot.','{K} gives {V} a very bad hair day. Headshot.','{K} lands one right between the eyes of {V}.','{K} takes {V}\'s head off the problem.'];
@@ -5396,7 +5396,7 @@ function secTeam(){if(!MPM.on)return GAME.sBase===2?2:1;   // solo: you play fro
 function secHostTeam(){return (NT.M.r%2===1)?1:2;}
 function secRel(own){return own===0?0:(own===secTeam()?1:2);}
 function secDepth(i,team){return team===1?SEC_DEF[i].dp:4-SEC_DEF[i].dp;}
-function secReset(){SECT.s.forEach((s,i)=>{s.own=i===0?1:i===6?2:0;s.cap=0;s.by=0;});SECT.launch=0;SECT.hit=0;SECT.tk=[TK_START,TK_START];SECT.dh=SECT.dg=1;SECT.deadT=-1;SECT.rsp=-1;SECT.prevOwn=SECT.s.map(s=>s.own);
+function secReset(){TK_START=Math.max(1,Math.round(+GAME.tkStart)||15);SECT.s.forEach((s,i)=>{s.own=i===0?1:i===6?2:0;s.cap=0;s.by=0;});SECT.launch=0;SECT.hit=0;SECT.tk=[TK_START,TK_START];SECT.dh=SECT.dg=1;SECT.deadT=-1;SECT.rsp=-1;SECT.prevOwn=SECT.s.map(s=>s.own);
   try{if(SILO.built&&SILO.st!=='idle')siloReset();}catch(e){}}
 function secArmed(team){const n=SECT.s.reduce((a,s)=>a+(s.own===team?1:0),0);return SECT.s[3].own===team&&n>=SEC_ARM;}
 function secAttackable(i,team){return i!==0&&i!==6&&SECT.s[i].own!==team;}   // any sector can be attacked at any time (no capture order)
@@ -6195,9 +6195,10 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
     pn.querySelectorAll('select[data-t]').forEach(x=>x.onchange=()=>{const t=x.dataset.t,i=+x.dataset.i;TM[t][i]=x.value;
       if(x.value==='P'){for(const u of ['a','b'])for(let k=(u==='a'?1:0);k<6;k++)if(TM[u][k]==='P'&&!(u===t&&k===i))TM[u][k]='N';}   // only one other human
       derive();build();});
-    const nm=document.createElement('div');nm.className='cgname';nm.innerHTML='<label for="cgName">Your name</label><input type="text" id="cgName" maxlength="16" placeholder="Player" autocomplete="off" spellcheck="false">';
+    const nm=document.createElement('div');nm.className='cgname';nm.innerHTML='<label for="cgName">Your name</label><input type="text" id="cgName" maxlength="16" placeholder="Player" autocomplete="off" spellcheck="false"><span style="width:18px"></span><label for="cgTk">Tickets <small>(game length)</small></label><input type="number" id="cgTk" min="1" max="200" step="1" style="width:76px">';
     pn.insertBefore(nm,pn.firstChild);const ni=nm.querySelector('input');ni.value=myName();ni.oninput=()=>{const c=cleanName(ni.value);try{localStorage.setItem('fsName',c);}catch(e){}try{if(NT&&NT.room)NT.room.presence({nm:c}).catch(()=>{});}catch(e){}
       const o=pn.querySelector('.teams select[disabled] option');if(o)o.textContent=(c?c+' (you)':'You');};
+    {const tk=nm.querySelector('#cgTk');tk.value=Math.max(1,Math.round(+GAME.tkStart)||15);tk.onchange=()=>{const v=Math.max(1,Math.min(200,Math.round(+tk.value)||15));tk.value=v;GAME.tkStart=v;save();if(!playing){try{TK_START=v;SECT.tk=[v,v];}catch(e){}}};}
     mpWrap.hidden=false;pn.appendChild(mpWrap);};
   window.CG_refresh=()=>{try{build();}catch(e){}};
   build();
@@ -7165,7 +7166,7 @@ function netStep(dt){farFlashStep(dt);
   if(opp){NT.oppSeen=now;if(!NT.opp||NT.opp.peer!==opp.peer){NT.opp=opp;if(!NT.wasOpp){toast(oppName()+' connected · click the game to capture the mouse');if(AC&&soundOn)playFanfare();else NT.fan=true;mpAutoDeploy();if(host)setTimeout(()=>{if(NT.room&&NT.role==='h'&&NT.opp&&NT.M.ph==='wait')mpStart();},3000);}NT.wasOpp=true;mpStat('Direct match'+' · '+NT.where+' · '+oppName()+' connected'+(host?' · press Start match':' · waiting for the host to start'));if(host)sendRoster();mpUI();}
     NT.opp=opp;const pr=opp.presence;feedSnap(pr.s);
     if(!host&&pr.m){const m=pr.m;MPM.coop=!!m.co;const prevPh=M.ph;NT.M={ph:String(m.ph),r:m.r|0,sc:[m.sc&&m.sc[0]|0,m.sc&&m.sc[1]|0],left:+m.left||0,lw:m.lw||'',sd:m.sd|0,why:String(m.wy||'')};
-      if(Array.isArray(m.sec)&&m.sec.length===SECT.s.length){m.sec.forEach((a,i)=>{const s=SECT.s[i];s.own=a[0]|0;s.cap=+a[1]||0;s.by=a[2]|0;s.in=a[3]|0;});SECT.launch=m.ln|0;if(Array.isArray(m.tk)){SECT.tk[0]=+m.tk[0];SECT.tk[1]=+m.tk[1];}}
+      if(Array.isArray(m.sec)&&m.sec.length===SECT.s.length){m.sec.forEach((a,i)=>{const s=SECT.s[i];s.own=a[0]|0;s.cap=+a[1]||0;s.by=a[2]|0;s.in=a[3]|0;});SECT.launch=m.ln|0;if(m.tks>0)TK_START=+m.tks;if(Array.isArray(m.tk)){SECT.tk[0]=+m.tk[0];SECT.tk[1]=+m.tk[1];}}
       if(Array.isArray(m.gm)){const K=['pk762'];K.forEach((k,i)=>{if(typeof m.gm[i]==='number'&&GAME[k]!==m.gm[i])GAME[k]=m.gm[i];});}   // pickup amounts come from the host
       if(typeof m.tod==='number'){DAY.rateI=clamp(m.ri|0,0,RATES.length-1);if(opp.updatedAt!==NT.todQ){NT.todQ=opp.updatedAt;const age=opp.updatedAt?Math.max(0,Math.min(1,(Date.now()-opp.updatedAt)/1000)):0,tg=(m.tod+(age+0.04)*RATES[DAY.rateI]/60+24)%24;if(Math.abs(wrapA((tg-DAY.tod)*PI/12))>0.004){DAY.tod=tg;try{stepDay(0);}catch(e){}}}}   // sun and moon follow the host's clock (one correction per update, aged for transit)
       if(NT.M.r>0&&NT.M.r!==NT.myR&&(NT.M.ph==='count'||NT.M.ph==='live'))roundReset();
@@ -7187,7 +7188,7 @@ function netStep(dt){farFlashStep(dt);
   // send my state
   NT.sendAcc+=dt;if(NT.sendAcc>=1/SEND_HZ){NT.sendAcc=0;const pl=player;
     const s={q:++NT.seq,t:Math.round(now),x:nr2(pl.pos.x),y:nr2(pl.pos.y),z:nr2(pl.pos.z),yw:nr3(wrapA(pl.yaw)),p:pl.pose?packPose(pl.pose):null,b:nr2(boltT),hp:Math.round(MPM.hp),al:pl.alive?1:0,r:NT.myR,sp:nr1(Math.hypot(pl.vel.x,pl.vel.z)),st:pl.stance[0],w:netWcode(),lf:(ZIP.lift&&LIFT.ride)?[LIFTS.indexOf(ZIP.lift),nr3(LIFT.ride.u)]:0,cp:CHUTE.on?[nr2(CHUTE.open),nr2(CHUTE.bank)]:0};
-    const patch={s};if(host)patch.m={co:MPM.coop?1:0,ph:M.ph,r:M.r,sd:M.sd|0,sc:M.sc.slice(),left:nr2(M.left),lw:M.lw,wy:M.why||'',tod:nr3(DAY.tod),ri:DAY.rateI,gm:[GAME.pk762],sec:SECT.s.map(s=>[s.own,Math.round(s.cap*100)/100,s.by,s.in|0]),ln:SECT.launch|0,tk:SECT.tk.map(v=>Math.round(v*10)/10)};
+    const patch={s};if(host)patch.m={co:MPM.coop?1:0,ph:M.ph,r:M.r,sd:M.sd|0,sc:M.sc.slice(),left:nr2(M.left),lw:M.lw,wy:M.why||'',tod:nr3(DAY.tod),ri:DAY.rateI,gm:[GAME.pk762],sec:SECT.s.map(s=>[s.own,Math.round(s.cap*100)/100,s.by,s.in|0]),ln:SECT.launch|0,tks:TK_START,tk:SECT.tk.map(v=>Math.round(v*10)/10)};
     NT.lastSize=JSON.stringify(patch).length;NT.room.presence(patch).catch(()=>{});}
   if(host&&NT.opp){NT.wildAcc+=dt;if(NT.wildAcc>=1/WILD_HZ){NT.wildAcc=0;sendWild();}}
   netStats(dt);
