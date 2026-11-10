@@ -3391,7 +3391,6 @@ mapCv.addEventListener('contextmenu',e=>{e.preventDefault();});   // the map no 
 let MAPALT=false;   // hold Alt (Option) with the map open to free the mouse: click to teleport (development), drag to pan, right-click the UGV
 addEventListener('keydown',e=>{if((e.code==='AltLeft'||e.code==='AltRight')&&mapOpen&&document.pointerLockElement){e.preventDefault();MAPALT=true;try{document.exitPointerLock();}catch(err){}}});
 addEventListener('keyup',e=>{if((e.code==='AltLeft'||e.code==='AltRight')&&MAPALT){MAPALT=false;if(mapOpen&&playing&&!SPW.open&&!document.pointerLockElement)requestLock();}});
-var WPNMAP=false;try{WPNMAP=localStorage.getItem('fsWpnMap')==='1';}catch(e){}
 function drawMap(){if(!mapBase)buildMap();const W=mapCv.width,Z=MZ.k,N=MAPL*Z;
   if((SPW.open||ART.aim)&&document.pointerLockElement)try{document.exitPointerLock();}catch(e){}   // the spawn picker and the artillery targeting always need the mouse
   if(document.pointerLockElement&&!SPW.open&&Z>1&&MZ.follow!==false){const p=player.pos;MZ.x=W/2-(W/MAPL)*N*(p.x+FE)/(FE*2);MZ.y=W/2-(W/MAPL)*N*(p.z+FE)/(FE*2);mzClamp();}   // locked mouse: a zoomed map follows you   // zoom: the terrain is drawn bigger, positions use the zoomed S, but icons and text keep their size
@@ -3399,9 +3398,6 @@ function drawMap(){if(!mapBase)buildMap();const W=mapCv.width,Z=MZ.k,N=MAPL*Z;
   mctx.setTransform(1,0,0,1,0,0);mctx.imageSmoothingEnabled=true;mctx.fillStyle='#0b0f10';mctx.fillRect(0,0,W,W);mctx.drawImage(mapBaseCv,MZ.x,MZ.y,W*Z,W*Z);mctx.setTransform(W/MAPL,0,0,W/MAPL,MZ.x,MZ.y);const S=v=>(v+FE)/(FE*2)*N;
   if($('optDeerMap').checked)DEER.forEach(d=>drawDeerMark(mctx,S(d.x),S(d.z),d,0.8,0));if($('optDeerMap').checked)BEARS.forEach(b=>drawBearMark(mctx,S(b.x),S(b.z),b,0.9,0));if($('optDeerMap').checked&&typeof UGVS!=='undefined')UGVS.forEach(u=>drawUgvMark(mctx,S(u.x),S(u.z),u,0.9));
   try{secDrawMap(mctx,S,N);}catch(e){}
-  if(WPNMAP){const WL={at4:['AT','#ff2fbf'],ar15:['AR','#ff8a2a'],rifle:['RF','#ffe08a'],m32:['M3','#7fd6ff']};mctx.font='600 9px "IBM Plex Mono", monospace';mctx.textAlign='center';mctx.textBaseline='middle';
-    const mark=(k,x,y)=>{const w=WL[k];if(!w)return;mctx.beginPath();mctx.arc(x,y,7,0,PI*2);mctx.fillStyle='rgba(10,12,10,0.8)';mctx.fill();mctx.lineWidth=2;mctx.strokeStyle=w[1];mctx.stroke();mctx.fillStyle=w[1];mctx.fillText(w[0],x,y+0.5);};
-    for(const n of RES_NODES)if(!n.got&&WL[n.t])mark(n.t,S(n.x),S(n.z));for(const d of DROPS)mark(d.k,S(d.x),S(d.z));mctx.textAlign='left';mctx.textBaseline='alphabetic';}
   try{droidMapMarks(mctx,(x,z)=>[S(x),S(z)],0.9);}catch(e){}
   SILO_SITES.forEach(q=>drawSiloMark(mctx,S(q.x),S(q.z),1,0,true));
   try{zipDrawMap(mctx,S);}catch(e){}
@@ -3457,7 +3453,6 @@ addEventListener('keydown',e=>{
     case 'Equal': case 'NumpadAdd': miniZoom(-1); break;
     case 'Minus': case 'NumpadSubtract': miniZoom(1); break;
     case 'KeyN': miniOn=!miniOn;miniTxt(); break;
-    case 'KeyL': WPNMAP=!WPNMAP;try{localStorage.setItem('fsWpnMap',WPNMAP?'1':'0');}catch(e){}toast(WPNMAP?'Weapon locations shown on the map (L to hide)':'Weapon locations hidden');if(mapOpen)try{drawMap();}catch(e){}break;
     case 'Tab': if(typeof SPW!=='undefined'&&SPW.open)break; setMap(!mapOpen); break;
   }
   switch(e.code){
@@ -3476,7 +3471,7 @@ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;input.lmb=input.r
 const KB_ACT=[
   ['Movement',[['fwd','Forward','KeyW'],['back','Back','KeyS'],['left','Strafe left','KeyA'],['right','Strafe right','KeyD'],['jump','Jump · parachute · let go of the zip line','Space'],['crouch','Crouch','KeyC'],['prone','Prone / get up (WASD crawls)','KeyZ']]],
   ['Weapons and gear',[['reload','Reload','KeyR'],['zup','Zero +50 m','KeyE'],['zdn','Zero −50 m','KeyQ'],['s1','Weapon slot 1','Digit1'],['s2','Weapon slot 2','Digit2'],['s3','Gadget slot 3 (radio: recon drone)','Digit3'],['s4','Gadget slot 4','Digit4'],['gather','Gather / pick up · zip line','KeyF'],['launch','Hold to launch the missile (at the silo)','KeyL']]],
-  ['Interface',[['mzin','Mini map zoom in','Equal'],['mzout','Mini map zoom out','Minus'],['mini','Mini map on / off','KeyN'],['wpnmap','Show weapon locations on the map','KeyL'],['view','1st / 3rd person','KeyV'],['mute','Mute','KeyM'],['hb','Show hit boxes','KeyB'],['arty','Dev: call a 155 mm strike','KeyJ']]]];
+  ['Interface',[['mzin','Mini map zoom in','Equal'],['mzout','Mini map zoom out','Minus'],['mini','Mini map on / off','KeyN'],['view','1st / 3rd person','KeyV'],['mute','Mute','KeyM'],['hb','Show hit boxes','KeyB'],['arty','Dev: call a 155 mm strike','KeyJ']]]];
 const KB_FIXED=[['Look','Mouse'],['Scoreboard (hold)','K'],['Scope on / off','Right mouse'],['Fire (hold for automatic with the AR-15)','Left mouse'],['Scope zoom 2 / 3 / 4 / 5×','Wheel'],['Hold breath (scoped) · sprint','Shift'],['Boost run (uses stamina)','Double-tap forward, keep holding'],['Slide (while running)','Ctrl'],['Full map','Tab'],['Menu / release the mouse','Esc']];
 const KB={user:{},inj:false,listen:null,M:{}};
 try{const v=JSON.parse(localStorage.getItem('fsKeys')||'null');if(v&&typeof v==='object')for(const k in v)if(typeof v[k]==='string')KB.user[k]=v[k];}catch(e){}
@@ -3704,7 +3699,7 @@ function updateLOD(){
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=659;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=660;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 function update(dt){
   clockT+=dt;stepDay(dt);
   netStep(dt);try{secFrame(dt);}catch(e){if(!window._secErr){window._secErr=1;console.warn('sec',e);}}resStep(dt);streakStep(dt);lookStep();updatePlayer(dt,clockT);try{artStep(dt);}catch(e){if(!window._artErr){window._artErr=1;console.warn('art',e);}}try{uavStep(dt);}catch(e){if(!window._uavErr){window._uavErr=1;console.warn('uav',e);}}
