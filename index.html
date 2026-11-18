@@ -3718,7 +3718,7 @@ let _lg=0;function updateLOD(){if(LODF&&++_lg%120===0)lodGuard();LODU.uLz.value=
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=671;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=672;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 /* live title-screen camera: the intro overlay flies the real game camera over the world at night */
 const INTRO=window.INTRO={on:false,ready:false,t:0,x:-90,z:440,eye:7,yaw:0,pitch:0.05,tod:5.15,fov:58,saved:16,y:0,
   start(){INTRO.saved=DAY.tod;INTRO.t=0;INTRO.y=groundH(INTRO.x,INTRO.z)+INTRO.eye;INTRO.on=true;},
@@ -7312,10 +7312,13 @@ requestAnimationFrame(()=>setTimeout(init,30));
       for(let ox=-S;ox<=S;ox+=S)for(let oy=-S;oy<=S;oy+=S){x.beginPath();pts.forEach((q,k)=>x[k?'lineTo':'moveTo'](px+ox+q[0],py+oy+q[1]));x.closePath();x.fill();}}
     x.lineCap='round';for(let i=0;i<420;i++){const px=Math.random()*S,py=Math.random()*S,a=-1.2+Math.random()*.5,l=4+Math.random()*8;x.strokeStyle=Math.random()<.5?'rgba(0,0,0,.12)':'rgba(190,255,150,.13)';x.lineWidth=1;x.beginPath();x.moveTo(px,py);x.lineTo(px+Math.cos(a)*l,py+Math.sin(a)*l);x.stroke();}
     return c;}
-  function crosshair(c,grow){const R=asc*.5,th=asc*.13;c.save();c.lineCap=grow?'round':'butt';
-    c.lineWidth=th+grow;c.beginPath();c.arc(xc,yc,R,0,6.2832);c.stroke();
-    c.lineWidth=th*.78+grow;const a=R*.5,b=R*1.34;c.beginPath();c.moveTo(xc-b,yc);c.lineTo(xc-a,yc);c.moveTo(xc+a,yc);c.lineTo(xc+b,yc);c.moveTo(xc,yc-b);c.lineTo(xc,yc-a);c.moveTo(xc,yc+a);c.lineTo(xc,yc+b);c.stroke();
-    c.beginPath();c.arc(xc,yc,th*.62+grow*.5,0,6.2832);c.fill();c.restore();}
+  function crosshair(c,grow){const R=asc*.5,th=asc*.085,g=grow*.55;c.save();c.lineCap='butt';
+    c.lineWidth=th+g;c.beginPath();c.arc(xc,yc,R,0,6.2832);c.stroke();                       // scope ring
+    c.lineWidth=th*.62+g;c.lineCap=grow?'round':'butt';const a=R*.26,b=R*1.42;               // reticle lines run through the ring with a gap at the centre
+    c.beginPath();c.moveTo(xc-b,yc);c.lineTo(xc-a,yc);c.moveTo(xc+a,yc);c.lineTo(xc+b,yc);c.moveTo(xc,yc-b);c.lineTo(xc,yc-a);c.moveTo(xc,yc+a);c.lineTo(xc,yc+b);c.stroke();
+    c.beginPath();c.arc(xc,yc,th*.4+g*.4,0,6.2832);c.fill();                                   // centre dot
+    for(const m of[-.62,.62]){c.beginPath();c.arc(xc+m*R,yc,th*.3+g*.3,0,6.2832);c.fill();c.beginPath();c.arc(xc,yc+m*R,th*.3+g*.3,0,6.2832);c.fill();}   // mil-dots
+    c.restore();}
   function glyphs(c,grow){setText(c);if(grow){c.lineWidth=grow;c.lineJoin='round';c.strokeText(P1,xF,cy);c.strokeText(P2,xR,cy);}c.fillText(P1,xF,cy);c.fillText(P2,xR,cy);crosshair(c,grow);}
   function layout(){
     DPR=Math.min(window.devicePixelRatio||1,2);FS=Math.round(Math.min(innerWidth*0.088,innerHeight*0.2,170));
