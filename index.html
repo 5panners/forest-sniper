@@ -3715,7 +3715,7 @@ function updateLOD(){LODU.uLz.value=Math.max(1,62/camera.fov);
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=667;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=668;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 /* live title-screen camera: the intro overlay flies the real game camera over the world at night */
 const INTRO=window.INTRO={on:false,ready:false,t:0,x:-90,z:440,eye:7,yaw:0,pitch:0.05,tod:5.15,fov:58,saved:16,y:0,
   start(){INTRO.saved=DAY.tod;INTRO.t=0;INTRO.y=groundH(INTRO.x,INTRO.z)+INTRO.eye;INTRO.on=true;},
@@ -7338,7 +7338,7 @@ requestAnimationFrame(()=>setTimeout(init,30));
   /* ---- live world: take over the game camera once the world is built ---- */
   let live=false,t0=performance.now(),raf,alive=true;
   function frame(){if(!alive)return;const T=(performance.now()-t0)/1000;
-    if(!live&&window.INTRO&&window.INTRO.ready){live=true;try{Object.assign(INTRO,{x:180,z:470,eye:10,yaw:-1.5,pitch:0.07,tod:5.15,fov:58});INTRO.start();}catch(e){}root.classList.add('live');try{const b=document.getElementById('bld');if(b)root.querySelector('#introBld').textContent=b.textContent;}catch(e){}}
+    if(!live&&window.INTRO&&window.INTRO.ready){live=true;try{Object.assign(INTRO,{x:-40,z:405,eye:9,yaw:-1.2,pitch:0.06,tod:5.15,fov:58});INTRO.start();}catch(e){}root.classList.add('live');try{const b=document.getElementById('bld');if(b)root.querySelector('#introBld').textContent=b.textContent;}catch(e){}}
     drawTitle(T);raf=requestAnimationFrame(frame);}
   function go(){layout();ready=true;root.classList.add('in');t0=performance.now();}
   addEventListener('resize',()=>{if(ready)layout();});
