@@ -185,7 +185,7 @@ const T0=performance.now();
 
 /* ---------------- renderer / scene ---------------- */
 const host=$('game');
-const renderer=new THREE.WebGLRenderer({antialias:true,stencil:true,powerPreference:'high-performance',preserveDrawingBuffer:true});
+const renderer=new THREE.WebGLRenderer({antialias:true,stencil:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(1.5,devicePixelRatio||1));
 renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFShadowMap;
 THREE.ColorManagement.enabled=false;renderer.outputColorSpace=THREE.SRGBColorSpace;   // keep the look the game was built with (colours used as written)
@@ -3715,7 +3715,7 @@ function updateLOD(){LODU.uLz.value=Math.max(1,62/camera.fov);
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=665;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=667;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 /* live title-screen camera: the intro overlay flies the real game camera over the world at night */
 const INTRO=window.INTRO={on:false,ready:false,t:0,x:-90,z:440,eye:7,yaw:0,pitch:0.05,tod:5.15,fov:58,saved:16,y:0,
   start(){INTRO.saved=DAY.tod;INTRO.t=0;INTRO.y=groundH(INTRO.x,INTRO.z)+INTRO.eye;INTRO.on=true;},
@@ -6714,8 +6714,9 @@ function droidLOD(q,d){
   if(q.fsp){const on=q.lodFull===false;for(let i=0;i<q.fsp.length;i++){const sp=q.fsp[i],fl=q.m.GUNS[i].flashT>0;sp.visible=on&&fl;if(sp.visible)sp.scale.setScalar(Math.min(9,Math.max(0.6,d*0.028))*(0.8+Math.random()*0.4));}}
   const nf=q.lodFull==null?d<45:q.lodFull?d<=48:d<40,sh=nf&&d<55;if(nf===q.lodFull&&sh===q.lodSh)return;
   q.lodFull=nf;q.lodSh=sh;
-  for(const e of q.lod){e.o.layers.set(nf?0:1);e.o.castShadow=!!(e.sh&&q.lodSh);}
-  q.proxy.visible=!nf;}
+  /* shadows: the ~110 separate parts of a close droid would each be drawn once per shadow cascade, so the single baked stand-in casts the shadow instead (invisible in the colour pass while the full model is showing) */
+  for(const e of q.lod){e.o.layers.set(nf?0:1);e.o.castShadow=false;}
+  const pm=q.proxy.children[0];pm.castShadow=sh;pm.material.colorWrite=pm.material.depthWrite=!nf;q.proxy.visible=!nf||sh;}
 function droidDyn(self){DR_DYN=[];const sx=self.m.D.x,sz=self.m.D.z;   /* only what is within 18 m can matter to this droid: keeps the per-query cost flat as the squads grow */
   for(const u of UGVS)if(!u.gone&&Math.abs(u.x-sx)<18&&Math.abs(u.z-sz)<18)DR_DYN.push({x:u.x,z:u.z,r:2.8});for(const q of DRS)if(q!==self&&q.m&&q.m.root.visible){const X=q.m.D.x,Z=q.m.D.z;if(Math.abs(X-sx)<18&&Math.abs(Z-sz)<18)DR_DYN.push({x:X,z:Z,r:2.2});}}
 function droidStep1(dt,nD,enem){
@@ -7052,7 +7053,7 @@ function playLost(){const C=AC;if(!C||!soundOn)return;const K=synthKit(null,null
 window.__boom=(d,r)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();const p=camera.position.clone().addScaledVector(f,d||25);p.y=groundH(p.x,p.z)+1;at4Blast(p,r||8);};
 window.__bl=()=>[BLL.intensity,BL.t,BLL.position.x,BLL.position.y,BLL.position.z,camera.position.x,camera.position.y,camera.position.z];
 window.__wn=t=>{const CP=CTRL_PTS();const L=RES_NODES.filter(n=>n.t===t);return [L.length,L.filter(n=>CP.some(q=>Math.hypot(n.x-q.x,n.z-q.z)<250)).length];};
-window.__BUILD=BUILD;window.__deer={sbQuit,siloStrikeFx,DEER,disturb,scare,deerAI,player,SECT,SILO,LH:()=>LH,GAME};window.__scn=()=>({scene,renderer,camera});
+window.__BUILD=BUILD;window.__deer={sbQuit,siloStrikeFx,DEER,disturb,scare,deerAI,player,SECT,SILO,LH:()=>LH,GAME};window.__scn=()=>({scene,renderer,camera,chunks,csm});
 window.__art={team:()=>secTeam(),coop:()=>MPM.coop,rr:()=>resReset(),mid:()=>{const T=CON[CON.length>>1];return [T.x,T.z]},tree:()=>({st:TF_STICKS,dead:CON.filter(t=>t.dead).length}),blast:(x,z,K)=>treeArty(V(x,groundH(x,z),z),K),land:()=>{player.pos.y=groundH(player.pos.x,player.pos.z)+0.05;player.vel.set(0,0,0);},hp:()=>[MPM.hp,player.alive],fwd:(d)=>{const f=new THREE.Vector3();camera.getWorldDirection(f);f.y=0;f.normalize();return [camera.position.x+f.x*d,camera.position.z+f.z*d];},ART,SLOT,aim:artAim,call:artCall,give:()=>{SLOT.g[0]={k:"arty"};slotSync();}};
 window.__acState=()=>AC?AC.state:"none";
 window.__hurt=()=>[!!SND.hurt,SND.hurt&&SND.hurt.duration];
