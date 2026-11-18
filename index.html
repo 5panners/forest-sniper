@@ -45,9 +45,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-ui);o
 .grid div{display:flex;gap:9px;align-items:baseline;min-width:0}
 kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-radius:4px;padding:0 6px;color:var(--amber);min-width:52px;text-align:center;flex:none}
 #deployBtn{font:700 16px var(--f-ui);letter-spacing:.05em;text-transform:uppercase;background:var(--moss);color:#11160c;border:0;border-radius:6px;padding:11px 22px;cursor:pointer}
-#resetBtn,#cfgBtn,#applyBtn{font:600 14px var(--f-ui);letter-spacing:.05em;text-transform:uppercase;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:10px 16px;margin-left:10px;cursor:pointer}
-#resetBtn:hover,#cfgBtn:hover,#applyBtn:hover{color:var(--amber);border-color:var(--amber)}
-#resetBtn:focus-visible,#cfgBtn:focus-visible,#applyBtn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+#resetBtn,#cfgBtn,#applyBtn,#quitBtn{font:600 14px var(--f-ui);letter-spacing:.05em;text-transform:uppercase;background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:10px 16px;margin-left:10px;cursor:pointer}
+#resetBtn:hover,#cfgBtn:hover,#applyBtn:hover,#quitBtn:hover{color:var(--amber);border-color:var(--amber)}
+#resetBtn:focus-visible,#cfgBtn:focus-visible,#applyBtn:focus-visible,#quitBtn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 #deployBtn:disabled{opacity:.5;cursor:wait}
 #deployBtn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .note{font:12px var(--f-mono);color:var(--muted);margin-top:10px}
@@ -157,7 +157,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
     <p class="note">100% is the recording at its original level. Press M in game to mute everything.</p>
   </div>
   <div id="paneMp" role="tabpanel" aria-labelledby="tabMp" hidden><div id="mpBox"><b>Connect</b><button id="mpStart" type="button" hidden>Start match</button><button id="mpLeave" type="button" hidden>Leave</button><input id="mpPw" type="text" maxlength="40" placeholder="Password" autocomplete="off" spellcheck="false" aria-label="Match password" style="width:150px;text-transform:none"><button id="mpDHost" type="button">Host match</button><button id="mpDJoin" type="button">Join match</button><textarea id="mpDx" rows="6" style="min-height:8em;resize:vertical" hidden spellcheck="false" aria-label="Connection code"></textarea><button id="mpDgo" type="button" hidden>Connect</button><div id="mpStat" class="note">Type the same password on both sides, then one presses Host and the other Join.</div></div><label class="opt" style="margin-bottom:22px"><input type="checkbox" id="optNet" checked><span><b>Show network stats</b></span></label></div>
-  <button id="deployBtn" disabled>Generating forest…</button><button id="cfgBtn" type="button">Copy settings</button><button id="applyBtn" type="button" title="Save the settings and reload the page so map pickup quantities and placement take effect">Apply &amp; reload</button>
+  <button id="deployBtn" disabled>Generating forest…</button><button id="quitBtn" type="button" title="Leave this game and return to the title screen">Quit</button><button id="cfgBtn" type="button">Copy settings</button><button id="applyBtn" type="button" title="Save the settings and reload the page so map pickup quantities and placement take effect">Apply &amp; reload</button>
   <div class="note" id="stats"></div>
 </div></div>
 
@@ -3437,6 +3437,7 @@ let everLocked=false;
 function goFallback(){if(fallback)return;if(everLocked){toast('Click the game to capture the mouse');return;}   // after Esc the browser refuses a re-lock for about a second: never give up on lock once it has worked
   if(MPM.on&&(MPM.lf=(MPM.lf||0)+1)<4){toast('Click the game to capture the mouse');return;}   // in a match, keep trying the lock rather than dropping to drag-to-look
   fallback=true;toast('Mouse lock unavailable here · hold a mouse button and drag to look');}
+$('quitBtn').addEventListener('click',()=>sbQuit());
 $('deployBtn').addEventListener('click',()=>{initAudio();if(AC&&AC.state==='suspended'&&soundOn)AC.resume();startAmbience();try{chuteInitialDrop();}catch(e){console.warn('drop',e);}setPlaying(true);cv.focus();requestLock();});
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===cv;if(locked){everLocked=true;fallback=false;}if(!locked&&playing&&!fallback&&!mapOpen&&!window.SB_END){if(MPM.on){for(const k in keys)keys[k]=false;input.lmb=input.rmb=false;toast('Mouse released · click the game to capture it · Esc for the menu');}else setPlaying(false);}else if(locked)MPM.lf=0;});   // in a match the game stays up when the mouse is released (switching tabs): click to take it back
 document.addEventListener('pointerlockerror',()=>goFallback());
@@ -3717,7 +3718,7 @@ let _lg=0;function updateLOD(){if(LODF&&++_lg%120===0)lodGuard();LODU.uLz.value=
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=669;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=670;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 /* live title-screen camera: the intro overlay flies the real game camera over the world at night */
 const INTRO=window.INTRO={on:false,ready:false,t:0,x:-90,z:440,eye:7,yaw:0,pitch:0.05,tod:5.15,fov:58,saved:16,y:0,
   start(){INTRO.saved=DAY.tod;INTRO.t=0;INTRO.y=groundH(INTRO.x,INTRO.z)+INTRO.eye;INTRO.on=true;},
