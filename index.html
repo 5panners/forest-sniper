@@ -114,6 +114,7 @@ kbd{font:12px var(--f-mono);background:#252c1d;border:1px solid #435034;border-r
       <label class="opt"><span><b>Shadow draw distance</b><small>How far from you trees and rocks cast shadows. Longer is softer and slower.</small></span><select id="optShD"><option value="30">30 m</option><option value="50">50 m</option><option value="100">100 m</option><option value="150" selected>150 m</option><option value="250">250 m</option></select></label>
       <label class="opt"><span><b>Render resolution</b><small>Lower this if the frame rate is poor.</small></span><select id="optRes"><option value="0.75">75%</option><option value="1" selected>100%</option><option value="1.5">Sharp (up to 1.5×)</option></select></label>
       <label class="opt"><input type="checkbox" id="optFps" checked><span><b>Show FPS</b><small>Frame rate and frame time, top left.</small></span></label>
+      <label class="opt"><input type="checkbox" id="optLodF" checked><span><b>Smooth tree detail fade</b><small>Trees blend between detail levels by distance instead of popping in. Turn off if you lose frames.</small></span></label>
       <label class="opt"><input type="checkbox" id="optGeo"><span><b>Show geometry stats</b><small>Triangles and draw calls this frame, plus geometries, textures and instanced trees and plants in memory.</small></span></label>
       <label class="opt"><input type="checkbox" id="optHB"><span><b>Show hit boxes</b><small>Wireframes on the player, player 2 and the deer: red head, yellow torso, blue limbs (deer: head, neck, body and legs). Also the B key.</small></span></label>
       <label class="opt"><input type="checkbox" id="optSh" checked><span><b>Shadows</b><small>Sun shadows near the player.</small></span></label>
@@ -1378,6 +1379,18 @@ function shrubGeo(){return merge([xf(tint(jitterGeo(new THREE.IcosahedronGeometr
 function fernGeo(){const L=[];for(let i=0;i<6;i++){const a=i/6*PI*2;const g=new THREE.ConeGeometry(0.16,1.2,3,1,true);g.rotateX(-HP*0.62);g.translate(0,0.18,0.45);g.rotateY(a);L.push(tint(g,'#ffffff',0.15));}return merge(L);}
 const GEO={spruceA:spruceHi(0),spruceB:spruceHi(1),spruceLo:spruceLo(),beechT:beechTrunk(),beechC:beechCrown(),beechLo:beechLo(),snag:snagHi(),snagLo:snagLo(),spruceFar:spruceFar(),beechFar:beechFar(),young:youngHi(),youngLo:youngLo(),shrub:shrubGeo(),fern:fernGeo()};
 const treeMat=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:0.95,metalness:0});
+/* tree LOD cross-fade: each tree fades between its models by its own distance from the camera (screen-door dither), so detail swaps stop popping a whole 87 m chunk at once */
+let LODF=true;try{const q=JSON.parse(localStorage.getItem('sniperGfx2')||'null');if(q&&q.lf===false)LODF=false;}catch(e){}
+const LODU={uLz:{value:1}},LODM=[];
+function lodMat(inA,inB,outA,outB){const m=treeMat.clone();m.defines=Object.assign({},m.defines);if(inB>0)m.defines.LF_IN=1;if(outB>0)m.defines.LF_OUT=1;
+  const U={uLb:{value:new THREE.Vector4(inA,inB,outA,outB)},uLz:LODU.uLz};csm.setupMaterial(m);m.userData.csm=1;const o=m.onBeforeCompile;
+  m.onBeforeCompile=function(sh,r){o.call(this,sh,r);Object.assign(sh.uniforms,U);
+    sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying float vLD;\nuniform float uLz;').replace('#include <project_vertex>','#include <project_vertex>\n{vec4 lw=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\nlw=instanceMatrix*lw;\n#endif\nlw=modelMatrix*lw;vLD=length(lw.xz-cameraPosition.xz)/uLz;}');
+    sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vLD;\nuniform vec4 uLb;').replace('void main() {','void main() {\n{float n=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(.06711056,.00583715))));float k=1.0;\n#ifdef LF_IN\nk*=step(1.0-smoothstep(uLb.x,uLb.y,vLD),n);\n#endif\n#ifdef LF_OUT\nk*=step(n,1.0-smoothstep(uLb.z,uLb.w,vLD)-1e-4);\n#endif\nif(k<0.5)discard;}');};
+  return m;}
+const LFM={hi:lodMat(0,0,86,100),lo:lodMat(86,100,290,312),far:lodMat(290,312,0,0)};
+function lodReg(m,k){if(m){m.material=LODF?LFM[k]:treeMat;LODM.push([m,k]);}return m;}
+function lodApply(){for(const[m,k]of LODM)m.material=LODF?LFM[k]:treeMat;}
 const plantMat=new THREE.MeshStandardMaterial({vertexColors:true,flatShading:true,roughness:1,metalness:0,side:THREE.DoubleSide});
 
 /* ---------------- forest placement, chunked with near/far LOD ---------------- */
@@ -1456,11 +1469,11 @@ chunks.forEach(c=>{const it=c.items;
   for(const t in it){const L=it[t];instCount+=L.length;
     if(t==='shrub'){instMesh(GEO.shrub,treeMat,L,c.near,false);continue;}
     if(t==='fern'){instMesh(GEO.fern,plantMat,L,c.near,false);continue;}
-    const mF=instMesh(GEO[FAR_OF[t]],treeMat,L,c.far,false);
+    const mF=instMesh(GEO[FAR_OF[t]],treeMat,L,c.far,false);if(c.inner)lodReg(mF,'far');
     if(!c.inner)continue;
-    const mL=instMesh(GEO[LOD_OF[t]],treeMat,L,c.lo,false);
-    if(t==='beech'){instMesh(GEO.beechT,treeMat,L.map(a=>[a[0],a[1],a[2],a[3],a[4],a[5],SPR[0],a[7]]),c.hi,true);instMesh(GEO.beechC,treeMat,L,c.hi,true);}
-    else{const mH=instMesh(GEO[t==='young'?'young':t],treeMat,L,c.hi,true);(c.mh||(c.mh={}))[t]=[mF,mL,mH];}}
+    const mL=lodReg(instMesh(GEO[LOD_OF[t]],treeMat,L,c.lo,false),'lo');
+    if(t==='beech'){lodReg(instMesh(GEO.beechT,treeMat,L.map(a=>[a[0],a[1],a[2],a[3],a[4],a[5],SPR[0],a[7]]),c.hi,true),'hi');lodReg(instMesh(GEO.beechC,treeMat,L,c.hi,true),'hi');}
+    else{const mH=lodReg(instMesh(GEO[t==='young'?'young':t],treeMat,L,c.hi,true),'hi');(c.mh||(c.mh={}))[t]=[mF,mL,mH];}}
   if(c.ymin>1e8){c.ymin=groundH((c.x0+c.x1)/2,(c.z0+c.z1)/2);c.ymax=c.ymin;}
   c.box.set(V(c.x0-6,c.ymin-5,c.z0-6),V(c.x1+6,c.ymax+8,c.z1+6));c.items=null;});
 /* ---------------- burning conifers: an AT4 / M32 round that lands under a spruce sets it alight for a minute (flames, smoke, firelight, the crown charring and burning away) and leaves a black stick ---------------- */
@@ -3542,13 +3555,13 @@ $('audB').onchange=()=>{if(AC&&soundOn&&SND.bz)playSample('bz',0.9*VOLS.bz,1);};
 $('audA').oninput=()=>{VOLS.amb=$('audA').value/100;$('audAv').textContent=$('audA').value+'%';audSave();};
 $('audG').oninput=()=>{VOLS.gun=$('audG').value/100;$('audGv').textContent=$('audG').value+'%';audSave();};
 $('audG').onchange=()=>{if(AC&&soundOn)sfx.shot();};   // preview the level when the slider is released
-function gfxSave(){try{localStorage.setItem('sniperGfx2',JSON.stringify({fps:$('optFps').checked,geo:$('optGeo').checked,sh:renderer.shadowMap.enabled,res:$('optRes').value,shd:$('optShD').value}));}catch(e){}}
+function gfxSave(){try{localStorage.setItem('sniperGfx2',JSON.stringify({fps:$('optFps').checked,geo:$('optGeo').checked,lf:LODF,sh:renderer.shadowMap.enabled,res:$('optRes').value,shd:$('optShD').value}));}catch(e){}}
 let SH_D=50;
 function applyShD(){SH_D=+$('optShD').value;csm.maxFar=SH_D;csm.updateFrustums();SUN_R=Math.max(150,SH_D+100);gfxSave();}
 $('optShD').onchange=applyShD;
 function applyRes(){const v=parseFloat($('optRes').value);renderer.setPixelRatio(Math.min(v,devicePixelRatio||1));resize();gfxSave();}
 function applyPerfVis(){perfEl.hidden=!($('optFps').checked||$('optGeo').checked);gfxSave();}
-$('optFps').onchange=applyPerfVis;$('optGeo').onchange=applyPerfVis;
+$('optLodF').checked=LODF;$('optLodF').onchange=()=>{LODF=$('optLodF').checked;lodApply();gfxSave();};$('optFps').onchange=applyPerfVis;$('optGeo').onchange=applyPerfVis;
 $('optSh').onchange=()=>setShadows($('optSh').checked);
 $('optRes').onchange=applyRes;applyShD();applyRes();
 try{const s=JSON.parse(localStorage.getItem('sniperGfx2')||'null');if(s){$('optFps').checked=!!s.fps;$('optGeo').checked=!!s.geo;if(s.res)$('optRes').value=s.res;if(s.shd){$('optShD').value=s.shd;applyShD();}applyRes();applyPerfVis();if(s.sh===false&&renderer.shadowMap.enabled)setShadows(false);}}catch(e){}
@@ -3686,20 +3699,23 @@ function perfTick(dt){
 
 /* ---------------- LOD + per-frame ---------------- */
 const _fr=new THREE.Frustum(),_pm=new THREE.Matrix4();
-function updateLOD(){
+function updateLOD(){LODU.uLz.value=Math.max(1,62/camera.fov);
   _pm.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);_fr.setFromProjectionMatrix(_pm);
   const cp=camera.position,zk=Math.max(1,62/camera.fov),pp=player.pos,shOn=renderer.shadowMap.enabled;
   for(const c of chunks){let vis=_fr.intersectsBox(c.box),sh=false;
     // shadow casters must stay visible (the shadow pass skips hidden objects) even when behind the camera
     if(c.inner&&shOn){const dpx=Math.max(c.x0-pp.x,0,pp.x-c.x1),dpz=Math.max(c.z0-pp.z,0,pp.z-c.z1);sh=Math.hypot(dpx,dpz)<SH_D+8;}
     const dx=Math.max(c.x0-cp.x,0,cp.x-c.x1),dz=Math.max(c.z0-cp.z,0,cp.z-c.z1);const dn=Math.hypot(dx,dz)/zk;
-    const lit=vis||sh;
-    const hi=lit&&c.inner&&dn<95, mid=lit&&c.inner&&!hi&&dn<300;c.hi.visible=hi;c.lo.visible=mid;c.far.visible=vis&&!hi&&!mid;c.near.visible=vis&&dn<(scoped?110:75);c.res.visible=vis&&dn<(scoped?220:150);   // pick-ups and their glow: only the nearby chunks are drawn
+    const lit=vis||sh;let hi,mid,fr;
+    if(LODF){const df=Math.hypot(Math.max(Math.abs(c.x0-cp.x),Math.abs(c.x1-cp.x)),Math.max(Math.abs(c.z0-cp.z),Math.abs(c.z1-cp.z)))/zk;   // farthest corner: the fade bands are per tree, so a chunk straddling a band draws both models
+      hi=lit&&c.inner&&dn<100;mid=lit&&c.inner&&dn<312&&df>86;fr=vis&&(!c.inner||df>290);}
+    else{hi=lit&&c.inner&&dn<95;mid=lit&&c.inner&&!hi&&dn<300;fr=vis&&!hi&&!mid;}
+    c.hi.visible=hi;c.lo.visible=mid;c.far.visible=fr;c.near.visible=vis&&dn<(scoped?110:75);c.res.visible=vis&&dn<(scoped?220:150);   // pick-ups and their glow: only the nearby chunks are drawn
     if(c.inner&&sh!==c.hiOn){c.hiOn=sh;c.hi.children.forEach(m=>m.castShadow=sh);c.lo.children.forEach(m=>m.castShadow=sh);}}
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=664;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=665;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 /* live title-screen camera: the intro overlay flies the real game camera over the world at night */
 const INTRO=window.INTRO={on:false,ready:false,t:0,x:-90,z:440,eye:7,yaw:0,pitch:0.05,tod:5.15,fov:58,saved:16,y:0,
   start(){INTRO.saved=DAY.tod;INTRO.t=0;INTRO.y=groundH(INTRO.x,INTRO.z)+INTRO.eye;INTRO.on=true;},
