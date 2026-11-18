@@ -3718,7 +3718,7 @@ let _lg=0;function updateLOD(){if(LODF&&++_lg%120===0)lodGuard();LODU.uLz.value=
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=672;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=673;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 /* live title-screen camera: the intro overlay flies the real game camera over the world at night */
 const INTRO=window.INTRO={on:false,ready:false,t:0,x:-90,z:440,eye:7,yaw:0,pitch:0.05,tod:5.15,fov:58,saved:16,y:0,
   start(){INTRO.saved=DAY.tod;INTRO.t=0;INTRO.y=groundH(INTRO.x,INTRO.z)+INTRO.eye;INTRO.on=true;},
@@ -7302,7 +7302,7 @@ requestAnimationFrame(()=>setTimeout(init,30));
   /* ---- title: green pine-textured letters with a glittering gold edge; the O of "FOrest" is a crosshair ---- */
   const cv=root.querySelector('#introTitle'),ctx=cv.getContext('2d');
   const FONT='"Cinzel",Georgia,"Times New Roman",serif',P1='F',P2='rest Sniper';
-  let W=0,H=0,DPR=1,FS=100,asc=70,cy=0,yc=0,xF=0,xc=0,xR=0,EW=6,edge=[],sp=[],ready=false,gC,gc,nC,pat;
+  let W=0,H=0,DPR=1,FS=100,asc=70,cy=0,YC=0,XC=0,xF=0,xR=0,xC,ax=0,ay=0,tx=0,ty=0,nt=0,edgeX=[],EW=6,edge=[],sp=[],ready=false,gC,gc,nC,pat;
   function setText(c){c.font='900 '+FS+'px '+FONT;c.textAlign='left';c.textBaseline='middle';try{c.letterSpacing=Math.round(FS*0.04)+'px';}catch(e){}}
   function mkPat(){const S=192,c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d');
     const g=x.createLinearGradient(0,0,S,S);g.addColorStop(0,'#2f8040');g.addColorStop(.5,'#256b34');g.addColorStop(1,'#1a5029');x.fillStyle=g;x.fillRect(0,0,S,S);
@@ -7312,14 +7312,14 @@ requestAnimationFrame(()=>setTimeout(init,30));
       for(let ox=-S;ox<=S;ox+=S)for(let oy=-S;oy<=S;oy+=S){x.beginPath();pts.forEach((q,k)=>x[k?'lineTo':'moveTo'](px+ox+q[0],py+oy+q[1]));x.closePath();x.fill();}}
     x.lineCap='round';for(let i=0;i<420;i++){const px=Math.random()*S,py=Math.random()*S,a=-1.2+Math.random()*.5,l=4+Math.random()*8;x.strokeStyle=Math.random()<.5?'rgba(0,0,0,.12)':'rgba(190,255,150,.13)';x.lineWidth=1;x.beginPath();x.moveTo(px,py);x.lineTo(px+Math.cos(a)*l,py+Math.sin(a)*l);x.stroke();}
     return c;}
-  function crosshair(c,grow){const R=asc*.5,th=asc*.085,g=grow*.55;c.save();c.lineCap='butt';
+  function crosshair(c,grow,ox,oy){const xc=XC+(ox||0),yc=YC+(oy||0),R=asc*.5,th=asc*.085,g=grow*.55;c.save();c.lineCap='butt';
     c.lineWidth=th+g;c.beginPath();c.arc(xc,yc,R,0,6.2832);c.stroke();                       // scope ring
     c.lineWidth=th*.62+g;c.lineCap=grow?'round':'butt';const a=R*.26,b=R*1.42;               // reticle lines run through the ring with a gap at the centre
     c.beginPath();c.moveTo(xc-b,yc);c.lineTo(xc-a,yc);c.moveTo(xc+a,yc);c.lineTo(xc+b,yc);c.moveTo(xc,yc-b);c.lineTo(xc,yc-a);c.moveTo(xc,yc+a);c.lineTo(xc,yc+b);c.stroke();
     c.beginPath();c.arc(xc,yc,th*.4+g*.4,0,6.2832);c.fill();                                   // centre dot
     for(const m of[-.62,.62]){c.beginPath();c.arc(xc+m*R,yc,th*.3+g*.3,0,6.2832);c.fill();c.beginPath();c.arc(xc,yc+m*R,th*.3+g*.3,0,6.2832);c.fill();}   // mil-dots
     c.restore();}
-  function glyphs(c,grow){setText(c);if(grow){c.lineWidth=grow;c.lineJoin='round';c.strokeText(P1,xF,cy);c.strokeText(P2,xR,cy);}c.fillText(P1,xF,cy);c.fillText(P2,xR,cy);crosshair(c,grow);}
+  function glyphs(c,grow,mode,ox,oy){setText(c);if(mode!=='x'){if(grow){c.lineWidth=grow;c.lineJoin='round';c.strokeText(P1,xF,cy);c.strokeText(P2,xR,cy);}c.fillText(P1,xF,cy);c.fillText(P2,xR,cy);}if(mode!=='t')crosshair(c,grow,ox,oy);}
   function layout(){
     DPR=Math.min(window.devicePixelRatio||1,2);FS=Math.round(Math.min(innerWidth*0.088,innerHeight*0.2,170));
     W=Math.ceil(Math.min(innerWidth*0.96,FS*9.2));H=Math.ceil(FS*1.6);EW=Math.max(3,FS*.062);
@@ -7327,35 +7327,46 @@ requestAnimationFrame(()=>setTimeout(init,30));
     const mk=()=>{const c=document.createElement('canvas');c.width=W*DPR;c.height=H*DPR;const x=c.getContext('2d');x.setTransform(DPR,0,0,DPR,0,0);return[c,x];};
     setText(ctx);const m=ctx.measureText(P1),ls=FS*.04;asc=m.actualBoundingBoxAscent||FS*.7;const desc=m.actualBoundingBoxDescent||0;
     const wF=m.width,wR=ctx.measureText(P2).width,XW=asc*1.34+ls*2,total=wF+ls+XW+wR;
-    cy=H/2;yc=cy+(desc-asc)/2;xF=(W-total)/2;xc=xF+wF+ls+XW/2;xR=xF+wF+ls+XW;
-    [gC,gc]=mk();let nc;[nC,nc]=mk();
+    cy=H/2;YC=cy+(desc-asc)/2;xF=(W-total)/2;XC=xF+wF+ls+XW/2;xR=xF+wF+ls+XW;
+    [gC,gc]=mk();[xC]=mk();let nc;[nC,nc]=mk();
     // green textured body (static)
-    pat=nc.createPattern(mkPat(),'repeat');nc.fillStyle=nc.strokeStyle=pat;glyphs(nc,0);
-    nc.globalCompositeOperation='source-atop';const sh=nc.createLinearGradient(0,yc-asc*.6,0,yc+asc*.6);sh.addColorStop(0,'rgba(220,255,200,.30)');sh.addColorStop(.45,'rgba(0,0,0,0)');sh.addColorStop(1,'rgba(0,12,0,.42)');nc.fillStyle=sh;nc.fillRect(0,0,W,H);
+    pat=nc.createPattern(mkPat(),'repeat');nc.fillStyle=nc.strokeStyle=pat;glyphs(nc,0,'t');
+    nc.globalCompositeOperation='source-atop';const sh=nc.createLinearGradient(0,YC-asc*.6,0,YC+asc*.6);sh.addColorStop(0,'rgba(220,255,200,.30)');sh.addColorStop(.45,'rgba(0,0,0,0)');sh.addColorStop(1,'rgba(0,12,0,.42)');nc.fillStyle=sh;nc.fillRect(0,0,W,H);SHG=sh;
     // outline of the gold rim, sampled at half resolution for the glitter
-    const o=document.createElement('canvas');o.width=Math.ceil(W/2);o.height=Math.ceil(H/2);const c=o.getContext('2d');c.scale(.5,.5);c.fillStyle=c.strokeStyle='#000';glyphs(c,EW);
+    const o=document.createElement('canvas');o.width=Math.ceil(W/2);o.height=Math.ceil(H/2);const c=o.getContext('2d');c.scale(.5,.5);c.fillStyle=c.strokeStyle='#000';glyphs(c,EW,'t');
     const d=c.getImageData(0,0,o.width,o.height).data,w=o.width,h=o.height;edge=[];const A=(x,y)=>d[(y*w+x)*4+3];
+    const o2=document.createElement('canvas');o2.width=o.width;o2.height=o.height;const c2=o2.getContext('2d');c2.scale(.5,.5);c2.fillStyle=c2.strokeStyle='#000';glyphs(c2,EW,'x');const d2=c2.getImageData(0,0,o2.width,o2.height).data;edgeX=[];const A2=(x,y)=>d2[(y*w+x)*4+3];
+    for(let y=2;y<h-2;y++)for(let x=2;x<w-2;x++){if(A2(x,y)>140&&(A2(x-2,y)<40||A2(x+2,y)<40||A2(x,y-2)<40||A2(x,y+2)<40))edgeX.push(x*2-XC,y*2-YC);}
     for(let y=2;y<h-2;y++)for(let x=2;x<w-2;x++){if(A(x,y)>140&&(A(x-2,y)<40||A(x+2,y)<40||A(x,y-2)<40||A(x,y+2)<40))edge.push(x*2,y*2);}
     sp=[];const n=RM?0:Math.min(130,Math.round(W/9));for(let i=0;i<n;i++)sp.push(newSp(Math.random()*2));
   }
-  function newSp(age){const k=(Math.random()*(edge.length/2))|0;return{x:edge[k*2]||0,y:edge[k*2+1]||0,t:-age,life:.5+Math.random()*1.1,s:.5+Math.random()*1}; }
+  function newSp(age){if(edgeX.length&&Math.random()<.2){const k=(Math.random()*(edgeX.length/2))|0;return{x:edgeX[k*2],y:edgeX[k*2+1],f:1,t:-age,life:.5+Math.random()*1.1,s:.5+Math.random()*1};}
+    const k=(Math.random()*(edge.length/2))|0;return{x:edge[k*2]||0,y:edge[k*2+1]||0,f:0,t:-age,life:.5+Math.random()*1.1,s:.5+Math.random()*1}; }
+  /* aim drift: the reticle eases toward a new point every few seconds, with slow breathing sway and a faint tremor, as if a shooter were lining up a shot */
+  let SHG;function aim(T,dt){if(T>=nt){nt=T+1.8+Math.random()*2.6;tx=(Math.random()*2-1)*asc*.65;ty=(Math.random()*2-1)*asc*.26;if(Math.random()<.3){tx*=.25;ty*=.25;}}
+    const k=1-Math.exp(-dt*1.6);ax+=(tx-ax)*k;ay+=(ty-ay)*k;}
+  function tr(T,i){return RM?0:(Math.sin(T*(i?1.1:.8)*2.3+i)*asc*.05+Math.sin(T*(i?9.3:7.7)+i*2)*asc*.012);}
   let lastT=0;function drawTitle(T){
-    if(!ready)return;const dt=Math.min(.1,Math.max(0,T-lastT));lastT=T;
+    if(!ready)return;const dt=Math.min(.1,Math.max(0,T-lastT));lastT=T;aim(T,dt);const ox=ax+tr(T,1),oy=ay+tr(T,2);
     // gold rim with a bright band sweeping along it
     gc.globalCompositeOperation='source-over';gc.clearRect(0,0,W,H);
-    const g=gc.createLinearGradient(0,yc-asc*.6,0,yc+asc*.6);g.addColorStop(0,'#fff0b8');g.addColorStop(.4,'#f0c04a');g.addColorStop(.7,'#c88a1e');g.addColorStop(1,'#8c5c12');
-    gc.fillStyle=gc.strokeStyle=g;glyphs(gc,EW);
+    const g=gc.createLinearGradient(0,YC-asc*.6,0,YC+asc*.6);g.addColorStop(0,'#fff0b8');g.addColorStop(.4,'#f0c04a');g.addColorStop(.7,'#c88a1e');g.addColorStop(1,'#8c5c12');
+    gc.fillStyle=gc.strokeStyle=g;glyphs(gc,EW,'',ox,oy);
     const ph=RM?-1:((T*.2)%1.7)-.3;
     if(ph>-.25&&ph<1.25){gc.globalCompositeOperation='source-atop';const bx=ph*W,sg=gc.createLinearGradient(bx-FS*.8,0,bx+FS*.8,FS*.4);sg.addColorStop(0,'rgba(255,255,255,0)');sg.addColorStop(.5,'rgba(255,255,235,.95)');sg.addColorStop(1,'rgba(255,255,255,0)');gc.fillStyle=sg;gc.fillRect(0,0,W,H);}
     ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);ctx.setTransform(DPR,0,0,DPR,0,0);
     ctx.save();ctx.shadowColor='rgba(255,190,80,.45)';ctx.shadowBlur=FS*.18;ctx.drawImage(gC,0,0,W,H);ctx.restore();
     ctx.drawImage(nC,0,0,W,H);
+    // the reticle's green body, redrawn each frame at its drifting position
+    const xx=xC.getContext('2d');xx.setTransform(DPR,0,0,DPR,0,0);xx.globalCompositeOperation='source-over';xx.clearRect(0,0,W,H);xx.fillStyle=xx.strokeStyle=pat;crosshair(xx,0,ox,oy);
+    xx.globalCompositeOperation='source-atop';const sh2=xx.createLinearGradient(0,YC+oy-asc*.6,0,YC+oy+asc*.6);sh2.addColorStop(0,'rgba(220,255,200,.30)');sh2.addColorStop(.45,'rgba(0,0,0,0)');sh2.addColorStop(1,'rgba(0,12,0,.42)');xx.fillStyle=sh2;xx.fillRect(0,0,W,H);
+    ctx.drawImage(xC,0,0,W,H);
     // glitter along the gold edge: tiny twinkling points (no star shapes)
     ctx.save();ctx.globalCompositeOperation='lighter';
-    for(let i=0;i<sp.length;i++){const s=sp[i];s.t+=dt;if(s.t>=s.life){sp[i]=newSp(0);continue;}if(s.t<0)continue;
+    for(let i=0;i<sp.length;i++){const s=sp[i];const sx=s.x+(s.f?XC+ox:0),sy=s.y+(s.f?YC+oy:0);s.t+=dt;if(s.t>=s.life){sp[i]=newSp(0);continue;}if(s.t<0)continue;
       const k=s.t/s.life;let a=Math.sin(Math.PI*k);a*=a;const r=Math.max(.8,FS*.009*s.s)*(.5+.5*a);
-      const gr=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,r*3.2);gr.addColorStop(0,'rgba(255,244,200,'+(.8*a)+')');gr.addColorStop(1,'rgba(255,210,110,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(s.x,s.y,r*3.2,0,6.2832);ctx.fill();
-      ctx.fillStyle='rgba(255,255,255,'+a+')';ctx.beginPath();ctx.arc(s.x,s.y,r*.7,0,6.2832);ctx.fill();}
+      const gr=ctx.createRadialGradient(sx,sy,0,sx,sy,r*3.2);gr.addColorStop(0,'rgba(255,244,200,'+(.8*a)+')');gr.addColorStop(1,'rgba(255,210,110,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(sx,sy,r*3.2,0,6.2832);ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,'+a+')';ctx.beginPath();ctx.arc(sx,sy,r*.7,0,6.2832);ctx.fill();}
     ctx.restore();
   }
   /* ---- live world: take over the game camera once the world is built ---- */
