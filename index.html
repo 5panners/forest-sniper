@@ -3720,7 +3720,7 @@ let _lg=0;function updateLOD(){if(LODF&&++_lg%120===0)lodGuard();LODU.uLz.value=
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=676;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=677;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 /* live title-screen camera: the intro overlay flies the real game camera over the world at night */
 const INTRO=window.INTRO={on:false,ready:false,t:0,x:-90,z:440,eye:7,yaw:0,pitch:0.05,tod:5.15,fov:58,saved:16,y:0,
   start(){INTRO.saved=DAY.tod;INTRO.t=0;INTRO.y=groundH(INTRO.x,INTRO.z)+INTRO.eye;INTRO.on=true;},
@@ -7382,7 +7382,10 @@ requestAnimationFrame(()=>setTimeout(init,30));
   function frame(){if(!alive)return;const T=(performance.now()-t0)/1000;
     if(!live&&window.INTRO&&window.INTRO.ready){live=true;try{Object.assign(INTRO,{x:-60,z:385,eye:8,yaw:-0.9,pitch:0.06,tod:5.15,fov:58});INTRO.start();}catch(e){}root.classList.add('live');try{const b=document.getElementById('bld');if(b)root.querySelector('#introBld').textContent=b.textContent;}catch(e){}}
     drawTitle(T);raf=requestAnimationFrame(frame);}
-  function go(){layout();ready=true;root.classList.add('in');t0=performance.now();}
+  function go(){layout();ready=true;root.classList.add('in');t0=performance.now();
+    // the outline, mask and edge samples are all measured from the font: redo them if it (or any later font) finishes loading after this first pass
+    try{document.fonts.addEventListener('loadingdone',()=>layout());document.fonts.ready.then(()=>layout());}catch(e){}
+    setTimeout(()=>{if(alive)layout();},1500);}
   addEventListener('resize',()=>{if(ready)layout();});
   let started=false;const begin=()=>{if(started)return;started=true;go();};
   try{Promise.race([document.fonts.load('900 80px Cinzel'),new Promise(r=>setTimeout(r,2500))]).then(begin,begin);}catch(e){setTimeout(begin,300);}
