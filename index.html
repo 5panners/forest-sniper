@@ -3718,7 +3718,7 @@ let _lg=0;function updateLOD(){if(LODF&&++_lg%120===0)lodGuard();LODU.uLz.value=
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=674;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=675;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 /* live title-screen camera: the intro overlay flies the real game camera over the world at night */
 const INTRO=window.INTRO={on:false,ready:false,t:0,x:-90,z:440,eye:7,yaw:0,pitch:0.05,tod:5.15,fov:58,saved:16,y:0,
   start(){INTRO.saved=DAY.tod;INTRO.t=0;INTRO.y=groundH(INTRO.x,INTRO.z)+INTRO.eye;INTRO.on=true;},
@@ -7302,7 +7302,7 @@ requestAnimationFrame(()=>setTimeout(init,30));
   /* ---- title: green pine-textured letters with a glittering gold edge; the O of "FOrest" is a crosshair ---- */
   const cv=root.querySelector('#introTitle'),ctx=cv.getContext('2d');
   const FONT='"Cinzel",Georgia,"Times New Roman",serif',P1='F',P2='rest Sniper';
-  let W=0,H=0,DPR=1,FS=100,asc=70,cy=0,yc=0,xF=0,xc=0,xR=0,EW=6,edge=[],sp=[],ready=false,gC,gc,nC,pat;
+  let W=0,H=0,DPR=1,FS=100,asc=70,cy=0,yc=0,xF=0,xc=0,xR=0,EW=6,edge=[],sp=[],ready=false,gC,gc,nC,nCx,mC,fc,fx,fid,LW=1,LH=1;
   function setText(c){c.font='900 '+FS+'px '+FONT;c.textAlign='left';c.textBaseline='middle';try{c.letterSpacing=Math.round(FS*0.04)+'px';}catch(e){}}
   function mkPat(){const S=192,c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d');
     const g=x.createLinearGradient(0,0,S,S);g.addColorStop(0,'#2f8040');g.addColorStop(.5,'#256b34');g.addColorStop(1,'#1a5029');x.fillStyle=g;x.fillRect(0,0,S,S);
@@ -7328,10 +7328,11 @@ requestAnimationFrame(()=>setTimeout(init,30));
     setText(ctx);const m=ctx.measureText(P1),ls=FS*.04;asc=m.actualBoundingBoxAscent||FS*.7;const desc=m.actualBoundingBoxDescent||0;
     const wF=m.width,wR=ctx.measureText(P2).width,XW=asc*1.34+ls*2,total=wF+ls+XW+wR;
     cy=H/2;yc=cy+(desc-asc)/2;xF=(W-total)/2;xc=xF+wF+ls+XW/2;xR=xF+wF+ls+XW;
-    [gC,gc]=mk();let nc;[nC,nc]=mk();
+    [gC,gc]=mk();[nC,nCx]=mk();
     // green textured body (static)
-    pat=nc.createPattern(mkPat(),'repeat');nc.fillStyle=nc.strokeStyle=pat;glyphs(nc,0);
-    nc.globalCompositeOperation='source-atop';const sh=nc.createLinearGradient(0,yc-asc*.6,0,yc+asc*.6);sh.addColorStop(0,'rgba(220,255,200,.30)');sh.addColorStop(.45,'rgba(0,0,0,0)');sh.addColorStop(1,'rgba(0,12,0,.42)');nc.fillStyle=sh;nc.fillRect(0,0,W,H);
+    mC=mk()[0];{const mx=mC.getContext('2d');mx.setTransform(DPR,0,0,DPR,0,0);mx.fillStyle=mx.strokeStyle='#000';glyphs(mx,0);}   // letter + reticle silhouette that the flames are clipped to
+    LW=Math.ceil(W/3);LH=Math.ceil(H/3);fc=document.createElement('canvas');fc.width=LW;fc.height=LH;fx=fc.getContext('2d');fid=fx.createImageData(LW,LH);
+
     // outline of the gold rim, sampled at half resolution for the glitter
     const o=document.createElement('canvas');o.width=Math.ceil(W/2);o.height=Math.ceil(H/2);const c=o.getContext('2d');c.scale(.5,.5);c.fillStyle=c.strokeStyle='#000';glyphs(c,EW);
     const d=c.getImageData(0,0,o.width,o.height).data,w=o.width,h=o.height;edge=[];const A=(x,y)=>d[(y*w+x)*4+3];
@@ -7339,6 +7340,22 @@ requestAnimationFrame(()=>setTimeout(init,30));
     sp=[];const n=RM?0:Math.min(130,Math.round(W/9));for(let i=0;i<n;i++)sp.push(newSp(Math.random()*2));
   }
   function newSp(age){const k=(Math.random()*(edge.length/2))|0;return{x:edge[k*2]||0,y:edge[k*2+1]||0,t:-age,life:.5+Math.random()*1.1,s:.5+Math.random()*1}; }
+  /* ---- flames: a scrolling noise field coloured as fire, painted at low resolution and clipped to the letters ---- */
+  const NZ=new Float32Array(64*64);for(let i=0;i<NZ.length;i++)NZ[i]=Math.random();
+  function vn(x,y){const xi=Math.floor(x),yi=Math.floor(y),fx_=x-xi,fy=y-yi,u=fx_*fx_*(3-2*fx_),v=fy*fy*(3-2*fy);const a=NZ[((yi&63)<<6)|(xi&63)],b=NZ[((yi&63)<<6)|((xi+1)&63)],c=NZ[(((yi+1)&63)<<6)|(xi&63)],d=NZ[(((yi+1)&63)<<6)|((xi+1)&63)];return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;}
+  const RAMP=[[0,26,3,2],[.22,96,10,2],[.42,196,38,4],[.6,255,120,12],[.78,255,200,50],[1,255,246,190]];
+  function ramp(h){if(h<=0)return RAMP[0];if(h>=1)return RAMP[5];for(let i=1;i<6;i++){if(h<=RAMP[i][0]){const p=RAMP[i-1],q=RAMP[i],t=(h-p[0])/(q[0]-p[0]);return[0,p[1]+(q[1]-p[1])*t,p[2]+(q[2]-p[2])*t,p[3]+(q[3]-p[3])*t];}}return RAMP[5];}
+  const RT=[];for(let i=0;i<256;i++)RT.push(ramp(i/255));
+  function paintFlames(T){const d=fid.data,t=RM?0:T,sc=3/(FS*.34),top=(cy-asc*.5-FS*.05)/3,bot=(cy+asc*.5+FS*.05)/3;
+    for(let y=0;y<LH;y++){let ny=(y-top)/(bot-top);ny=ny<0?0:ny>1?1:ny;const base=.16+ny*.7;
+      for(let x=0;x<LW;x++){const X=x*3*sc,Y=y*3*sc;
+        const w=vn(X*.8+t*.3,Y*.8-t*1.6)*1.6-.8;                       // sideways lick
+        let n=vn(X*1.3+w*.9,Y*1.3+t*2.4)*.55+vn(X*2.7-w,Y*2.7+t*3.7)*.3+vn(X*5.4,Y*5.4+t*5.2)*.15;
+        let h=base+(n-.5)*1.15+Math.sin(t*9+X*2)*.025;h=h<0?0:h>1?1:h;
+        const c=RT[(h*255)|0],i=(y*LW+x)*4;d[i]=c[1];d[i+1]=c[2];d[i+2]=c[3];d[i+3]=255;}}
+    fx.putImageData(fid,0,0);
+    nCx.setTransform(1,0,0,1,0,0);nCx.globalCompositeOperation='source-over';nCx.clearRect(0,0,nC.width,nC.height);nCx.imageSmoothingEnabled=true;nCx.drawImage(fc,0,0,nC.width,nC.height);
+    nCx.globalCompositeOperation='destination-in';nCx.drawImage(mC,0,0);nCx.globalCompositeOperation='source-over';}
   let lastT=0;function drawTitle(T){
     if(!ready)return;const dt=Math.min(.1,Math.max(0,T-lastT));lastT=T;
     // gold rim with a bright band sweeping along it
@@ -7349,7 +7366,7 @@ requestAnimationFrame(()=>setTimeout(init,30));
     if(ph>-.25&&ph<1.25){gc.globalCompositeOperation='source-atop';const bx=ph*W,sg=gc.createLinearGradient(bx-FS*.8,0,bx+FS*.8,FS*.4);sg.addColorStop(0,'rgba(255,255,255,0)');sg.addColorStop(.5,'rgba(255,255,235,.95)');sg.addColorStop(1,'rgba(255,255,255,0)');gc.fillStyle=sg;gc.fillRect(0,0,W,H);}
     ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);ctx.setTransform(DPR,0,0,DPR,0,0);
     ctx.save();ctx.shadowColor='rgba(255,190,80,.45)';ctx.shadowBlur=FS*.18;ctx.drawImage(gC,0,0,W,H);ctx.restore();
-    ctx.drawImage(nC,0,0,W,H);
+    paintFlames(T);ctx.drawImage(nC,0,0,W,H);
     // glitter along the gold edge: tiny twinkling points (no star shapes)
     ctx.save();ctx.globalCompositeOperation='lighter';
     for(let i=0;i<sp.length;i++){const s=sp[i];s.t+=dt;if(s.t>=s.life){sp[i]=newSp(0);continue;}if(s.t<0)continue;
