@@ -3722,7 +3722,7 @@ let _lg=0;function updateLOD(){if(LODF&&++_lg%120===0)lodGuard();LODU.uLz.value=
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=678;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=679;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 /* live title-screen camera: the intro overlay flies the real game camera over the world at night */
 const INTRO=window.INTRO={on:false,ready:false,t:0,x:-90,z:440,eye:7,yaw:0,pitch:0.05,tod:5.15,fov:58,saved:16,y:0,
   start(){INTRO.saved=DAY.tod;INTRO.t=0;INTRO.y=groundH(INTRO.x,INTRO.z)+INTRO.eye;INTRO.on=true;},
@@ -5457,7 +5457,8 @@ function secSpawnFor(team){const opp=(MPM.on&&!MPM.coop&&NT.opp&&RPS.pos)?RPS.po
   if(best<0)best=team===1?0:6;const d=SEC_DEF[best],home=SEC_DEF[team===1?0:6];let x=d.x,z=d.z;
   if(best!==0&&best!==6){const dx=home.x-d.x,dz=home.z-d.z,L=Math.hypot(dx,dz)||1;x+=dx/L*(d.k==='C'?24:14);z+=dz/L*(d.k==='C'?24:14);}
   return {x,z,i:best};}
-function secPlace(x,z){const c=SEC_DEF[3];const yaw=Math.atan2(-(c.x-x),-(c.z-z));
+function secPlace(x,z){if(MPM.on&&MPM.coop){const a=Math.random()*6.2832,r=3+Math.random()*4;x+=Math.cos(a)*r;z+=Math.sin(a)*r;}   // co-op: team mates deploy a few metres apart, not on the same spot
+  const c=SEC_DEF[3];const yaw=Math.atan2(-(c.x-x),-(c.z-z));
   player.action=null;player.slide=null;player.mantle=null;player.pos.set(x,groundH(x,z)+0.05,z);player.vel.set(0,0,0);player.stance='stand';snapLayer('idle');player.alive=true;player.ammo=MAG;player.reloadT=-1;boltT=-1;MPM.hp=GAME.pHpStart;
   player.yaw=yaw;camYaw=yaw;camPitch=-0.05;camPivot.copy(player.pos).add(V(0,1.68,0));for(const b of bullets){if(b.tr)relP(b.tr);}bullets.length=0;try{NT.pend.clear();}catch(e){}}
 // ---- deploy screen: when you die the map opens and you click any sector your side holds to spawn there
@@ -6983,7 +6984,8 @@ function roundReset(){const r=NT.M.r;NT.myR=r;try{artReset();}catch(e){}resReset
   try{if(CHUTE.on)chuteLand();if(ZIP.on){if(ZIP.lift)liftEnd(false);else zipEnd(false);}SPW.open=false;SPW.t=0;if(mapOpen)setMap(false);}catch(e){}   // nobody carries a zip line, lift, parachute or open map into the new round
   RPS.buf=[];RPS.vis=false;   // and the opponent's old pose must not be drawn gliding to the base
   const mine=((MPM.guest&&!MPM.coop)?(r%2===0):(r%2===1))?P1_SPAWN:P2_SPAWN;   // host starts NE, sides swap every round
-  player.action=null;player.slide=null;player.mantle=null;player.pos.set(mine.x,groundH(mine.x,mine.z)+0.05,mine.z);player.vel.set(0,0,0);
+  let sx=mine.x,sz=mine.z;if(MPM.coop){const L=Math.hypot(mine.x,mine.z)||1,sd=MPM.guest?-1:1;sx+=(-mine.z/L)*3.5*sd;sz+=(mine.x/L)*3.5*sd;}   // co-op: host and guest start 7 m apart, side by side
+  player.action=null;player.slide=null;player.mantle=null;player.pos.set(sx,groundH(sx,sz)+0.05,sz);player.vel.set(0,0,0);
   player.stance='stand';snapLayer('idle');player.alive=true;player.ammo=MAG;player.reserve=SPARE;player.reloadT=-1;boltT=-1;MPM.hp=GAME.pHpStart;
   const yaw=Math.atan2(-mine.x,-mine.z);player.yaw=yaw;camYaw=yaw;camPitch=-0.05;camPivot.copy(player.pos).add(V(0,1.68,0));
   for(const b of bullets){if(b.tr)relP(b.tr);}bullets.length=0;NT.pend.clear();
