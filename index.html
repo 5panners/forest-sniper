@@ -3722,7 +3722,7 @@ let _lg=0;function updateLOD(){if(LODF&&++_lg%120===0)lodGuard();LODU.uLz.value=
 }
 let last=performance.now(), clockT=0;
 camPivot.copy(player.pos).add(V(0,1.68,0)); camSh.set(0.55,3.4,0);
-const BUILD=679;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
+const BUILD=680;$('bld').textContent='build '+BUILD;const brgEl=$('hudT'), hudL=$('hudL'), warnEl=$('warn');
 /* live title-screen camera: the intro overlay flies the real game camera over the world at night */
 const INTRO=window.INTRO={on:false,ready:false,t:0,x:-90,z:440,eye:7,yaw:0,pitch:0.05,tod:5.15,fov:58,saved:16,y:0,
   start(){INTRO.saved=DAY.tod;INTRO.t=0;INTRO.y=groundH(INTRO.x,INTRO.z)+INTRO.eye;INTRO.on=true;},
@@ -6213,8 +6213,8 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
      The bot counts the game already uses (dFr, dCnt) are just the number of Bot slots, so nothing else changes for solo. */
   const TM=(()=>{let t=null;try{t=JSON.parse(localStorage.getItem('fsTeams')||'null');}catch(e){}
     const ok=x=>Array.isArray(x)&&x.length===6&&x.every(v=>v==='P'||v==='B'||v==='N');
-    if(t&&ok(t.a)&&ok(t.b)){t.a[0]='P';return t;}
-    const nf=Math.min(5,DR_NF()),ne=Math.min(6,DR_NE());return {a:['P'].concat(Array.from({length:5},(_,i)=>i<nf?'B':'N')),b:Array.from({length:6},(_,i)=>i<ne?'B':'N')};})();
+    if(t&&ok(t.a)&&ok(t.b)){t.a[0]='P';if(!localStorage.getItem('fsTeamsBots')){localStorage.setItem('fsTeamsBots','1');for(const u of ['a','b'])for(let k=0;k<6;k++)if(t[u][k]==='N')t[u][k]='B';}return t;}   // default: every empty slot is a bot (applied once to saved teams too)
+    localStorage.setItem('fsTeamsBots','1');return {a:['P','B','B','B','B','B'],b:['B','B','B','B','B','B']};})();
   const remoteSlot=()=>{for(const t of ['a','b'])for(let i=(t==='a'?1:0);i<6;i++)if(TM[t][i]==='P')return [t,i];return null;};
   const derive=()=>{GAME.dFr=TM.a.filter((x,i)=>i>0&&x==='B').length;GAME.dCnt=TM.b.filter(x=>x==='B').length;const pa=TM.a.slice(1).includes('P'),pb=TM.b.includes('P');GAME.coop=pa?1:0;GAME.gMode=(pa||pb)?1:0;
     try{localStorage.setItem('fsTeams',JSON.stringify(TM));}catch(e){}save();};
@@ -6222,7 +6222,7 @@ function droidW(q,fn){const c=dcGet(q.i||0),sv={};for(const k of DGKEYS){sv[k]=G
   window.CG_ensureRemote=()=>{if(remoteSlot())return;const i=TM.b.indexOf('N')>=0?TM.b.indexOf('N'):0;TM.b[i]='P';derive();build();};   // pressing Host with nobody chosen means a 1v1
   const build=()=>{const nf=DR_NF(),ne=DR_NE(),rs=remoteSlot(),on=!!rs,rn=(()=>{try{return NT.opp?oppName():'Player';}catch(e){return 'Player';}})();
     const sel=(t,i)=>{if(t==='a'&&i===0)return `<select disabled aria-label="Your slot"><option>${myName()?sbEsc(myName())+' (you)':'You'}</option></select>`;
-      return `<select data-t="${t}" data-i="${i}" aria-label="${t==='a'?'Your team':'Enemy team'}, slot ${i+1}">${[['P',sbEsc(rn)],['B','Bot'],['N','NA']].map(([k,l])=>`<option value="${k}"${TM[t][i]===k?' selected':''}>${l}</option>`).join('')}</select>`;};
+      return `<select data-t="${t}" data-i="${i}" aria-label="${t==='a'?'Your team':'Enemy team'}, slot ${i+1}">${[['P',sbEsc(rn)],['B','Bot'],['N','Empty']].map(([k,l])=>`<option value="${k}"${TM[t][i]===k?' selected':''}>${l}</option>`).join('')}</select>`;};
     const col=(t,h,c)=>`<div><p class="sec" style="margin-top:0;color:${c}">${h}</p>${TM[t].map((_,i)=>sel(t,i)).join('')}</div>`;
     const A=1+nf+(TM.a.slice(1).includes('P')?1:0),B=ne+(TM.b.includes('P')?1:0);
     const mode=!on?'Solo against bots':rs[0]==='b'?'1v1 online'+(nf||ne?' with bots':''):'Co-op online against '+(ne?ne+' bot'+(ne>1?'s':''):'nobody');
